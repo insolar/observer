@@ -19,7 +19,12 @@ package observer
 import (
 	"context"
 
+	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/insolar/pulse"
+	"github.com/insolar/insolar/ledger/heavy/replica"
+	"github.com/insolar/insolar/ledger/heavy/sequence"
+	"github.com/insolar/insolar/metrics"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/insolar/network"
@@ -27,14 +32,14 @@ import (
 	"github.com/insolar/insolar/network/transport"
 
 	"github.com/insolar/observer/internal/ledger/store"
+	transport2 "github.com/insolar/observer/internal/transport"
+	"github.com/insolar/observer/ledger/mimic"
 	"github.com/insolar/observer/server/internal/observer/stubs"
 
 	"github.com/insolar/insolar/component"
-	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/cryptography"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/keystore"
-	"github.com/insolar/insolar/metrics"
 	"github.com/insolar/insolar/platformpolicy"
 )
 
@@ -79,6 +84,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		HostNetwork      network.HostNetwork
 		RoutingTableStub network.RoutingTable
 		TransportFactory transport.Factory
+		ReplicaTransport replica.Transport
 	)
 	{
 		var err error
@@ -91,6 +97,8 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		RoutingTableStub = &stubs.RoutingTable{}
 
 		TransportFactory = transport.NewFactory(cfg.Host.Transport)
+
+		ReplicaTransport = transport2.NewHostTransport(HostNetwork)
 	}
 
 	// API.
@@ -108,14 +116,23 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 	// Storage.
 	var (
-		DB *store.BadgerDB
+		DB         store.DB
+		Pulses     pulse.Accessor
+		Sequencer  sequence.Sequencer
+		Replicator *replica.Replicator
 	)
 	{
 		var err error
-		DB, err = store.NewBadgerDB(cfg.Ledger.Storage.DataDirectory)
+		// DB, err = store.NewBadgerDB(cfg.Ledger.Storage.DataDirectory)
+		DB, err = store.NewPostgresDB("postgresql://localhost/yz?sslmode=disable")
 		if err != nil {
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
+
+		Pulses = stubs.NewPulses(DB)
+		Sequencer = mimic.NewMimicSequencer(DB)
+		jetKeeper := stubs.NewJetKeeper(DB)
+		Replicator = replica.NewReplicator(cfg, Pulses, jetKeeper)
 	}
 
 	metricsHandler, err := metrics.NewMetrics(
@@ -138,6 +155,9 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		HostNetwork,
 		RoutingTableStub,
 		TransportFactory,
+		ReplicaTransport,
+		Sequencer,
+		Replicator,
 	)
 	err = c.cmp.Init(ctx)
 	if err != nil {

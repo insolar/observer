@@ -68,8 +68,8 @@ func main() {
 	conf.Host.Transport.Address = fmt.Sprintf("%s:63846", defaultHost)
 	conf.Host.Transport.Protocol = "TCP"
 
-	conf.APIRunner.Address = fmt.Sprintf(defaultHost+":191%02d", 6)
-	conf.Metrics.ListenAddress = fmt.Sprintf(defaultHost+":80%02d", 6)
+	conf.APIRunner.Address = fmt.Sprintf(defaultHost+":191%02d", 7)
+	conf.Metrics.ListenAddress = fmt.Sprintf(defaultHost+":80%02d", 7)
 
 	conf.Tracer.Jaeger.AgentEndpoint = defaultJaegerEndPoint
 	conf.Log.Level = debugLevel

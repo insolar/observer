@@ -42,7 +42,7 @@
   name = "github.com/google/gofuzz"
 
 [[constraint]]
-  branch = "WLT-631-extract-observer"
+  branch = "WLT-503-replicator-draft"
   name = "github.com/insolar/insolar"
 
 [[constraint]]

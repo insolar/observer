@@ -46,9 +46,14 @@
   revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
 
 [[projects]]
-  digest = "1:d171543eca2b50f422bda2a9614f04e3ef687053e74c2c8f707c009cbd3da0a8"
+  digest = "1:c7bb91d70f45893148ae85300638c9fbdd1d0777c86e459c6f3bbb398692c46a"
   name = "github.com/ThreeDotsLabs/watermill"
-  packages = ["."]
+  packages = [
+    ".",
+    "internal",
+    "internal/sync",
+    "message",
+  ]
   pruneopts = "UT"
   revision = "b39a48a1c9edad83d74898f3bf96adedd18ece81"
   version = "v0.4.0"
@@ -192,6 +197,22 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8a6fb523712970c966eefc6b39ed2c5e74880354"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:f668349b83f7d779567c880550534addeca7ebadfdcf44b0b9c39be61864b4b7"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "886a7fbe3eb1c874d46f623bfa70af45f425b3d1"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:67474f760e9ac3799f740db2c489e6423a4cde45520673ec123ac831ad849cb8"
   name = "github.com/hashicorp/golang-lru"
   packages = ["simplelru"]
@@ -227,17 +248,26 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "WLT-631-extract-observer"
-  digest = "1:385c02c5a2001ce410f8a5e544f3e519011e4d051255cfa0c9bb2575a45565c0"
+  branch = "WLT-503-replicator-draft"
+  digest = "1:a39e37402704618dbddba277f86fc82f75948ae7dd4e2373497fbf9e19843ff4"
   name = "github.com/insolar/insolar"
   packages = [
+    "application/extractor",
+    "certificate",
     "component",
     "configuration",
     "cryptography",
     "insolar",
+    "insolar/bus",
     "insolar/defaults",
     "insolar/gen",
+    "insolar/jet",
+    "insolar/message",
+    "insolar/node",
+    "insolar/payload",
     "insolar/pulse",
+    "insolar/record",
+    "insolar/reply",
     "insolar/utils",
     "instrumentation/inslogger",
     "instrumentation/insmetrics",
@@ -246,11 +276,27 @@
     "internal/ledger/store",
     "keystore",
     "keystore/internal/privatekey",
+    "ledger/drop",
+    "ledger/heavy/replica",
+    "ledger/heavy/replica/intergrity",
+    "ledger/heavy/sequence",
+    "ledger/light/recentstorage",
     "log",
+    "logicrunner/common",
+    "logicrunner/goplugin/foundation",
+    "logicrunner/goplugin/rpctypes",
     "metrics",
     "network",
+    "network/cascade",
     "network/consensusv1",
+    "network/consensusv1/claimhandler",
     "network/consensusv1/packets",
+    "network/consensusv1/phases",
+    "network/controller",
+    "network/controller/bootstrap",
+    "network/controller/common",
+    "network/controller/pinger",
+    "network/gateway",
     "network/hostnetwork",
     "network/hostnetwork/future",
     "network/hostnetwork/host",
@@ -258,18 +304,26 @@
     "network/hostnetwork/packet/types",
     "network/hostnetwork/pool",
     "network/hostnetwork/resolver",
+    "network/merkle",
     "network/node",
     "network/node/internal/node",
+    "network/routing",
     "network/sequence",
+    "network/servicenetwork",
     "network/transport",
     "network/utils",
     "platformpolicy",
     "platformpolicy/internal/hash",
     "platformpolicy/internal/sign",
+    "pulsar",
+    "pulsar/entropygenerator",
+    "pulsar/storage",
+    "testutils",
+    "utils/entropy",
     "version",
   ]
   pruneopts = "UT"
-  revision = "245fccb2d8d91e11c8d39465b07867b48e0dc2a8"
+  revision = "a06fc58d74c875c67d65947ca4d10c341d4a5d8d"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
@@ -360,6 +414,14 @@
   pruneopts = "UT"
   revision = "be3bccf06dda9a40aa6800c4736ac77f2fef987f"
   version = "v2.0.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cade3da7b9e04ef34e9ece52d91a0b76e08f478f55ecfe217854edb4603eb1f8"
+  name = "github.com/onrik/gomerkle"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ae4e74c60b38b413037256369800ddf7579a009a"
 
 [[projects]]
   digest = "1:ee4d4af67d93cc7644157882329023ce9a7bcfce956a079069a9405521c7cc8d"
@@ -596,6 +658,14 @@
   revision = "34c6fa2dc70986bccbbffcc6130f6920a924b075"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4262ea367f180f3865bad721123c6eefb389762190b3c90de6f7723fbe5ca6f2"
+  name = "github.com/tylerb/gls"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e606233f194d6c314156dc6a35f21a42a470c6f6"
+
+[[projects]]
   digest = "1:56a1ddd7eb11b4e46f7c8b8137194f6e33f2faa64afb25d0412002603452f274"
   name = "github.com/ugorji/go"
   packages = ["codec"]
@@ -758,15 +828,20 @@
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/defaults",
     "github.com/insolar/insolar/insolar/gen",
+    "github.com/insolar/insolar/insolar/pulse",
     "github.com/insolar/insolar/insolar/utils",
     "github.com/insolar/insolar/instrumentation/inslogger",
     "github.com/insolar/insolar/instrumentation/instracer",
     "github.com/insolar/insolar/keystore",
+    "github.com/insolar/insolar/ledger/heavy/replica",
+    "github.com/insolar/insolar/ledger/heavy/sequence",
     "github.com/insolar/insolar/log",
     "github.com/insolar/insolar/metrics",
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
     "github.com/insolar/insolar/network/hostnetwork/host",
+    "github.com/insolar/insolar/network/hostnetwork/packet",
+    "github.com/insolar/insolar/network/hostnetwork/packet/types",
     "github.com/insolar/insolar/network/transport",
     "github.com/insolar/insolar/network/utils",
     "github.com/insolar/insolar/platformpolicy",
@@ -779,6 +854,7 @@
     "github.com/spf13/jwalterweatherman",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "github.com/ugorji/go/codec",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"
