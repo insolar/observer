@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package stubs
+package replica
 
 import (
 	"context"

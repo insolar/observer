@@ -128,7 +128,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		}
 
 		Sequencer = sequence2.NewMimicSequencer(DB)
-		jetKeeper := stubs.NewJetKeeper(DB)
+		jetKeeper := replica2.NewJetKeeper(DB)
 		Replicator = replica.NewReplicator(cfg, jetKeeper)
 	}
 
