@@ -42,7 +42,7 @@
   name = "github.com/google/gofuzz"
 
 [[constraint]]
-  branch = "WLT-503-replicator-draft"
+  branch = "WLT-503-replicator"
   name = "github.com/insolar/insolar"
 
 [[constraint]]

@@ -1,6 +1,6 @@
 BIN_DIR ?= bin
 ARTIFACTS_DIR ?= .artifacts
-INSOLARD = insolard
+OBSERVER = observer
 
 ALL_PACKAGES = ./...
 MOCKS_PACKAGE = github.com/insolar/observer/testutils
@@ -21,11 +21,6 @@ BUILD_HASH = $(shell git rev-parse --short HEAD)
 BUILD_VERSION ?= $(shell git describe --abbrev=0 --tags)
 
 GOPATH ?= `go env GOPATH`
-LDFLAGS += -X github.com/insolar/insolar/version.Version=${BUILD_VERSION}
-LDFLAGS += -X github.com/insolar/insolar/version.BuildNumber=${BUILD_NUMBER}
-LDFLAGS += -X github.com/insolar/insolar/version.BuildDate=${BUILD_DATE}
-LDFLAGS += -X github.com/insolar/insolar/version.BuildTime=${BUILD_TIME}
-LDFLAGS += -X github.com/insolar/insolar/version.GitHash=${BUILD_HASH}
 
 
 .PHONY: all
@@ -75,14 +70,14 @@ ensure:
 	dep ensure
 
 .PHONY: build
-build: $(BIN_DIR) $(INSOLARD)
+build: $(BIN_DIR) $(OBSERVER)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-.PHONY: $(INSOLARD)
-$(INSOLARD):
-	$(GOBUILD) -o $(BIN_DIR)/$(INSOLARD) ${BUILD_TAGS} -ldflags "${LDFLAGS}" cmd/insolard/*.go
+.PHONY: $(OBSERVER)
+$(OBSERVER):
+	$(GOBUILD) -o $(BIN_DIR)/$(OBSERVER) ${BUILD_TAGS} -ldflags "${LDFLAGS}" cmd/observer/*.go
 
 .PHONY: test_unit
 test_unit:
@@ -103,7 +98,7 @@ test_func: functest
 
 .PHONY: test_slow
 test_slow:
-	CGO_ENABLED=1 go test $(TEST_ARGS) -tags slowtest ./logicrunner/... ./server/internal/...
+	CGO_ENABLED=1 go test $(TEST_ARGS) -tags slowtest ./server/internal/...
 
 .PHONY: test
 test: test_unit
@@ -138,12 +133,12 @@ ci_test_slow:
 	GOMAXPROCS=$(CI_GOMAXPROCS) CGO_ENABLED=1 \
 		go test $(CI_TEST_ARGS) $(TEST_ARGS) -json -v -tags slowtest ./logicrunner/... ./server/internal/... -count 1 | tee -a ci_test_unit.json
 
-.PHONY: docker-insolard
-docker-insolard:
-	docker build --target insolard --tag insolar/insolard -f ./docker/Dockerfile .
+.PHONY: docker-observer
+docker-observer:
+	docker build --target observer --tag insolar/observer -f ./docker/Dockerfile .
 
 .PHONY: docker
-docker: docker-insolard
+docker: docker-observer
 
 generate-protobuf:
 	protoc -I./vendor -I./ --gogoslick_out=./ network/node/internal/node/node.proto

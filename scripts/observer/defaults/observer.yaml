@@ -24,10 +24,7 @@ ledger:
     out:
       - in
     parentaddress: 127.0.0.1:13831
-    parentpubkey: "-----BEGIN PUBLIC KEY-----
-                     MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERRsRdOX9zTYrw1UA0J2Cywo2DmCN
-                     U7LyON8i96epO/EHbb8IGWnT7NT/zneFzWOKaiCRjhYPKSi4qAjk66uloQ==
-                     -----END PUBLIC KEY-----"
+    parentpubkey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXbw/WYbgJnj6dvRXkBQs2SGXDsKI\nOQZwG6+5VXYM1rfTOkaebLYrg/+Je/HgWpWy3iBN3Ap+jVaBE1V/BudsLg==\n-----END PUBLIC KEY-----\n"
 log:
   level: Debug
   adapter: zerolog

@@ -24,6 +24,6 @@ type Server interface {
 	Serve()
 }
 
-func NewObserverServer(cfgPath string, trace bool) Server {
-	return observer.New(cfgPath, trace)
+func NewObserverServer(cfgPath string) Server {
+	return observer.New(cfgPath)
 }

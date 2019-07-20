@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package mimic
+package sequence
 
 import (
 	"bytes"

@@ -248,8 +248,8 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "WLT-503-replicator-draft"
-  digest = "1:a39e37402704618dbddba277f86fc82f75948ae7dd4e2373497fbf9e19843ff4"
+  branch = "WLT-503-replicator"
+  digest = "1:de27242b9981fb76ba32c5a953ddc342c4fc88641dcf84f7d5f1a886eb34f774"
   name = "github.com/insolar/insolar"
   packages = [
     "application/extractor",
@@ -278,7 +278,7 @@
     "keystore/internal/privatekey",
     "ledger/drop",
     "ledger/heavy/replica",
-    "ledger/heavy/replica/intergrity",
+    "ledger/heavy/replica/integrity",
     "ledger/heavy/sequence",
     "ledger/light/recentstorage",
     "log",
@@ -323,7 +323,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "a06fc58d74c875c67d65947ca4d10c341d4a5d8d"
+  revision = "6d4353fec26e72dcfd5ffccc70c5514b39375326"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"

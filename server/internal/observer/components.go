@@ -21,7 +21,6 @@ import (
 
 	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar/gen"
-	"github.com/insolar/insolar/insolar/pulse"
 	"github.com/insolar/insolar/ledger/heavy/replica"
 	"github.com/insolar/insolar/ledger/heavy/sequence"
 	"github.com/insolar/insolar/metrics"
@@ -32,8 +31,8 @@ import (
 	"github.com/insolar/insolar/network/transport"
 
 	"github.com/insolar/observer/internal/ledger/store"
-	transport2 "github.com/insolar/observer/internal/transport"
-	"github.com/insolar/observer/ledger/mimic"
+	replica2 "github.com/insolar/observer/ledger/observer/replica"
+	sequence2 "github.com/insolar/observer/ledger/observer/sequence"
 	"github.com/insolar/observer/server/internal/observer/stubs"
 
 	"github.com/insolar/insolar/component"
@@ -98,7 +97,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 		TransportFactory = transport.NewFactory(cfg.Host.Transport)
 
-		ReplicaTransport = transport2.NewHostTransport(HostNetwork)
+		ReplicaTransport = replica2.NewHostTransport(HostNetwork)
 	}
 
 	// API.
@@ -117,7 +116,6 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 	// Storage.
 	var (
 		DB         store.DB
-		Pulses     pulse.Accessor
 		Sequencer  sequence.Sequencer
 		Replicator *replica.Replicator
 	)
@@ -129,10 +127,9 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
 
-		Pulses = stubs.NewPulses(DB)
-		Sequencer = mimic.NewMimicSequencer(DB)
+		Sequencer = sequence2.NewMimicSequencer(DB)
 		jetKeeper := stubs.NewJetKeeper(DB)
-		Replicator = replica.NewReplicator(cfg, Pulses, jetKeeper)
+		Replicator = replica.NewReplicator(cfg, jetKeeper)
 	}
 
 	metricsHandler, err := metrics.NewMetrics(

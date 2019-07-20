@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	defaultOutputConfigNameTmpl = "insolard.yaml"
+	defaultOutputConfigNameTmpl = "observer.yaml"
 	defaultHost                 = "127.0.0.1"
 	defaultJaegerEndPoint       = ""
 	nodeDataDirectoryTemplate   = "data"
@@ -43,7 +43,7 @@ var (
 	prometheusConfigTmpl = "scripts/prom/server.yml.tmpl"
 	prometheusFileName   = "prometheus.yaml"
 
-	insolardDefaultsConfig = "scripts/insolard/defaults/insolard.yaml"
+	insolardDefaultsConfig = "scripts/observer/defaults/observer.yaml"
 )
 
 var (
