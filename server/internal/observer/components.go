@@ -18,6 +18,7 @@ package observer
 
 import (
 	"context"
+	"github.com/insolar/observer/internal/beauty"
 
 	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar/gen"
@@ -123,7 +124,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 	{
 		var err error
 		// DB, err = store.NewBadgerDB(cfg.Ledger.Storage.DataDirectory)
-		DB, err = store.NewPostgresDB("postgresql://localhost/yz?sslmode=disable")
+		DB, err = store.NewPostgresDB("postgresql://localhost/postgres?sslmode=disable")
 		if err != nil {
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
@@ -143,6 +144,9 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		return nil, errors.Wrap(err, "failed to start Metrics")
 	}
 
+	// Beautifier
+	beautifier := beauty.NewBeautifier()
+
 	c.cmp.Inject(
 		DB,
 		metricsHandler,
@@ -156,6 +160,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		ReplicaTransport,
 		Sequencer,
 		Replicator,
+		beautifier,
 	)
 	err = c.cmp.Init(ctx)
 	if err != nil {
