@@ -20,11 +20,12 @@ ledger:
     exportlag: 40
   replica:
     role: observer
+    port: 20112
     in: in
     out:
       - in
-    parentaddress: 127.0.0.1:13831
-    parentpubkey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXbw/WYbgJnj6dvRXkBQs2SGXDsKI\nOQZwG6+5VXYM1rfTOkaebLYrg/+Je/HgWpWy3iBN3Ap+jVaBE1V/BudsLg==\n-----END PUBLIC KEY-----\n"
+    parentaddress: 127.0.0.1:20111
+    parentpubkey: "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAENYuUvDpTrLwU6SLghi7/NFxEZ6Lo\nhOIlw7CQk5FE4nMkeIPOz3lKSmjMe4WJNBhNUoRcIOY6BSapf2jUxYKV4A==\n-----END PUBLIC KEY-----\n"
 log:
   level: Debug
   adapter: zerolog

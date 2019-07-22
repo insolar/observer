@@ -97,7 +97,8 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 		TransportFactory = transport.NewFactory(cfg.Host.Transport)
 
-		ReplicaTransport = replica2.NewHostTransport(HostNetwork)
+		// ReplicaTransport = replica2.NewHostTransport(HostNetwork)
+		ReplicaTransport = replica.NewGRPCTransport(cfg.Ledger.Replica.Port)
 	}
 
 	// API.

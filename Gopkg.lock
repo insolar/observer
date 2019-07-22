@@ -249,7 +249,7 @@
 
 [[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:de27242b9981fb76ba32c5a953ddc342c4fc88641dcf84f7d5f1a886eb34f774"
+  digest = "1:1df65d9229d4202d91addb68efda4c95693959a2600f0dffb1017c316f14f891"
   name = "github.com/insolar/insolar"
   packages = [
     "application/extractor",
@@ -323,7 +323,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "6d4353fec26e72dcfd5ffccc70c5514b39375326"
+  revision = "281f3006b5b97bd349298a34bf89247eb9a8ec59"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
@@ -711,10 +711,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:245513f26a0d2c70372c30182414e3f1881cba072e090ab005c7aa6dc32b4ff6"
+  digest = "1:b5936d38011189ba9b2e5890a38c7ffe0ac7f157eef2ddc0fe752117c50d394d"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
     "internal/timeseries",
     "trace",
   ]
@@ -742,15 +746,25 @@
   revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
 
 [[projects]]
-  digest = "1:1093f2eb4b344996604f7d8b29a16c5b22ab9e1b25652140d3fede39f640d5cd"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "secure/bidirule",
     "transform",
+    "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
@@ -791,16 +805,42 @@
   revision = "710ae3a149df3775bfc2e9efb7f4fb97b186b233"
 
 [[projects]]
-  digest = "1:caa836d207326da987daf8eb4404ef80806fb843056367d2c3c1636f57ede119"
+  digest = "1:cf01ae0753310464677058b125fa31e74fd943781782ada503180ad784fc83d3"
   name = "google.golang.org/grpc"
   packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
+    "credentials",
+    "credentials/internal",
+    "encoding",
+    "encoding/proto",
     "grpclog",
     "internal",
+    "internal/backoff",
+    "internal/balancerload",
+    "internal/binarylog",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
+    "internal/transport",
+    "keepalive",
     "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "serviceconfig",
     "stats",
     "status",
+    "tap",
   ]
   pruneopts = "UT"
   revision = "1d89a3c832915b2314551c1d2a506874d62e53f7"
@@ -828,7 +868,6 @@
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/defaults",
     "github.com/insolar/insolar/insolar/gen",
-    "github.com/insolar/insolar/insolar/pulse",
     "github.com/insolar/insolar/insolar/utils",
     "github.com/insolar/insolar/instrumentation/inslogger",
     "github.com/insolar/insolar/instrumentation/instracer",
@@ -854,7 +893,6 @@
     "github.com/spf13/jwalterweatherman",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
-    "github.com/ugorji/go/codec",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

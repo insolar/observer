@@ -44,5 +44,5 @@ generate_keys
 echo "start observer node"
 ${OBSERVER} \
     --config ${LAUNCHNET_BASE_DIR}observer.yaml \
-    --trace ${NODE_LOGS}/output.log
+    ${NODE_LOGS}/output.log
 echo "observer node started in background"
