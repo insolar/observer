@@ -249,7 +249,7 @@
 
 [[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:1df65d9229d4202d91addb68efda4c95693959a2600f0dffb1017c316f14f891"
+  digest = "1:4ba566eb90c414ac4802d2dc845391e3a2b670be58af5aa3b943bbfa64c7452f"
   name = "github.com/insolar/insolar"
   packages = [
     "application/extractor",
@@ -323,7 +323,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "281f3006b5b97bd349298a34bf89247eb9a8ec59"
+  revision = "0a5b350105b343c6bc78b7f2174991a3fdc03f83"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
