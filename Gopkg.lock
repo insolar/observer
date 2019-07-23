@@ -138,6 +138,24 @@
   version = "v1.4.7"
 
 [[projects]]
+  digest = "1:d02b94ed7089fc72fcd2e89c89df858c843470fe36788df39bf45e074293165e"
+  name = "github.com/go-pg/pg"
+  packages = [
+    ".",
+    "internal",
+    "internal/iszero",
+    "internal/parser",
+    "internal/pool",
+    "internal/struct_filter",
+    "internal/tag",
+    "orm",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "11cb265cd96c769490bea4cdc3634ea2049197f6"
+  version = "v8.0.4"
+
+[[projects]]
   digest = "1:33f49b72fdad072a03d13b31a42edfff08088b7c27198f4073b8213a58884f27"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -342,17 +360,6 @@
   revision = "6237cf65f3a6f7111cd8a42be3590df99a66bc7d"
 
 [[projects]]
-  digest = "1:da6718abe4d47b1132d98bf3f9b18e302d537bf6daf02bd40804d9295a3f32bd"
-  name = "github.com/jinzhu/gorm"
-  packages = [
-    ".",
-    "dialects/postgres",
-  ]
-  pruneopts = "UT"
-  revision = "836fb2c19d84dac7b0272958dfb9af7cf0d0ade4"
-  version = "v1.9.10"
-
-[[projects]]
   digest = "1:01ed62f8f4f574d8aff1d88caee113700a2b44c42351943fa73cc1808f736a50"
   name = "github.com/jinzhu/inflection"
   packages = ["."]
@@ -369,11 +376,10 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:0e06e487551e2f9e0d6967a15c42223354e37c2e9869b301b14a42e4b51ea3e0"
+  digest = "1:bdd53b87de8185da386bae179c84d4848854c6870bacacf6a154fe63e2e750f7"
   name = "github.com/lib/pq"
   packages = [
     ".",
-    "hstore",
     "oid",
     "scram",
   ]
@@ -723,9 +729,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9c4fed825c10231651e81bf0ab2c12e3a6cc349dcc62a78f8d3a9dfb6744855e"
+  digest = "1:c898f5b58dcca1f1d987fec5a28f056a6b5d52e2016d4b3a49e152d2d7147b05"
   name = "golang.org/x/crypto"
-  packages = ["sha3"]
+  packages = [
+    "pbkdf2",
+    "sha3",
+  ]
   pruneopts = "UT"
   revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
@@ -874,11 +883,20 @@
   revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
   version = "v2.2.2"
 
+[[projects]]
+  digest = "1:999d566ad1ae4303c456af5a155f7b42401cca4fd33552567ed9dd997b107a08"
+  name = "mellium.im/sasl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e58e780e1378aa4df5dc705364ff5ae9a4dd1e04"
+  version = "v0.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/dgraph-io/badger",
+    "github.com/go-pg/pg",
     "github.com/gojuno/minimock",
     "github.com/google/btree",
     "github.com/google/gofuzz",
@@ -906,8 +924,6 @@
     "github.com/insolar/insolar/platformpolicy",
     "github.com/insolar/insolar/version",
     "github.com/insolar/rpc/v2",
-    "github.com/jinzhu/gorm",
-    "github.com/jinzhu/gorm/dialects/postgres",
     "github.com/lib/pq",
     "github.com/ory/dockertest",
     "github.com/pkg/errors",
