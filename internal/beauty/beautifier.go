@@ -43,10 +43,10 @@ type HalfResponse struct {
 }
 
 type Beautifier struct {
-	db       *pg.DB
-	logger   insolar.Logger
-	requests map[uint]HalfRequest  // half of request/response
-	results  map[uint]HalfResponse // half of response/request
+	db            *pg.DB
+	logger        insolar.Logger
+	requestsParts map[uint]HalfRequest  // half of request/response
+	resultsParts  map[uint]HalfResponse // half of response/request
 }
 
 type InsDeposit struct {
@@ -88,6 +88,7 @@ type InsTransaction struct {
 	ReferenceTo   string   `sql:",notnull"`
 }
 
+// Init initialize connection to db
 func (b *Beautifier) Init(ctx context.Context) error {
 	b.db = pg.Connect(&pg.Options{
 		User:     "postgres",
@@ -111,10 +112,12 @@ func (b *Beautifier) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop close connection to db
 func (b *Beautifier) Stop(ctx context.Context) error {
 	return b.db.Close()
 }
 
+// ParseAndStore consume array of records and pulse number parse them and save to db
 func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.PulseNumber) {
 	for i := len(records); i <= len(records); i++ {
 		b.parse(records[i], pulseNumber)
@@ -123,24 +126,24 @@ func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.
 
 func (b *Beautifier) parse(record sequence.Item, pulseNumber insolar.PulseNumber) {
 
-	switch v := b.build(record.Key, record.Value).(type) {
+	switch result := b.build(record.Key, record.Value).(type) {
 	case InsTransaction:
-		err := b.storeTx(v)
+		err := b.storeTx(result)
 		if err != nil {
 			b.logger.Error(errors.Wrapf(err, "failed to save transaction"))
 		}
 	case InsMember:
-		err := b.storeMember(v)
+		err := b.storeMember(result)
 		if err != nil {
 			b.logger.Error(errors.Wrapf(err, "failed to save member"))
 		}
 	case InsDeposit:
-		err := b.storeDeposit(v)
+		err := b.storeDeposit(result)
 		if err != nil {
 			b.logger.Error(errors.Wrapf(err, "failed to save deposit"))
 		}
 	case InsFee:
-		err := b.storeFee(v)
+		err := b.storeFee(result)
 		if err != nil {
 			b.logger.Error(errors.Wrapf(err, "failed to save fee"))
 		}
@@ -149,42 +152,7 @@ func (b *Beautifier) parse(record sequence.Item, pulseNumber insolar.PulseNumber
 	}
 }
 
-func (b *Beautifier) storeTx(tx InsTransaction) error {
-	// store to db
-	_, err := b.db.Model(&tx).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeMember(member InsMember) error {
-	// store to db
-	_, err := b.db.Model(&member).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeDeposit(deposit InsDeposit) error {
-	// store to db
-	_, err := b.db.Model(&deposit).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeFee(fee InsFee) error {
-	// store to db
-	_, err := b.db.Model(&fee).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
+// model builder
 func (b *Beautifier) build(key []byte, value []byte) interface{} {
 	var (
 		err error
@@ -279,4 +247,40 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 			}
 		}
 	}
+}
+
+func (b *Beautifier) storeTx(tx InsTransaction) error {
+	// store to db
+	_, err := b.db.Model(&tx).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Beautifier) storeMember(member InsMember) error {
+	// store to db
+	_, err := b.db.Model(&member).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Beautifier) storeDeposit(deposit InsDeposit) error {
+	// store to db
+	_, err := b.db.Model(&deposit).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *Beautifier) storeFee(fee InsFee) error {
+	// store to db
+	_, err := b.db.Model(&fee).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return err
+	}
+	return nil
 }

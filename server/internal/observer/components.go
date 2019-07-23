@@ -144,7 +144,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		return nil, errors.Wrap(err, "failed to start Metrics")
 	}
 
-	// Beautifier
+	// Data beautifier
 	beautifier := beauty.NewBeautifier()
 
 	c.cmp.Inject(
