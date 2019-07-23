@@ -26,10 +26,6 @@
 
 
 [[constraint]]
-  name = "github.com/dgraph-io/badger"
-  version = "1.5.3"
-
-[[constraint]]
   name = "github.com/gojuno/minimock"
   version = "2.1.7"
 
