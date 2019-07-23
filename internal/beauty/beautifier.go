@@ -19,11 +19,16 @@ package beauty
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/sequence"
+	"github.com/insolar/insolar/log"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	"github.com/insolar/insolar/logicrunner/common"
 	"github.com/pkg/errors"
 )
@@ -45,8 +50,8 @@ type HalfResponse struct {
 type Beautifier struct {
 	db            *pg.DB
 	logger        insolar.Logger
-	requestsParts map[uint]HalfRequest  // half of request/response
-	resultsParts  map[uint]HalfResponse // half of response/request
+	requestsParts map[HalfRequest]HalfResponse // half of request/response
+	resultsParts  map[HalfResponse]HalfRequest // half of response/request
 }
 
 type InsDeposit struct {
@@ -76,16 +81,23 @@ type InsMember struct {
 }
 
 type InsTransaction struct {
-	tableName     struct{} `sql:"transactions"`
-	Id            uint     `sql:",pk_id"`
-	TxID          string   `sql:",notnull"`
-	Amount        string   `sql:",notnull"`
-	Fee           string   `sql:",notnull"`
-	Timestamp     uint     `sql:",notnull"`
-	Pulse         uint     `sql:",notnull"`
-	Status        string   `sql:",notnull"`
-	ReferenceFrom string   `sql:",notnull"`
-	ReferenceTo   string   `sql:",notnull"`
+	tableName     struct{}            `sql:"transactions"`
+	Id            uint                `sql:",pk_id"`
+	TxID          string              `sql:",notnull"`
+	Amount        string              `sql:",notnull"`
+	Fee           string              `sql:",notnull"`
+	Timestamp     int64               `sql:",notnull"`
+	Pulse         insolar.PulseNumber `sql:",notnull"`
+	Status        string              `sql:",notnull"`
+	ReferenceFrom string              `sql:",notnull"`
+	ReferenceTo   string              `sql:",notnull"`
+}
+
+type InsRecord struct {
+	tableName struct{} `sql:"records"`
+	Key       string
+	Value     string
+	Scope     uint
 }
 
 // Init initialize connection to db
@@ -120,13 +132,13 @@ func (b *Beautifier) Stop(ctx context.Context) error {
 // ParseAndStore consume array of records and pulse number parse them and save to db
 func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.PulseNumber) {
 	for i := len(records); i <= len(records); i++ {
-		b.parse(records[i], pulseNumber)
+		b.parse(records[i].Key, records[i].Value, pulseNumber)
 	}
 }
 
-func (b *Beautifier) parse(record sequence.Item, pulseNumber insolar.PulseNumber) {
+func (b *Beautifier) parse(key []byte, value []byte, pulseNumber insolar.PulseNumber) {
 
-	switch result := b.build(record.Key, record.Value).(type) {
+	switch result := b.build(key, value).(type) {
 	case InsTransaction:
 		err := b.storeTx(result)
 		if err != nil {
@@ -162,7 +174,8 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 
 	id := insolar.ID{}
 	copy(id[:], key[1:])
-	// log.Infof("pulse: %v", id.Pulse())
+	log.Infof("pulse: %v", id.Pulse())
+	fmt.Println(key[0])
 	if key[0] == 2 {
 		rec := record.Material{}
 		err = rec.Unmarshal(value)
@@ -170,43 +183,41 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 			b.logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
 			return nil
 		}
+		fmt.Println(rec.String())
 		switch rec.Virtual.Union.(type) {
 		case *record.Virtual_IncomingRequest:
 			in := rec.Virtual.GetIncomingRequest()
 			if in.CallType != record.CTGenesis {
-				args := []interface{}{}
-				insolar.Deserialize(in.Arguments, &args)
+				var args []interface{}
+				err = insolar.Deserialize(in.Arguments, &args)
+				if err != nil {
+					b.logger.Error(errors.Wrapf(err, "failed to deserialize arguments"))
+					return nil
+				}
 				request := member.Request{}
+				var pulseTimeStamp int64
 				if len(args) > 0 {
 					if rawRequest, ok := args[0].([]byte); ok {
 						var signature string
-						var pulseTimeStamp int64
 						var raw []byte
-						signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-						// logger.Infof("RAW: %v %v ", signature, string(rawRequest))
+						err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+						if err != nil {
+							b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
+							return nil
+						}
+						b.logger.Infof("RAW: %v %v ", signature, string(rawRequest))
 						err = json.Unmarshal(raw, &request)
 					}
 				}
 				if in.Method == "Transfer" {
 					ref := insolar.Reference{}.FromSlice(args[1].([]byte))
 					b.logger.Infof("TRANSFER amount: %v toMember: %v", args[0], ref.String())
+					return InsTransaction{TxID: id.String(), Status: "PENDING", Amount: args[0].(string),
+						ReferenceFrom: request.Params.Reference, ReferenceTo: ref.String(), Pulse: id.Pulse(), Timestamp: pulseTimeStamp}
 				}
 				callParams, _ := request.Params.CallParams.(map[string]interface{})
 				b.logger.Infof("in %v %v %v toMember: %v", in.Method, id.String(), request.Params.CallSite, callParams["toMemberReference"])
 			}
-		// case *record.Virtual_OutgoingRequest:
-		// 	out := rec.Virtual.GetOutgoingRequest()
-		// 	logger.Infof("out %v %v %v", id.Pulse(), out.Method, string(out.Arguments))
-		// 	logger.Infof("out method:%v type:%v args:%v", out.Method, out.CallType.String(), string(out.Arguments))
-		// case *record.Virtual_Type: // TODO: узнать про Type
-		// 	t := rec.Virtual.GetType()
-		// 	logger.Infof("type: %v", t)
-		// logger.Infof("Rec type: %v", reflect.TypeOf(rec.Virtual.Union).String())
-		// switch rec.Virtual.Union.(type) {
-		// case *record.Virtual_IncomingRequest:
-		// 	in := rec.Virtual.GetIncomingRequest()
-		// 	logger.Infof("in: %v", in)
-		// }
 		case *record.Virtual_Result:
 			res := rec.Virtual.GetResult()
 			// res.
@@ -238,8 +249,8 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 			w := wallet.Wallet{}
 			serializer := common.NewCBORSerializer()
 			switch {
-			// case serializer.Deserialize(amn.Memory, &m) == nil:
-			// 	logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+			//case serializer.Deserialize(amn.Memory, &m) == nil:
+			//	b.logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 			case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
 				b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 			default:
@@ -247,6 +258,7 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 			}
 		}
 	}
+	return nil
 }
 
 func (b *Beautifier) storeTx(tx InsTransaction) error {
