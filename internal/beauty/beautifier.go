@@ -19,6 +19,7 @@ package beauty
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -29,6 +30,8 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	"github.com/insolar/insolar/logicrunner/common"
 	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/internal/ledger/store"
 )
 
 func NewBeautifier() *Beautifier {
@@ -46,6 +49,7 @@ type HalfResponse struct {
 }
 
 type Beautifier struct {
+	Publisher     store.DBSetPublisher `inject:""`
 	db            *pg.DB
 	logger        insolar.Logger
 	resultParts   map[insolar.ID]HalfResponse // half of requestID/response
@@ -100,6 +104,11 @@ type InsRecord struct {
 
 // Init initialize connection to db
 func (b *Beautifier) Init(ctx context.Context) error {
+	b.Publisher.Subscribe(func(key store.Key, value []byte) {
+		pn := insolar.NewPulseNumber(key.ID())
+		k := append([]byte{byte(key.Scope())}, key.ID()...)
+		b.ParseAndStore([]sequence.Item{{Key: k, Value: value}}, pn)
+	})
 	b.db = pg.Connect(&pg.Options{
 		User:     "postgres",
 		Password: "",
