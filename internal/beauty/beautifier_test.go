@@ -7,11 +7,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/insolar/observer/internal/ledger/store"
 )
+
+type publisherStub struct{}
+
+func (p *publisherStub) Subscribe(handle store.DBSetHandle) {}
 
 func TestBeautifier_parse(t *testing.T) {
 	ctx := context.Background()
 	b := NewBeautifier()
+	b.Publisher = &publisherStub{}
 
 	assert.NoError(t, b.Init(ctx))
 	assert.NoError(t, b.Start(ctx))
@@ -26,6 +33,7 @@ func TestBeautifier_parse(t *testing.T) {
 func TestBeautifier_storeTx(t *testing.T) {
 	ctx := context.Background()
 	b := NewBeautifier()
+	b.Publisher = &publisherStub{}
 
 	assert.NoError(t, b.Init(ctx))
 	assert.NoError(t, b.Start(ctx))
@@ -34,12 +42,13 @@ func TestBeautifier_storeTx(t *testing.T) {
 	tx := Transaction{TxID: "foo", Amount: "1000", Fee: "100",
 		Timestamp: 5555, Pulse: 32323, Status: "SUCCESS", ReferenceFrom: "alpha", ReferenceTo: "beta"}
 
-	assert.NoError(t, b.storeTx(tx))
+	assert.NoError(t, b.storeTx(&tx))
 }
 
 func TestBeautifier_ParseAndStore(t *testing.T) {
 	ctx := context.Background()
 	b := NewBeautifier()
+	b.Publisher = &publisherStub{}
 
 	assert.NoError(t, b.Init(ctx))
 	assert.NoError(t, b.Start(ctx))
