@@ -24,7 +24,6 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/sequence"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
@@ -168,7 +167,7 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 
 	id := insolar.ID{}
 	copy(id[:], key[1:])
-	log.Infof("pulse: %v", id.Pulse())
+	//log.Infof("pulse: %v", id.Pulse())
 	rec := record.Material{}
 	err := rec.Unmarshal(value)
 	if err != nil {
@@ -185,33 +184,42 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 				b.logger.Error(errors.Wrapf(err, "failed to deserialize arguments"))
 				return nil
 			}
-			request := member.Request{}
-			var pulseTimeStamp int64
-			if len(args) > 0 {
-				if rawRequest, ok := args[0].([]byte); ok {
-					var signature string
-					var raw []byte
-					err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-					if err != nil {
-						b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
-						return ""
+			if in.Method == "Call" {
+				request := member.Request{}
+				if len(args) > 0 {
+					if rawRequest, ok := args[0].([]byte); ok {
+						var pulseTimeStamp int64
+						var signature string
+						var raw []byte
+						err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+						if err != nil {
+							b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
+							return ""
+						}
+						err = json.Unmarshal(raw, &request)
 					}
-					err = json.Unmarshal(raw, &request)
+				}
+
+				callParams, _ := request.Params.CallParams.(map[string]interface{})
+				if request.Params.CallSite == "member.transfer" {
+					amount, _ := callParams["amount"]
+					toMemberReference, _ := callParams["toMemberReference"]
+					return InsTransaction{
+						TxID:          id.String(),
+						Status:        "PENDING",
+						Amount:        amount.(string),
+						ReferenceFrom: request.Params.Reference,
+						ReferenceTo:   toMemberReference.(string),
+						Pulse:         id.Pulse(),
+						Timestamp:     1,
+					}
+				}
+				// TODO: implement member.create
+				if request.Params.CallSite == "member.create" {
+					b.logger.Info("Catch member create call")
 				}
 			}
 
-			callParams, _ := request.Params.CallParams.(map[string]interface{})
-			if in.Method == "Call" && request.Params.CallSite == "member.transfer" {
-				ref := request.Params.Reference
-				amount, _ := callParams["amount"]
-				b.logger.Infof("Transfer amount: %v toMember: %v", amount, ref)
-				return InsTransaction{TxID: id.String(), Status: "PENDING", Amount: amount.(string),
-					ReferenceFrom: request.Params.Reference, ReferenceTo: ref, Pulse: id.Pulse(), Timestamp: pulseTimeStamp}
-			}
-
-			// TODO: handle member.create
-
-			b.logger.Infof("in %v %v %v toMember: %v", in.Method, id.String(), request.Params.CallSite, callParams["toMemberReference"])
 		}
 	case *record.Virtual_Result:
 		res := rec.Virtual.GetResult()
@@ -247,9 +255,11 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 		//case serializer.Deserialize(amn.Memory, &m) == nil:
 		//	b.logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 		case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
-			b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+			//b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+			b.logger.Infof("amn: (Wallet %v %v) %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String())
 		default:
-			b.logger.Infof("amn: %v %v %v", amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+			//b.logger.Infof("amn: %v %v %v", amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+			b.logger.Infof("amn: %v %v", amn.Request.String(), amn.PrevState.String())
 		}
 	}
 	return ""

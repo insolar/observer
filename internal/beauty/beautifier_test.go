@@ -45,7 +45,7 @@ func TestBeautifier_ParseAndStore(t *testing.T) {
 	defer b.Stop(ctx)
 
 	var records []InsRecord
-	count, err := b.db.Model(&records).Limit(3000).Where("scope = ?", 2).SelectAndCount()
+	count, err := b.db.Model(&records).Where("scope = ?", 2).SelectAndCount()
 	assert.NoError(t, err)
 
 	fmt.Println("Records size: ", count)
