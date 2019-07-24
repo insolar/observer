@@ -100,7 +100,7 @@ type InsRecord struct {
 	Scope     uint
 }
 
-// Init initialize connection to db
+// Init initialize connection to db and subscribe for records
 func (b *Beautifier) Init(ctx context.Context) error {
 	b.Publisher.Subscribe(func(key store.Key, value []byte) {
 		if key.Scope() != store.ScopeRecord {
@@ -120,10 +120,6 @@ func (b *Beautifier) Init(ctx context.Context) error {
 }
 
 func (b *Beautifier) Start(ctx context.Context) error {
-	// WorkFlow
-	// Start from previous work
-	// Take chunk of raw data and insert in db (it can be tx or account creation)
-	// save done work in db
 	return nil
 }
 
@@ -172,7 +168,6 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 
 	id := insolar.ID{}
 	copy(id[:], key[1:])
-	//log.Infof("pulse: %v", id.Pulse())
 	rec := record.Material{}
 	err := rec.Unmarshal(value)
 	if err != nil {
@@ -205,10 +200,10 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 					}
 				}
 
-				callParams, _ := request.Params.CallParams.(map[string]interface{})
+				callParams := request.Params.CallParams.(map[string]interface{})
 				if request.Params.CallSite == "member.transfer" {
-					amount, _ := callParams["amount"]
-					toMemberReference, _ := callParams["toMemberReference"]
+					amount := callParams["amount"]
+					toMemberReference := callParams["toMemberReference"]
 					return InsTransaction{
 						TxID:          id.String(),
 						Status:        "PENDING",
@@ -231,7 +226,6 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 		b.logger.Infof("res: %v %v %v", res.Request.String(), res.Object.String(), string(res.Payload))
 	case *record.Virtual_Activate:
 		act := rec.Virtual.GetActivate()
-		// m := member.Member{}
 		w := wallet.Wallet{}
 		serializer := common.NewCBORSerializer()
 		switch {
