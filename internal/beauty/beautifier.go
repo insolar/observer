@@ -28,10 +28,8 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	"github.com/insolar/insolar/logicrunner/common"
-	"github.com/pkg/errors"
-	"os"
-
 	"github.com/insolar/observer/internal/ledger/store"
+	"github.com/pkg/errors"
 )
 
 func NewBeautifier() *Beautifier {
@@ -113,10 +111,9 @@ func (b *Beautifier) Init(ctx context.Context) error {
 		b.ParseAndStore([]sequence.Item{{Key: k, Value: value}}, pn)
 	})
 	b.db = pg.Connect(&pg.Options{
-		Addr:     os.Getenv("DB_HOST") + ":" + os.Getenv("DB_PORT"),
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASS"),
-		Database: os.Getenv("DB_NAME"),
+		User:     "postgres",
+		Password: "",
+		Database: "postgres",
 	})
 	b.logger = inslogger.FromContext(ctx)
 	return nil
