@@ -220,7 +220,6 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 						Fee:           "99999",
 					}
 				}
-				// TODO: implement member.create
 				if request.Params.CallSite == "member.create" {
 					b.logger.Info("Catch member create call")
 				}
@@ -229,15 +228,6 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 		}
 	case *record.Virtual_Result:
 		res := rec.Virtual.GetResult()
-		// res.
-		// serializer := common.NewCBORSerializer()
-		// rets := []interface{}{}
-		// if err := serializer.Deserialize(res.Payload, &rets); err == nil && len(rets) > 0 {
-		// 	msg, ok := rets[0].(string)
-		// 	if ok && msg == "" {
-		// 		logger.Infof("Success transfer if it was transfer %v", res.Request.String())
-		// 	}
-		// }
 		b.logger.Infof("res: %v %v %v", res.Request.String(), res.Object.String(), string(res.Payload))
 	case *record.Virtual_Activate:
 		act := rec.Virtual.GetActivate()
@@ -245,8 +235,6 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 		w := wallet.Wallet{}
 		serializer := common.NewCBORSerializer()
 		switch {
-		// case serializer.Deserialize(act.Memory, &m) == nil:
-		// 	logger.Infof("act: (Member %v %v) %v %v %v", id.String(), m.Name, act.Request.String(), act.Parent.String(), string(act.Memory))
 		case serializer.Deserialize(act.Memory, &w) == nil && w.Balance != "":
 			b.logger.Infof("act: (Wallet %v %v) %v %v %v", id.String(), w.Balance, act.Request.String(), act.Parent.String(), string(act.Memory))
 		default:
@@ -254,17 +242,12 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 		}
 	case *record.Virtual_Amend:
 		amn := rec.Virtual.GetAmend()
-		// m := member.Member{}
 		w := wallet.Wallet{}
 		serializer := common.NewCBORSerializer()
 		switch {
-		//case serializer.Deserialize(amn.Memory, &m) == nil:
-		//	b.logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 		case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
-			//b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 			b.logger.Infof("amn: (Wallet %v %v) %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String())
 		default:
-			//b.logger.Infof("amn: %v %v %v", amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 			b.logger.Infof("amn: %v %v", amn.Request.String(), amn.PrevState.String())
 		}
 	}
