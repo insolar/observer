@@ -18,6 +18,7 @@ package observer
 
 import (
 	"context"
+
 	"github.com/insolar/observer/internal/beauty"
 
 	"github.com/insolar/insolar/configuration"
@@ -117,9 +118,10 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 	// Storage.
 	var (
-		DB         store.DB
-		Sequencer  sequence.Sequencer
-		Replicator *replica.Replicator
+		DB             store.DB
+		dbSetPublisher store.DBSetPublisher
+		Sequencer      sequence.Sequencer
+		Replicator     *replica.Replicator
 	)
 	{
 		var err error
@@ -128,6 +130,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		if err != nil {
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
+		DB, dbSetPublisher = store.NewDBPublisher(DB)
 
 		Sequencer = sequence2.NewMimicSequencer(DB)
 		jetKeeper := replica2.NewJetKeeper(DB)
@@ -160,6 +163,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		ReplicaTransport,
 		Sequencer,
 		Replicator,
+		dbSetPublisher,
 		beautifier,
 	)
 	err = c.cmp.Init(ctx)
