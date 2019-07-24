@@ -141,6 +141,24 @@
   version = "v1.4.7"
 
 [[projects]]
+  digest = "1:d02b94ed7089fc72fcd2e89c89df858c843470fe36788df39bf45e074293165e"
+  name = "github.com/go-pg/pg"
+  packages = [
+    ".",
+    "internal",
+    "internal/iszero",
+    "internal/parser",
+    "internal/pool",
+    "internal/struct_filter",
+    "internal/tag",
+    "orm",
+    "types",
+  ]
+  pruneopts = "UT"
+  revision = "11cb265cd96c769490bea4cdc3634ea2049197f6"
+  version = "v8.0.4"
+
+[[projects]]
   digest = "1:33f49b72fdad072a03d13b31a42edfff08088b7c27198f4073b8213a58884f27"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -236,7 +254,7 @@
 
 [[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:00bb57040011f972bf2c854562491b18662e817732c5fd29f03f6f9fb48cdb46"
+  digest = "1:2abee57184e5cb6a27e1128f78b3a9cb5f8b72d6ec60a914aa5f137ea8e41689"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -247,6 +265,7 @@
     "insolar/gen",
     "insolar/jet",
     "insolar/pulse",
+    "insolar/record",
     "insolar/utils",
     "instrumentation/inslogger",
     "instrumentation/insmetrics",
@@ -260,6 +279,21 @@
     "ledger/heavy/replica/integrity",
     "ledger/heavy/sequence",
     "log",
+    "logicrunner/builtin/contract/member",
+    "logicrunner/builtin/contract/member/helper",
+    "logicrunner/builtin/contract/member/signer",
+    "logicrunner/builtin/contract/wallet",
+    "logicrunner/builtin/contract/wallet/safemath",
+    "logicrunner/builtin/proxy/costcenter",
+    "logicrunner/builtin/proxy/deposit",
+    "logicrunner/builtin/proxy/member",
+    "logicrunner/builtin/proxy/nodedomain",
+    "logicrunner/builtin/proxy/rootdomain",
+    "logicrunner/builtin/proxy/tariff",
+    "logicrunner/builtin/proxy/wallet",
+    "logicrunner/common",
+    "logicrunner/goplugin/foundation",
+    "logicrunner/goplugin/rpctypes",
     "metrics",
     "network",
     "network/consensusv1",
@@ -293,12 +327,44 @@
   version = "v1.2.1"
 
 [[projects]]
+  digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
+  name = "github.com/insolar/x-crypto"
+  packages = [
+    ".",
+    "dsa",
+    "ecdsa",
+    "elliptic",
+    "internal/randutil",
+    "md5",
+    "rand",
+    "rand/internal/unix",
+    "rsa",
+    "sha1",
+    "sha256",
+    "sha512",
+    "subtle",
+    "x509",
+    "x509/pkix",
+  ]
+  pruneopts = "UT"
+  revision = "f1d1a11a87990a129e7cc24fe4b7efb46dbdbe01"
+  version = "1.1"
+
+[[projects]]
   branch = "master"
   digest = "1:fa3a7dc0a780fb19838fb96d4e18c0b9a019d9bb618798308d7b6ca48fcb9876"
   name = "github.com/jbenet/go-base58"
   packages = ["."]
   pruneopts = "UT"
   revision = "6237cf65f3a6f7111cd8a42be3590df99a66bc7d"
+
+[[projects]]
+  digest = "1:01ed62f8f4f574d8aff1d88caee113700a2b44c42351943fa73cc1808f736a50"
+  name = "github.com/jinzhu/inflection"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f5c5f50e6090ae76a29240b61ae2a90dd810112e"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -609,6 +675,14 @@
   revision = "34c6fa2dc70986bccbbffcc6130f6920a924b075"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4262ea367f180f3865bad721123c6eefb389762190b3c90de6f7723fbe5ca6f2"
+  name = "github.com/tylerb/gls"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e606233f194d6c314156dc6a35f21a42a470c6f6"
+
+[[projects]]
   digest = "1:56a1ddd7eb11b4e46f7c8b8137194f6e33f2faa64afb25d0412002603452f274"
   name = "github.com/ugorji/go"
   packages = ["codec"]
@@ -646,9 +720,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9c4fed825c10231651e81bf0ab2c12e3a6cc349dcc62a78f8d3a9dfb6744855e"
+  digest = "1:7013a3cb15a2ab56af125efb944ecca7fb3fb50e1b3c8dd63bcd698f8f5e2fa7"
   name = "golang.org/x/crypto"
-  packages = ["sha3"]
+  packages = [
+    "cryptobyte",
+    "cryptobyte/asn1",
+    "pbkdf2",
+    "sha3",
+  ]
   pruneopts = "UT"
   revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
@@ -795,10 +874,19 @@
   revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
   version = "v2.2.2"
 
+[[projects]]
+  digest = "1:999d566ad1ae4303c456af5a155f7b42401cca4fd33552567ed9dd997b107a08"
+  name = "mellium.im/sasl"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e58e780e1378aa4df5dc705364ff5ae9a4dd1e04"
+  version = "v0.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/go-pg/pg",
     "github.com/gojuno/minimock",
     "github.com/google/btree",
     "github.com/google/gofuzz",
@@ -808,19 +896,23 @@
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/defaults",
     "github.com/insolar/insolar/insolar/gen",
+    "github.com/insolar/insolar/insolar/record",
     "github.com/insolar/insolar/insolar/utils",
     "github.com/insolar/insolar/instrumentation/inslogger",
     "github.com/insolar/insolar/instrumentation/instracer",
     "github.com/insolar/insolar/keystore",
+    "github.com/insolar/insolar/ledger/heavy/executor",
     "github.com/insolar/insolar/ledger/heavy/replica",
     "github.com/insolar/insolar/ledger/heavy/sequence",
     "github.com/insolar/insolar/log",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/member",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/wallet",
+    "github.com/insolar/insolar/logicrunner/common",
     "github.com/insolar/insolar/metrics",
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
     "github.com/insolar/insolar/network/hostnetwork/host",
-    "github.com/insolar/insolar/network/hostnetwork/packet",
-    "github.com/insolar/insolar/network/hostnetwork/packet/types",
     "github.com/insolar/insolar/network/transport",
     "github.com/insolar/insolar/network/utils",
     "github.com/insolar/insolar/platformpolicy",

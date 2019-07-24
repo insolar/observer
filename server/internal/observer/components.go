@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/replica"
 	"github.com/insolar/insolar/ledger/heavy/sequence"
 	"github.com/insolar/insolar/metrics"
+	"github.com/insolar/observer/internal/beauty"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/insolar/network"
@@ -116,17 +117,19 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 	// Storage.
 	var (
-		DB         store.DB
-		Sequencer  sequence.Sequencer
-		Replicator *replica.Replicator
+		DB             store.DB
+		dbSetPublisher store.DBSetPublisher
+		Sequencer      sequence.Sequencer
+		Replicator     *replica.Replicator
 	)
 	{
 		var err error
 		// DB, err = store.NewBadgerDB(cfg.Ledger.Storage.DataDirectory)
-		DB, err = store.NewPostgresDB("postgresql://localhost/yz?sslmode=disable")
+		DB, err = store.NewPostgresDB("postgresql://localhost/postgres?sslmode=disable")
 		if err != nil {
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
+		DB, dbSetPublisher = store.NewDBPublisher(DB)
 
 		Sequencer = sequence2.NewMimicSequencer(DB)
 		jetKeeper := replica2.NewJetKeeper(DB)
@@ -143,6 +146,9 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		return nil, errors.Wrap(err, "failed to start Metrics")
 	}
 
+	// Data beautifier
+	beautifier := beauty.NewBeautifier()
+
 	c.cmp.Inject(
 		DB,
 		metricsHandler,
@@ -156,6 +162,8 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 		ReplicaTransport,
 		Sequencer,
 		Replicator,
+		dbSetPublisher,
+		beautifier,
 	)
 	err = c.cmp.Init(ctx)
 	if err != nil {
