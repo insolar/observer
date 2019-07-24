@@ -25,7 +25,7 @@ generate_insolard_configs()
 {
     echo "generate configs"
     set -x
-    go run scripts/generate_insolar_configs.go
+    go run scripts/insolard/gen/config/generate_insolar_configs.go
     { set +x; } 2>/dev/null
 }
 
@@ -33,7 +33,7 @@ generate_keys()
 {
     echo "generate configs"
     set -x
-    go run scripts/generate_keys.go
+    go run scripts/insolard/gen/keys/generate_keys.go
     { set +x; } 2>/dev/null
 }
 

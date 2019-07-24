@@ -1,3 +1,19 @@
+//
+// Copyright 2019 Insolar Technologies GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package main
 
 import (
@@ -11,36 +27,35 @@ import (
 	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/defaults"
-	"github.com/insolar/insolar/keystore"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/platformpolicy"
 	"github.com/spf13/cobra"
 )
 
 var (
-	_outputDir  string
-	_debugLevel string
-	_keysFile   = "keys.json"
+	outputDir  string
+	debugLevel string
+	keysFile   = "keys.json"
 )
 
 func main() {
-	_parseInputParams()
-	_mustMakeDir(_outputDir)
+	parseInputParams()
+	mustMakeDir(outputDir)
 
-	KeysPath := filepath.Join(_outputDir, _keysFile)
+	KeysPath := filepath.Join(outputDir, keysFile)
 	genCertificate(KeysPath, false)
 }
 
-func _parseInputParams() {
+func parseInputParams() {
 	var rootCmd = &cobra.Command{}
 
 	rootCmd.Flags().StringVarP(
-		&_outputDir, "output", "o", _baseDir(), "output directory")
+		&outputDir, "output", "o", baseDir(), "output directory")
 	rootCmd.Flags().StringVarP(
-		&_debugLevel, "debuglevel", "d", "Debug", "debug level")
+		&debugLevel, "debuglevel", "d", "Debug", "debug level")
 
 	err := rootCmd.Execute()
-	_check("Wrong input params:", err)
+	check("Wrong input params:", err)
 }
 
 func (g *certGen) generateKeys() {
@@ -49,17 +64,6 @@ func (g *certGen) generateKeys() {
 	pubKey := g.keyProcessor.ExtractPublicKey(privKey)
 	fmt.Println("Generate keys")
 	g.pubKey, g.privKey = pubKey, privKey
-}
-
-func (g *certGen) loadKeys() {
-	keyStore, err := keystore.NewKeyStore(g.keysFileOut)
-	checkError("Failed to laod keys", err)
-
-	g.privKey, err = keyStore.GetPrivateKey("")
-	checkError("Failed to GetPrivateKey", err)
-
-	fmt.Println("Load keys")
-	g.pubKey = g.keyProcessor.ExtractPublicKey(g.privKey)
 }
 
 func (g *certGen) writeKeys() {
@@ -84,16 +88,6 @@ func (g *certGen) writeKeys() {
 	fmt.Println("Write keys to", g.keysFileOut)
 }
 
-func (g *certGen) writeCertificate(cert []byte) {
-	f, err := openFile(g.certFileOut)
-	checkError("Failed to open file with certificate:", err)
-
-	_, err = f.Write(cert)
-	checkError("Failed to write file with certificate:", err)
-
-	fmt.Println("Write certificate to", g.certFileOut)
-}
-
 func checkError(msg string, err error) {
 	if err != nil {
 		fmt.Println(msg, ": ", err)
@@ -107,31 +101,22 @@ func openFile(path string) (io.Writer, error) {
 
 type certGen struct {
 	keyProcessor insolar.KeyProcessor
-
-	rootKeysFile string
 	API          string
 
 	keysFileOut string
-	certFileOut string
 
 	pubKey  crypto.PublicKey
 	privKey crypto.PrivateKey
 }
 
 func genCertificate(
-	// rootKeysFile string,
-	// url string,
 	keysFile string,
-	// certFile string,
 	reuseKeys bool,
 ) {
 
 	g := &certGen{
 		keyProcessor: platformpolicy.NewKeyProcessor(),
-		// rootKeysFile: rootKeysFile,
-		// API:          url,
-		keysFileOut: keysFile,
-		// certFileOut:  certFile,
+		keysFileOut:  keysFile,
 	}
 
 	g.generateKeys()
@@ -139,20 +124,19 @@ func genCertificate(
 	if !reuseKeys {
 		g.writeKeys()
 	}
-	// g.writeCertificate(cert)
 }
 
-func _mustMakeDir(dir string) {
+func mustMakeDir(dir string) {
 	err := os.MkdirAll(dir, 0775)
-	_check("couldn't create directory "+dir, err)
+	check("couldn't create directory "+dir, err)
 	fmt.Println("generate_insolar_configs.go: creates dir", dir)
 }
 
-func _baseDir() string {
+func baseDir() string {
 	return defaults.LaunchnetDir()
 }
 
-func _check(msg string, err error) {
+func check(msg string, err error) {
 	if err == nil {
 		return
 	}

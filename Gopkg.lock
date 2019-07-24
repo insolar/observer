@@ -19,14 +19,36 @@
   revision = "e2d15f34fcf99d5dbb871c820ec73f710fca9815"
 
 [[projects]]
-  digest = "1:c7bb91d70f45893148ae85300638c9fbdd1d0777c86e459c6f3bbb398692c46a"
-  name = "github.com/ThreeDotsLabs/watermill"
+  branch = "master"
+  digest = "1:6da51e5ec493ad2b44cb04129e2d0a068c8fb9bd6cb5739d199573558696bb94"
+  name = "github.com/Azure/go-ansiterm"
   packages = [
     ".",
-    "internal",
-    "internal/sync",
-    "message",
+    "winterm",
   ]
+  pruneopts = "UT"
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
+  digest = "1:f9ae348e1f793dcf9ed930ed47136a67343dbd6809c5c91391322267f4476892"
+  name = "github.com/Microsoft/go-winio"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1a8911d1ed007260465c3bfbbc785ac6915a0bb8"
+  version = "v0.4.12"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3721a10686511b80c052323423f0de17a8c06d417dbdd3b392b1578432a33aae"
+  name = "github.com/Nvveen/Gotty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
+
+[[projects]]
+  digest = "1:d171543eca2b50f422bda2a9614f04e3ef687053e74c2c8f707c009cbd3da0a8"
+  name = "github.com/ThreeDotsLabs/watermill"
+  packages = ["."]
   pruneopts = "UT"
   revision = "b39a48a1c9edad83d74898f3bf96adedd18ece81"
   version = "v0.4.0"
@@ -38,6 +60,22 @@
   pruneopts = "UT"
   revision = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:29fb1d9358f24856ab2a3747e2f3d97be41897b22b46bf20fbb984ba7be439af"
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2146c93394225c3732078705043ce9f26584d334"
+  version = "v2.2.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e48c63e818c67fbf3d7afe20bba33134ab1a5bf384847385384fd027652a5a96"
+  name = "github.com/containerd/continuity"
+  packages = ["pathdriver"]
+  pruneopts = "UT"
+  revision = "aaeac12a7ffcd198ae25440a9dff125c2e2703a7"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -69,6 +107,22 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "6a90982ecee230ff6cba02d5bd386acc030be9d3"
+
+[[projects]]
+  digest = "1:87dcb59127512b84097086504c16595cf8fef35b9e0bfca565dfc06e198158d7"
+  name = "github.com/docker/go-connections"
+  packages = ["nat"]
+  pruneopts = "UT"
+  revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
+  version = "v0.3.0"
+
+[[projects]]
+  digest = "1:6f82cacd0af5921e99bf3f46748705239b36489464f4529a1589bc895764fb18"
+  name = "github.com/docker/go-units"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
+  version = "v0.3.3"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -138,22 +192,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
-  name = "github.com/hashicorp/errwrap"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "8a6fb523712970c966eefc6b39ed2c5e74880354"
-  version = "v1.0.0"
-
-[[projects]]
-  digest = "1:f668349b83f7d779567c880550534addeca7ebadfdcf44b0b9c39be61864b4b7"
-  name = "github.com/hashicorp/go-multierror"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "886a7fbe3eb1c874d46f623bfa70af45f425b3d1"
-  version = "v1.0.0"
-
-[[projects]]
   digest = "1:67474f760e9ac3799f740db2c489e6423a4cde45520673ec123ac831ad849cb8"
   name = "github.com/hashicorp/golang-lru"
   packages = ["simplelru"]
@@ -190,35 +228,17 @@
 
 [[projects]]
   branch = "WLT-631-extract-observer"
-  digest = "1:65f14fc001ddb54df72e251374440a3648e32335145272a79acdbc1127a47ac0"
+  digest = "1:385c02c5a2001ce410f8a5e544f3e519011e4d051255cfa0c9bb2575a45565c0"
   name = "github.com/insolar/insolar"
   packages = [
-    "api",
-    "api/requester",
-    "api/seedmanager",
-    "application/extractor",
-    "bootstrap",
-    "certificate",
-    "cmd/pulsewatcher/config",
     "component",
     "configuration",
     "cryptography",
     "insolar",
-    "insolar/bus",
     "insolar/defaults",
     "insolar/gen",
-    "insolar/genesisrefs",
-    "insolar/jet",
-    "insolar/message",
-    "insolar/node",
-    "insolar/payload",
     "insolar/pulse",
-    "insolar/record",
-    "insolar/reply",
-    "insolar/rootdomain",
-    "insolar/secrets",
     "insolar/utils",
-    "instrumentation/hack",
     "instrumentation/inslogger",
     "instrumentation/insmetrics",
     "instrumentation/instracer",
@@ -226,23 +246,7 @@
     "internal/ledger/store",
     "keystore",
     "keystore/internal/privatekey",
-    "ledger/drop",
-    "ledger/object",
     "log",
-    "logicrunner/artifacts",
-    "logicrunner/builtin/proxy/costcenter",
-    "logicrunner/builtin/proxy/deposit",
-    "logicrunner/builtin/proxy/member",
-    "logicrunner/builtin/proxy/nodedomain",
-    "logicrunner/builtin/proxy/noderecord",
-    "logicrunner/builtin/proxy/rootdomain",
-    "logicrunner/builtin/proxy/tariff",
-    "logicrunner/builtin/proxy/wallet",
-    "logicrunner/common",
-    "logicrunner/goplugin/foundation",
-    "logicrunner/goplugin/goplugintestutils",
-    "logicrunner/goplugin/rpctypes",
-    "messagebus",
     "metrics",
     "network",
     "network/consensusv1",
@@ -262,46 +266,18 @@
     "platformpolicy",
     "platformpolicy/internal/hash",
     "platformpolicy/internal/sign",
-    "testutils",
     "version",
   ]
   pruneopts = "UT"
   revision = "245fccb2d8d91e11c8d39465b07867b48e0dc2a8"
 
 [[projects]]
-  digest = "1:d585d1cae389b646325b7ef48032cdc9b58e68cd88c1fdc5da795eabb2114455"
+  digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
   name = "github.com/insolar/rpc"
-  packages = [
-    "v2",
-    "v2/json2",
-  ]
+  packages = ["v2"]
   pruneopts = "UT"
   revision = "60ccffd3c0df575286752c08ae3d6312f728291d"
   version = "v1.2.1"
-
-[[projects]]
-  digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
-  name = "github.com/insolar/x-crypto"
-  packages = [
-    ".",
-    "dsa",
-    "ecdsa",
-    "elliptic",
-    "internal/randutil",
-    "md5",
-    "rand",
-    "rand/internal/unix",
-    "rsa",
-    "sha1",
-    "sha256",
-    "sha512",
-    "subtle",
-    "x509",
-    "x509/pkix",
-  ]
-  pruneopts = "UT"
-  revision = "f1d1a11a87990a129e7cc24fe4b7efb46dbdbe01"
-  version = "1.1"
 
 [[projects]]
   branch = "master"
@@ -310,6 +286,26 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "6237cf65f3a6f7111cd8a42be3590df99a66bc7d"
+
+[[projects]]
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:bdd53b87de8185da386bae179c84d4848854c6870bacacf6a154fe63e2e750f7"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid",
+    "scram",
+  ]
+  pruneopts = "UT"
+  revision = "bc6a3c0594130b1e34005880bc600b6d3f49fa7f"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -364,6 +360,67 @@
   pruneopts = "UT"
   revision = "be3bccf06dda9a40aa6800c4736ac77f2fef987f"
   version = "v2.0.2"
+
+[[projects]]
+  digest = "1:ee4d4af67d93cc7644157882329023ce9a7bcfce956a079069a9405521c7cc8d"
+  name = "github.com/opencontainers/go-digest"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
+  version = "v1.0.0-rc1"
+
+[[projects]]
+  digest = "1:11db38d694c130c800d0aefb502fb02519e514dc53d9804ce51d1ad25ec27db6"
+  name = "github.com/opencontainers/image-spec"
+  packages = [
+    "specs-go",
+    "specs-go/v1",
+  ]
+  pruneopts = "UT"
+  revision = "d60099175f88c47cd379c4738d158884749ed235"
+  version = "v1.0.1"
+
+[[projects]]
+  digest = "1:eecbbd6bfbfbe1acdad4b22c4fd530ab569df1634deef359e40d2ee4f85057f9"
+  name = "github.com/opencontainers/runc"
+  packages = ["libcontainer/user"]
+  pruneopts = "UT"
+  revision = "425e105d5a03fabd737a126ad93d62a9eeede87f"
+  version = "v1.0.0-rc8"
+
+[[projects]]
+  digest = "1:7a6ab584104636b15f87c75bbfad3dfd0f60847b53af903159f354ef708bd632"
+  name = "github.com/ory/dockertest"
+  packages = [
+    ".",
+    "docker",
+    "docker/opts",
+    "docker/pkg/archive",
+    "docker/pkg/fileutils",
+    "docker/pkg/homedir",
+    "docker/pkg/idtools",
+    "docker/pkg/ioutils",
+    "docker/pkg/jsonmessage",
+    "docker/pkg/longpath",
+    "docker/pkg/mount",
+    "docker/pkg/pools",
+    "docker/pkg/stdcopy",
+    "docker/pkg/system",
+    "docker/pkg/term",
+    "docker/pkg/term/windows",
+    "docker/types",
+    "docker/types/blkiodev",
+    "docker/types/container",
+    "docker/types/filters",
+    "docker/types/mount",
+    "docker/types/network",
+    "docker/types/registry",
+    "docker/types/strslice",
+    "docker/types/versions",
+  ]
+  pruneopts = "UT"
+  revision = "f76851ed013cf03f376b6580c834467187bb7148"
+  version = "v3.3.4"
 
 [[projects]]
   digest = "1:93131d8002d7025da13582877c32d1fc302486775a1b06f62241741006428c5e"
@@ -469,6 +526,14 @@
   revision = "b2ce2384e17bbe0c6d34077efa39dbab3e09123b"
 
 [[projects]]
+  digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
+
+[[projects]]
   digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
   name = "github.com/spf13/afero"
   packages = [
@@ -531,14 +596,6 @@
   revision = "34c6fa2dc70986bccbbffcc6130f6920a924b075"
 
 [[projects]]
-  branch = "master"
-  digest = "1:4262ea367f180f3865bad721123c6eefb389762190b3c90de6f7723fbe5ca6f2"
-  name = "github.com/tylerb/gls"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "e606233f194d6c314156dc6a35f21a42a470c6f6"
-
-[[projects]]
   digest = "1:56a1ddd7eb11b4e46f7c8b8137194f6e33f2faa64afb25d0412002603452f274"
   name = "github.com/ugorji/go"
   packages = ["codec"]
@@ -576,13 +633,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:af16df560b6ac62084c5cd3ab0bc2e869b7142c633c3b45f93444e448e02adf6"
+  digest = "1:9c4fed825c10231651e81bf0ab2c12e3a6cc349dcc62a78f8d3a9dfb6744855e"
   name = "golang.org/x/crypto"
-  packages = [
-    "cryptobyte",
-    "cryptobyte/asn1",
-    "sha3",
-  ]
+  packages = ["sha3"]
   pruneopts = "UT"
   revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
 
@@ -608,11 +661,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6f7b102dfe61016b45aa051b96413e36cc2eff446b61249fdf723dd8e24d308b"
+  digest = "1:7e3e63385ebe2dd5210be1534c516d8ae33c7ffac74126e5243d43ba7222e0d4"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
     "unix",
+    "windows",
   ]
   pruneopts = "UT"
   revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
@@ -698,10 +752,6 @@
     "github.com/gojuno/minimock",
     "github.com/google/btree",
     "github.com/google/gofuzz",
-    "github.com/insolar/insolar/api",
-    "github.com/insolar/insolar/bootstrap",
-    "github.com/insolar/insolar/certificate",
-    "github.com/insolar/insolar/cmd/pulsewatcher/config",
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/configuration",
     "github.com/insolar/insolar/cryptography",
@@ -717,14 +767,13 @@
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
     "github.com/insolar/insolar/network/hostnetwork/host",
-    "github.com/insolar/insolar/network/hostnetwork/resolver",
-    "github.com/insolar/insolar/network/node",
     "github.com/insolar/insolar/network/transport",
     "github.com/insolar/insolar/network/utils",
     "github.com/insolar/insolar/platformpolicy",
     "github.com/insolar/insolar/version",
     "github.com/insolar/rpc/v2",
-    "github.com/insolar/rpc/v2/json2",
+    "github.com/lib/pq",
+    "github.com/ory/dockertest",
     "github.com/pkg/errors",
     "github.com/spf13/cobra",
     "github.com/spf13/jwalterweatherman",
