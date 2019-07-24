@@ -19,7 +19,6 @@ package beauty
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -30,6 +29,7 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	"github.com/insolar/insolar/logicrunner/common"
 	"github.com/pkg/errors"
+	"os"
 
 	"github.com/insolar/observer/internal/ledger/store"
 )
@@ -105,20 +105,19 @@ type InsRecord struct {
 // Init initialize connection to db
 func (b *Beautifier) Init(ctx context.Context) error {
 	b.Publisher.Subscribe(func(key store.Key, value []byte) {
+		if key.Scope() != store.ScopeRecord {
+			return
+		}
 		pn := insolar.NewPulseNumber(key.ID())
 		k := append([]byte{byte(key.Scope())}, key.ID()...)
 		b.ParseAndStore([]sequence.Item{{Key: k, Value: value}}, pn)
 	})
 	b.db = pg.Connect(&pg.Options{
-		User:     "postgres",
-		Password: "",
-		Database: "postgres",
+		Addr:     os.Getenv("DB_HOST") + ":" + os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASS"),
+		Database: os.Getenv("DB_NAME"),
 	})
-	// Conf from env
-	//	Addr:     os.Getenv("DB_HOST")+":"+os.Getenv("DB_PORT"),
-	//	User:     os.Getenv("DB_USER"),
-	//	Password: os.Getenv("DB_PASS"),
-	//	Database: os.Getenv("DB_NAME"),
 	b.logger = inslogger.FromContext(ctx)
 	return nil
 }
@@ -138,7 +137,7 @@ func (b *Beautifier) Stop(ctx context.Context) error {
 
 // ParseAndStore consume array of records and pulse number parse them and save to db
 func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.PulseNumber) {
-	for i := len(records); i <= len(records); i++ {
+	for i := 0; i < len(records); i++ {
 		b.parse(records[i].Key, records[i].Value, pulseNumber)
 	}
 }
@@ -195,11 +194,11 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 			}
 			if in.Method == "Call" {
 				request := member.Request{}
+				var pulseTimeStamp int64
+				var signature string
+				var raw []byte
 				if len(args) > 0 {
 					if rawRequest, ok := args[0].([]byte); ok {
-						var pulseTimeStamp int64
-						var signature string
-						var raw []byte
 						err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
 						if err != nil {
 							b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
@@ -220,7 +219,8 @@ func (b *Beautifier) build(key []byte, value []byte) interface{} {
 						ReferenceFrom: request.Params.Reference,
 						ReferenceTo:   toMemberReference.(string),
 						Pulse:         id.Pulse(),
-						Timestamp:     1,
+						Timestamp:     pulseTimeStamp,
+						Fee:           "99999",
 					}
 				}
 				// TODO: implement member.create

@@ -1,0 +1,6 @@
+DB_URL=test
+DB_HOST=test
+DB_PORT=test
+DB_USER=test
+DB_PASS=test
+DB_NAME=test

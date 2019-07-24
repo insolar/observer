@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/insolar/observer/internal/beauty"
+	"os"
 
 	"github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar/gen"
@@ -126,7 +127,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 	{
 		var err error
 		// DB, err = store.NewBadgerDB(cfg.Ledger.Storage.DataDirectory)
-		DB, err = store.NewPostgresDB("postgresql://localhost/postgres?sslmode=disable")
+		DB, err = store.NewPostgresDB(os.Getenv("DB_URL"))
 		if err != nil {
 			panic(errors.Wrap(err, "failed to initialize DB"))
 		}
