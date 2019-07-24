@@ -17,6 +17,9 @@
 package store
 
 import (
+	"context"
+
+	"github.com/insolar/OracleMigrationToken/ins/component"
 	"github.com/pkg/errors"
 )
 
@@ -39,6 +42,13 @@ func (p *publisher) Set(key Key, value []byte) error {
 }
 func (p *publisher) NewIterator(pivot Key, reverse bool) Iterator {
 	return p.db.NewIterator(pivot, reverse)
+}
+
+func (p *publisher) Stop(ctx context.Context) error {
+	if stopper, ok := p.db.(component.Stopper); ok {
+		return stopper.Stop(ctx)
+	}
+	return nil
 }
 
 type DBSetHandle func(key Key, value []byte)
