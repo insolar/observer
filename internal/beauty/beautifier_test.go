@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBeautifier_parse(t *testing.T) {
@@ -30,7 +31,7 @@ func TestBeautifier_storeTx(t *testing.T) {
 	assert.NoError(t, b.Start(ctx))
 	defer b.Stop(ctx)
 
-	tx := InsTransaction{TxID: "foo", Amount: "1000", Fee: "100",
+	tx := Transaction{TxID: "foo", Amount: "1000", Fee: "100",
 		Timestamp: 5555, Pulse: 32323, Status: "SUCCESS", ReferenceFrom: "alpha", ReferenceTo: "beta"}
 
 	assert.NoError(t, b.storeTx(tx))
@@ -44,7 +45,7 @@ func TestBeautifier_ParseAndStore(t *testing.T) {
 	assert.NoError(t, b.Start(ctx))
 	defer b.Stop(ctx)
 
-	var records []InsRecord
+	var records []Record
 	count, err := b.db.Model(&records).Where("scope = ?", 2).SelectAndCount()
 	assert.NoError(t, err)
 

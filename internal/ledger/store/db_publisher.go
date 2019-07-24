@@ -19,7 +19,7 @@ package store
 import (
 	"context"
 
-	"github.com/insolar/OracleMigrationToken/ins/component"
+	"github.com/insolar/insolar/component"
 	"github.com/pkg/errors"
 )
 

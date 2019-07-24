@@ -19,6 +19,7 @@ package beauty
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -26,35 +27,34 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/sequence"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
-	"github.com/insolar/insolar/logicrunner/common"
-	"github.com/insolar/observer/internal/ledger/store"
 	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/internal/ledger/store"
 )
 
 func NewBeautifier() *Beautifier {
-	return &Beautifier{}
+	return &Beautifier{txs: make(chan *Transaction, 1)}
 }
 
 type HalfRequest struct {
-	timestamp uint
-	value     interface{}
+	timestamp int64
+	value     *record.IncomingRequest
 }
 
 type HalfResponse struct {
-	timestamp uint
-	value     interface{}
+	timestamp int64
+	value     *record.Result
 }
 
 type Beautifier struct {
-	Publisher     store.DBSetPublisher `inject:""`
-	db            *pg.DB
-	logger        insolar.Logger
-	resultParts   map[insolar.ID]HalfResponse // half of requestID/response
-	requestsParts map[insolar.ID]HalfRequest  // half of responseID/request
+	Publisher store.DBSetPublisher `inject:""`
+	db        *pg.DB
+	results   map[insolar.ID]HalfResponse
+	requests  map[insolar.ID]HalfRequest
+	txs       chan *Transaction
 }
 
-type InsDeposit struct {
+type Deposit struct {
 	Id              uint `sql:",pk_id"`
 	Timestamp       uint
 	HoldReleaseDate uint
@@ -65,7 +65,7 @@ type InsDeposit struct {
 	MemberID        uint
 }
 
-type InsFee struct {
+type Fee struct {
 	Id        uint `sql:",pk_id"`
 	AmountMin uint
 	AmountMax uint
@@ -73,15 +73,16 @@ type InsFee struct {
 	Status    string
 }
 
-type InsMember struct {
+type Member struct {
 	Id               uint   `sql:",pk_id"`
 	Reference        string `sql:",notnull"`
 	Balance          string
 	MigrationAddress string
 }
 
-type InsTransaction struct {
-	tableName     struct{}            `sql:"transactions"`
+type Transaction struct {
+	tableName struct{} `sql:"transactions"`
+
 	Id            uint                `sql:",pk_id"`
 	TxID          string              `sql:",notnull"`
 	Amount        string              `sql:",notnull"`
@@ -93,14 +94,15 @@ type InsTransaction struct {
 	ReferenceTo   string              `sql:",notnull"`
 }
 
-type InsRecord struct {
+type Record struct {
 	tableName struct{} `sql:"records"`
-	Key       string
-	Value     string
-	Scope     uint
+
+	Key   string
+	Value string
+	Scope uint
 }
 
-// Init initialize connection to db
+// Init initializes connection to db and subscribes beautifier on db updates.
 func (b *Beautifier) Init(ctx context.Context) error {
 	b.Publisher.Subscribe(func(key store.Key, value []byte) {
 		if key.Scope() != store.ScopeRecord {
@@ -110,24 +112,21 @@ func (b *Beautifier) Init(ctx context.Context) error {
 		k := append([]byte{byte(key.Scope())}, key.ID()...)
 		b.ParseAndStore([]sequence.Item{{Key: k, Value: value}}, pn)
 	})
+	// TODO: move connection params to config
 	b.db = pg.Connect(&pg.Options{
 		User:     "postgres",
 		Password: "",
 		Database: "postgres",
 	})
-	b.logger = inslogger.FromContext(ctx)
 	return nil
 }
 
 func (b *Beautifier) Start(ctx context.Context) error {
-	// WorkFlow
-	// Start from previous work
-	// Take chunk of raw data and insert in db (it can be tx or account creation)
-	// save done work in db
+	go b.transactionSaver(b.txs)
 	return nil
 }
 
-// Stop close connection to db
+// Stop closes connection to db.
 func (b *Beautifier) Stop(ctx context.Context) error {
 	return b.db.Close()
 }
@@ -139,153 +138,137 @@ func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.
 	}
 }
 
-func (b *Beautifier) parse(key []byte, value []byte, pulseNumber insolar.PulseNumber) {
-
-	switch result := b.build(key, value).(type) {
-	case InsTransaction:
-		err := b.storeTx(result)
-		if err != nil {
-			b.logger.Error(errors.Wrapf(err, "failed to save transaction"))
-		}
-	case InsMember:
-		err := b.storeMember(result)
-		if err != nil {
-			b.logger.Error(errors.Wrapf(err, "failed to save member"))
-		}
-	case InsDeposit:
-		err := b.storeDeposit(result)
-		if err != nil {
-			b.logger.Error(errors.Wrapf(err, "failed to save deposit"))
-		}
-	case InsFee:
-		err := b.storeFee(result)
-		if err != nil {
-			b.logger.Error(errors.Wrapf(err, "failed to save fee"))
-		}
-	default:
-		b.logger.Debug("not supported type")
-	}
-}
-
-// model builder
-func (b *Beautifier) build(key []byte, value []byte) interface{} {
+func (b *Beautifier) parse(key []byte, value []byte, pn insolar.PulseNumber) {
+	logger := inslogger.FromContext(context.Background())
 
 	id := insolar.ID{}
 	copy(id[:], key[1:])
-	//log.Infof("pulse: %v", id.Pulse())
 	rec := record.Material{}
 	err := rec.Unmarshal(value)
 	if err != nil {
-		b.logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
-		return ""
+		logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
+		return
 	}
 	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_IncomingRequest:
 		in := rec.Virtual.GetIncomingRequest()
-		if in.CallType != record.CTGenesis {
-			var args []interface{}
-			err = insolar.Deserialize(in.Arguments, &args)
+		if in.CallType != record.CTGenesis && in.Method == "Call" {
+			request := b.parseCallArguments(in.Arguments)
+			if request.Params.CallSite == "member.transfer" {
+				amount, toMemberReference := b.parseCallParams(request)
+				b.txs <- &Transaction{
+					TxID:          id.String(),
+					Status:        "PENDING",
+					Amount:        amount,
+					ReferenceFrom: request.Params.Reference,
+					ReferenceTo:   toMemberReference,
+					Pulse:         pn,
+					Timestamp:     int64(pn),
+					Fee:           "99999",
+				}
+			}
+		}
+	}
+}
+
+func (b *Beautifier) parseCallArguments(inArgs []byte) member.Request {
+	logger := inslogger.FromContext(context.Background())
+	var args []interface{}
+	err := insolar.Deserialize(inArgs, &args)
+	if err != nil {
+		logger.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return member.Request{}
+	}
+
+	request := member.Request{}
+	if len(args) > 0 {
+		if rawRequest, ok := args[0].([]byte); ok {
+			var (
+				pulseTimeStamp int64
+				signature      string
+				raw            []byte
+			)
+			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
 			if err != nil {
-				b.logger.Error(errors.Wrapf(err, "failed to deserialize arguments"))
-				return nil
+				logger.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				return member.Request{}
 			}
-			if in.Method == "Call" {
-				request := member.Request{}
-				var pulseTimeStamp int64
-				var signature string
-				var raw []byte
-				if len(args) > 0 {
-					if rawRequest, ok := args[0].([]byte); ok {
-						err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-						if err != nil {
-							b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
-							return ""
-						}
-						err = json.Unmarshal(raw, &request)
-					}
-				}
-
-				callParams, _ := request.Params.CallParams.(map[string]interface{})
-				if request.Params.CallSite == "member.transfer" {
-					amount, _ := callParams["amount"]
-					toMemberReference, _ := callParams["toMemberReference"]
-					return InsTransaction{
-						TxID:          id.String(),
-						Status:        "PENDING",
-						Amount:        amount.(string),
-						ReferenceFrom: request.Params.Reference,
-						ReferenceTo:   toMemberReference.(string),
-						Pulse:         id.Pulse(),
-						Timestamp:     pulseTimeStamp,
-						Fee:           "99999",
-					}
-				}
-				if request.Params.CallSite == "member.create" {
-					b.logger.Info("Catch member create call")
-				}
+			err = json.Unmarshal(raw, &request)
+			if err != nil {
+				logger.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				return member.Request{}
 			}
-
-		}
-	case *record.Virtual_Result:
-		res := rec.Virtual.GetResult()
-		b.logger.Infof("res: %v %v %v", res.Request.String(), res.Object.String(), string(res.Payload))
-	case *record.Virtual_Activate:
-		act := rec.Virtual.GetActivate()
-		// m := member.Member{}
-		w := wallet.Wallet{}
-		serializer := common.NewCBORSerializer()
-		switch {
-		case serializer.Deserialize(act.Memory, &w) == nil && w.Balance != "":
-			b.logger.Infof("act: (Wallet %v %v) %v %v %v", id.String(), w.Balance, act.Request.String(), act.Parent.String(), string(act.Memory))
-		default:
-			b.logger.Infof("act: %v %v %v", act.Request.String(), act.Parent.String(), string(act.Memory))
-		}
-	case *record.Virtual_Amend:
-		amn := rec.Virtual.GetAmend()
-		w := wallet.Wallet{}
-		serializer := common.NewCBORSerializer()
-		switch {
-		case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
-			b.logger.Infof("amn: (Wallet %v %v) %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String())
-		default:
-			b.logger.Infof("amn: %v %v", amn.Request.String(), amn.PrevState.String())
 		}
 	}
-	return ""
+	return request
 }
 
-func (b *Beautifier) storeTx(tx InsTransaction) error {
-	// store to db
-	_, err := b.db.Model(&tx).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) parseCallParams(request member.Request) (string, string) {
+	var (
+		logger = inslogger.FromContext(context.Background())
+		amount = ""
+		to     = ""
+	)
+	callParams, ok := request.Params.CallParams.(map[string]interface{})
+	if !ok {
+		logger.Warnf("failed to cast CallParams to map[string]interface{}")
+		return "", ""
+	}
+	if a, ok := callParams["amount"]; ok {
+		if amount, ok = a.(string); !ok {
+			logger.Warnf(`failed to cast CallParams["amount"] to string`)
+		}
+	} else {
+		logger.Warnf(`failed to get CallParams["amount"]`)
+	}
+	if t, ok := callParams["toMemberReference"]; ok {
+		if to, ok = t.(string); !ok {
+			logger.Warnf(`failed to cast CallParams["toMemberReference"] to string`)
+		}
+	} else {
+		logger.Warnf(`failed to get CallParams["toMemberReference"]`)
+	}
+	return amount, to
+}
+
+func (b *Beautifier) storeTx(tx *Transaction) error {
+	_, err := b.db.Model(tx).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *Beautifier) storeMember(member InsMember) error {
-	// store to db
-	_, err := b.db.Model(&member).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) storeMember(member *Member) error {
+	_, err := b.db.Model(member).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *Beautifier) storeDeposit(deposit InsDeposit) error {
-	// store to db
-	_, err := b.db.Model(&deposit).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) storeDeposit(deposit *Deposit) error {
+	_, err := b.db.Model(deposit).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *Beautifier) storeFee(fee InsFee) error {
-	// store to db
-	_, err := b.db.Model(&fee).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) storeFee(fee *Fee) error {
+	_, err := b.db.Model(fee).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (b *Beautifier) transactionSaver(txs chan *Transaction) {
+	logger := inslogger.FromContext(context.Background())
+	for tx := range txs {
+		err := b.storeTx(tx)
+		if err != nil {
+			logger.Error(err)
+		}
+	}
 }
