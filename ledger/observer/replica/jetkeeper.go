@@ -18,17 +18,17 @@ package replica
 
 import (
 	"context"
+	"github.com/insolar/insolar/ledger/heavy/executor"
 	"sync"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
-	"github.com/insolar/insolar/ledger/heavy/replica"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/ledger/store"
 )
 
-func NewJetKeeper(db store.DB) replica.JetKeeper {
+func NewJetKeeper(db store.DB) executor.JetKeeper {
 	return &jetKeeper{db: db}
 }
 

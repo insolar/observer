@@ -19,7 +19,6 @@ package beauty
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -50,8 +49,8 @@ type HalfResponse struct {
 type Beautifier struct {
 	db            *pg.DB
 	logger        insolar.Logger
-	requestsParts map[HalfRequest]HalfResponse // half of request/response
-	resultsParts  map[HalfResponse]HalfRequest // half of response/request
+	resultParts   map[insolar.ID]HalfResponse // half of requestID/response
+	requestsParts map[insolar.ID]HalfRequest  // half of responseID/request
 }
 
 type InsDeposit struct {
@@ -166,99 +165,94 @@ func (b *Beautifier) parse(key []byte, value []byte, pulseNumber insolar.PulseNu
 
 // model builder
 func (b *Beautifier) build(key []byte, value []byte) interface{} {
-	var (
-		err error
-		// key   insolar.ID
-		// value []byte
-	)
 
 	id := insolar.ID{}
 	copy(id[:], key[1:])
 	log.Infof("pulse: %v", id.Pulse())
-	fmt.Println(key[0])
-	if key[0] == 2 {
-		rec := record.Material{}
-		err = rec.Unmarshal(value)
-		if err != nil {
-			b.logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
-			return nil
-		}
-		fmt.Println(rec.String())
-		switch rec.Virtual.Union.(type) {
-		case *record.Virtual_IncomingRequest:
-			in := rec.Virtual.GetIncomingRequest()
-			if in.CallType != record.CTGenesis {
-				var args []interface{}
-				err = insolar.Deserialize(in.Arguments, &args)
-				if err != nil {
-					b.logger.Error(errors.Wrapf(err, "failed to deserialize arguments"))
-					return nil
-				}
-				request := member.Request{}
-				var pulseTimeStamp int64
-				if len(args) > 0 {
-					if rawRequest, ok := args[0].([]byte); ok {
-						var signature string
-						var raw []byte
-						err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-						if err != nil {
-							b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
-							return nil
-						}
-						b.logger.Infof("RAW: %v %v ", signature, string(rawRequest))
-						err = json.Unmarshal(raw, &request)
+	rec := record.Material{}
+	err := rec.Unmarshal(value)
+	if err != nil {
+		b.logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
+		return ""
+	}
+	switch rec.Virtual.Union.(type) {
+	case *record.Virtual_IncomingRequest:
+		in := rec.Virtual.GetIncomingRequest()
+		if in.CallType != record.CTGenesis {
+			var args []interface{}
+			err = insolar.Deserialize(in.Arguments, &args)
+			if err != nil {
+				b.logger.Error(errors.Wrapf(err, "failed to deserialize arguments"))
+				return nil
+			}
+			request := member.Request{}
+			var pulseTimeStamp int64
+			if len(args) > 0 {
+				if rawRequest, ok := args[0].([]byte); ok {
+					var signature string
+					var raw []byte
+					err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+					if err != nil {
+						b.logger.Error(errors.Wrapf(err, "failed to unmarshal params"))
+						return ""
 					}
+					err = json.Unmarshal(raw, &request)
 				}
-				if in.Method == "Transfer" {
-					ref := insolar.Reference{}.FromSlice(args[1].([]byte))
-					b.logger.Infof("TRANSFER amount: %v toMember: %v", args[0], ref.String())
-					return InsTransaction{TxID: id.String(), Status: "PENDING", Amount: args[0].(string),
-						ReferenceFrom: request.Params.Reference, ReferenceTo: ref.String(), Pulse: id.Pulse(), Timestamp: pulseTimeStamp}
-				}
-				callParams, _ := request.Params.CallParams.(map[string]interface{})
-				b.logger.Infof("in %v %v %v toMember: %v", in.Method, id.String(), request.Params.CallSite, callParams["toMemberReference"])
 			}
-		case *record.Virtual_Result:
-			res := rec.Virtual.GetResult()
-			// res.
-			// serializer := common.NewCBORSerializer()
-			// rets := []interface{}{}
-			// if err := serializer.Deserialize(res.Payload, &rets); err == nil && len(rets) > 0 {
-			// 	msg, ok := rets[0].(string)
-			// 	if ok && msg == "" {
-			// 		logger.Infof("Success transfer if it was transfer %v", res.Request.String())
-			// 	}
-			// }
-			b.logger.Infof("res: %v %v %v", res.Request.String(), res.Object.String(), string(res.Payload))
-		case *record.Virtual_Activate:
-			act := rec.Virtual.GetActivate()
-			// m := member.Member{}
-			w := wallet.Wallet{}
-			serializer := common.NewCBORSerializer()
-			switch {
-			// case serializer.Deserialize(act.Memory, &m) == nil:
-			// 	logger.Infof("act: (Member %v %v) %v %v %v", id.String(), m.Name, act.Request.String(), act.Parent.String(), string(act.Memory))
-			case serializer.Deserialize(act.Memory, &w) == nil && w.Balance != "":
-				b.logger.Infof("act: (Wallet %v %v) %v %v %v", id.String(), w.Balance, act.Request.String(), act.Parent.String(), string(act.Memory))
-			default:
-				b.logger.Infof("act: %v %v %v", act.Request.String(), act.Parent.String(), string(act.Memory))
+
+			callParams, _ := request.Params.CallParams.(map[string]interface{})
+			if in.Method == "Call" && request.Params.CallSite == "member.transfer" {
+				ref := request.Params.Reference
+				amount, _ := callParams["amount"]
+				b.logger.Infof("Transfer amount: %v toMember: %v", amount, ref)
+				return InsTransaction{TxID: id.String(), Status: "PENDING", Amount: amount.(string),
+					ReferenceFrom: request.Params.Reference, ReferenceTo: ref, Pulse: id.Pulse(), Timestamp: pulseTimeStamp}
 			}
-		case *record.Virtual_Amend:
-			amn := rec.Virtual.GetAmend()
-			// m := member.Member{}
-			w := wallet.Wallet{}
-			serializer := common.NewCBORSerializer()
-			switch {
-			//case serializer.Deserialize(amn.Memory, &m) == nil:
-			//	b.logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
-			case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
-				b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
-			default:
-				b.logger.Infof("amn: %v %v %v", amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
-			}
+
+			// TODO: handle member.create
+
+			b.logger.Infof("in %v %v %v toMember: %v", in.Method, id.String(), request.Params.CallSite, callParams["toMemberReference"])
+		}
+	case *record.Virtual_Result:
+		res := rec.Virtual.GetResult()
+		// res.
+		// serializer := common.NewCBORSerializer()
+		// rets := []interface{}{}
+		// if err := serializer.Deserialize(res.Payload, &rets); err == nil && len(rets) > 0 {
+		// 	msg, ok := rets[0].(string)
+		// 	if ok && msg == "" {
+		// 		logger.Infof("Success transfer if it was transfer %v", res.Request.String())
+		// 	}
+		// }
+		b.logger.Infof("res: %v %v %v", res.Request.String(), res.Object.String(), string(res.Payload))
+	case *record.Virtual_Activate:
+		act := rec.Virtual.GetActivate()
+		// m := member.Member{}
+		w := wallet.Wallet{}
+		serializer := common.NewCBORSerializer()
+		switch {
+		// case serializer.Deserialize(act.Memory, &m) == nil:
+		// 	logger.Infof("act: (Member %v %v) %v %v %v", id.String(), m.Name, act.Request.String(), act.Parent.String(), string(act.Memory))
+		case serializer.Deserialize(act.Memory, &w) == nil && w.Balance != "":
+			b.logger.Infof("act: (Wallet %v %v) %v %v %v", id.String(), w.Balance, act.Request.String(), act.Parent.String(), string(act.Memory))
+		default:
+			b.logger.Infof("act: %v %v %v", act.Request.String(), act.Parent.String(), string(act.Memory))
+		}
+	case *record.Virtual_Amend:
+		amn := rec.Virtual.GetAmend()
+		// m := member.Member{}
+		w := wallet.Wallet{}
+		serializer := common.NewCBORSerializer()
+		switch {
+		//case serializer.Deserialize(amn.Memory, &m) == nil:
+		//	b.logger.Infof("amn: (Member %v %v %v) %v %v %v", id.String(), m.Name, m.PublicKey, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+		case serializer.Deserialize(amn.Memory, &w) == nil && w.Balance != "":
+			b.logger.Infof("amn: (Wallet %v %v) %v %v %v", id.String(), w.Balance, amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
+		default:
+			b.logger.Infof("amn: %v %v %v", amn.Request.String(), amn.PrevState.String(), string(amn.Memory))
 		}
 	}
-	return nil
+	return ""
 }
 
 func (b *Beautifier) storeTx(tx InsTransaction) error {
