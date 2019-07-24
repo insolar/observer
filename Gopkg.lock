@@ -86,19 +86,19 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:21ac9938fb1098b3a7b0dd909fb30878d33231177fac11a2821114eb9c1088ff"
+  digest = "1:6be8582a4f52ba2851d8a039eb9c3a3b90334b2820563d71e97de35580da128e"
   name = "github.com/dgraph-io/badger"
   packages = [
     ".",
     "options",
-    "protos",
+    "pb",
     "skl",
     "table",
     "y",
   ]
   pruneopts = "UT"
-  revision = "391b6d3b93e6014fe8c2971fcc0c1266e47dbbd9"
-  version = "v1.5.3"
+  revision = "2fa005c9d4bf695277ab5214c1fbce3735b9562a"
+  version = "v1.6.0"
 
 [[projects]]
   branch = "master"
@@ -123,6 +123,14 @@
   pruneopts = "UT"
   revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
   version = "v0.3.3"
+
+[[projects]]
+  digest = "1:6f9339c912bbdda81302633ad7e99a28dfa5a639c864061f1929510a9a64aa74"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -227,8 +235,8 @@
   version = "v1.0"
 
 [[projects]]
-  branch = "WLT-631-extract-observer"
-  digest = "1:385c02c5a2001ce410f8a5e544f3e519011e4d051255cfa0c9bb2575a45565c0"
+  branch = "WLT-503-replicator"
+  digest = "1:00bb57040011f972bf2c854562491b18662e817732c5fd29f03f6f9fb48cdb46"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -237,6 +245,7 @@
     "insolar",
     "insolar/defaults",
     "insolar/gen",
+    "insolar/jet",
     "insolar/pulse",
     "insolar/utils",
     "instrumentation/inslogger",
@@ -246,6 +255,10 @@
     "internal/ledger/store",
     "keystore",
     "keystore/internal/privatekey",
+    "ledger/heavy/executor",
+    "ledger/heavy/replica",
+    "ledger/heavy/replica/integrity",
+    "ledger/heavy/sequence",
     "log",
     "metrics",
     "network",
@@ -269,7 +282,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "245fccb2d8d91e11c8d39465b07867b48e0dc2a8"
+  revision = "f725187f291d2b00416ab5c378a6fc3308fae974"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
@@ -641,10 +654,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:245513f26a0d2c70372c30182414e3f1881cba072e090ab005c7aa6dc32b4ff6"
+  digest = "1:b5936d38011189ba9b2e5890a38c7ffe0ac7f157eef2ddc0fe752117c50d394d"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
     "internal/timeseries",
     "trace",
   ]
@@ -672,15 +689,25 @@
   revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
 
 [[projects]]
-  digest = "1:1093f2eb4b344996604f7d8b29a16c5b22ab9e1b25652140d3fede39f640d5cd"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "secure/bidirule",
     "transform",
+    "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
+    "unicode/rangetable",
   ]
   pruneopts = "UT"
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
@@ -721,20 +748,44 @@
   revision = "710ae3a149df3775bfc2e9efb7f4fb97b186b233"
 
 [[projects]]
-  digest = "1:caa836d207326da987daf8eb4404ef80806fb843056367d2c3c1636f57ede119"
+  digest = "1:cbc746de4662c66fd24a037501bd65aa0f8ad0bfca0c92576e0abb88864e3741"
   name = "google.golang.org/grpc"
   packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
     "codes",
     "connectivity",
+    "credentials",
+    "credentials/internal",
+    "encoding",
+    "encoding/proto",
     "grpclog",
     "internal",
+    "internal/backoff",
+    "internal/binarylog",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/syscall",
+    "internal/transport",
+    "keepalive",
     "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
     "stats",
     "status",
+    "tap",
   ]
   pruneopts = "UT"
-  revision = "1d89a3c832915b2314551c1d2a506874d62e53f7"
-  version = "v1.22.0"
+  revision = "2fdaae294f38ed9a121193c51ec99fecd3b13eb7"
+  version = "v1.19.0"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -748,7 +799,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/dgraph-io/badger",
     "github.com/gojuno/minimock",
     "github.com/google/btree",
     "github.com/google/gofuzz",
@@ -762,11 +812,15 @@
     "github.com/insolar/insolar/instrumentation/inslogger",
     "github.com/insolar/insolar/instrumentation/instracer",
     "github.com/insolar/insolar/keystore",
+    "github.com/insolar/insolar/ledger/heavy/replica",
+    "github.com/insolar/insolar/ledger/heavy/sequence",
     "github.com/insolar/insolar/log",
     "github.com/insolar/insolar/metrics",
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
     "github.com/insolar/insolar/network/hostnetwork/host",
+    "github.com/insolar/insolar/network/hostnetwork/packet",
+    "github.com/insolar/insolar/network/hostnetwork/packet/types",
     "github.com/insolar/insolar/network/transport",
     "github.com/insolar/insolar/network/utils",
     "github.com/insolar/insolar/platformpolicy",

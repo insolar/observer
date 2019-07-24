@@ -34,13 +34,11 @@ import (
 
 type Server struct {
 	cfgPath string
-	trace   bool
 }
 
-func New(cfgPath string, trace bool) *Server {
+func New(cfgPath string) *Server {
 	return &Server{
 		cfgPath: cfgPath,
-		trace:   trace,
 	}
 }
 

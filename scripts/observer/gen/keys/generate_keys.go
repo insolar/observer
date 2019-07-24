@@ -129,7 +129,7 @@ func genCertificate(
 func mustMakeDir(dir string) {
 	err := os.MkdirAll(dir, 0775)
 	check("couldn't create directory "+dir, err)
-	fmt.Println("generate_insolar_configs.go: creates dir", dir)
+	fmt.Println("generate_configs.go: creates dir", dir)
 }
 
 func baseDir() string {

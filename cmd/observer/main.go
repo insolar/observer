@@ -26,17 +26,13 @@ import (
 )
 
 type inputParams struct {
-	configPath        string
-	genesisConfigPath string
-	traceEnabled      bool
+	configPath string
 }
 
 func parseInputParams() inputParams {
-	var rootCmd = &cobra.Command{Use: "insolard"}
+	var rootCmd = &cobra.Command{Use: "observer"}
 	var result inputParams
 	rootCmd.Flags().StringVarP(&result.configPath, "config", "c", "", "path to config file")
-	rootCmd.Flags().StringVarP(&result.genesisConfigPath, "heavy-genesis", "", "", "path to genesis config for heavy node")
-	rootCmd.Flags().BoolVarP(&result.traceEnabled, "trace", "t", false, "enable tracing")
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Fatal("Wrong input params:", err)
@@ -49,6 +45,6 @@ func main() {
 	params := parseInputParams()
 	jww.SetStdoutThreshold(jww.LevelDebug)
 
-	s := server.NewObserverServer(params.configPath, params.traceEnabled)
+	s := server.NewObserverServer(params.configPath)
 	s.Serve()
 }

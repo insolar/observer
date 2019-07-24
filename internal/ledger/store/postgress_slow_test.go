@@ -30,6 +30,7 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
+	"github.com/insolar/insolar/insolar"
 	"github.com/ory/dockertest"
 	"github.com/stretchr/testify/require"
 
@@ -204,7 +205,7 @@ func TestPostgresDB_NewIteratorSlow(t *testing.T) {
 	i := 0
 	for it.Next() && i < len(expected) {
 		require.Equal(t, expected[i].k.ID(), it.Key(), "i: %v", i)
-		val, err := it.Value()
+		val := it.Value()
 		require.NoError(t, err, "i: %v", i)
 		require.Equal(t, expected[i].v, val, "i: %v", i)
 		i++
@@ -253,7 +254,7 @@ func TestPostgresDB_SimpleReverse(t *testing.T) {
 		})
 
 		seek := rand2.Intn(count)
-		pivot := testBadgerKey{id: prefixes[seek], scope: ScopeRecord}
+		pivot := testPostgresKey{id: prefixes[seek], scope: ScopeRecord}
 		it := db.NewIterator(pivot, false)
 		defer it.Close()
 		var actual [][]byte
@@ -276,7 +277,7 @@ func TestPostgresDB_SimpleReverse(t *testing.T) {
 
 		seek := rand2.Intn(count)
 		prefix := fillPrefix(prefixes[seek], length*2)
-		pivot := testBadgerKey{id: prefix, scope: ScopeRecord}
+		pivot := testPostgresKey{id: prefix, scope: ScopeRecord}
 		it := db.NewIterator(pivot, true)
 		defer it.Close()
 		var actual [][]byte
@@ -286,4 +287,30 @@ func TestPostgresDB_SimpleReverse(t *testing.T) {
 		require.Equal(t, count-seek, len(actual))
 		require.Equal(t, keys[seek:], actual)
 	})
+}
+
+func TestPulse(t *testing.T) {
+	t.Parallel()
+
+	var (
+		ctx = inslogger.TestContext(t)
+		err error
+	)
+
+	connStr := `postgresql://localhost/yz?sslmode=disable`
+	db, err := NewPostgresDB(connStr)
+	require.NoError(t, err)
+	defer db.Stop(ctx)
+
+	val, err := db.Get(testPostgresKey{id: insolar.GenesisPulse.PulseNumber.Bytes(), scope: ScopePulse})
+	// pulse := insolar.Pulse{}
+	// insolar.Deserialize(val, &pulse)
+	n := dbNode{}
+	insolar.Deserialize(val, &n)
+	t.Logf("pulse: %v %v %v", n.Pulse, n.Prev, n.Next)
+}
+
+type dbNode struct {
+	Pulse      insolar.Pulse
+	Prev, Next *insolar.PulseNumber
 }

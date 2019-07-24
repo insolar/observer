@@ -48,7 +48,7 @@ func NewPostgresDB(connStr string) (*PostgresDB, error) {
 		db.Close()
 		return nil, errors.Wrapf(err, "failed to make prepared insert")
 	}
-	update, err := db.Prepare(`UPDATE records SET value = $2 WHERE key = $1 AND scope = $2;`)
+	update, err := db.Prepare(`UPDATE records SET value = $2 WHERE key = $1 AND scope = $3;`)
 	if err != nil {
 		db.Close()
 		return nil, errors.Wrapf(err, "failed to make prepared update")
@@ -195,15 +195,15 @@ func (pi *postgresIterator) Key() []byte {
 	return key
 }
 
-func (pi *postgresIterator) Value() ([]byte, error) {
+func (pi *postgresIterator) Value() []byte {
 	var hexKey, hexValue string
 	err := pi.cursor.Scan(&hexKey, &hexValue)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "failed to get value")
+		return []byte{}
 	}
 	value, err := hex.DecodeString(hexValue)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "failed to decode value from hex string")
+		return []byte{}
 	}
-	return value, nil
+	return value
 }

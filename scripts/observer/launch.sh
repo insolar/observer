@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 # Changeable environment variables (parameters)
-INSOLAR_ARTIFACTS_DIR=${INSOLAR_ARTIFACTS_DIR:-".artifacts"}/
-LAUNCHNET_BASE_DIR=${LAUNCHNET_BASE_DIR:-"${INSOLAR_ARTIFACTS_DIR}launchnet"}/
+OBSERVER_ARTIFACTS_DIR=${OBSERVER_ARTIFACTS_DIR:-".artifacts"}/
+LAUNCHNET_BASE_DIR=${LAUNCHNET_BASE_DIR:-"${OBSERVER_ARTIFACTS_DIR}launchnet"}/
 
 BIN_DIR=bin
-INSOLARD=$BIN_DIR/insolard
+OBSERVER=$BIN_DIR/observer
 NODE_LOGS=${LAUNCHNET_BASE_DIR}logs
 
 mkdir -p ${NODE_LOGS}
@@ -21,28 +21,28 @@ check_working_dir()
     echo "check_working_dir() end."
 }
 
-generate_insolard_configs()
+generate_observer_configs()
 {
     echo "generate configs"
     set -x
-    go run scripts/insolard/gen/config/generate_insolar_configs.go
+    go run scripts/observer/gen/config/generate_configs.go
     { set +x; } 2>/dev/null
 }
 
 generate_keys()
 {
-    echo "generate configs"
+    echo "generate keys"
     set -x
-    go run scripts/insolard/gen/keys/generate_keys.go
+    go run scripts/observer/gen/keys/generate_keys.go
     { set +x; } 2>/dev/null
 }
 
 check_working_dir
-generate_insolard_configs
+generate_observer_configs
 generate_keys
 
 echo "start observer node"
-${INSOLARD} \
-    --config ${LAUNCHNET_BASE_DIR}insolard.yaml \
-    --trace ${NODE_LOGS}/output.log
+${OBSERVER} \
+    --config ${LAUNCHNET_BASE_DIR}observer.yaml \
+    ${NODE_LOGS}/output.log
 echo "observer node started in background"
