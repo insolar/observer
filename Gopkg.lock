@@ -254,13 +254,14 @@
 
 [[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:2abee57184e5cb6a27e1128f78b3a9cb5f8b72d6ec60a914aa5f137ea8e41689"
+  digest = "1:7218f161858fe4f703bd1d91eb44f1683ea7b5702fa97e1f6706066b5ea2fa1a"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
     "configuration",
     "cryptography",
     "insolar",
+    "insolar/bits",
     "insolar/defaults",
     "insolar/gen",
     "insolar/jet",
@@ -280,16 +281,11 @@
     "ledger/heavy/sequence",
     "log",
     "logicrunner/builtin/contract/member",
-    "logicrunner/builtin/contract/member/helper",
     "logicrunner/builtin/contract/member/signer",
-    "logicrunner/builtin/contract/wallet",
-    "logicrunner/builtin/contract/wallet/safemath",
-    "logicrunner/builtin/proxy/costcenter",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/nodedomain",
     "logicrunner/builtin/proxy/rootdomain",
-    "logicrunner/builtin/proxy/tariff",
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
     "logicrunner/goplugin/foundation",
@@ -308,6 +304,7 @@
     "network/node",
     "network/node/internal/node",
     "network/sequence",
+    "network/storage",
     "network/transport",
     "network/utils",
     "platformpolicy",
@@ -316,7 +313,7 @@
     "version",
   ]
   pruneopts = "UT"
-  revision = "f725187f291d2b00416ab5c378a6fc3308fae974"
+  revision = "600a92e88adeaddecb334894bc3efd161dbb343a"
 
 [[projects]]
   digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
@@ -887,6 +884,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-pg/pg",
+    "github.com/go-pg/pg/orm",
     "github.com/gojuno/minimock",
     "github.com/google/btree",
     "github.com/google/gofuzz",
@@ -907,8 +905,6 @@
     "github.com/insolar/insolar/log",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
-    "github.com/insolar/insolar/logicrunner/builtin/contract/wallet",
-    "github.com/insolar/insolar/logicrunner/common",
     "github.com/insolar/insolar/metrics",
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
@@ -925,6 +921,7 @@
     "github.com/spf13/jwalterweatherman",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "golang.org/x/net/context",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

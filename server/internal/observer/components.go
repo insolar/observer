@@ -133,6 +133,7 @@ func newComponents(ctx context.Context, cfg configuration.Configuration) (*compo
 
 		Sequencer = sequence2.NewMimicSequencer(DB)
 		jetKeeper := replica2.NewJetKeeper(DB)
+		cfg.Ledger.Replica.ParentPubKeyFile = ".artifacts/launchnet/parent_pubkey.pem"
 		Replicator = replica.NewReplicator(cfg, jetKeeper)
 	}
 

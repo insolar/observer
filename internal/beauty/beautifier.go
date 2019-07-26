@@ -19,29 +19,35 @@ package beauty
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/sequence"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
-	"github.com/pkg/errors"
-
 	"github.com/insolar/observer/internal/ledger/store"
+	"github.com/pkg/errors"
 )
 
 func NewBeautifier() *Beautifier {
-	return &Beautifier{txs: make(chan *Transaction, 1)}
+	return &Beautifier{
+		requests: make(map[insolar.ID]SuspendedRequest),
+		results:  make(map[insolar.ID]HeadlessResult),
+		txs:      make(map[insolar.ID]*Transaction),
+		accounts: make(map[insolar.ID]*Account),
+	}
 }
 
-type HalfRequest struct {
+type SuspendedRequest struct {
 	timestamp int64
 	value     *record.IncomingRequest
 }
 
-type HalfResponse struct {
+type HeadlessResult struct {
 	timestamp int64
 	value     *record.Result
 }
@@ -49,9 +55,11 @@ type HalfResponse struct {
 type Beautifier struct {
 	Publisher store.DBSetPublisher `inject:""`
 	db        *pg.DB
-	results   map[insolar.ID]HalfResponse
-	requests  map[insolar.ID]HalfRequest
-	txs       chan *Transaction
+	prevPulse insolar.PulseNumber
+	requests  map[insolar.ID]SuspendedRequest
+	results   map[insolar.ID]HeadlessResult
+	txs       map[insolar.ID]*Transaction
+	accounts  map[insolar.ID]*Account
 }
 
 type Deposit struct {
@@ -71,27 +79,6 @@ type Fee struct {
 	AmountMax uint
 	Fee       uint
 	Status    string
-}
-
-type Member struct {
-	Id               uint   `sql:",pk_id"`
-	Reference        string `sql:",notnull"`
-	Balance          string
-	MigrationAddress string
-}
-
-type Transaction struct {
-	tableName struct{} `sql:"transactions"`
-
-	Id            uint                `sql:",pk_id"`
-	TxID          string              `sql:",notnull"`
-	Amount        string              `sql:",notnull"`
-	Fee           string              `sql:",notnull"`
-	Timestamp     int64               `sql:",notnull"`
-	Pulse         insolar.PulseNumber `sql:",notnull"`
-	Status        string              `sql:",notnull"`
-	ReferenceFrom string              `sql:",notnull"`
-	ReferenceTo   string              `sql:",notnull"`
 }
 
 type Record struct {
@@ -118,11 +105,16 @@ func (b *Beautifier) Init(ctx context.Context) error {
 		Password: "",
 		Database: "postgres",
 	})
+	if err := b.db.CreateTable(&Transaction{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
+	if err := b.db.CreateTable(&Account{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (b *Beautifier) Start(ctx context.Context) error {
-	go b.transactionSaver(b.txs)
 	return nil
 }
 
@@ -134,44 +126,61 @@ func (b *Beautifier) Stop(ctx context.Context) error {
 // ParseAndStore consume array of records and pulse number parse them and save to db
 func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.PulseNumber) {
 	for i := 0; i < len(records); i++ {
-		b.parse(records[i].Key, records[i].Value, pulseNumber)
+		b.process(records[i].Key, records[i].Value, pulseNumber)
 	}
 }
 
-func (b *Beautifier) parse(key []byte, value []byte, pn insolar.PulseNumber) {
-	logger := inslogger.FromContext(context.Background())
-
-	id := insolar.ID{}
-	copy(id[:], key[1:])
-	rec := record.Material{}
-	err := rec.Unmarshal(value)
-	if err != nil {
-		logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
-		return
+func (b *Beautifier) process(key []byte, value []byte, pn insolar.PulseNumber) {
+	if b.prevPulse != pn {
+		b.flush(b.prevPulse)
 	}
+
+	id := parseID(key)
+	rec := parseRecord(value)
 	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_IncomingRequest:
 		in := rec.Virtual.GetIncomingRequest()
 		if in.CallType != record.CTGenesis && in.Method == "Call" {
-			request := b.parseCallArguments(in.Arguments)
-			if request.Params.CallSite == "member.transfer" {
-				amount, toMemberReference := b.parseCallParams(request)
-				b.txs <- &Transaction{
-					TxID:          id.String(),
-					Status:        "PENDING",
-					Amount:        amount,
-					ReferenceFrom: request.Params.Reference,
-					ReferenceTo:   toMemberReference,
-					Pulse:         pn,
-					Timestamp:     int64(pn),
-					Fee:           "99999",
-				}
-			}
+			b.processCallRequest(pn, id, in)
+		}
+	case *record.Virtual_Result:
+		res := rec.Virtual.GetResult()
+		if rec := res.Request.Record(); rec != nil {
+			b.processResult(pn, rec, res)
 		}
 	}
 }
 
-func (b *Beautifier) parseCallArguments(inArgs []byte) member.Request {
+func (b *Beautifier) processCallRequest(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest) {
+	request := b.parseMemberCallArguments(in.Arguments)
+	switch request.Params.CallSite {
+	case "member.transfer":
+		b.processTransferCall(pn, id, in, request)
+	case "member.create":
+		b.processMemberCreate(pn, id, in, request)
+	case "member.migrationCreate":
+		b.processMemberCreate(pn, id, in, request)
+	}
+}
+
+func (b *Beautifier) processResult(pn insolar.PulseNumber, rec *insolar.ID, res *record.Result) {
+	if req, ok := b.requests[*rec]; ok {
+		in := req.value
+		request := b.parseMemberCallArguments(in.Arguments)
+		switch request.Params.CallSite {
+		case "member.transfer":
+			b.processTransferResult(pn, rec, res)
+		case "member.create":
+			b.processMemberCreateResult(pn, rec, res)
+		case "member.migrationCreate":
+			b.processMemberCreateResult(pn, rec, res)
+		}
+	} else {
+		b.results[*rec] = HeadlessResult{timestamp: time.Now().Unix(), value: res}
+	}
+}
+
+func (b *Beautifier) parseMemberCallArguments(inArgs []byte) member.Request {
 	logger := inslogger.FromContext(context.Background())
 	var args []interface{}
 	err := insolar.Deserialize(inArgs, &args)
@@ -203,70 +212,48 @@ func (b *Beautifier) parseCallArguments(inArgs []byte) member.Request {
 	return request
 }
 
-func (b *Beautifier) parseCallParams(request member.Request) (string, string) {
-	var (
-		logger = inslogger.FromContext(context.Background())
-		amount = ""
-		to     = ""
-	)
-	callParams, ok := request.Params.CallParams.(map[string]interface{})
-	if !ok {
-		logger.Warnf("failed to cast CallParams to map[string]interface{}")
-		return "", ""
-	}
-	if a, ok := callParams["amount"]; ok {
-		if amount, ok = a.(string); !ok {
-			logger.Warnf(`failed to cast CallParams["amount"] to string`)
-		}
-	} else {
-		logger.Warnf(`failed to get CallParams["amount"]`)
-	}
-	if t, ok := callParams["toMemberReference"]; ok {
-		if to, ok = t.(string); !ok {
-			logger.Warnf(`failed to cast CallParams["toMemberReference"] to string`)
-		}
-	} else {
-		logger.Warnf(`failed to get CallParams["toMemberReference"]`)
-	}
-	return amount, to
+func parseID(fullKey []byte) insolar.ID {
+	id := insolar.ID{}
+	copy(id[:], fullKey[1:])
+	return id
 }
 
-func (b *Beautifier) storeTx(tx *Transaction) error {
-	_, err := b.db.Model(tx).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeMember(member *Member) error {
-	_, err := b.db.Model(member).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeDeposit(deposit *Deposit) error {
-	_, err := b.db.Model(deposit).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) storeFee(fee *Fee) error {
-	_, err := b.db.Model(fee).OnConflict("DO NOTHING").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *Beautifier) transactionSaver(txs chan *Transaction) {
+func parseRecord(value []byte) record.Material {
 	logger := inslogger.FromContext(context.Background())
-	for tx := range txs {
+	rec := record.Material{}
+	err := rec.Unmarshal(value)
+	if err != nil {
+		logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
+		return record.Material{}
+	}
+	return rec
+}
+
+func parsePayload(payload []byte) []interface{} {
+	logger := inslogger.FromContext(context.Background())
+	rets := []interface{}{}
+	err := insolar.Deserialize(payload, &rets)
+	if err != nil {
+		logger.Warnf("failed to parse payload as two interfaces")
+		return []interface{}{}
+	}
+	return rets
+}
+
+func (b *Beautifier) flush(pn insolar.PulseNumber) {
+	logger := inslogger.FromContext(context.Background())
+
+	// TODO: make flush under single db transaction
+
+	for _, tx := range b.txs {
 		err := b.storeTx(tx)
+		if err != nil {
+			logger.Error(err)
+		}
+	}
+
+	for _, a := range b.accounts {
+		err := b.storeAccount(a)
 		if err != nil {
 			logger.Error(err)
 		}
