@@ -18,8 +18,9 @@ package replica
 
 import (
 	"context"
-	"github.com/insolar/insolar/ledger/heavy/executor"
 	"sync"
+
+	"github.com/insolar/insolar/ledger/heavy/executor"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
@@ -37,8 +38,12 @@ type jetKeeper struct {
 	db store.DB
 }
 
-func (jk *jetKeeper) Add(context.Context, insolar.PulseNumber, insolar.JetID) error {
-	return errors.New("not implemented JetKeeper.Add")
+func (jk *jetKeeper) AddDropConfirmation(ctx context.Context, pn insolar.PulseNumber, jet insolar.JetID, split bool) error {
+	return errors.New("not implemented JetKeeper.AddDropConfirmation")
+}
+
+func (jk *jetKeeper) AddHotConfirmation(ctx context.Context, pn insolar.PulseNumber, jet insolar.JetID, split bool) error {
+	return errors.New("not implemented JetKeeper.AddHotConfirmation")
 }
 
 func (jk *jetKeeper) TopSyncPulse() insolar.PulseNumber {
