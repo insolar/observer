@@ -16,6 +16,17 @@
 
 package beauty
 
+type Deposit struct {
+	ID              uint `sql:",pk_id"`
+	Timestamp       uint
+	HoldReleaseDate uint
+	Amount          string
+	Bonus           string
+	EthHash         string
+	Status          string
+	MemberID        uint
+}
+
 func (b *Beautifier) storeDeposit(deposit *Deposit) error {
 	_, err := b.db.Model(deposit).OnConflict("DO NOTHING").Insert()
 	if err != nil {

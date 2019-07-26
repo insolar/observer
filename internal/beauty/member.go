@@ -35,10 +35,12 @@ type Account struct {
 	Status           string `sql:",notnull"`
 	Balance          string `sql:",notnull"`
 	MigrationAddress string
+
+	requestID insolar.ID
 }
 
 func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest, request member.Request) {
-	status := "PENDING"
+	status := PENDING
 	mirationAddress := ""
 	if result, ok := b.results[id]; ok {
 		status, mirationAddress = accountStatus(result.value.Payload)
@@ -50,6 +52,7 @@ func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, 
 		Status:           status,
 		Balance:          "0",
 		MigrationAddress: mirationAddress,
+		requestID:        id,
 	}
 }
 
@@ -72,7 +75,7 @@ func accountStatus(payload []byte) (string, string) {
 	}
 	if retError, ok := rets[1].(error); ok {
 		if retError != nil {
-			return "CANCELED", ""
+			return CANCELED, ""
 		}
 	}
 	params, ok := rets[0].(map[string]interface{})
@@ -81,13 +84,13 @@ func accountStatus(payload []byte) (string, string) {
 	}
 	migrationAddressInterface, ok := params["migrationAddress"]
 	if !ok {
-		return "SUCCESS", ""
+		return SUCCESS, ""
 	}
 	migrationAddress, ok := migrationAddressInterface.(string)
 	if !ok {
 		return "MIGRATION_ADDRESS_NOT_STRING", ""
 	}
-	return "SUCCESS", migrationAddress
+	return SUCCESS, migrationAddress
 }
 
 func (b *Beautifier) storeAccount(account *Account) error {

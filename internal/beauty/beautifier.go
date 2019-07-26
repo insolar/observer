@@ -62,25 +62,6 @@ type Beautifier struct {
 	accounts  map[insolar.ID]*Account
 }
 
-type Deposit struct {
-	Id              uint `sql:",pk_id"`
-	Timestamp       uint
-	HoldReleaseDate uint
-	Amount          string
-	Bonus           string
-	EthHash         string
-	Status          string
-	MemberID        uint
-}
-
-type Fee struct {
-	Id        uint `sql:",pk_id"`
-	AmountMin uint
-	AmountMax uint
-	Fee       uint
-	Status    string
-}
-
 type Record struct {
 	tableName struct{} `sql:"records"`
 
@@ -250,12 +231,22 @@ func (b *Beautifier) flush(pn insolar.PulseNumber) {
 		if err != nil {
 			logger.Error(err)
 		}
+		if tx.Status != PENDING {
+			delete(b.txs, tx.requestID)
+			delete(b.requests, tx.requestID)
+			delete(b.results, tx.requestID)
+		}
 	}
 
 	for _, a := range b.accounts {
 		err := b.storeAccount(a)
 		if err != nil {
 			logger.Error(err)
+		}
+		if a.Status != PENDING {
+			delete(b.txs, a.requestID)
+			delete(b.requests, a.requestID)
+			delete(b.results, a.requestID)
 		}
 	}
 }

@@ -39,26 +39,28 @@ type Transaction struct {
 	Status        string              `sql:",notnull"`
 	ReferenceTo   string              `sql:",notnull"`
 	ReferenceFrom string              `sql:",notnull"`
+
+	requestID insolar.ID
 }
 
 func (b Beautifier) processTransferCall(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest, request member.Request) {
-	amount, toMemberReference := b.parseTransferCallParams(request)
-	status := "PENDING"
-	fee := "0"
+	callParams := b.parseTransferCallParams(request)
+	r := txResult{status: PENDING, fee: "0"}
 	if result, ok := b.results[id]; ok {
-		status, fee = txStatus(result.value.Payload)
+		r = txStatus(result.value.Payload)
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
 	b.txs[id] = &Transaction{
 		TxID:          id.String(),
-		Status:        status,
-		Amount:        amount,
+		Status:        r.status,
+		Amount:        callParams.amount,
 		ReferenceTo:   request.Params.Reference,
-		ReferenceFrom: toMemberReference,
+		ReferenceFrom: callParams.toMemberReference,
 		Pulse:         pn,
 		Timestamp:     int64(pn),
-		Fee:           fee,
+		Fee:           r.fee,
+		requestID:     id,
 	}
 }
 
@@ -69,12 +71,17 @@ func (b *Beautifier) processTransferResult(pn insolar.PulseNumber, rec *insolar.
 		logger.Error(errors.New("failed to get cached transaction"))
 		return
 	}
-	status, fee := txStatus(res.Payload)
-	tx.Status = status
-	tx.Fee = fee
+	result := txStatus(res.Payload)
+	tx.Status = result.status
+	tx.Fee = result.fee
 }
 
-func (b *Beautifier) parseTransferCallParams(request member.Request) (string, string) {
+type transferCallParams struct {
+	amount            string
+	toMemberReference string
+}
+
+func (b *Beautifier) parseTransferCallParams(request member.Request) transferCallParams {
 	var (
 		logger = inslogger.FromContext(context.Background())
 		amount = ""
@@ -83,7 +90,7 @@ func (b *Beautifier) parseTransferCallParams(request member.Request) (string, st
 	callParams, ok := request.Params.CallParams.(map[string]interface{})
 	if !ok {
 		logger.Warnf("failed to cast CallParams to map[string]interface{}")
-		return "", ""
+		return transferCallParams{}
 	}
 	if a, ok := callParams["amount"]; ok {
 		if amount, ok = a.(string); !ok {
@@ -99,32 +106,40 @@ func (b *Beautifier) parseTransferCallParams(request member.Request) (string, st
 	} else {
 		logger.Warnf(`failed to get CallParams["toMemberReference"]`)
 	}
-	return amount, to
+	return transferCallParams{
+		amount:            amount,
+		toMemberReference: to,
+	}
 }
 
-func txStatus(payload []byte) (string, string) {
+type txResult struct {
+	status string
+	fee    string
+}
+
+func txStatus(payload []byte) txResult {
 	rets := parsePayload(payload)
 	if len(rets) < 2 {
-		return "NOT_ENOUGH_PAYLOAD_PARAMS", ""
+		return txResult{status: "NOT_ENOUGH_PAYLOAD_PARAMS", fee: ""}
 	}
 	if retError, ok := rets[1].(error); ok {
 		if retError != nil {
-			return "CANCELED", ""
+			return txResult{status: CANCELED, fee: ""}
 		}
 	}
 	params, ok := rets[0].(map[string]interface{})
 	if !ok {
-		return "FIRST_PARAM_NOT_MAP", ""
+		return txResult{status: "FIRST_PARAM_NOT_MAP", fee: ""}
 	}
 	feeInterface, ok := params["fee"]
 	if !ok {
-		return "FEE_PARAM_NOT_EXIST", ""
+		return txResult{status: "FEE_PARAM_NOT_EXIST", fee: ""}
 	}
 	fee, ok := feeInterface.(string)
 	if !ok {
-		return "FEE_NOT_STRING", ""
+		return txResult{status: "FEE_NOT_STRING", fee: ""}
 	}
-	return "SUCCESS", fee
+	return txResult{status: SUCCESS, fee: fee}
 }
 
 func (b *Beautifier) storeTx(tx *Transaction) error {

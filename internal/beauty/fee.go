@@ -16,6 +16,14 @@
 
 package beauty
 
+type Fee struct {
+	ID        uint `sql:",pk_id"`
+	AmountMin uint
+	AmountMax uint
+	Fee       uint
+	Status    string
+}
+
 func (b *Beautifier) storeFee(fee *Fee) error {
 	_, err := b.db.Model(fee).OnConflict("DO NOTHING").Insert()
 	if err != nil {
