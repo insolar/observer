@@ -17,6 +17,7 @@
 package beauty
 
 import (
+	"encoding/hex"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 )
@@ -56,8 +57,8 @@ func (b *Beautifier) parseRequest(id insolar.ID, req *record.IncomingRequest) {
 		Object:     object,
 		Prototype:  prototype,
 		Method:     req.Method,
-		//Arguments:  string(req.Arguments),
-		Reason: req.Reason.String(),
+		Arguments:  hex.EncodeToString(req.Arguments),
+		Reason:     req.Reason.String(),
 	}
 }
 

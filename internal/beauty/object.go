@@ -17,6 +17,7 @@
 package beauty
 
 import (
+	"encoding/hex"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 )
@@ -40,9 +41,9 @@ func (b *Beautifier) parseActivate(id insolar.ID, act *record.Activate) {
 		ObjectID: id.String(),
 		Domain:   act.Domain.String(),
 		Request:  act.Request.String(),
-		//Memory:   string(act.Memory),
-		Image:  act.Image.String(),
-		Parent: act.Parent.String(),
+		Memory:   hex.EncodeToString(act.Memory),
+		Image:    act.Image.String(),
+		Parent:   act.Parent.String(),
 	}
 }
 
@@ -51,9 +52,9 @@ func (b *Beautifier) parseAmend(id insolar.ID, amend *record.Amend) {
 		ObjectID: id.String(),
 		Domain:   amend.Domain.String(),
 		Request:  amend.Request.String(),
-		//Memory:   string(amend.Memory),
-		Image:  amend.Image.String(),
-		Parent: amend.PrevState.String(),
+		Memory:   hex.EncodeToString(amend.Memory),
+		Image:    amend.Image.String(),
+		Parent:   amend.PrevState.String(),
 	}
 }
 

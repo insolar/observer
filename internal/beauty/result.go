@@ -17,6 +17,7 @@
 package beauty
 
 import (
+	"encoding/hex"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 )
@@ -35,7 +36,7 @@ func (b *Beautifier) parseResult(id insolar.ID, res *record.Result) {
 	b.rawResults[id] = &Result{
 		ResultID: id.String(),
 		Request:  res.Request.String(),
-		//Payload:  string(res.Payload),
+		Payload:  hex.EncodeToString(res.Payload),
 	}
 }
 
