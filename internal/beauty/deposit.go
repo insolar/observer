@@ -17,6 +17,8 @@
 package beauty
 
 type Deposit struct {
+	tableName struct{} `sql:"deposits"`
+
 	ID              uint `sql:",pk_id"`
 	Timestamp       uint
 	HoldReleaseDate uint
