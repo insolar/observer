@@ -27,10 +27,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-type Account struct {
-	tableName struct{} `sql:"accounts"`
+type Member struct {
+	tableName struct{} `sql:"members"`
 
-	Id               uint   `sql:",pk_id"`
+	ID               uint   `sql:",pk_id"`
 	Reference        string `sql:",notnull"`
 	Status           string `sql:",notnull"`
 	Balance          string `sql:",notnull"`
@@ -43,11 +43,11 @@ func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, 
 	status := PENDING
 	mirationAddress := ""
 	if result, ok := b.results[id]; ok {
-		status, mirationAddress = accountStatus(result.value.Payload)
+		status, mirationAddress = memberStatus(result.value.Payload)
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
-	b.accounts[id] = &Account{
+	b.members[id] = &Member{
 		Reference:        id.String(),
 		Status:           status,
 		Balance:          "0",
@@ -58,17 +58,17 @@ func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, 
 
 func (b *Beautifier) processMemberCreateResult(pn insolar.PulseNumber, rec *insolar.ID, res *record.Result) {
 	logger := inslogger.FromContext(context.Background())
-	account, ok := b.accounts[*rec]
+	member, ok := b.members[*rec]
 	if !ok {
 		logger.Error(errors.New("failed to get cached transaction"))
 		return
 	}
-	status, mirationAddress := accountStatus(res.Payload)
-	account.Status = status
-	account.MigrationAddress = mirationAddress
+	status, mirationAddress := memberStatus(res.Payload)
+	member.Status = status
+	member.MigrationAddress = mirationAddress
 }
 
-func accountStatus(payload []byte) (string, string) {
+func memberStatus(payload []byte) (string, string) {
 	rets := parsePayload(payload)
 	if len(rets) < 2 {
 		return "NOT_ENOUGH_PAYLOAD_PARAMS", ""
@@ -93,8 +93,8 @@ func accountStatus(payload []byte) (string, string) {
 	return SUCCESS, migrationAddress
 }
 
-func (b *Beautifier) storeAccount(account *Account) error {
-	_, err := b.db.Model(account).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) storeMember(member *Member) error {
+	_, err := b.db.Model(member).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}

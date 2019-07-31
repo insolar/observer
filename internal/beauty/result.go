@@ -16,21 +16,32 @@
 
 package beauty
 
-type Deposit struct {
-	tableName struct{} `sql:"deposits"`
+import (
+	"encoding/hex"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
+)
 
-	ID              uint `sql:",pk_id"`
-	Timestamp       uint
-	HoldReleaseDate uint
-	Amount          string
-	Bonus           string
-	EthHash         string
-	Status          string
-	MemberID        uint
+type Result struct {
+	tableName struct{} `sql:"results"`
+
+	ResultID string `sql:",pk,column_name:result_id"`
+	Request  string
+	Payload  string
+
+	requestID insolar.ID
 }
 
-func (b *Beautifier) storeDeposit(deposit *Deposit) error {
-	_, err := b.db.Model(deposit).OnConflict("DO NOTHING").Insert()
+func (b *Beautifier) parseResult(id insolar.ID, res *record.Result) {
+	b.rawResults[id] = &Result{
+		ResultID: id.String(),
+		Request:  res.Request.String(),
+		Payload:  hex.EncodeToString(res.Payload),
+	}
+}
+
+func (b *Beautifier) storeResult(result *Result) error {
+	_, err := b.db.Model(result).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}

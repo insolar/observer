@@ -35,10 +35,13 @@ import (
 
 func NewBeautifier() *Beautifier {
 	return &Beautifier{
-		requests: make(map[insolar.ID]SuspendedRequest),
-		results:  make(map[insolar.ID]HeadlessResult),
-		txs:      make(map[insolar.ID]*Transaction),
-		accounts: make(map[insolar.ID]*Account),
+		requests:    make(map[insolar.ID]SuspendedRequest),
+		results:     make(map[insolar.ID]HeadlessResult),
+		txs:         make(map[insolar.ID]*Transaction),
+		members:     make(map[insolar.ID]*Member),
+		rawObjects:  make(map[insolar.ID]*Object),
+		rawResults:  make(map[insolar.ID]*Result),
+		rawRequests: make(map[insolar.ID]*Request),
 	}
 }
 
@@ -53,13 +56,16 @@ type HeadlessResult struct {
 }
 
 type Beautifier struct {
-	Publisher store.DBSetPublisher `inject:""`
-	db        *pg.DB
-	prevPulse insolar.PulseNumber
-	requests  map[insolar.ID]SuspendedRequest
-	results   map[insolar.ID]HeadlessResult
-	txs       map[insolar.ID]*Transaction
-	accounts  map[insolar.ID]*Account
+	Publisher   store.DBSetPublisher `inject:""`
+	db          *pg.DB
+	prevPulse   insolar.PulseNumber
+	requests    map[insolar.ID]SuspendedRequest
+	results     map[insolar.ID]HeadlessResult
+	txs         map[insolar.ID]*Transaction
+	members     map[insolar.ID]*Member
+	rawObjects  map[insolar.ID]*Object
+	rawResults  map[insolar.ID]*Result
+	rawRequests map[insolar.ID]*Request
 }
 
 type Record struct {
@@ -89,7 +95,16 @@ func (b *Beautifier) Init(ctx context.Context) error {
 	if err := b.db.CreateTable(&Transaction{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
 		return err
 	}
-	if err := b.db.CreateTable(&Account{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+	if err := b.db.CreateTable(&Member{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
+	if err := b.db.CreateTable(&Object{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
+	if err := b.db.CreateTable(&Request{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
+	if err := b.db.CreateTable(&Result{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
 		return err
 	}
 	return nil
@@ -118,17 +133,25 @@ func (b *Beautifier) process(key []byte, value []byte, pn insolar.PulseNumber) {
 
 	id := parseID(key)
 	rec := parseRecord(value)
-	switch rec.Virtual.Union.(type) {
+	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_IncomingRequest:
 		in := rec.Virtual.GetIncomingRequest()
+		b.parseRequest(id, v.IncomingRequest)
 		if in.CallType != record.CTGenesis && in.Method == "Call" {
 			b.processCallRequest(pn, id, in)
 		}
 	case *record.Virtual_Result:
 		res := rec.Virtual.GetResult()
+		b.parseResult(id, v.Result)
 		if rec := res.Request.Record(); rec != nil {
 			b.processResult(pn, rec, res)
 		}
+	case *record.Virtual_Activate:
+		b.parseActivate(id, v.Activate)
+	case *record.Virtual_Amend:
+		b.parseAmend(id, v.Amend)
+	case *record.Virtual_Deactivate:
+		b.parseDeactivate(id, v.Deactivate)
 	}
 }
 
@@ -238,8 +261,8 @@ func (b *Beautifier) flush(pn insolar.PulseNumber) {
 		}
 	}
 
-	for _, a := range b.accounts {
-		err := b.storeAccount(a)
+	for _, a := range b.members {
+		err := b.storeMember(a)
 		if err != nil {
 			logger.Error(err)
 		}
@@ -248,5 +271,29 @@ func (b *Beautifier) flush(pn insolar.PulseNumber) {
 			delete(b.requests, a.requestID)
 			delete(b.results, a.requestID)
 		}
+	}
+
+	for _, req := range b.rawRequests {
+		err := b.storeRequest(req)
+		if err != nil {
+			logger.Error(err)
+		}
+		delete(b.rawResults, req.requestID)
+	}
+
+	for _, res := range b.rawResults {
+		err := b.storeResult(res)
+		if err != nil {
+			logger.Error(err)
+		}
+		delete(b.rawResults, res.requestID)
+	}
+
+	for _, obj := range b.rawObjects {
+		err := b.storeObject(obj)
+		if err != nil {
+			logger.Error(err)
+		}
+		delete(b.rawResults, obj.requestID)
 	}
 }
