@@ -14,16 +14,39 @@
 // limitations under the License.
 //
 
-package server
+package configuration
 
 import (
-	"github.com/insolar/observer/server/internal/observer"
+	"time"
 )
 
-type Server interface {
-	Serve()
+type Configurator interface {
+	Default() *Configuration
 }
 
-func NewObserverServer(cfgPath string) Server {
-	return observer.New(cfgPath)
+func New() Configurator {
+	return &Configuration{}
+}
+
+type Configuration struct {
+	HTTPRouter HTTPRouter
+	Replicator Replicator
+}
+
+func (c *Configuration) Default() *Configuration {
+	return &Configuration{
+		HTTPRouter: HTTPRouter{
+			Addr: ":8080",
+		},
+		Replicator: Replicator{
+			Addr:            "127.0.0.1:5678",
+			MaxTransportMsg: 1073741824,
+			RequestDelay:    10 * time.Second,
+			BatchSize:       1000,
+		},
+	}
+}
+
+func Start() {
+
 }

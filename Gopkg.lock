@@ -3,15 +3,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a85b0dc359de4812d383ee6670f0dae595cfcb8b13ff6b872bdb013a18c37b07"
-  name = "git.apache.org/thrift.git"
-  packages = ["lib/go/thrift"]
-  pruneopts = "UT"
-  revision = "1a2dee60b4384de2f6190caa85cf3e2a497c31b9"
-  source = "github.com/apache/thrift"
-
-[[projects]]
-  branch = "master"
   digest = "1:6716c9fe6333591128e72848f246fc01dc72240e1e64185d8b4e124e7280b35d"
   name = "github.com/AndreasBriese/bbloom"
   packages = ["."]
@@ -52,14 +43,6 @@
   pruneopts = "UT"
   revision = "b39a48a1c9edad83d74898f3bf96adedd18ece81"
   version = "v0.4.0"
-
-[[projects]]
-  digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
-  name = "github.com/beorn7/perks"
-  packages = ["quantile"]
-  pruneopts = "UT"
-  revision = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46"
-  version = "v1.0.0"
 
 [[projects]]
   digest = "1:29fb1d9358f24856ab2a3747e2f3d97be41897b22b46bf20fbb984ba7be439af"
@@ -172,12 +155,12 @@
   version = "v1.2.1"
 
 [[projects]]
-  digest = "1:f0e1e96007161b0f7e0d64335bd4fe37dfd15d90ffcde3b56955f7c7432a498e"
+  digest = "1:1e03a48a110b7c5a26bc26c31431efdcc93c6e8d6b35d6ae31e15d2b5beabd96"
   name = "github.com/gojuno/minimock"
   packages = ["."]
   pruneopts = "UT"
-  revision = "48589a7befe5db74c606e57157ed511dba560b07"
-  version = "v2.1.7"
+  revision = "49d47c6ba53c89ce3171ee2c50763b410a394a36"
+  version = "v2.1.8"
 
 [[projects]]
   digest = "1:239c4c7fd2159585454003d9be7207167970194216193a8a210b8d29576f19c9"
@@ -218,14 +201,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:67474f760e9ac3799f740db2c489e6423a4cde45520673ec123ac831ad849cb8"
-  name = "github.com/hashicorp/golang-lru"
-  packages = ["simplelru"]
-  pruneopts = "UT"
-  revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
-  version = "v0.5.1"
-
-[[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
   name = "github.com/hashicorp/hcl"
   packages = [
@@ -245,88 +220,52 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
-  name = "github.com/inconshreveable/mousetrap"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
-  version = "v1.0"
-
-[[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:241673d792b7b638d448cd9961ecb697dbb5dea241af77f990d8b4401f7e1e06"
+  digest = "1:f8c10fc3a47684fb0342af6fdab6e42576d73d4f41613c6e713d03e77aaefee5"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
     "configuration",
-    "cryptography",
     "insolar",
     "insolar/bits",
-    "insolar/defaults",
-    "insolar/gen",
     "insolar/jet",
     "insolar/pulse",
     "insolar/record",
     "insolar/utils",
     "instrumentation/inslogger",
-    "instrumentation/insmetrics",
-    "instrumentation/instracer",
-    "instrumentation/pprof",
     "internal/ledger/store",
-    "keystore",
-    "keystore/internal/privatekey",
     "ledger/heavy/executor",
-    "ledger/heavy/replica",
-    "ledger/heavy/replica/integrity",
+    "ledger/heavy/exporter",
     "ledger/heavy/sequence",
+    "ledger/object",
     "log",
     "logicrunner/builtin/contract/deposit",
     "logicrunner/builtin/contract/member",
     "logicrunner/builtin/contract/member/signer",
     "logicrunner/builtin/contract/wallet",
-    "logicrunner/builtin/contract/wallet/safemath",
+    "logicrunner/builtin/foundation",
+    "logicrunner/builtin/foundation/safemath",
     "logicrunner/builtin/proxy/costcenter",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/nodedomain",
     "logicrunner/builtin/proxy/rootdomain",
-    "logicrunner/builtin/proxy/tariff",
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
-    "logicrunner/goplugin/foundation",
     "logicrunner/goplugin/rpctypes",
-    "metrics",
-    "network",
-    "network/consensusv1",
+    "network/consensus/common/capacity",
+    "network/consensus/gcpv2/api/member",
     "network/consensusv1/packets",
-    "network/hostnetwork",
-    "network/hostnetwork/future",
-    "network/hostnetwork/host",
-    "network/hostnetwork/packet",
-    "network/hostnetwork/packet/types",
-    "network/hostnetwork/pool",
-    "network/hostnetwork/resolver",
     "network/node",
     "network/node/internal/node",
-    "network/sequence",
     "network/storage",
-    "network/transport",
     "network/utils",
     "platformpolicy",
     "platformpolicy/internal/hash",
     "platformpolicy/internal/sign",
-    "version",
   ]
   pruneopts = "UT"
-  revision = "600a92e88adeaddecb334894bc3efd161dbb343a"
-
-[[projects]]
-  digest = "1:cafe8370a76c32121b345e518dd02b9112e8ddbe85b89b86232925768b07db41"
-  name = "github.com/insolar/rpc"
-  packages = ["v2"]
-  pruneopts = "UT"
-  revision = "60ccffd3c0df575286752c08ae3d6312f728291d"
-  version = "v1.2.1"
+  revision = "afb3e6519c1bb63dd19ac24d89a4259c7863c42a"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -369,6 +308,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:f97285a3b0a496dcf8801072622230d513f69175665d94de60eb042d03387f6c"
+  name = "github.com/julienschmidt/httprouter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "348b672cd90d8190f8240323e372ecd1e66b59dc"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
@@ -395,14 +342,6 @@
   pruneopts = "UT"
   revision = "de8848e004dd33dc07a2947b3d76f618a7fc7ef1"
   version = "v1.8.1"
-
-[[projects]]
-  digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
-  name = "github.com/matttproud/golang_protobuf_extensions"
-  packages = ["pbutil"]
-  pruneopts = "UT"
-  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
-  version = "v1.0.1"
 
 [[projects]]
   digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
@@ -536,49 +475,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e89f2cdede55684adbe44b5566f55838ad2aee1dff348d14b73ccf733607b671"
-  name = "github.com/prometheus/client_golang"
-  packages = [
-    "prometheus",
-    "prometheus/internal",
-    "prometheus/promhttp",
-  ]
-  pruneopts = "UT"
-  revision = "2641b987480bca71fb39738eb8c8b0d577cb1d76"
-  version = "v0.9.4"
-
-[[projects]]
-  branch = "master"
-  digest = "1:2d5cd61daa5565187e1d96bae64dbbc6080dacf741448e9629c64fd93203b0d4"
-  name = "github.com/prometheus/client_model"
-  packages = ["go"]
-  pruneopts = "UT"
-  revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
-
-[[projects]]
-  digest = "1:8dcedf2e8f06c7f94e48267dea0bc0be261fa97b377f3ae3e87843a92a549481"
-  name = "github.com/prometheus/common"
-  packages = [
-    "expfmt",
-    "internal/bitbucket.org/ww/goautoneg",
-    "model",
-  ]
-  pruneopts = "UT"
-  revision = "31bed53e4047fd6c510e43a941f90cb31be0972a"
-  version = "v0.6.0"
-
-[[projects]]
-  digest = "1:366f5aa02ff6c1e2eccce9ca03a22a6d983da89eecff8a89965401764534eb7c"
-  name = "github.com/prometheus/procfs"
-  packages = [
-    ".",
-    "internal/fs",
-  ]
-  pruneopts = "UT"
-  revision = "3f98efb27840a48a7a2898ec80be07674d19f9c8"
-  version = "v0.0.3"
-
-[[projects]]
   digest = "1:4853aea8a727b1cc962f687688aef22ce0dd040a9f695c07f303559e4595a152"
   name = "github.com/renstrom/shortuuid"
   packages = ["."]
@@ -634,14 +530,6 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:e096613fb7cf34743d49af87d197663cfccd61876e2219853005a57baedfa562"
-  name = "github.com/spf13/cobra"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "f2b07da1e2c38d5f12845a4f607e2e1018cbb1f5"
-  version = "v0.0.5"
-
-[[projects]]
   digest = "1:1b753ec16506f5864d26a28b43703c58831255059644351bbcb019b843950900"
   name = "github.com/spf13/jwalterweatherman"
   packages = ["."]
@@ -692,29 +580,17 @@
   revision = "772ced7fd4c2f6322c07537a9a93b68d74551fa6"
 
 [[projects]]
-  digest = "1:6565c9138a443bcbbab8d339e86c75824e944edc06589605ae534f0e6701418a"
+  digest = "1:286eb95a9a56ac1d47dcbfa404ae1cf6fc5fd7d1e84ce30f80a7f41918930c1a"
   name = "go.opencensus.io"
   packages = [
-    ".",
-    "exporter/jaeger",
-    "exporter/jaeger/internal/gen-go/jaeger",
-    "exporter/prometheus",
-    "internal",
     "internal/tagencoding",
     "metric/metricdata",
     "metric/metricproducer",
-    "plugin/ocgrpc",
     "resource",
     "stats",
     "stats/internal",
     "stats/view",
     "tag",
-    "trace",
-    "trace/internal",
-    "trace/propagation",
-    "trace/tracestate",
-    "zpages",
-    "zpages/internal",
   ]
   pruneopts = "UT"
   revision = "43463a80402d8447b7fce0d2c58edf1687ff0b58"
@@ -748,14 +624,6 @@
   ]
   pruneopts = "UT"
   revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
-
-[[projects]]
-  branch = "master"
-  digest = "1:382bb5a7fb4034db3b6a2d19e5a4a6bcf52f4750530603c01ca18a172fa3089b"
-  name = "golang.org/x/sync"
-  packages = ["semaphore"]
-  pruneopts = "UT"
-  revision = "112230192c580c3556b8cee6403af37a4fc5f28c"
 
 [[projects]]
   branch = "master"
@@ -811,14 +679,6 @@
   ]
   pruneopts = "UT"
   revision = "72ffa07ba3db8d09f5215feec0f89464f3028f8e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:5f003878aabe31d7f6b842d4de32b41c46c214bb629bb485387dbcce1edf5643"
-  name = "google.golang.org/api"
-  packages = ["support/bundler"]
-  pruneopts = "UT"
-  revision = "2d86357cba3144750fda6bbae8a3466d39dc3963"
 
 [[projects]]
   branch = "master"
@@ -894,18 +754,10 @@
     "github.com/google/btree",
     "github.com/google/gofuzz",
     "github.com/insolar/insolar/component",
-    "github.com/insolar/insolar/configuration",
-    "github.com/insolar/insolar/cryptography",
     "github.com/insolar/insolar/insolar",
-    "github.com/insolar/insolar/insolar/defaults",
-    "github.com/insolar/insolar/insolar/gen",
     "github.com/insolar/insolar/insolar/record",
-    "github.com/insolar/insolar/insolar/utils",
     "github.com/insolar/insolar/instrumentation/inslogger",
-    "github.com/insolar/insolar/instrumentation/instracer",
-    "github.com/insolar/insolar/keystore",
-    "github.com/insolar/insolar/ledger/heavy/executor",
-    "github.com/insolar/insolar/ledger/heavy/replica",
+    "github.com/insolar/insolar/ledger/heavy/exporter",
     "github.com/insolar/insolar/ledger/heavy/sequence",
     "github.com/insolar/insolar/log",
     "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
@@ -914,24 +766,15 @@
     "github.com/insolar/insolar/logicrunner/builtin/contract/wallet",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet",
-    "github.com/insolar/insolar/metrics",
-    "github.com/insolar/insolar/network",
-    "github.com/insolar/insolar/network/hostnetwork",
-    "github.com/insolar/insolar/network/hostnetwork/host",
-    "github.com/insolar/insolar/network/transport",
-    "github.com/insolar/insolar/network/utils",
-    "github.com/insolar/insolar/platformpolicy",
-    "github.com/insolar/insolar/version",
-    "github.com/insolar/rpc/v2",
+    "github.com/julienschmidt/httprouter",
     "github.com/lib/pq",
     "github.com/ory/dockertest",
     "github.com/pkg/errors",
-    "github.com/spf13/cobra",
-    "github.com/spf13/jwalterweatherman",
+    "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "golang.org/x/net/context",
-    "gopkg.in/yaml.v2",
+    "google.golang.org/grpc",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

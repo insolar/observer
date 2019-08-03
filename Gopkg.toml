@@ -42,6 +42,10 @@
   name = "github.com/insolar/insolar"
 
 [[constraint]]
+  name = "google.golang.org/grpc"
+  version = "=1.19.0"
+
+[[constraint]]
   name = "github.com/insolar/rpc"
   version = "1.2.1"
 
@@ -60,6 +64,8 @@
 [[constraint]]
   branch = "master"
   name = "github.com/stretchr/testify"
+
+
 
 [prune]
   go-tests = true
