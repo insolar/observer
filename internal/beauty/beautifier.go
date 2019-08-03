@@ -19,7 +19,6 @@ package beauty
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/go-pg/pg"
@@ -44,6 +43,8 @@ func NewBeautifier() *Beautifier {
 		balanceUpdates: make(map[insolar.ID]BalanceUpdate),
 		txs:            make(map[insolar.ID]*Transaction),
 		members:        make(map[insolar.ID]*Member),
+		deposits:       make(map[insolar.ID]*Deposit),
+		depositUpdates: make(map[insolar.ID]DepositUpdate),
 		rawObjects:     make(map[insolar.ID]*Object),
 		rawResults:     make(map[insolar.ID]*Result),
 		rawRequests:    make(map[insolar.ID]*Request),
@@ -78,6 +79,14 @@ type BalanceUpdate struct {
 	balance   string
 }
 
+type DepositUpdate struct {
+	id        insolar.ID
+	amount    string
+	withdrawn string
+	status    string
+	prevState string
+}
+
 type Beautifier struct {
 	Publisher      store.DBSetPublisher `inject:""`
 	db             *pg.DB
@@ -89,6 +98,8 @@ type Beautifier struct {
 	balanceUpdates map[insolar.ID]BalanceUpdate
 	txs            map[insolar.ID]*Transaction
 	members        map[insolar.ID]*Member
+	deposits       map[insolar.ID]*Deposit
+	depositUpdates map[insolar.ID]DepositUpdate
 	rawObjects     map[insolar.ID]*Object
 	rawResults     map[insolar.ID]*Result
 	rawRequests    map[insolar.ID]*Request
@@ -122,6 +133,9 @@ func (b *Beautifier) Init(ctx context.Context) error {
 		return err
 	}
 	if err := b.db.CreateTable(&Member{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		return err
+	}
+	if err := b.db.CreateTable(&Deposit{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
 		return err
 	}
 	if err := b.db.CreateTable(&Object{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
@@ -258,8 +272,9 @@ func (b *Beautifier) processActivate(pn insolar.PulseNumber, id insolar.ID, act 
 	if req, ok := b.intentions[rec]; ok {
 		switch {
 		case isWalletActivate(act):
-			fmt.Printf("Wallet Activate pulse: %v\n", pn)
 			b.processWalletActivate(id, req.value, act)
+		case isDepositActivate(act):
+			b.processDepositActivate(pn, id, act)
 		}
 	} else {
 		b.activates[rec] = UnrelatedActivate{timestamp: time.Now().Unix(), id: id, value: act}
@@ -269,7 +284,6 @@ func (b *Beautifier) processActivate(pn insolar.PulseNumber, id insolar.ID, act 
 func (b *Beautifier) processNewRequest(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest) {
 	switch {
 	case isNewWallet(in):
-		fmt.Printf("New Wallet Request pulse: %v\n", pn)
 		b.processNewWallet(pn, id, in)
 	}
 }
@@ -277,8 +291,9 @@ func (b *Beautifier) processNewRequest(pn insolar.PulseNumber, id insolar.ID, in
 func (b *Beautifier) processAmend(id insolar.ID, amd *record.Amend) {
 	switch {
 	case isWalletAmend(amd):
-		fmt.Printf("wallet amend %v\n", amd.PrevState.String())
 		b.processWalletAmend(id, amd)
+	case isDepositAmend(amd):
+		b.processDepositAmend(id, amd)
 	}
 }
 
@@ -341,6 +356,15 @@ func (b *Beautifier) flush(pn insolar.PulseNumber) {
 		}
 	}
 
+	for id, d := range b.deposits {
+		err := b.storeDeposit(d)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+		delete(b.deposits, id)
+	}
+
 	for _, req := range b.rawRequests {
 		err := b.storeRequest(req)
 		if err != nil {
@@ -375,5 +399,14 @@ func (b *Beautifier) flush(pn insolar.PulseNumber) {
 			continue
 		}
 		delete(b.balanceUpdates, id)
+	}
+
+	for id, upd := range b.depositUpdates {
+		err := b.updateDeposit(upd.id, upd.amount, upd.withdrawn, upd.status, upd.prevState)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+		delete(b.depositUpdates, id)
 	}
 }
