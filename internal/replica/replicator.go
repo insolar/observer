@@ -21,34 +21,36 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	"github.com/insolar/observer/internal/configuration"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/configuration"
+	"github.com/insolar/observer/internal/raw"
 )
 
-type Handle func(rec *record.Material)
+type Handle func(n uint32, rec *record.Material)
 
 type Publisher interface {
 	Subscribe(handle Handle)
 }
 
 type Replicator struct {
-	cfg      *configuration.Configuration
-	handlers []Handle
+	Configurator configuration.Configurator `inject:""`
+	cfg          *configuration.Configuration
+	handlers     []Handle
 
 	conn *grpc.ClientConn
 	stop chan bool
 }
 
 func NewReplicator() *Replicator {
-	config := &configuration.Configuration{}
-	cfg := config.Default()
-	return &Replicator{cfg: cfg, stop: make(chan bool)}
+	return &Replicator{stop: make(chan bool)}
 }
 
 func (r *Replicator) Subscribe(handle Handle) {
@@ -56,6 +58,11 @@ func (r *Replicator) Subscribe(handle Handle) {
 }
 
 func (r *Replicator) Init(ctx context.Context) error {
+	if r.Configurator != nil {
+		r.cfg = r.Configurator.Actual()
+	} else {
+		r.cfg = configuration.Default()
+	}
 	limits := grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(r.cfg.Replicator.MaxTransportMsg),
 		grpc.MaxCallSendMsgSize(r.cfg.Replicator.MaxTransportMsg),
@@ -70,7 +77,9 @@ func (r *Replicator) Init(ctx context.Context) error {
 }
 
 func (r *Replicator) Start(ctx context.Context) error {
-	req := &exporter.GetRecords{Count: r.cfg.Replicator.BatchSize, PulseNumber: 0, RecordNumber: 0}
+	last, lastPulse := r.getLastRecord()
+	log.Infof("Starting replication from position (n: %d, pulse: %d)", last, lastPulse)
+	req := &exporter.GetRecords{Count: r.cfg.Replicator.BatchSize, PulseNumber: lastPulse, RecordNumber: last}
 	go func() {
 		for {
 			last, lastPulse, count := r.getData(req)
@@ -107,29 +116,24 @@ func (r *Replicator) getData(req *exporter.GetRecords) (uint32, insolar.PulseNum
 	}
 	for {
 		resp, err := stream.Recv()
-		if resp != nil {
-			log.Infof("repl: %v %v", resp.RecordNumber, resp.Record.ID.String())
-		} else {
-			log.Infof("repl: %v", err)
-		}
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			// log.Error(errors.Wrapf(err, "failed to get value from gRPC stream"))
+			log.Debug(errors.Wrapf(err, "received error value from gRPC stream"))
 			break
 		}
 		n, rec := resp.RecordNumber, &resp.Record
-		r.notify(rec)
+		r.notify(n, rec)
 		last, lastPulse = n, rec.ID.Pulse()
 		count++
 	}
 	return last, lastPulse, count
 }
 
-func (r *Replicator) notify(rec *record.Material) {
+func (r *Replicator) notify(n uint32, rec *record.Material) {
 	for _, handle := range r.handlers {
-		handle(rec)
+		handle(n, rec)
 	}
 }
 
@@ -141,4 +145,21 @@ func (r *Replicator) needStop() bool {
 		// continue
 	}
 	return false
+}
+
+func (r *Replicator) getLastRecord() (uint32, insolar.PulseNumber) {
+	opt, err := pg.ParseURL(r.cfg.DB.URL)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
+		return 0, 0
+	}
+	db := pg.Connect(opt)
+	rec := &raw.Record{}
+	err = db.Model(rec).Last()
+	if err != nil {
+		log.Debug(errors.Wrapf(err, "failed to get last record from db"))
+		return 0, 0
+	}
+	id := insolar.NewIDFromBytes(rec.Key)
+	return rec.Number, id.Pulse()
 }

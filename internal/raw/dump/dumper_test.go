@@ -14,20 +14,20 @@
 // limitations under the License.
 //
 
-package beauty
+package dump
 
-type Fee struct {
-	ID        uint `sql:",pk_id"`
-	AmountMin uint
-	AmountMax uint
-	Fee       uint
-	Status    string
-}
+import (
+	"testing"
 
-func (b *Beautifier) storeFee(fee *Fee) error {
-	_, err := b.db.Model(fee).OnConflict("(id) DO UPDATE").Insert()
-	if err != nil {
-		return err
-	}
-	return nil
+	"github.com/insolar/insolar/insolar"
+
+	"github.com/insolar/observer/internal/raw"
+)
+
+func TestLoader_Last(t *testing.T) {
+	db
+	rec := &raw.Record{}
+	err := db.Model(rec).Last()
+	id := insolar.NewIDFromBytes(rec.Key)
+	t.Logf("rec: %v %v", rec.Number, id.Pulse())
 }

@@ -21,9 +21,13 @@ import (
 
 	"github.com/insolar/insolar/component"
 
-	"github.com/insolar/observer/internal/replica"
-	"github.com/insolar/observer/internal/routing"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/api"
+	"github.com/insolar/observer/internal/beauty"
+	"github.com/insolar/observer/internal/configuration"
+	"github.com/insolar/observer/internal/raw/dump"
+	"github.com/insolar/observer/internal/replica"
 )
 
 type Components struct {
@@ -33,13 +37,14 @@ type Components struct {
 func Prepare() *Components {
 	manager := component.NewManager(nil)
 
-	router := routing.NewRouter()
-	replicator := replica.NewReplicator()
-
 	manager.Inject(
-		router,
-		replicator,
+		configuration.Load(),
+		api.NewRouter(),
+		replica.NewReplicator(),
+		dump.NewLoader(),
+		beauty.NewBeautifier(),
 	)
+
 	return &Components{manager: manager}
 }
 

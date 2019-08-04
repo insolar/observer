@@ -16,37 +16,7 @@
 
 package configuration
 
-import (
-	"time"
-)
-
-type Configurator interface {
-	Default() *Configuration
-}
-
-func New() Configurator {
-	return &Configuration{}
-}
-
-type Configuration struct {
-	HTTPRouter HTTPRouter
-	Replicator Replicator
-}
-
-func (c *Configuration) Default() *Configuration {
-	return &Configuration{
-		HTTPRouter: HTTPRouter{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:            "127.0.0.1:5678",
-			MaxTransportMsg: 1073741824,
-			RequestDelay:    10 * time.Second,
-			BatchSize:       1000,
-		},
-	}
-}
-
-func Start() {
-
+type DB struct {
+	URL          string
+	CreateTables bool
 }

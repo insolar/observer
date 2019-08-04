@@ -6,7 +6,9 @@ ADD ./ /go/src/github.com/insolar/observer
 
 WORKDIR /go/src/github.com/insolar/observer
 RUN make build
+RUN make artifacts
 
 FROM centos:7 as app
 COPY --from=builder /go/src/github.com/insolar/observer/bin/observer /observer
+COPY --from=builder /go/src/github.com/insolar/observer/.artifacts/* /
 CMD [ "/observer" ]

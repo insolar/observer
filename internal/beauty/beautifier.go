@@ -25,23 +25,25 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/instrumentation/inslogger"
-	"github.com/insolar/insolar/ledger/heavy/sequence"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/internal/ledger/store"
+	"github.com/insolar/observer/internal/configuration"
+	"github.com/insolar/observer/internal/replica"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func NewBeautifier() *Beautifier {
 	return &Beautifier{
+		cfg:            configuration.Default(),
 		requests:       make(map[insolar.ID]SuspendedRequest),
 		results:        make(map[insolar.ID]UnrelatedResult),
 		intentions:     make(map[insolar.ID]SuspendedIntention),
 		activates:      make(map[insolar.ID]UnrelatedActivate),
 		balanceUpdates: make(map[insolar.ID]BalanceUpdate),
-		txs:            make(map[insolar.ID]*Transaction),
+		txs:            make(map[insolar.ID]*Transfer),
 		members:        make(map[insolar.ID]*Member),
 		deposits:       make(map[insolar.ID]*Deposit),
 		depositUpdates: make(map[insolar.ID]DepositUpdate),
@@ -88,7 +90,9 @@ type DepositUpdate struct {
 }
 
 type Beautifier struct {
-	Publisher      store.DBSetPublisher `inject:""`
+	Configurator   configuration.Configurator `inject:""`
+	Publisher      replica.Publisher          `inject:""`
+	cfg            *configuration.Configuration
 	db             *pg.DB
 	prevPulse      insolar.PulseNumber
 	requests       map[insolar.ID]SuspendedRequest
@@ -96,7 +100,7 @@ type Beautifier struct {
 	intentions     map[insolar.ID]SuspendedIntention
 	activates      map[insolar.ID]UnrelatedActivate
 	balanceUpdates map[insolar.ID]BalanceUpdate
-	txs            map[insolar.ID]*Transaction
+	txs            map[insolar.ID]*Transfer
 	members        map[insolar.ID]*Member
 	deposits       map[insolar.ID]*Deposit
 	depositUpdates map[insolar.ID]DepositUpdate
@@ -115,37 +119,25 @@ type Record struct {
 
 // Init initializes connection to db and subscribes beautifier on db updates.
 func (b *Beautifier) Init(ctx context.Context) error {
-	b.Publisher.Subscribe(func(key store.Key, value []byte) {
-		if key.Scope() != store.ScopeRecord {
-			return
-		}
-		pn := insolar.NewPulseNumber(key.ID())
-		k := append([]byte{byte(key.Scope())}, key.ID()...)
-		b.ParseAndStore([]sequence.Item{{Key: k, Value: value}}, pn)
-	})
-	// TODO: move connection params to config
-	b.db = pg.Connect(&pg.Options{
-		User:     "postgres",
-		Password: "",
-		Database: "postgres",
-	})
-	if err := b.db.CreateTable(&Transaction{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
+	if b.Configurator != nil {
+		b.cfg = b.Configurator.Actual()
+	} else {
+		b.cfg = configuration.Default()
 	}
-	if err := b.db.CreateTable(&Member{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
+	if b.Publisher != nil {
+		b.Publisher.Subscribe(func(recordNumber uint32, rec *record.Material) {
+			pn := rec.ID.Pulse()
+			b.process(pn, rec)
+		})
 	}
-	if err := b.db.CreateTable(&Deposit{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
+	opt, err := pg.ParseURL(b.cfg.DB.URL)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
+		return nil
 	}
-	if err := b.db.CreateTable(&Object{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
-	}
-	if err := b.db.CreateTable(&Request{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
-	}
-	if err := b.db.CreateTable(&Result{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
-		return err
+	b.db = pg.Connect(opt)
+	if b.cfg.DB.CreateTables {
+		b.createTables()
 	}
 	return nil
 }
@@ -156,24 +148,44 @@ func (b *Beautifier) Start(ctx context.Context) error {
 
 // Stop closes connection to db.
 func (b *Beautifier) Stop(ctx context.Context) error {
-	return b.db.Close()
+	err := b.db.Close()
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to close db"))
+	}
+	return nil
 }
 
-// ParseAndStore consume array of records and pulse number parse them and save to db
-func (b *Beautifier) ParseAndStore(records []sequence.Item, pulseNumber insolar.PulseNumber) {
-	for i := 0; i < len(records); i++ {
-		b.process(records[i].Key, records[i].Value, pulseNumber)
+func (b *Beautifier) createTables() {
+	if err := b.db.CreateTable(&Transfer{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create transactions table"))
+	}
+	if err := b.db.CreateTable(&Member{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create members table"))
+	}
+	if err := b.db.CreateTable(&Deposit{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create deposits table"))
+	}
+	if err := b.db.CreateTable(&Object{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create objects table"))
+	}
+	if err := b.db.CreateTable(&Request{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create requests table"))
+	}
+	if err := b.db.CreateTable(&Result{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+		log.Error(errors.Wrapf(err, "failed to create results table"))
 	}
 }
 
-func (b *Beautifier) process(key []byte, value []byte, pn insolar.PulseNumber) {
+func (b *Beautifier) process(pn insolar.PulseNumber, rec *record.Material) {
+	if b.prevPulse == 0 {
+		b.prevPulse = pn
+	}
 	if b.prevPulse != pn {
 		b.flush(b.prevPulse)
 		b.prevPulse = pn
 	}
 
-	id := parseID(key)
-	rec := parseRecord(value)
+	id := rec.ID
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_IncomingRequest:
 		in := v.IncomingRequest
@@ -236,11 +248,10 @@ func (b *Beautifier) processResult(pn insolar.PulseNumber, res *record.Result) {
 }
 
 func (b *Beautifier) parseMemberCallArguments(inArgs []byte) member.Request {
-	logger := inslogger.FromContext(context.Background())
 	var args []interface{}
 	err := insolar.Deserialize(inArgs, &args)
 	if err != nil {
-		logger.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
 		return member.Request{}
 	}
 
@@ -254,12 +265,12 @@ func (b *Beautifier) parseMemberCallArguments(inArgs []byte) member.Request {
 			)
 			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
 			if err != nil {
-				logger.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
 				return member.Request{}
 			}
 			err = json.Unmarshal(raw, &request)
 			if err != nil {
-				logger.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
 				return member.Request{}
 			}
 		}
@@ -297,115 +308,126 @@ func (b *Beautifier) processAmend(id insolar.ID, amd *record.Amend) {
 	}
 }
 
-func parseID(fullKey []byte) insolar.ID {
-	id := insolar.ID{}
-	copy(id[:], fullKey[1:])
-	return id
-}
-
-func parseRecord(value []byte) record.Material {
-	logger := inslogger.FromContext(context.Background())
-	rec := record.Material{}
-	err := rec.Unmarshal(value)
-	if err != nil {
-		logger.Error(errors.Wrapf(err, "failed to unmarshal record data"))
-		return record.Material{}
-	}
-	return rec
-}
-
 func parsePayload(payload []byte) []interface{} {
-	logger := inslogger.FromContext(context.Background())
 	rets := []interface{}{}
 	err := insolar.Deserialize(payload, &rets)
 	if err != nil {
-		logger.Warnf("failed to parse payload as two interfaces")
+		log.Warnf("failed to parse payload as two interfaces")
 		return []interface{}{}
 	}
 	return rets
 }
 
 func (b *Beautifier) flush(pn insolar.PulseNumber) {
-	logger := inslogger.FromContext(context.Background())
+	log.WithField("pulse", pn).Debugf("flushing beautified values")
 
-	// TODO: make flush under single db transaction
+	b.insertValues()
+	b.updateValues()
+}
 
-	for _, tx := range b.txs {
-		err := b.storeTx(tx)
+func (b *Beautifier) insertValues() {
+	tx, err := b.db.Begin()
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to create db transaction"))
+		return
+	}
+	defer func() {
+		err := tx.Commit()
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to commit db transaction"))
 		}
-		if tx.Status != PENDING {
-			delete(b.txs, tx.requestID)
-			delete(b.requests, tx.requestID)
-			delete(b.results, tx.requestID)
+	}()
+
+	for _, transfer := range b.txs {
+		err := storeTransfer(tx, transfer)
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to save transfer"))
+			return
+		}
+		if transfer.Status != PENDING {
+			delete(b.txs, transfer.requestID)
+			delete(b.requests, transfer.requestID)
+			delete(b.results, transfer.requestID)
 		}
 	}
 
-	for _, a := range b.members {
-		err := b.storeMember(a)
+	for _, m := range b.members {
+		err := storeMember(tx, m)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to save member"))
+			return
 		}
-		if a.Status != PENDING && a.Balance != "" {
-			delete(b.txs, a.requestID)
-			delete(b.requests, a.requestID)
-			delete(b.results, a.requestID)
+		if m.Status != PENDING && m.Balance != "" {
+			delete(b.txs, m.requestID)
+			delete(b.requests, m.requestID)
+			delete(b.results, m.requestID)
 		}
 	}
 
 	for id, d := range b.deposits {
-		err := b.storeDeposit(d)
+		err := storeDeposit(tx, d)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to save deposit"))
+			return
 		}
 		delete(b.deposits, id)
 	}
 
 	for _, req := range b.rawRequests {
-		err := b.storeRequest(req)
+		err := storeRequest(tx, req)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to save request"))
+			return
 		}
 		delete(b.rawResults, req.requestID)
 	}
 
 	for _, res := range b.rawResults {
-		err := b.storeResult(res)
+		err := storeResult(tx, res)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to save result"))
+			return
 		}
 		delete(b.rawResults, res.requestID)
 	}
 
 	for _, obj := range b.rawObjects {
-		err := b.storeObject(obj)
+		err := storeObject(tx, obj)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to save object"))
+			return
 		}
 		delete(b.rawResults, obj.requestID)
 	}
+}
+
+func (b *Beautifier) updateValues() {
+	tx, err := b.db.Begin()
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to create db transaction"))
+		return
+	}
+	defer func() {
+		err := tx.Commit()
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to commit db transaction"))
+		}
+	}()
 
 	for id, upd := range b.balanceUpdates {
-		err := b.updateBalance(upd.id, upd.prevState, upd.balance)
+		err := updateBalance(tx, upd.id, upd.prevState, upd.balance)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to update balance"))
+			return
 		}
 		delete(b.balanceUpdates, id)
 	}
 
 	for id, upd := range b.depositUpdates {
-		err := b.updateDeposit(upd.id, upd.amount, upd.withdrawn, upd.status, upd.prevState)
+		err := updateDeposit(tx, upd.id, upd.amount, upd.withdrawn, upd.status, upd.prevState)
 		if err != nil {
-			logger.Error(err)
-			continue
+			log.Error(errors.Wrapf(err, "failed to update deposit"))
+			return
 		}
 		delete(b.depositUpdates, id)
 	}

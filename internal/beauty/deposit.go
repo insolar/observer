@@ -17,14 +17,13 @@
 package beauty
 
 import (
-	"context"
-
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type Deposit struct {
@@ -57,11 +56,10 @@ func (b *Beautifier) processDepositActivate(pn insolar.PulseNumber, id insolar.I
 }
 
 func initialDepositState(act *record.Activate) *deposit.Deposit {
-	logger := inslogger.FromContext(context.Background())
 	d := deposit.Deposit{}
 	err := insolar.Deserialize(act.Memory, &d)
 	if err != nil {
-		logger.Error(errors.New("failed to deserialize deposit contract state"))
+		log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
 }
@@ -78,11 +76,10 @@ func (b *Beautifier) processDepositAmend(id insolar.ID, amd *record.Amend) {
 }
 
 func depositState(amd *record.Amend) *deposit.Deposit {
-	logger := inslogger.FromContext(context.Background())
 	d := deposit.Deposit{}
 	err := insolar.Deserialize(amd.Memory, &d)
 	if err != nil {
-		logger.Error(errors.New("failed to deserialize deposit contract state"))
+		log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
 }
@@ -95,16 +92,16 @@ func isDepositAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*depositProxy.PrototypeReference)
 }
 
-func (b *Beautifier) storeDeposit(deposit *Deposit) error {
-	_, err := b.db.Model(deposit).OnConflict("DO NOTHING").Insert()
+func storeDeposit(tx *pg.Tx, deposit *Deposit) error {
+	_, err := tx.Model(deposit).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *Beautifier) updateDeposit(id insolar.ID, amount, withdrawn, status, prevState string) error {
-	res, err := b.db.Model(&Deposit{}).
+func updateDeposit(tx *pg.Tx, id insolar.ID, amount, withdrawn, status, prevState string) error {
+	res, err := tx.Model(&Deposit{}).
 		Set("amount=?,wallet_state=?,withdrawn=?", amount, id.String(), withdrawn).
 		Where("deposit_state=?", prevState).
 		Update()

@@ -14,5 +14,32 @@
 // limitations under the License.
 //
 
-// Package db contains primitives for storing and indexing data.
-package store
+package configuration
+
+import (
+	"time"
+)
+
+type Configuration struct {
+	API        API
+	Replicator Replicator
+	DB         DB
+}
+
+func Default() *Configuration {
+	return &Configuration{
+		API: API{
+			Addr: ":8080",
+		},
+		Replicator: Replicator{
+			Addr:            "127.0.0.1:5678",
+			MaxTransportMsg: 1073741824,
+			RequestDelay:    10 * time.Second,
+			BatchSize:       1000,
+		},
+		DB: DB{
+			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
+			CreateTables: false,
+		},
+	}
+}

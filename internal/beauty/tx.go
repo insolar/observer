@@ -17,20 +17,20 @@
 package beauty
 
 import (
-	"context"
 	"errors"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
+	log "github.com/sirupsen/logrus"
 )
 
-type Transaction struct {
+type Transfer struct {
 	tableName struct{} `sql:"transactions"`
 
-	Id            uint                `sql:",pk_id"`
+	ID            uint                `sql:",pk_id"`
 	TxID          string              `sql:",notnull"`
 	Amount        string              `sql:",notnull"`
 	Fee           string              `sql:",notnull"`
@@ -51,7 +51,7 @@ func (b Beautifier) processTransferCall(pn insolar.PulseNumber, id insolar.ID, i
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
-	b.txs[id] = &Transaction{
+	b.txs[id] = &Transfer{
 		TxID:          id.String(),
 		Status:        r.status,
 		Amount:        callParams.amount,
@@ -65,10 +65,9 @@ func (b Beautifier) processTransferCall(pn insolar.PulseNumber, id insolar.ID, i
 }
 
 func (b *Beautifier) processTransferResult(pn insolar.PulseNumber, rec insolar.ID, res *record.Result) {
-	logger := inslogger.FromContext(context.Background())
 	tx, ok := b.txs[rec]
 	if !ok {
-		logger.Error(errors.New("failed to get cached transaction"))
+		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
 	result := txStatus(res.Payload)
@@ -83,28 +82,27 @@ type transferCallParams struct {
 
 func (b *Beautifier) parseTransferCallParams(request member.Request) transferCallParams {
 	var (
-		logger = inslogger.FromContext(context.Background())
 		amount = ""
 		to     = ""
 	)
 	callParams, ok := request.Params.CallParams.(map[string]interface{})
 	if !ok {
-		logger.Warnf("failed to cast CallParams to map[string]interface{}")
+		log.Warnf("failed to cast CallParams to map[string]interface{}")
 		return transferCallParams{}
 	}
 	if a, ok := callParams["amount"]; ok {
 		if amount, ok = a.(string); !ok {
-			logger.Warnf(`failed to cast CallParams["amount"] to string`)
+			log.Warnf(`failed to cast CallParams["amount"] to string`)
 		}
 	} else {
-		logger.Warnf(`failed to get CallParams["amount"]`)
+		log.Warnf(`failed to get CallParams["amount"]`)
 	}
 	if t, ok := callParams["toMemberReference"]; ok {
 		if to, ok = t.(string); !ok {
-			logger.Warnf(`failed to cast CallParams["toMemberReference"] to string`)
+			log.Warnf(`failed to cast CallParams["toMemberReference"] to string`)
 		}
 	} else {
-		logger.Warnf(`failed to get CallParams["toMemberReference"]`)
+		log.Warnf(`failed to get CallParams["toMemberReference"]`)
 	}
 	return transferCallParams{
 		amount:            amount,
@@ -142,8 +140,8 @@ func txStatus(payload []byte) txResult {
 	return txResult{status: SUCCESS, fee: fee}
 }
 
-func (b *Beautifier) storeTx(tx *Transaction) error {
-	_, err := b.db.Model(tx).OnConflict("DO NOTHING").Insert()
+func storeTransfer(tx *pg.Tx, transaction *Transfer) error {
+	_, err := tx.Model(transaction).OnConflict("(id) DO UPDATE").Insert()
 	if err != nil {
 		return err
 	}

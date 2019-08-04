@@ -14,8 +14,27 @@
 // limitations under the License.
 //
 
-package configuration
+package main
 
-type HTTPRouter struct {
-	Addr string
+import (
+	"io/ioutil"
+
+	"github.com/insolar/observer/internal/configuration"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+)
+
+func main() {
+	cfg := configuration.Default()
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to marshal default config structure"))
+	}
+	err = ioutil.WriteFile(configuration.ConfigFilePath, out, 0644)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to write config file"))
+		return
+	}
 }

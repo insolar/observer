@@ -1,3 +1,3 @@
 # Observer
 
-`make build && ./scripts/insolard/launch.sh`
+`dep ensure -v && make build && make artifacts && ./bin/observer`
