@@ -30,9 +30,7 @@ import (
 type Member struct {
 	tableName struct{} `sql:"members"`
 
-	ID               uint   `sql:",pk_id"`
-	Reference        string `sql:",notnull"`
-	Status           string `sql:",notnull"`
+	MemberRef        string `sql:",pk"`
 	Balance          string `sql:",notnull"`
 	MigrationAddress string
 	WalletState      string `sql:",notnull"`
@@ -41,17 +39,17 @@ type Member struct {
 }
 
 func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest, request member.Request) {
-	status := PENDING
+	// TODO: status
+	// status := PENDING
 	migrationAddress := ""
 	if result, ok := b.results[id]; ok {
-		status, migrationAddress = memberStatus(result.value.Payload)
+		_, migrationAddress = memberStatus(result.value.Payload)
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
 	if _, ok := b.members[id]; !ok {
 		b.members[id] = &Member{
-			Reference:        id.String(),
-			Status:           status,
+			MemberRef:        id.String(),
 			Balance:          "",
 			MigrationAddress: migrationAddress,
 			requestID:        id,
@@ -65,8 +63,8 @@ func (b *Beautifier) processMemberCreateResult(rec insolar.ID, res *record.Resul
 		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
-	status, mirationAddress := memberStatus(res.Payload)
-	member.Status = status
+	_, mirationAddress := memberStatus(res.Payload)
+	// member.Status = status
 	member.MigrationAddress = mirationAddress
 }
 
@@ -96,7 +94,7 @@ func memberStatus(payload []byte) (string, string) {
 }
 
 func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest) {
-	status := PENDING
+	// status := PENDING
 	migrationAddress := ""
 	balance := ""
 	walletState := ""
@@ -110,12 +108,11 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 	if res, ok := b.results[origin]; !ok {
 		b.intentions[id] = SuspendedIntention{timestamp: time.Now().Unix(), value: in}
 	} else {
-		status, migrationAddress = memberStatus(res.value.Payload)
+		_, migrationAddress = memberStatus(res.value.Payload)
 	}
 	if _, ok := b.members[origin]; !ok {
 		b.members[origin] = &Member{
-			Reference:        origin.String(),
-			Status:           status,
+			MemberRef:        origin.String(),
 			Balance:          balance,
 			MigrationAddress: migrationAddress,
 			WalletState:      walletState,
