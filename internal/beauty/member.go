@@ -19,12 +19,12 @@ package beauty
 import (
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
+	log "github.com/sirupsen/logrus"
 )
 
 type Member struct {
@@ -60,10 +60,9 @@ func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, 
 }
 
 func (b *Beautifier) processMemberCreateResult(rec insolar.ID, res *record.Result) {
-	logger := inslogger.FromContext(context.Background())
 	member, ok := b.members[rec]
 	if !ok {
-		logger.Error(errors.New("failed to get cached transaction"))
+		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
 	status, mirationAddress := memberStatus(res.Payload)
@@ -126,11 +125,10 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 }
 
 func (b *Beautifier) processWalletActivate(id insolar.ID, direct *record.IncomingRequest, act *record.Activate) {
-	logger := inslogger.FromContext(context.Background())
 	origin := *direct.Reason.Record()
 	member, ok := b.members[origin]
 	if !ok {
-		logger.Error(errors.New("failed to get cached transaction"))
+		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
 	balance := initialBalance(act)
@@ -148,16 +146,16 @@ func (b *Beautifier) processWalletAmend(id insolar.ID, amd *record.Amend) {
 	}
 }
 
-func (b *Beautifier) storeMember(member *Member) error {
-	_, err := b.db.Model(member).OnConflict("DO NOTHING").Insert()
+func storeMember(tx *pg.Tx, member *Member) error {
+	_, err := tx.Model(member).OnConflict("(id) DO UPDATE").Insert()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *Beautifier) updateBalance(id insolar.ID, prevState, balance string) error {
-	res, err := b.db.Model(&Member{}).
+func updateBalance(tx *pg.Tx, id insolar.ID, prevState, balance string) error {
+	res, err := tx.Model(&Member{}).
 		Set("balance=?,wallet_state=?", balance, id.String()).
 		Where("wallet_state=?", prevState).
 		Update()

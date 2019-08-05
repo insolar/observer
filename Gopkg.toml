@@ -38,7 +38,7 @@
   name = "github.com/google/gofuzz"
 
 [[constraint]]
-  branch = "WLT-503-replicator"
+  branch = "master"
   name = "github.com/insolar/insolar"
 
 [[constraint]]

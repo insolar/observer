@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 
-package store
+package raw
 
-import (
-	"github.com/pkg/errors"
-)
+type Record struct {
+	tableName struct{} `sql:"records"`
 
-var (
-	// ErrNotFound is returned when value was not found.
-	ErrNotFound = errors.New("value not found")
-)
+	ID     uint   `sql:",pk_id"`
+	Key    []byte `sql:",notnull,unique"`
+	Value  []byte
+	Number uint32
+}

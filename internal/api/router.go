@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package routing
+package api
 
 import (
 	"context"
@@ -24,17 +24,30 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/configuration"
 )
 
 func NewRouter() *Router {
-	router := httprouter.New()
-	router.GET("/healthcheck", healthCheck)
-	hs := &http.Server{Addr: ":8080", Handler: router}
-	return &Router{hs: hs}
+	return &Router{}
 }
 
 type Router struct {
-	hs *http.Server
+	Configurator configuration.Configurator `inject:""`
+	cfg          *configuration.Configuration
+	hs           *http.Server
+}
+
+func (r *Router) Init(ctx context.Context) error {
+	if r.Configurator != nil {
+		r.cfg = r.Configurator.Actual()
+	} else {
+		r.cfg = configuration.Default()
+	}
+	router := httprouter.New()
+	router.GET("/healthcheck", healthCheck)
+	r.hs = &http.Server{Addr: r.cfg.API.Addr, Handler: router}
+	return nil
 }
 
 func (r *Router) Start(ctx context.Context) error {

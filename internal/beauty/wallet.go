@@ -17,14 +17,12 @@
 package beauty
 
 import (
-	"context"
-
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 func isWalletActivate(act *record.Activate) bool {
@@ -40,11 +38,10 @@ func isWalletAmend(amd *record.Amend) bool {
 }
 
 func initialBalance(act *record.Activate) string {
-	logger := inslogger.FromContext(context.Background())
 	balance := ""
 	w := wallet.Wallet{}
 	if err := insolar.Deserialize(act.Memory, &w); err != nil {
-		logger.Error(errors.New("failed to deserialize wallet memory"))
+		log.Error(errors.New("failed to deserialize wallet memory"))
 	} else {
 		balance = w.Balance
 	}
@@ -52,11 +49,10 @@ func initialBalance(act *record.Activate) string {
 }
 
 func walletBalance(amd *record.Amend) string {
-	logger := inslogger.FromContext(context.Background())
 	balance := ""
 	w := wallet.Wallet{}
 	if err := insolar.Deserialize(amd.Memory, &w); err != nil {
-		logger.Error(errors.New("failed to deserialize wallet memory"))
+		log.Error(errors.New("failed to deserialize wallet memory"))
 	} else {
 		balance = w.Balance
 	}

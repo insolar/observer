@@ -18,6 +18,8 @@ package beauty
 
 import (
 	"encoding/hex"
+
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 )
@@ -40,8 +42,8 @@ func (b *Beautifier) parseResult(id insolar.ID, res *record.Result) {
 	}
 }
 
-func (b *Beautifier) storeResult(result *Result) error {
-	_, err := b.db.Model(result).OnConflict("DO NOTHING").Insert()
+func storeResult(tx *pg.Tx, result *Result) error {
+	_, err := tx.Model(result).OnConflict("(result_id) DO UPDATE").Insert()
 	if err != nil {
 		return err
 	}
