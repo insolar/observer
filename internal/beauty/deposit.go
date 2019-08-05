@@ -93,7 +93,7 @@ func isDepositAmend(amd *record.Amend) bool {
 }
 
 func storeDeposit(tx *pg.Tx, deposit *Deposit) error {
-	_, err := tx.Model(deposit).OnConflict("DO NOTHING").Insert()
+	_, err := tx.Model(deposit).OnConflict("(eth_hash) DO UPDATE").Insert()
 	if err != nil {
 		return err
 	}

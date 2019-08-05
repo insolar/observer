@@ -146,7 +146,7 @@ func (b *Beautifier) processWalletAmend(id insolar.ID, amd *record.Amend) {
 }
 
 func storeMember(tx *pg.Tx, member *Member) error {
-	_, err := tx.Model(member).OnConflict("(id) DO UPDATE").Insert()
+	_, err := tx.Model(member).OnConflict("(member_ref) DO UPDATE").Insert()
 	if err != nil {
 		return err
 	}
