@@ -41,7 +41,7 @@ func Prepare() *Components {
 		configuration.Load(),
 		api.NewRouter(),
 		replica.NewReplicator(),
-		dump.NewLoader(),
+		dump.NewDumper(),
 		beauty.NewBeautifier(),
 	)
 

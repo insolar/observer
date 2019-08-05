@@ -23,3 +23,10 @@ $(ARTIFACTS):
 $(CONFIG):
 	go run internal/configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
+
+.PHONY: ensure
+ensure:
+	dep ensure -v
+
+.PHONY: all
+all: ensure build artifacts

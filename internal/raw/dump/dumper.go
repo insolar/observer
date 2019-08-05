@@ -40,7 +40,7 @@ type Dumper struct {
 	cache        []*raw.Record
 }
 
-func NewLoader() *Dumper {
+func NewDumper() *Dumper {
 	return &Dumper{}
 }
 
