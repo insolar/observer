@@ -34,16 +34,16 @@ type Member struct {
 	Balance          string `sql:",notnull"`
 	MigrationAddress string
 	WalletState      string `sql:",notnull"`
+	Status           string
 
 	requestID insolar.ID
 }
 
 func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest, request member.Request) {
-	// TODO: status
-	// status := PENDING
+	status := PENDING
 	migrationAddress := ""
 	if result, ok := b.results[id]; ok {
-		_, migrationAddress = memberStatus(result.value.Payload)
+		status, migrationAddress = memberStatus(result.value.Payload)
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
@@ -52,6 +52,7 @@ func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, 
 			MemberRef:        id.String(),
 			Balance:          "",
 			MigrationAddress: migrationAddress,
+			Status:           status,
 			requestID:        id,
 		}
 	}
@@ -63,9 +64,9 @@ func (b *Beautifier) processMemberCreateResult(rec insolar.ID, res *record.Resul
 		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
-	_, mirationAddress := memberStatus(res.Payload)
-	// member.Status = status
-	member.MigrationAddress = mirationAddress
+	status, migrationAddress := memberStatus(res.Payload)
+	member.Status = status
+	member.MigrationAddress = migrationAddress
 }
 
 func memberStatus(payload []byte) (string, string) {
@@ -94,7 +95,7 @@ func memberStatus(payload []byte) (string, string) {
 }
 
 func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest) {
-	// status := PENDING
+	status := PENDING
 	migrationAddress := ""
 	balance := ""
 	walletState := ""
@@ -108,7 +109,7 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 	if res, ok := b.results[origin]; !ok {
 		b.intentions[id] = SuspendedIntention{timestamp: time.Now().Unix(), value: in}
 	} else {
-		_, migrationAddress = memberStatus(res.value.Payload)
+		status, migrationAddress = memberStatus(res.value.Payload)
 	}
 	if _, ok := b.members[origin]; !ok {
 		b.members[origin] = &Member{
@@ -116,6 +117,7 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 			Balance:          balance,
 			MigrationAddress: migrationAddress,
 			WalletState:      walletState,
+			Status:           status,
 			requestID:        origin,
 		}
 	}
