@@ -34,11 +34,14 @@ type Transfer struct {
 	TxID          string              `sql:",notnull"`
 	Amount        string              `sql:",notnull"`
 	Fee           string              `sql:",notnull"`
-	Timestamp     int64               `sql:",notnull"`
-	Pulse         insolar.PulseNumber `sql:",notnull"`
+	TransferDate  int64               `sql:",notnull"`
+	PulseNum      insolar.PulseNumber `sql:",notnull"`
 	Status        string              `sql:",notnull"`
-	ReferenceTo   string              `sql:",notnull"`
-	ReferenceFrom string              `sql:",notnull"`
+	MemberFromRef string              `sql:",notnull"`
+	MemberToRef   string              `sql:",notnull"`
+	WalletFromRef string              `sql:",notnull"`
+	WalletToRef   string              `sql:",notnull"`
+	EthHash       string              `sql:",notnull"`
 
 	requestID insolar.ID
 }
@@ -55,11 +58,14 @@ func (b Beautifier) processTransferCall(pn insolar.PulseNumber, id insolar.ID, i
 		TxID:          id.String(),
 		Status:        r.status,
 		Amount:        callParams.amount,
-		ReferenceTo:   request.Params.Reference,
-		ReferenceFrom: callParams.toMemberReference,
-		Pulse:         pn,
-		Timestamp:     int64(pn),
+		MemberToRef:   request.Params.Reference,
+		MemberFromRef: callParams.toMemberReference,
+		PulseNum:      pn,
+		TransferDate:  int64(pn),
 		Fee:           r.fee,
+		WalletFromRef: "TODO",
+		WalletToRef:   "TODO",
+		EthHash:       "TODO",
 		requestID:     id,
 	}
 }

@@ -357,7 +357,8 @@ func (b *Beautifier) insertValues() {
 			log.Error(errors.Wrapf(err, "failed to save member"))
 			return
 		}
-		if m.Status != PENDING && m.Balance != "" {
+		// if m.Status != PENDING && m.Balance != "" {
+		if m.Balance != "" {
 			delete(b.txs, m.requestID)
 			delete(b.requests, m.requestID)
 			delete(b.results, m.requestID)
@@ -414,6 +415,7 @@ func (b *Beautifier) updateValues() {
 		}
 	}()
 
+	// TODO: 1. Try to apply upd in-memory 2. Check update opportunity in DB and if it has then apply upd or defer it
 	for id, upd := range b.balanceUpdates {
 		err := updateBalance(tx, upd.id, upd.prevState, upd.balance)
 		if err != nil {
