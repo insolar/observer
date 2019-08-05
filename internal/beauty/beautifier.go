@@ -352,16 +352,20 @@ func (b *Beautifier) insertValues() {
 	}
 
 	for _, m := range b.members {
-		err := storeMember(tx, m)
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to save member"))
-			return
-		}
-		// if m.Status != PENDING && m.Balance != "" {
-		if m.Balance != "" {
-			delete(b.txs, m.requestID)
-			delete(b.requests, m.requestID)
-			delete(b.results, m.requestID)
+		if m.MemberRef != "" && m.Balance != "" {
+			err := storeMember(tx, m)
+			if err != nil {
+				log.Error(errors.Wrapf(err, "failed to save member"))
+				return
+			}
+			// if m.Status != PENDING && m.Balance != "" {
+			if m.Balance != "" {
+				delete(b.txs, m.requestID)
+				delete(b.requests, m.requestID)
+				delete(b.results, m.requestID)
+			}
+		} else {
+			log.Infof("Incomplete member struct: %v", m)
 		}
 	}
 
