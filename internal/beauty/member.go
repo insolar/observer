@@ -42,14 +42,22 @@ type Member struct {
 func (b *Beautifier) processMemberCreate(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest, request member.Request) {
 	status := PENDING
 	migrationAddress := ""
+	memberRef := ""
 	if result, ok := b.results[id]; ok {
-		status, migrationAddress = memberStatus(result.value.Payload)
+		params := memberStatus(result.value.Payload)
+		status = params.status
+		migrationAddress = params.migrationAddress
+		ref, err := insolar.NewReferenceFromBase58(params.reference)
+		if err == nil {
+			memberRef = ref.Record().String()
+		}
 	} else {
 		b.requests[id] = SuspendedRequest{timestamp: time.Now().Unix(), value: in}
 	}
 	if _, ok := b.members[id]; !ok {
+
 		b.members[id] = &Member{
-			MemberRef:        id.String(),
+			MemberRef:        memberRef,
 			Balance:          "",
 			MigrationAddress: migrationAddress,
 			Status:           status,
@@ -64,34 +72,58 @@ func (b *Beautifier) processMemberCreateResult(rec insolar.ID, res *record.Resul
 		log.Error(errors.New("failed to get cached transaction"))
 		return
 	}
-	status, migrationAddress := memberStatus(res.Payload)
+
+	memberRef := ""
+	params := memberStatus(res.Payload)
+	status := params.status
+	migrationAddress := params.migrationAddress
+	ref, err := insolar.NewReferenceFromBase58(params.reference)
+	if err == nil {
+		memberRef = ref.Record().String()
+	}
 	member.Status = status
 	member.MigrationAddress = migrationAddress
+	member.MemberRef = memberRef
 }
 
-func memberStatus(payload []byte) (string, string) {
+type memberResultParams struct {
+	status           string
+	migrationAddress string
+	reference        string
+}
+
+func memberStatus(payload []byte) memberResultParams {
 	rets := parsePayload(payload)
 	if len(rets) < 2 {
-		return "NOT_ENOUGH_PAYLOAD_PARAMS", ""
+		return memberResultParams{"NOT_ENOUGH_PAYLOAD_PARAMS", "", ""}
 	}
 	if retError, ok := rets[1].(error); ok {
 		if retError != nil {
-			return CANCELED, ""
+			return memberResultParams{CANCELED, "", ""}
 		}
 	}
 	params, ok := rets[0].(map[string]interface{})
 	if !ok {
-		return "FIRST_PARAM_NOT_MAP", ""
+		return memberResultParams{"FIRST_PARAM_NOT_MAP", "", ""}
 	}
+	referenceInterface, ok := params["reference"]
+	if !ok {
+		return memberResultParams{SUCCESS, "", ""}
+	}
+	reference, ok := referenceInterface.(string)
+	if !ok {
+		return memberResultParams{"MIGRATION_ADDRESS_NOT_STRING", "", ""}
+	}
+
 	migrationAddressInterface, ok := params["migrationAddress"]
 	if !ok {
-		return SUCCESS, ""
+		return memberResultParams{SUCCESS, "", reference}
 	}
 	migrationAddress, ok := migrationAddressInterface.(string)
 	if !ok {
-		return "MIGRATION_ADDRESS_NOT_STRING", ""
+		return memberResultParams{"MIGRATION_ADDRESS_NOT_STRING", "", reference}
 	}
-	return SUCCESS, migrationAddress
+	return memberResultParams{SUCCESS, migrationAddress, reference}
 }
 
 func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in *record.IncomingRequest) {
@@ -99,6 +131,7 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 	migrationAddress := ""
 	balance := ""
 	walletState := ""
+	memberRef := ""
 	if act, ok := b.activates[id]; !ok {
 		b.intentions[id] = SuspendedIntention{timestamp: time.Now().Unix(), value: in}
 	} else {
@@ -109,11 +142,17 @@ func (b *Beautifier) processNewWallet(pn insolar.PulseNumber, id insolar.ID, in 
 	if res, ok := b.results[origin]; !ok {
 		b.intentions[id] = SuspendedIntention{timestamp: time.Now().Unix(), value: in}
 	} else {
-		status, migrationAddress = memberStatus(res.value.Payload)
+		params := memberStatus(res.value.Payload)
+		status = params.status
+		migrationAddress = params.migrationAddress
+		ref, err := insolar.NewReferenceFromBase58(params.reference)
+		if err == nil {
+			memberRef = ref.Record().String()
+		}
 	}
 	if _, ok := b.members[origin]; !ok {
 		b.members[origin] = &Member{
-			MemberRef:        origin.String(),
+			MemberRef:        memberRef,
 			Balance:          balance,
 			MigrationAddress: migrationAddress,
 			WalletState:      walletState,

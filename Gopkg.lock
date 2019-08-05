@@ -146,7 +146,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d921edd9d91a8bf6048781adfdc01e16bcc39412e5cb3809566b92577149319a"
+  digest = "1:49381e588e4d07c1a6aad7c65f4b0f870772939f157a47e03e12a6d51972e162"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -177,7 +177,11 @@
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
     "logicrunner/goplugin/rpctypes",
+    "network/consensus/common/args",
     "network/consensus/common/capacity",
+    "network/consensus/common/cryptkit",
+    "network/consensus/common/longbits",
+    "network/consensus/common/pulse",
     "network/consensus/gcpv2/api/member",
     "network/consensusv1/packets",
     "network/node",
@@ -189,7 +193,7 @@
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "639a6accb9d8cff37aca5ef413f1f75123463659"
+  revision = "2e2f408b122b921576cd3f91ce677481826f93d7"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
