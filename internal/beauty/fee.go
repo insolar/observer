@@ -17,11 +17,10 @@
 package beauty
 
 type Fee struct {
-	ID        uint `sql:",pk_id"`
-	AmountMin uint
-	AmountMax uint
-	Fee       uint
-	Status    string
+	ID       uint `sql:",pk_id"`
+	StartSum uint64
+	FinSum   uint64
+	Percent  uint
 }
 
 func (b *Beautifier) storeFee(fee *Fee) error {
