@@ -14,31 +14,15 @@
 // limitations under the License.
 //
 
-package observer
+package configuration
 
 import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
-	"github.com/insolar/insolar/configuration"
+	"time"
 )
 
-func TestComponents(t *testing.T) {
-	ctx := context.Background()
-	cfg := configuration.NewConfiguration()
-	cfg.KeysPath = "testdata/bootstrap_keys.json"
-	cfg.CertificatePath = "testdata/certificate.json"
-	cfg.Metrics.ListenAddress = "0.0.0.0:0"
-	cfg.APIRunner.Address = "0.0.0.0:0"
-
-	c, err := newComponents(ctx, cfg)
-	require.NoError(t, err)
-
-	err = c.Start(ctx)
-	require.NoError(t, err)
-
-	err = c.Stop(ctx)
-	require.NoError(t, err)
+type Replicator struct {
+	Addr            string
+	MaxTransportMsg int
+	RequestDelay    time.Duration
+	BatchSize       uint32
 }

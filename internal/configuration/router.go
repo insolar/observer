@@ -14,28 +14,8 @@
 // limitations under the License.
 //
 
-package main
+package configuration
 
-import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	"github.com/insolar/insolar/log"
-
-	"github.com/insolar/observer/internal/components"
-)
-
-func main() {
-	cmps := components.Prepare()
-	cmps.Start()
-	graceful(cmps.Stop)
-}
-
-func graceful(that func()) {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type HTTPRouter struct {
+	Addr string
 }
