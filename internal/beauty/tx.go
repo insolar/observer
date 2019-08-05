@@ -64,9 +64,9 @@ func (b Beautifier) processTransferCall(pn insolar.PulseNumber, id insolar.ID, i
 	}
 }
 
-func (b *Beautifier) processTransferResult(pn insolar.PulseNumber, rec *insolar.ID, res *record.Result) {
+func (b *Beautifier) processTransferResult(pn insolar.PulseNumber, rec insolar.ID, res *record.Result) {
 	logger := inslogger.FromContext(context.Background())
-	tx, ok := b.txs[*rec]
+	tx, ok := b.txs[rec]
 	if !ok {
 		logger.Error(errors.New("failed to get cached transaction"))
 		return

@@ -254,7 +254,7 @@
 
 [[projects]]
   branch = "WLT-503-replicator"
-  digest = "1:7218f161858fe4f703bd1d91eb44f1683ea7b5702fa97e1f6706066b5ea2fa1a"
+  digest = "1:241673d792b7b638d448cd9961ecb697dbb5dea241af77f990d8b4401f7e1e06"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -280,12 +280,17 @@
     "ledger/heavy/replica/integrity",
     "ledger/heavy/sequence",
     "log",
+    "logicrunner/builtin/contract/deposit",
     "logicrunner/builtin/contract/member",
     "logicrunner/builtin/contract/member/signer",
+    "logicrunner/builtin/contract/wallet",
+    "logicrunner/builtin/contract/wallet/safemath",
+    "logicrunner/builtin/proxy/costcenter",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/nodedomain",
     "logicrunner/builtin/proxy/rootdomain",
+    "logicrunner/builtin/proxy/tariff",
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
     "logicrunner/goplugin/foundation",
@@ -903,8 +908,12 @@
     "github.com/insolar/insolar/ledger/heavy/replica",
     "github.com/insolar/insolar/ledger/heavy/sequence",
     "github.com/insolar/insolar/log",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/wallet",
+    "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
+    "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet",
     "github.com/insolar/insolar/metrics",
     "github.com/insolar/insolar/network",
     "github.com/insolar/insolar/network/hostnetwork",
