@@ -1,3 +1,3 @@
 # Observer
 
-`dep ensure -v && make build && make artifacts && ./bin/observer`
+`make all && ./bin/observer`
