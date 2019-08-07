@@ -14,33 +14,26 @@
 // limitations under the License.
 //
 
-package configuration
+package beauty
 
 import (
-	"time"
+	"github.com/go-pg/pg"
+	"github.com/pkg/errors"
 )
 
-type Configuration struct {
-	API        API
-	Replicator Replicator
-	DB         DB
+type Member struct {
+	tableName struct{} `sql:"members"`
+
+	MemberRef        string `sql:",pk"`
+	Balance          string `sql:",notnull"`
+	MigrationAddress string
+	WalletState      string `sql:",notnull"`
+	Status           string
 }
 
-func Default() *Configuration {
-	return &Configuration{
-		API: API{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
-		},
-		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
-		},
+func (m *Member) Dump(tx *pg.Tx) error {
+	if err := tx.Insert(m); err != nil {
+		return errors.Wrapf(err, "failed to insert member")
 	}
+	return nil
 }

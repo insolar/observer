@@ -14,19 +14,30 @@
 // limitations under the License.
 //
 
-package beauty
+package raw
 
-type Fee struct {
-	ID       uint `sql:",pk_id"`
-	StartSum uint64
-	FinSum   uint64
-	Percent  uint
+import (
+	"github.com/go-pg/pg"
+	"github.com/pkg/errors"
+)
+
+type Request struct {
+	tableName struct{} `sql:"requests"`
+
+	RequestID  string `sql:",pk,column_name:request_id"`
+	Caller     string
+	ReturnMode string
+	Base       string
+	Object     string
+	Prototype  string
+	Method     string
+	Arguments  string
+	Reason     string
 }
 
-func (b *Beautifier) storeFee(fee *Fee) error {
-	_, err := b.db.Model(fee).OnConflict("(id) DO UPDATE").Insert()
-	if err != nil {
-		return err
+func (r *Request) Dump(tx *pg.Tx) error {
+	if err := tx.Insert(r); err != nil {
+		return errors.Wrapf(err, "failed to insert request")
 	}
 	return nil
 }

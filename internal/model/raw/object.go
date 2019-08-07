@@ -14,33 +14,28 @@
 // limitations under the License.
 //
 
-package configuration
+package raw
 
 import (
-	"time"
+	"github.com/go-pg/pg"
+	"github.com/pkg/errors"
 )
 
-type Configuration struct {
-	API        API
-	Replicator Replicator
-	DB         DB
+type Object struct {
+	tableName struct{} `sql:"objects"`
+
+	ObjectID  string `sql:",pk,column_name:object_id"`
+	Domain    string
+	Request   string
+	Memory    string
+	Image     string
+	Parent    string
+	PrevState string
 }
 
-func Default() *Configuration {
-	return &Configuration{
-		API: API{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
-		},
-		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
-		},
+func (r *Object) Dump(tx *pg.Tx) error {
+	if err := tx.Insert(r); err != nil {
+		return errors.Wrapf(err, "failed to insert object")
 	}
+	return nil
 }

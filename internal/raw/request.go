@@ -14,33 +14,19 @@
 // limitations under the License.
 //
 
-package beauty
+package raw
 
 import (
 	"encoding/hex"
 
-	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/model/raw"
 )
 
-type Request struct {
-	tableName struct{} `sql:"requests"`
-
-	RequestID  string `sql:",pk,column_name:request_id"`
-	Caller     string
-	ReturnMode string
-	Base       string
-	Object     string
-	Prototype  string
-	Method     string
-	Arguments  string
-	Reason     string
-
-	requestID insolar.ID
-}
-
-func (b *Beautifier) parseRequest(id insolar.ID, req *record.IncomingRequest) {
+func parseRequest(rec *record.Material) *raw.Request {
+	id := rec.ID
+	req := rec.Virtual.GetIncomingRequest()
 	var base, object, prototype = "", "", ""
 	if nil != req.Base {
 		base = req.Base.String()
@@ -51,7 +37,7 @@ func (b *Beautifier) parseRequest(id insolar.ID, req *record.IncomingRequest) {
 	if nil != req.Prototype {
 		object = req.Prototype.String()
 	}
-	b.rawRequests[id] = &Request{
+	return &raw.Request{
 		RequestID:  id.String(),
 		Caller:     req.Caller.String(),
 		ReturnMode: req.ReturnMode.String(),
@@ -62,13 +48,4 @@ func (b *Beautifier) parseRequest(id insolar.ID, req *record.IncomingRequest) {
 		Arguments:  hex.EncodeToString(req.Arguments),
 		Reason:     req.Reason.String(),
 	}
-}
-
-func storeRequest(tx *pg.Tx, request *Request) error {
-	_, err := tx.Model(request).OnConflict("(request_id) DO UPDATE").
-		Insert()
-	if err != nil {
-		return err
-	}
-	return nil
 }

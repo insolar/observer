@@ -14,38 +14,25 @@
 // limitations under the License.
 //
 
-package beauty
+package raw
 
 import (
-	"encoding/hex"
-
 	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/record"
+	"github.com/pkg/errors"
 )
 
-type Result struct {
-	tableName struct{} `sql:"results"`
+type Record struct {
+	tableName struct{} `sql:"records"`
 
-	ResultID string `sql:",pk,column_name:result_id"`
-	Request  string
-	Payload  string
-
-	requestID insolar.ID
+	ID     uint   `sql:",pk_id"`
+	Key    []byte `sql:",notnull,unique"`
+	Value  []byte
+	Number uint32
 }
 
-func (b *Beautifier) parseResult(id insolar.ID, res *record.Result) {
-	b.rawResults[id] = &Result{
-		ResultID: id.String(),
-		Request:  res.Request.String(),
-		Payload:  hex.EncodeToString(res.Payload),
-	}
-}
-
-func storeResult(tx *pg.Tx, result *Result) error {
-	_, err := tx.Model(result).OnConflict("(result_id) DO UPDATE").Insert()
-	if err != nil {
-		return err
+func (r *Record) Dump(tx *pg.Tx) error {
+	if err := tx.Insert(r); err != nil {
+		return errors.Wrapf(err, "failed to insert record")
 	}
 	return nil
 }

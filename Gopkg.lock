@@ -118,6 +118,14 @@
   version = "v1.3.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
+  name = "github.com/google/gofuzz"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f140a6486e521aad38f5917de355cbf147cc0496"
+
+[[projects]]
   digest = "1:582b704bebaa06b48c29b0cec224a6058a09c86883aaddabde889cd1a5f73e1b"
   name = "github.com/google/uuid"
   packages = ["."]
@@ -146,19 +154,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:49381e588e4d07c1a6aad7c65f4b0f870772939f157a47e03e12a6d51972e162"
+  digest = "1:685c06e075a779e5410338daec909264618fd1c16a4b4ae86609631a37c1989d"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
     "configuration",
     "insolar",
     "insolar/bits",
+    "insolar/gen",
     "insolar/jet",
     "insolar/pulse",
     "insolar/record",
+    "insolar/store",
     "insolar/utils",
     "instrumentation/inslogger",
-    "internal/ledger/store",
     "ledger/heavy/executor",
     "ledger/heavy/exporter",
     "ledger/object",
@@ -193,7 +202,7 @@
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "2e2f408b122b921576cd3f91ce677481826f93d7"
+  revision = "5521e67ac569f984e7c0fcf806798a08d1e242dc"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -402,9 +411,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f19b3b07f8a366704f206a55676a6b5f9a0ada8a4c1be7218f1e44aecab6c1c4"
+  digest = "1:45511ffd176fe0c5ab6cb08cdd141f3217df8e115124b176e894ab103925d53c"
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = [
+    "assert",
+    "require",
+  ]
   pruneopts = "UT"
   revision = "34c6fa2dc70986bccbbffcc6130f6920a924b075"
 
@@ -594,6 +606,7 @@
     "github.com/go-pg/pg/orm",
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
+    "github.com/insolar/insolar/insolar/gen",
     "github.com/insolar/insolar/insolar/record",
     "github.com/insolar/insolar/ledger/heavy/exporter",
     "github.com/insolar/insolar/log",
@@ -607,6 +620,7 @@
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
+    "github.com/stretchr/testify/require",
     "google.golang.org/grpc",
     "gopkg.in/yaml.v2",
   ]

@@ -21,8 +21,9 @@ import (
 )
 
 type Replicator struct {
-	Addr            string
-	MaxTransportMsg int
-	RequestDelay    time.Duration
-	BatchSize       uint32
+	Addr                  string
+	MaxTransportMsg       int
+	RequestDelay          time.Duration
+	BatchSize             uint32
+	TransactionRetryDelay time.Duration
 }

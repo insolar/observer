@@ -14,33 +14,24 @@
 // limitations under the License.
 //
 
-package configuration
+package deposit
 
-import (
-	"time"
-)
-
-type Configuration struct {
-	API        API
-	Replicator Replicator
-	DB         DB
-}
-
-func Default() *Configuration {
-	return &Configuration{
-		API: API{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
-		},
-		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
-		},
-	}
-}
+// func (b *beauty.Beautifier) processDepositAmend(id insolar.ID, amd *record.Amend) {
+// 	deposit := depositState(amd)
+// 	b.depositUpdates[id] = beauty.DepositUpdate{
+// 		id:        id,
+// 		amount:    deposit.Amount,
+// 		withdrawn: "0",
+// 		status:    "MIGRATION",
+// 		prevState: amd.PrevState.String(),
+// 	}
+// }
+//
+// func depositState(amd *record.Amend) *deposit.Deposit {
+// 	d := deposit.Deposit{}
+// 	err := insolar.Deserialize(amd.Memory, &d)
+// 	if err != nil {
+// 		log.Error(errors.New("failed to deserialize deposit contract state"))
+// 	}
+// 	return &d
+// }

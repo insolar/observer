@@ -14,33 +14,22 @@
 // limitations under the License.
 //
 
-package configuration
+package raw
 
 import (
-	"time"
+	"encoding/hex"
+
+	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/model/raw"
 )
 
-type Configuration struct {
-	API        API
-	Replicator Replicator
-	DB         DB
-}
-
-func Default() *Configuration {
-	return &Configuration{
-		API: API{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
-		},
-		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
-		},
+func parseResult(rec *record.Material) *raw.Result {
+	id := rec.ID
+	res := rec.Virtual.GetResult()
+	return &raw.Result{
+		ResultID: id.String(),
+		Request:  res.Request.String(),
+		Payload:  hex.EncodeToString(res.Payload),
 	}
 }

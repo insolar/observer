@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package beauty
+package member
 
 import (
 	"github.com/insolar/insolar/insolar"
@@ -29,7 +29,12 @@ func isWalletActivate(act *record.Activate) bool {
 	return act.Image.Equal(*proxyWallet.PrototypeReference)
 }
 
-func isNewWallet(in *record.IncomingRequest) bool {
+func isNewWallet(rec *record.Material) bool {
+	_, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
+	if !ok {
+		return false
+	}
+	in := rec.Virtual.GetIncomingRequest()
 	return in.Method == "New" && in.Prototype.Equal(*proxyWallet.PrototypeReference)
 }
 
