@@ -154,7 +154,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2042550fb1778f4ed0e051ac60827a643809e791c4765c4229ef734932475d03"
+  digest = "1:685c06e075a779e5410338daec909264618fd1c16a4b4ae86609631a37c1989d"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -165,9 +165,9 @@
     "insolar/jet",
     "insolar/pulse",
     "insolar/record",
+    "insolar/store",
     "insolar/utils",
     "instrumentation/inslogger",
-    "internal/ledger/store",
     "ledger/heavy/executor",
     "ledger/heavy/exporter",
     "ledger/object",
@@ -202,7 +202,7 @@
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "2e2f408b122b921576cd3f91ce677481826f93d7"
+  revision = "5521e67ac569f984e7c0fcf806798a08d1e242dc"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
