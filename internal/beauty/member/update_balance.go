@@ -74,7 +74,7 @@ func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		}
 	}
 
-	log.Infof("cached len(balance_updates)=%v", len(u.cache))
+	log.Infof("balance updates=%d", len(u.cache))
 	var deferred []*beauty.BalanceUpdate
 	for _, upd := range u.cache {
 		if err := upd.Dump(tx); err != nil {
@@ -82,7 +82,6 @@ func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		}
 	}
 
-	log.Infof("deferred balance updates: %d", len(deferred))
 	for _, upd := range deferred {
 		log.Infof("Wallet update %v", upd)
 	}

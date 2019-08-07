@@ -155,7 +155,7 @@ func parseCallArguments(inArgs []byte) member.Request {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("cached transfers=%d", len(c.cache))
+	log.Infof("new transfers=%d", len(c.cache))
 	for _, transfer := range c.cache {
 		if err := transfer.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump transfers")

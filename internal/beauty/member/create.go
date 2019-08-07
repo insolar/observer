@@ -169,11 +169,7 @@ func (c *Composer) compose(b *memberBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("ready %d", len(c.cache))
-	log.Infof("req %d", len(c.requests))
-	log.Infof("res %d", len(c.results))
-	log.Infof("act %d", len(c.activates))
-	log.Infof("builders %d", len(c.builders))
+	log.Infof("new members=%d", len(c.cache))
 	for _, member := range c.cache {
 		if err := member.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump members")

@@ -180,7 +180,7 @@ func (r *Replicator) emitData(rn uint32, rec *record.Material) {
 func (r *Replicator) emitDump(pn insolar.PulseNumber) {
 	db := r.ConnectionHolder.DB()
 	emitter := &successEmitter{}
-	log.Infof("emitted dump %d", pn)
+	log.Infof("pulse=%d", pn)
 	for {
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
 			for _, handle := range r.dumpHandles {
