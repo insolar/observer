@@ -26,8 +26,9 @@ import (
 	"github.com/insolar/observer/internal/api"
 	"github.com/insolar/observer/internal/beauty"
 	"github.com/insolar/observer/internal/configuration"
-	"github.com/insolar/observer/internal/raw/dump"
-	"github.com/insolar/observer/internal/replica"
+	"github.com/insolar/observer/internal/db"
+	"github.com/insolar/observer/internal/raw"
+	"github.com/insolar/observer/internal/replication"
 )
 
 type Components struct {
@@ -39,10 +40,11 @@ func Prepare() *Components {
 
 	manager.Inject(
 		configuration.Load(),
-		api.NewRouter(),
-		replica.NewReplicator(),
-		dump.NewDumper(),
+		db.NewConnectionHolder(),
+		replication.NewReplicator(),
+		raw.NewDumper(),
 		beauty.NewBeautifier(),
+		api.NewRouter(),
 	)
 
 	return &Components{manager: manager}

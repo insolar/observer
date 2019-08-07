@@ -14,33 +14,19 @@
 // limitations under the License.
 //
 
-package configuration
+package member
 
 import (
-	"time"
+	"github.com/insolar/insolar/insolar"
+	log "github.com/sirupsen/logrus"
 )
 
-type Configuration struct {
-	API        API
-	Replicator Replicator
-	DB         DB
-}
-
-func Default() *Configuration {
-	return &Configuration{
-		API: API{
-			Addr: ":8080",
-		},
-		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
-		},
-		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
-		},
+func parsePayload(payload []byte) []interface{} {
+	rets := []interface{}{}
+	err := insolar.Deserialize(payload, &rets)
+	if err != nil {
+		log.Warnf("failed to parse payload as two interfaces")
+		return []interface{}{}
 	}
+	return rets
 }

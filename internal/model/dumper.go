@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 
-package beauty
+package model
 
-const (
-	PENDING  = "PENDING"
-	SUCCESS  = "SUCCESS"
-	CANCELED = "CANCELED"
-)
+import "github.com/go-pg/pg"
+
+type Dumper interface {
+	Dump(tx *pg.Tx) error
+}

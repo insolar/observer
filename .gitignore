@@ -53,3 +53,4 @@ network_cache
 /docs/build
 
 *.lock
+scenario

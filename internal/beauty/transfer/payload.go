@@ -14,13 +14,19 @@
 // limitations under the License.
 //
 
-package raw
+package transfer
 
-type Record struct {
-	tableName struct{} `sql:"records"`
+import (
+	"github.com/insolar/insolar/insolar"
+	log "github.com/sirupsen/logrus"
+)
 
-	ID     uint   `sql:",pk_id"`
-	Key    []byte `sql:",notnull,unique"`
-	Value  []byte
-	Number uint32
+func parsePayload(payload []byte) []interface{} {
+	rets := []interface{}{}
+	err := insolar.Deserialize(payload, &rets)
+	if err != nil {
+		log.Warnf("failed to parse payload as two interfaces")
+		return []interface{}{}
+	}
+	return rets
 }
