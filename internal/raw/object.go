@@ -34,6 +34,7 @@ func parseActivate(rec *record.Material) *raw.Object {
 		Memory:   hex.EncodeToString(act.Memory),
 		Image:    act.Image.String(),
 		Parent:   act.Parent.String(),
+		Type:     "ACTIVATE",
 	}
 }
 
@@ -41,12 +42,13 @@ func parseAmend(rec *record.Material) *raw.Object {
 	id := rec.ID
 	amend := rec.Virtual.GetAmend()
 	return &raw.Object{
-		ObjectID: id.String(),
-		Domain:   amend.Domain.String(),
-		Request:  amend.Request.String(),
-		Memory:   hex.EncodeToString(amend.Memory),
-		Image:    amend.Image.String(),
-		Parent:   amend.PrevState.String(),
+		ObjectID:  id.String(),
+		Domain:    amend.Domain.String(),
+		Request:   amend.Request.String(),
+		Memory:    hex.EncodeToString(amend.Memory),
+		Image:     amend.Image.String(),
+		PrevState: amend.PrevState.String(),
+		Type:      "AMEND",
 	}
 }
 
@@ -54,9 +56,10 @@ func parseDeactivate(rec *record.Material) *raw.Object {
 	id := rec.ID
 	deact := rec.Virtual.GetDeactivate()
 	return &raw.Object{
-		ObjectID: id.String(),
-		Domain:   deact.Domain.String(),
-		Request:  deact.Request.String(),
-		Parent:   deact.PrevState.String(),
+		ObjectID:  id.String(),
+		Domain:    deact.Domain.String(),
+		Request:   deact.Request.String(),
+		PrevState: deact.PrevState.String(),
+		Type:      "DEACTIVATE",
 	}
 }

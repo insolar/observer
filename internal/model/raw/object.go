@@ -31,6 +31,7 @@ type Object struct {
 	Image     string
 	Parent    string
 	PrevState string
+	Type      string
 }
 
 func (r *Object) Dump(tx *pg.Tx) error {
