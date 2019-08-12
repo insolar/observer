@@ -42,14 +42,13 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 	if !ok {
 		return
 	}
-	if !isWalletAmend(v.Amend) {
+	if !isAccountAmend(v.Amend) {
 		return
 	}
-	u.processWalletAmend(rec.ID, rec)
+	u.processAccountAmend(rec.ID, rec)
 }
 
-func (u *BalanceUpdater) processWalletAmend(id insolar.ID, rec *record.Material) {
-	// TODO: use account contract to update balance
+func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material) {
 	amd := rec.Virtual.GetAmend()
 	balance := accountBalance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {

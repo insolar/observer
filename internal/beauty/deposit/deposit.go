@@ -42,7 +42,6 @@ type depositBuilder struct {
 }
 
 func (b *depositBuilder) build() (*beauty.Deposit, error) {
-	// TODO: withdrawn
 	res := b.res.Virtual.GetResult()
 	callResult := parseMemberRef(res.Payload)
 	if callResult.status != SUCCESS {
@@ -58,9 +57,8 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 		TransferDate:    pulse.Number(deposit.PulseDepositCreate).AsApproximateTime().Unix(),
 		HoldReleaseDate: pulse.Number(deposit.PulseDepositUnHold).AsApproximateTime().Unix(),
 		Amount:          deposit.Amount,
-		Withdrawn:       "0",
+		Balance:         deposit.Balance,
 		DepositState:    id.String(),
-		Status:          "MIGRATION",
 	}, nil
 }
 
@@ -268,8 +266,4 @@ func isDepositNew(req *record.Material) bool {
 
 func isDepositActivate(act *record.Activate) bool {
 	return act.Image.Equal(*depositProxy.PrototypeReference)
-}
-
-func isDepositAmend(amd *record.Amend) bool {
-	return amd.Image.Equal(*depositProxy.PrototypeReference)
 }

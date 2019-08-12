@@ -16,22 +16,68 @@
 
 package deposit
 
-// func (b *beauty.Beautifier) processDepositAmend(id insolar.ID, amd *record.Amend) {
-// 	deposit := depositState(amd)
-// 	b.depositUpdates[id] = beauty.DepositUpdate{
-// 		id:        id,
-// 		amount:    deposit.Amount,
-// 		withdrawn: "0",
-// 		status:    "MIGRATION",
-// 		prevState: amd.PrevState.String(),
-// 	}
-// }
-//
-// func depositState(amd *record.Amend) *deposit.Deposit {
-// 	d := deposit.Deposit{}
-// 	err := insolar.Deserialize(amd.Memory, &d)
-// 	if err != nil {
-// 		log.Error(errors.New("failed to deserialize deposit contract state"))
-// 	}
-// 	return &d
-// }
+import (
+	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
+	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/replication"
+)
+
+type DepositKeeper struct {
+	cache []*beauty.DepositUpdate
+}
+
+func (k *DepositKeeper) Process(rec *record.Material) {
+	if isDepositAmend(rec) {
+		amd := rec.Virtual.GetAmend()
+		d := depositState(amd)
+		k.cache = append(k.cache, &beauty.DepositUpdate{
+			ID:        rec.ID.String(),
+			Amount:    d.Amount,
+			Balance:   d.Balance,
+			PrevState: amd.PrevState.String(),
+		})
+	}
+}
+
+func (k *DepositKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	deferred := []*beauty.DepositUpdate{}
+	for _, upd := range k.cache {
+		if err := upd.Dump(tx); err != nil {
+			deferred = append(deferred, upd)
+		}
+	}
+
+	for _, upd := range deferred {
+		log.Infof("Deposit update %v", upd)
+	}
+
+	pub.Subscribe(func() {
+		k.cache = deferred
+	})
+	return nil
+}
+
+func isDepositAmend(rec *record.Material) bool {
+	v, ok := rec.Virtual.Union.(*record.Virtual_Amend)
+	if !ok {
+		return false
+	}
+
+	return v.Amend.Image.Equal(*depositProxy.PrototypeReference)
+}
+
+func depositState(amd *record.Amend) *deposit.Deposit {
+	d := deposit.Deposit{}
+	err := insolar.Deserialize(amd.Memory, &d)
+	if err != nil {
+		log.Error(errors.New("failed to deserialize deposit contract state"))
+	}
+	return &d
+}
