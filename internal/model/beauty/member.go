@@ -27,7 +27,8 @@ type Member struct {
 	MemberRef        string `sql:",pk"`
 	Balance          string `sql:",notnull"`
 	MigrationAddress string
-	WalletState      string `sql:",notnull"`
+	WalletRef        string
+	AccountState     string `sql:",notnull"`
 	Status           string
 }
 

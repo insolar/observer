@@ -17,11 +17,17 @@
 package deposit
 
 import (
+	"encoding/json"
+	"sync"
+
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
+	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/model/beauty"
@@ -30,43 +36,153 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Composer struct {
-	cache []*beauty.Deposit
+type depositBuilder struct {
+	res *record.Material
+	act *record.Material
 }
 
-func NewComposer() *Composer {
-	return &Composer{}
-}
-
-func (c *Composer) Process(rec *record.Material) {
-	v, ok := rec.Virtual.Union.(*record.Virtual_Activate)
-	if !ok {
-		return
+func (b *depositBuilder) build() (*beauty.Deposit, error) {
+	// TODO: withdrawn
+	res := b.res.Virtual.GetResult()
+	callResult := parseMemberRef(res.Payload)
+	if callResult.status != SUCCESS {
+		return nil, errors.New("invalid create deposit result payload")
 	}
-
-	if isDepositActivate(v.Activate) {
-		c.processDepositActivate(rec)
-	}
-}
-
-func (c *Composer) processDepositActivate(rec *record.Material) {
-	id := rec.ID
-	act := rec.Virtual.GetActivate()
+	id := b.act.ID
+	act := b.act.Virtual.GetActivate()
 	deposit := initialDepositState(act)
-	c.cache = append(c.cache, &beauty.Deposit{
+	return &beauty.Deposit{
 		EthHash:         deposit.TxHash,
-		DepositRef:      "",
-		MemberRef:       "",
-		TransferDate:    int64(deposit.PulseDepositCreate),
-		HoldReleaseDate: int64(deposit.PulseDepositUnHold),
+		DepositRef:      act.Request.String(),
+		MemberRef:       callResult.memberRef,
+		TransferDate:    pulse.Number(deposit.PulseDepositCreate).AsApproximateTime().Unix(),
+		HoldReleaseDate: pulse.Number(deposit.PulseDepositUnHold).AsApproximateTime().Unix(),
 		Amount:          deposit.Amount,
 		Withdrawn:       "0",
 		DepositState:    id.String(),
 		Status:          "MIGRATION",
-	})
+	}, nil
+}
+
+type Composer struct {
+	requests  map[insolar.ID]*record.Material
+	results   map[insolar.ID]*record.Material
+	activates map[insolar.ID]*record.Material
+	builders  map[insolar.ID]*depositBuilder
+
+	sync.RWMutex
+	cache []*beauty.Deposit
+}
+
+func NewComposer() *Composer {
+	return &Composer{
+		requests:  make(map[insolar.ID]*record.Material),
+		results:   make(map[insolar.ID]*record.Material),
+		activates: make(map[insolar.ID]*record.Material),
+		builders:  make(map[insolar.ID]*depositBuilder),
+	}
+}
+
+func (c *Composer) Process(rec *record.Material) {
+	switch v := rec.Virtual.Union.(type) {
+	case *record.Virtual_Result:
+		origin := *v.Result.Request.Record()
+		if req, ok := c.requests[origin]; ok {
+			delete(c.requests, origin)
+			switch {
+			case isDepositMigrationCall(req):
+				c.processResult(rec)
+			case isDepositNew(req):
+				c.processDepositNew(req)
+			}
+		} else {
+			c.results[origin] = rec
+		}
+	case *record.Virtual_IncomingRequest:
+		id := rec.ID
+		if res, ok := c.results[id]; ok {
+			delete(c.results, id)
+			switch {
+			case isDepositMigrationCall(rec):
+				c.processResult(res)
+			case isDepositNew(rec):
+				c.processDepositNew(rec)
+			}
+		} else {
+			c.requests[id] = rec
+		}
+	case *record.Virtual_OutgoingRequest:
+		id := rec.ID
+		if _, ok := c.results[id]; ok {
+			delete(c.results, id)
+		} else {
+			c.requests[id] = rec
+		}
+	case *record.Virtual_Activate:
+		if isDepositActivate(v.Activate) {
+			c.processDepositActivate(rec)
+		}
+	}
+}
+
+func (c *Composer) processResult(res *record.Material) {
+	origin := *res.Virtual.GetResult().Request.Record()
+	if b, ok := c.builders[origin]; ok {
+		b.res = res
+		c.compose(b)
+	} else {
+		c.builders[origin] = &depositBuilder{res: res}
+	}
+}
+
+func (c *Composer) processDepositNew(req *record.Material) {
+	direct := req.ID
+	if act, ok := c.activates[direct]; ok {
+		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		if b, ok := c.builders[origin]; ok {
+			b.act = act
+			c.compose(b)
+		} else {
+			c.builders[origin] = &depositBuilder{act: act}
+		}
+	} else {
+		c.requests[direct] = req
+	}
+}
+
+func (c *Composer) processDepositActivate(rec *record.Material) {
+	direct := *rec.Virtual.GetActivate().Request.Record()
+	if req, ok := c.requests[direct]; ok {
+		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		if b, ok := c.builders[origin]; ok {
+			b.act = rec
+			c.compose(b)
+		} else {
+			c.builders[origin] = &depositBuilder{act: rec}
+		}
+	} else {
+		c.activates[direct] = rec
+	}
+}
+
+func (c *Composer) compose(b *depositBuilder) {
+	c.Lock()
+	defer c.Unlock()
+
+	deposit, err := b.build()
+	if err == nil {
+		c.cache = append(c.cache, deposit)
+	}
+
+	direct := *b.act.Virtual.GetActivate().Request.Record()
+	origin := *b.res.Virtual.GetResult().Request.Record()
+	delete(c.activates, direct)
+	delete(c.requests, direct)
+	delete(c.builders, origin)
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("new deposits=%d", len(c.cache))
 	for _, dep := range c.cache {
 		if err := dep.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump deposits")
@@ -74,9 +190,42 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	}
 
 	pub.Subscribe(func() {
+		c.Lock()
+		defer c.Unlock()
 		c.cache = []*beauty.Deposit{}
 	})
 	return nil
+}
+
+func parseCallArguments(inArgs []byte) member.Request {
+	var args []interface{}
+	err := insolar.Deserialize(inArgs, &args)
+	if err != nil {
+		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return member.Request{}
+	}
+
+	request := member.Request{}
+	if len(args) > 0 {
+		if rawRequest, ok := args[0].([]byte); ok {
+			var (
+				pulseTimeStamp int64
+				signature      string
+				raw            []byte
+			)
+			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			if err != nil {
+				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				return member.Request{}
+			}
+			err = json.Unmarshal(raw, &request)
+			if err != nil {
+				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				return member.Request{}
+			}
+		}
+	}
+	return request
 }
 
 func initialDepositState(act *record.Activate) *deposit.Deposit {
@@ -86,6 +235,35 @@ func initialDepositState(act *record.Activate) *deposit.Deposit {
 		log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
+}
+
+func isDepositMigrationCall(rec *record.Material) bool {
+	v, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
+	if !ok {
+		return false
+	}
+
+	in := v.IncomingRequest
+	if in.Method != "Call" {
+		return false
+	}
+
+	args := parseCallArguments(in.Arguments)
+	return args.Params.CallSite == "deposit.migration"
+}
+
+func isDepositNew(req *record.Material) bool {
+	v, ok := req.Virtual.Union.(*record.Virtual_IncomingRequest)
+	if !ok {
+		return false
+	}
+
+	in := v.IncomingRequest
+	if in.Method != "New" {
+		return false
+	}
+
+	return in.Prototype.Equal(*depositProxy.PrototypeReference)
 }
 
 func isDepositActivate(act *record.Activate) bool {

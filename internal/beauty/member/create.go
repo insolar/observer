@@ -39,7 +39,7 @@ type memberBuilder struct {
 
 func (b *memberBuilder) build() (*beauty.Member, error) {
 	params := memberStatus(b.res.Virtual.GetResult().Payload)
-	balance := initialBalance(b.act.Virtual.GetActivate())
+	balance := accountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.New("invalid member reference")
@@ -48,7 +48,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		MemberRef:        ref.Record().String(),
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
-		WalletState:      b.act.ID.String(),
+		AccountState:     b.act.ID.String(),
 		Status:           params.status,
 	}, nil
 }

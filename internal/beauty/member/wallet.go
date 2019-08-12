@@ -17,12 +17,8 @@
 package member
 
 import (
-	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/wallet"
 	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 func isWalletActivate(act *record.Activate) bool {
@@ -40,26 +36,4 @@ func isNewWallet(rec *record.Material) bool {
 
 func isWalletAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*proxyWallet.PrototypeReference)
-}
-
-func initialBalance(act *record.Activate) string {
-	balance := ""
-	w := wallet.Wallet{}
-	if err := insolar.Deserialize(act.Memory, &w); err != nil {
-		log.Error(errors.New("failed to deserialize wallet memory"))
-	} else {
-		balance = w.Balance
-	}
-	return balance
-}
-
-func walletBalance(amd *record.Amend) string {
-	balance := ""
-	w := wallet.Wallet{}
-	if err := insolar.Deserialize(amd.Memory, &w); err != nil {
-		log.Error(errors.New("failed to deserialize wallet memory"))
-	} else {
-		balance = w.Balance
-	}
-	return balance
 }

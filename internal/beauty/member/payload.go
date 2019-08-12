@@ -18,15 +18,16 @@ package member
 
 import (
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	log "github.com/sirupsen/logrus"
 )
 
 func parsePayload(payload []byte) []interface{} {
-	rets := []interface{}{}
-	err := insolar.Deserialize(payload, &rets)
+	result := foundation.Result{}
+	err := insolar.Deserialize(payload, &result)
 	if err != nil {
-		log.Warnf("failed to parse payload as two interfaces")
+		log.Warnf("failed to parse payload as foundation.Result{}")
 		return []interface{}{}
 	}
-	return rets
+	return result.Returns
 }

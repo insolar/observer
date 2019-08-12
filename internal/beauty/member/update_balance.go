@@ -45,18 +45,20 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 	if !isWalletAmend(v.Amend) {
 		return
 	}
-	u.processWalletAmend(rec.ID, v.Amend)
+	u.processWalletAmend(rec.ID, rec)
 }
 
-func (u *BalanceUpdater) processWalletAmend(id insolar.ID, amd *record.Amend) {
-	balance := walletBalance(amd)
+func (u *BalanceUpdater) processWalletAmend(id insolar.ID, rec *record.Material) {
+	// TODO: use account contract to update balance
+	amd := rec.Virtual.GetAmend()
+	balance := accountBalance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
 		randomID := gen.ID()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{
-			MemberRef:   randomID.String(),
-			Balance:     balance,
-			WalletState: id.String(),
-			Status:      "INTERNAL",
+			MemberRef:    randomID.String(),
+			Balance:      balance,
+			AccountState: id.String(),
+			Status:       "INTERNAL",
 		})
 		return
 	}
