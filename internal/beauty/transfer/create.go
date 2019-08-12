@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
+	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -32,7 +33,7 @@ import (
 )
 
 func build(req *record.Material, res *record.Material) (*beauty.Transfer, error) {
-	// TODO: convert pn -> timestamp (transfer_date)
+	// TODO: add eth_hash to transfer
 	callArguments := parseCallArguments(req.Virtual.GetIncomingRequest().Arguments)
 	pn := req.ID.Pulse()
 	callParams := parseTransferCallParams(callArguments)
@@ -46,13 +47,13 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		return nil, errors.New("invalid toMemberReference")
 	}
 	return &beauty.Transfer{
-		TxID:          req.ID.String(),
+		TxID:          insolar.NewReference(req.ID).String(),
 		Status:        transferResult.status,
 		Amount:        callParams.amount,
-		MemberFromRef: memberFrom.Record().String(),
-		MemberToRef:   memberTo.Record().String(),
+		MemberFromRef: memberFrom.String(),
+		MemberToRef:   memberTo.String(),
 		PulseNum:      pn,
-		TransferDate:  int64(pn),
+		TransferDate:  pulse.Number(pn).AsApproximateTime().Unix(),
 		Fee:           transferResult.fee,
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",

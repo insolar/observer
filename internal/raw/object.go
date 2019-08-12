@@ -19,6 +19,7 @@ package raw
 import (
 	"encoding/hex"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 
 	"github.com/insolar/observer/internal/model/raw"
@@ -28,7 +29,7 @@ func parseActivate(rec *record.Material) *raw.Object {
 	id := rec.ID
 	act := rec.Virtual.GetActivate()
 	return &raw.Object{
-		ObjectID: id.String(),
+		ObjectID: insolar.NewReference(id).String(),
 		Domain:   act.Domain.String(),
 		Request:  act.Request.String(),
 		Memory:   hex.EncodeToString(act.Memory),
@@ -42,7 +43,7 @@ func parseAmend(rec *record.Material) *raw.Object {
 	id := rec.ID
 	amend := rec.Virtual.GetAmend()
 	return &raw.Object{
-		ObjectID:  id.String(),
+		ObjectID:  insolar.NewReference(id).String(),
 		Domain:    amend.Domain.String(),
 		Request:   amend.Request.String(),
 		Memory:    hex.EncodeToString(amend.Memory),
@@ -56,7 +57,7 @@ func parseDeactivate(rec *record.Material) *raw.Object {
 	id := rec.ID
 	deact := rec.Virtual.GetDeactivate()
 	return &raw.Object{
-		ObjectID:  id.String(),
+		ObjectID:  insolar.NewReference(id).String(),
 		Domain:    deact.Domain.String(),
 		Request:   deact.Request.String(),
 		PrevState: deact.PrevState.String(),

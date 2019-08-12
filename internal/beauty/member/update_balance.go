@@ -52,9 +52,9 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 	amd := rec.Virtual.GetAmend()
 	balance := accountBalance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
-		randomID := gen.ID()
+		randomRef := gen.Reference()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{
-			MemberRef:    randomID.String(),
+			MemberRef:    randomRef.String(),
 			Balance:      balance,
 			AccountState: id.String(),
 			Status:       "INTERNAL",

@@ -45,7 +45,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		return nil, errors.New("invalid member reference")
 	}
 	return &beauty.Member{
-		MemberRef:        ref.Record().String(),
+		MemberRef:        ref.String(),
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
 		AccountState:     b.act.ID.String(),
