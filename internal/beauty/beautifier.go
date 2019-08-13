@@ -26,6 +26,7 @@ import (
 
 	"github.com/insolar/observer/internal/beauty/burn"
 	"github.com/insolar/observer/internal/beauty/deposit"
+	depositTransfer "github.com/insolar/observer/internal/beauty/deposit/transfer"
 	"github.com/insolar/observer/internal/beauty/member"
 	"github.com/insolar/observer/internal/beauty/member/transfer"
 	"github.com/insolar/observer/internal/configuration"
@@ -45,6 +46,7 @@ func NewBeautifier() *Beautifier {
 		depositComposer:          deposit.NewComposer(),
 		migrationAddressComposer: burn.NewComposer(),
 		migrationAddressKeeper:   burn.NewKeeper(),
+		depositTransferComposer:  depositTransfer.NewComposer(),
 	}
 }
 
@@ -61,6 +63,7 @@ type Beautifier struct {
 	depositComposer          *deposit.Composer
 	migrationAddressComposer *burn.Composer
 	migrationAddressKeeper   *burn.MigrationAddressKeeper
+	depositTransferComposer  *depositTransfer.Composer
 }
 
 type Record struct {
@@ -121,6 +124,7 @@ func (b *Beautifier) process(rec *record.Material) {
 	b.depositComposer.Process(rec)
 	b.migrationAddressComposer.Process(rec)
 	b.migrationAddressKeeper.Process(rec)
+	b.depositTransferComposer.Process(rec)
 }
 
 func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
@@ -140,6 +144,9 @@ func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		return err
 	}
 	if err := b.migrationAddressKeeper.Dump(tx, pub); err != nil {
+		return err
+	}
+	if err := b.depositTransferComposer.Dump(tx, pub); err != nil {
 		return err
 	}
 	return nil

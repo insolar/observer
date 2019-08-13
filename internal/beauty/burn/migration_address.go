@@ -180,7 +180,7 @@ func successResult(res *record.Material) bool {
 			return false
 		}
 
-		log.Error(errors.New(msg))
+		log.Debug(errors.New(msg))
 		return false
 	}
 

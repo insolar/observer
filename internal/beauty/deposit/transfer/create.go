@@ -19,6 +19,7 @@ package transfer
 import (
 	"encoding/json"
 
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
@@ -28,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/replication"
 )
 
 func build(req *record.Material, res *record.Material) (*beauty.Transfer, error) {
@@ -40,9 +42,6 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
-	if err != nil {
-		return nil, errors.New("invalid toMemberReference")
-	}
 	return &beauty.Transfer{
 		TxID:          insolar.NewReference(req.ID).String(),
 		Status:        transferResult.status,
@@ -51,7 +50,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		MemberToRef:   memberFrom.String(),
 		PulseNum:      pn,
 		TransferDate:  pulse.Number(pn).AsApproximateTime().Unix(),
-		Fee:           transferResult.fee,
+		Fee:           "0",
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
 		EthHash:       callParams.ethTxHash,
@@ -69,6 +68,19 @@ func NewComposer() *Composer {
 		requests: make(map[insolar.ID]*record.Material),
 		results:  make(map[insolar.ID]*record.Material),
 	}
+}
+
+func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	for _, transfer := range c.cache {
+		if err := transfer.Dump(tx); err != nil {
+			return errors.Wrapf(err, "failed to dump deposit transfers")
+		}
+	}
+
+	pub.Subscribe(func() {
+		c.cache = []*beauty.Transfer{}
+	})
+	return nil
 }
 
 func (c *Composer) Process(rec *record.Material) {
