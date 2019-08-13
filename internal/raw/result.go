@@ -19,6 +19,7 @@ package raw
 import (
 	"encoding/hex"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 
 	"github.com/insolar/observer/internal/model/raw"
@@ -28,7 +29,7 @@ func parseResult(rec *record.Material) *raw.Result {
 	id := rec.ID
 	res := rec.Virtual.GetResult()
 	return &raw.Result{
-		ResultID: id.String(),
+		ResultID: insolar.NewReference(id).String(),
 		Request:  res.Request.String(),
 		Payload:  hex.EncodeToString(res.Payload),
 	}

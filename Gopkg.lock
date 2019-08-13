@@ -3,6 +3,15 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:014bae1dbc72cbca001e5a5e46ee087d8978c059abfcd0dc1f28d4f3c1fb0ef4"
+  name = "git.apache.org/thrift.git"
+  packages = ["lib/go/thrift"]
+  pruneopts = "UT"
+  revision = "74d6d9d3d6400d1672f48b4acf5bc7d1260ad96d"
+  source = "github.com/apache/thrift"
+
+[[projects]]
+  branch = "master"
   digest = "1:6716c9fe6333591128e72848f246fc01dc72240e1e64185d8b4e124e7280b35d"
   name = "github.com/AndreasBriese/bbloom"
   packages = ["."]
@@ -10,12 +19,25 @@
   revision = "e2d15f34fcf99d5dbb871c820ec73f710fca9815"
 
 [[projects]]
-  digest = "1:d171543eca2b50f422bda2a9614f04e3ef687053e74c2c8f707c009cbd3da0a8"
+  digest = "1:c7bb91d70f45893148ae85300638c9fbdd1d0777c86e459c6f3bbb398692c46a"
   name = "github.com/ThreeDotsLabs/watermill"
-  packages = ["."]
+  packages = [
+    ".",
+    "internal",
+    "internal/sync",
+    "message",
+  ]
   pruneopts = "UT"
   revision = "b39a48a1c9edad83d74898f3bf96adedd18ece81"
   version = "v0.4.0"
+
+[[projects]]
+  digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  pruneopts = "UT"
+  revision = "37c8de3658fcb183f997c4e13e8337516ab753e6"
+  version = "v1.0.1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -134,6 +156,30 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8a6fb523712970c966eefc6b39ed2c5e74880354"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:f668349b83f7d779567c880550534addeca7ebadfdcf44b0b9c39be61864b4b7"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "886a7fbe3eb1c874d46f623bfa70af45f425b3d1"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:7fae9ec96d10b2afce0da23c378c8b3389319b7f92fa092f2621bba3078cfb4b"
+  name = "github.com/hashicorp/golang-lru"
+  packages = ["simplelru"]
+  pruneopts = "UT"
+  revision = "7f827b33c0f158ec5dfbba01bb0b14a4541fd81d"
+  version = "v0.5.3"
+
+[[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
   name = "github.com/hashicorp/hcl"
   packages = [
@@ -153,32 +199,42 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:685c06e075a779e5410338daec909264618fd1c16a4b4ae86609631a37c1989d"
+  branch = "INS-3221-transfer-to-deposit"
+  digest = "1:c2cc76d4190aa6917f9af8248a0e72830c01a722ecf2dc5abae49e082081d199"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
     "configuration",
     "insolar",
     "insolar/bits",
+    "insolar/bus",
+    "insolar/flow",
+    "insolar/flow/internal/pulse",
     "insolar/gen",
+    "insolar/genesisrefs",
     "insolar/jet",
+    "insolar/message",
+    "insolar/payload",
     "insolar/pulse",
     "insolar/record",
+    "insolar/reply",
     "insolar/store",
     "insolar/utils",
     "instrumentation/inslogger",
+    "instrumentation/insmetrics",
+    "instrumentation/instracer",
     "ledger/heavy/executor",
     "ledger/heavy/exporter",
     "ledger/object",
     "log",
+    "logicrunner/artifacts",
+    "logicrunner/builtin/contract/account",
     "logicrunner/builtin/contract/deposit",
     "logicrunner/builtin/contract/member",
     "logicrunner/builtin/contract/member/signer",
-    "logicrunner/builtin/contract/wallet",
     "logicrunner/builtin/foundation",
     "logicrunner/builtin/foundation/safemath",
-    "logicrunner/builtin/proxy/costcenter",
+    "logicrunner/builtin/proxy/account",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/nodedomain",
@@ -186,23 +242,26 @@
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
     "logicrunner/goplugin/rpctypes",
+    "messagebus",
+    "network",
+    "network/consensus/adapters/candidate",
     "network/consensus/common/args",
     "network/consensus/common/capacity",
     "network/consensus/common/cryptkit",
     "network/consensus/common/longbits",
     "network/consensus/common/pulse",
     "network/consensus/gcpv2/api/member",
-    "network/consensusv1/packets",
+    "network/hostnetwork/host",
+    "network/hostnetwork/packet",
+    "network/hostnetwork/packet/types",
     "network/node",
     "network/node/internal/node",
-    "network/storage",
-    "network/utils",
     "platformpolicy",
     "platformpolicy/internal/hash",
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "5521e67ac569f984e7c0fcf806798a08d1e242dc"
+  revision = "0820db597faf9aa9fe647f14b3dd82f87416a810"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -269,6 +328,14 @@
   version = "v1.8.1"
 
 [[projects]]
+  digest = "1:ff5ebae34cfbf047d505ee150de27e60570e8c394b3b8fdbb720ff6ac71985fc"
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  pruneopts = "UT"
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -329,6 +396,49 @@
   pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:e89f2cdede55684adbe44b5566f55838ad2aee1dff348d14b73ccf733607b671"
+  name = "github.com/prometheus/client_golang"
+  packages = [
+    "prometheus",
+    "prometheus/internal",
+    "prometheus/promhttp",
+  ]
+  pruneopts = "UT"
+  revision = "2641b987480bca71fb39738eb8c8b0d577cb1d76"
+  version = "v0.9.4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:2d5cd61daa5565187e1d96bae64dbbc6080dacf741448e9629c64fd93203b0d4"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  pruneopts = "UT"
+  revision = "14fe0d1b01d4d5fc031dd4bec1823bd3ebbe8016"
+
+[[projects]]
+  digest = "1:8dcedf2e8f06c7f94e48267dea0bc0be261fa97b377f3ae3e87843a92a549481"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model",
+  ]
+  pruneopts = "UT"
+  revision = "31bed53e4047fd6c510e43a941f90cb31be0972a"
+  version = "v0.6.0"
+
+[[projects]]
+  digest = "1:366f5aa02ff6c1e2eccce9ca03a22a6d983da89eecff8a89965401764534eb7c"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/fs",
+  ]
+  pruneopts = "UT"
+  revision = "3f98efb27840a48a7a2898ec80be07674d19f9c8"
+  version = "v0.0.3"
 
 [[projects]]
   digest = "1:4853aea8a727b1cc962f687688aef22ce0dd040a9f695c07f303559e4595a152"
@@ -436,9 +546,14 @@
   revision = "772ced7fd4c2f6322c07537a9a93b68d74551fa6"
 
 [[projects]]
-  digest = "1:286eb95a9a56ac1d47dcbfa404ae1cf6fc5fd7d1e84ce30f80a7f41918930c1a"
+  digest = "1:6f020c941e38e42b2ec2863f5264ad185d1b21ab30f4958fc57257993aedd408"
   name = "go.opencensus.io"
   packages = [
+    ".",
+    "exporter/jaeger",
+    "exporter/jaeger/internal/gen-go/jaeger",
+    "exporter/prometheus",
+    "internal",
     "internal/tagencoding",
     "metric/metricdata",
     "metric/metricproducer",
@@ -447,6 +562,9 @@
     "stats/internal",
     "stats/view",
     "tag",
+    "trace",
+    "trace/internal",
+    "trace/tracestate",
   ]
   pruneopts = "UT"
   revision = "43463a80402d8447b7fce0d2c58edf1687ff0b58"
@@ -479,6 +597,14 @@
   ]
   pruneopts = "UT"
   revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
+
+[[projects]]
+  branch = "master"
+  digest = "1:382bb5a7fb4034db3b6a2d19e5a4a6bcf52f4750530603c01ca18a172fa3089b"
+  name = "golang.org/x/sync"
+  packages = ["semaphore"]
+  pruneopts = "UT"
+  revision = "112230192c580c3556b8cee6403af37a4fc5f28c"
 
 [[projects]]
   branch = "master"
@@ -533,6 +659,14 @@
   ]
   pruneopts = "UT"
   revision = "72ffa07ba3db8d09f5215feec0f89464f3028f8e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5f003878aabe31d7f6b842d4de32b41c46c214bb629bb485387dbcce1edf5643"
+  name = "google.golang.org/api"
+  packages = ["support/bundler"]
+  pruneopts = "UT"
+  revision = "954df90885a21cbb22088134ab537facda86943c"
 
 [[projects]]
   branch = "master"
@@ -610,12 +744,15 @@
     "github.com/insolar/insolar/insolar/record",
     "github.com/insolar/insolar/ledger/heavy/exporter",
     "github.com/insolar/insolar/log",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/account",
     "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
-    "github.com/insolar/insolar/logicrunner/builtin/contract/wallet",
+    "github.com/insolar/insolar/logicrunner/builtin/foundation",
+    "github.com/insolar/insolar/logicrunner/builtin/proxy/account",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet",
+    "github.com/insolar/insolar/network/consensus/common/pulse",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",

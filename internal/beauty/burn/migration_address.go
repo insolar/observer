@@ -22,7 +22,6 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
@@ -30,26 +29,58 @@ import (
 
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
+	log "github.com/sirupsen/logrus"
 )
 
 type Composer struct {
-	cache []*beauty.MigrationAddress
+	requests map[insolar.ID]*record.Material
+	results  map[insolar.ID]*record.Material
+	cache    []*beauty.MigrationAddress
 }
 
 func NewComposer() *Composer {
-	return &Composer{}
+	return &Composer{
+		requests: make(map[insolar.ID]*record.Material),
+		results:  make(map[insolar.ID]*record.Material),
+	}
 }
 
 func (c *Composer) Process(rec *record.Material) {
-	if isAddBurnAddresses(rec) {
-		c.processAddBurnAddresses(rec)
+	switch v := rec.Virtual.Union.(type) {
+	case *record.Virtual_Result:
+		origin := *v.Result.Request.Record()
+		if req, ok := c.requests[origin]; ok {
+			delete(c.requests, origin)
+			if isAddBurnAddresses(req) {
+				c.processAddBurnAddresses(req, rec)
+			}
+		} else {
+			c.results[origin] = rec
+		}
+	case *record.Virtual_IncomingRequest:
+		origin := rec.ID
+		if res, ok := c.results[origin]; ok {
+			delete(c.results, origin)
+			if isAddBurnAddresses(rec) {
+				c.processAddBurnAddresses(rec, res)
+			}
+		} else {
+			c.requests[origin] = rec
+		}
+	case *record.Virtual_OutgoingRequest:
+		origin := rec.ID
+		if _, ok := c.results[origin]; ok {
+			delete(c.results, origin)
+		} else {
+			c.requests[origin] = rec
+		}
 	}
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	for _, addr := range c.cache {
 		if err := addr.Dump(tx); err != nil {
-			return errors.Wrapf(err, "failed to dump migration addresses")
+			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}
 	}
 
@@ -59,11 +90,14 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	return nil
 }
 
-func (c *Composer) processAddBurnAddresses(rec *record.Material) {
-	in := rec.Virtual.GetIncomingRequest()
+func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Material) {
+	if !successResult(res) {
+		return
+	}
+	in := req.Virtual.GetIncomingRequest()
 	args := parseCallArguments(in.Arguments)
 	addresses := parseAddBurnAddressesCallParams(args)
-	pn := pulse.Number(rec.ID.Pulse())
+	pn := pulse.Number(req.ID.Pulse())
 	for _, addr := range addresses {
 		c.cache = append(c.cache, &beauty.MigrationAddress{
 			Addr:      addr,
@@ -117,4 +151,38 @@ func parseCallArguments(inArgs []byte) member.Request {
 		}
 	}
 	return request
+}
+
+func successResult(res *record.Material) bool {
+	payload := res.Virtual.GetResult().Payload
+	params := parsePayload(payload)
+	if len(params) < 2 {
+		log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
+		return false
+	}
+	ret1 := params[1]
+	if ret1 != nil {
+		errMap, ok := ret1.(map[string]interface{})
+		if !ok {
+			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
+			return false
+		}
+
+		strRepresentation, ok := errMap["S"]
+		if !ok {
+			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
+			return false
+		}
+
+		msg, ok := strRepresentation.(string)
+		if !ok {
+			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
+			return false
+		}
+
+		log.Error(errors.New(msg))
+		return false
+	}
+
+	return true
 }

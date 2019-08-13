@@ -20,11 +20,11 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
+	log "github.com/sirupsen/logrus"
 )
 
 type MigrationAddressKeeper struct {
@@ -49,7 +49,7 @@ func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) 
 	}
 
 	for _, addr := range deferred {
-		log.Infof("Migration address update %v", addr)
+		log.Infof("Deferred migration address %s", addr.Addr)
 	}
 
 	pub.Subscribe(func() {
@@ -62,9 +62,9 @@ func (k *MigrationAddressKeeper) Process(rec *record.Material) {
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
-		if _, ok := k.requests[origin]; ok {
+		if req, ok := k.requests[origin]; ok {
 			delete(k.requests, origin)
-			if isGetFreeMigrationAddress(rec) {
+			if isGetFreeMigrationAddress(req) {
 				k.processResult(rec)
 			}
 		} else {
@@ -94,7 +94,7 @@ func (k *MigrationAddressKeeper) processResult(rec *record.Material) {
 	res := rec.Virtual.GetResult()
 	addr := wastedAddress(res.Payload)
 	if addr.status != SUCCESS {
-		log.Error(errors.Errorf("invalid GetFreeMigrationAddress result status=%v", addr.status))
+		log.Debug(errors.Errorf("GetFreeMigrationAddress result status=%v", addr.status))
 		return
 	}
 

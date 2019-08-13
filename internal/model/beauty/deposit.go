@@ -30,9 +30,8 @@ type Deposit struct {
 	TransferDate    int64  `sql:",notnull"`
 	HoldReleaseDate int64  `sql:",notnull"`
 	Amount          string `sql:",notnull"`
-	Withdrawn       string `sql:",notnull"`
+	Balance         string `sql:",notnull"`
 	DepositState    string `sql:",notnull"`
-	Status          string `sql:",notnull"`
 }
 
 func (d *Deposit) Dump(tx *pg.Tx) error {

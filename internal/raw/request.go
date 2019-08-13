@@ -19,6 +19,7 @@ package raw
 import (
 	"encoding/hex"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 
 	"github.com/insolar/observer/internal/model/raw"
@@ -38,7 +39,7 @@ func parseRequest(rec *record.Material) *raw.Request {
 		object = req.Prototype.String()
 	}
 	return &raw.Request{
-		RequestID:  id.String(),
+		RequestID:  insolar.NewReference(id).String(),
 		Caller:     req.Caller.String(),
 		ReturnMode: req.ReturnMode.String(),
 		Base:       base,

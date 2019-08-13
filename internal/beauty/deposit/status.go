@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package burn
+package deposit
 
 import (
 	"github.com/pkg/errors"
@@ -27,15 +27,15 @@ const (
 	CANCELED = "CANCELED"
 )
 
-type addressResult struct {
-	status  string
-	address string
+type depositStatus struct {
+	status    string
+	memberRef string
 }
 
-func wastedAddress(payload []byte) addressResult {
+func parseMemberRef(payload []byte) depositStatus {
 	rets := parsePayload(payload)
 	if len(rets) < 2 {
-		return addressResult{"NOT_ENOUGH_PAYLOAD_PARAMS", ""}
+		return depositStatus{"NOT_ENOUGH_PAYLOAD_PARAMS", ""}
 	}
 
 	if rets[1] != nil {
@@ -45,14 +45,25 @@ func wastedAddress(payload []byte) addressResult {
 					log.Debug(errors.New(msg))
 				}
 			}
-			return addressResult{CANCELED, ""}
+			return depositStatus{CANCELED, ""}
 		}
 		log.Error(errors.New("invalid error value in GetMigrationAddress payload"))
-		return addressResult{"INVALID_ERROR_VALUE", ""}
+		return depositStatus{"INVALID_ERROR_VALUE", ""}
 	}
-	address, ok := rets[0].(string)
+
+	resultMap, ok := rets[0].(map[string]interface{})
 	if !ok {
-		return addressResult{"FIRST_PARAM_NOT_STRING", ""}
+		return depositStatus{"INVALID_RESULT_VALUE", ""}
 	}
-	return addressResult{SUCCESS, address}
+
+	memberRefInterface, ok := resultMap["memberReference"]
+	if !ok {
+		return depositStatus{"HAS_NOT_MEMBER_REFERENCE", ""}
+	}
+	memberRef, ok := memberRefInterface.(string)
+	if !ok {
+		return depositStatus{"MEMBER_REFERENCE_IS_NOT_STRING", ""}
+	}
+
+	return depositStatus{SUCCESS, memberRef}
 }

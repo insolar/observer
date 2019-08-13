@@ -13,8 +13,8 @@ type BalanceUpdate struct {
 
 func (u *BalanceUpdate) Dump(tx *pg.Tx) error {
 	res, err := tx.Model(&Member{}).
-		Where("wallet_state=?", u.PrevState).
-		Set("balance=?,wallet_state=?", u.Balance, u.ID).
+		Where("account_state=?", u.PrevState).
+		Set("balance=?,account_state=?", u.Balance, u.ID).
 		Update()
 	if err != nil {
 		return errors.Wrapf(err, "failed to update member balance")

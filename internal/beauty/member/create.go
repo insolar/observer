@@ -39,16 +39,16 @@ type memberBuilder struct {
 
 func (b *memberBuilder) build() (*beauty.Member, error) {
 	params := memberStatus(b.res.Virtual.GetResult().Payload)
-	balance := initialBalance(b.act.Virtual.GetActivate())
+	balance := accountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.New("invalid member reference")
 	}
 	return &beauty.Member{
-		MemberRef:        ref.Record().String(),
+		MemberRef:        ref.String(),
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
-		WalletState:      b.act.ID.String(),
+		AccountState:     b.act.ID.String(),
 		Status:           params.status,
 	}, nil
 }
@@ -81,8 +81,8 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(req):
 				c.memberCreateResult(rec)
-			case isNewWallet(req):
-				c.newWallet(req)
+			case isNewAccount(req):
+				c.newAccount(req)
 			}
 		} else {
 			c.results[origin] = rec
@@ -93,8 +93,8 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(rec):
 				c.memberCreateResult(res)
-			case isNewWallet(rec):
-				c.newWallet(rec)
+			case isNewAccount(rec):
+				c.newAccount(rec)
 			}
 		} else {
 			c.requests[rec.ID] = rec
@@ -106,8 +106,8 @@ func (c *Composer) Process(rec *record.Material) {
 			c.requests[rec.ID] = rec
 		}
 	case *record.Virtual_Activate:
-		if isWalletActivate(v.Activate) {
-			c.walletActivate(rec)
+		if isAccountActivate(v.Activate) {
+			c.accountActivate(rec)
 		}
 	}
 }
@@ -122,7 +122,7 @@ func (c *Composer) memberCreateResult(rec *record.Material) {
 	}
 }
 
-func (c *Composer) newWallet(rec *record.Material) {
+func (c *Composer) newAccount(rec *record.Material) {
 	direct := rec.ID
 	if act, ok := c.activates[direct]; ok {
 		origin := *rec.Virtual.GetIncomingRequest().Reason.Record()
@@ -137,7 +137,7 @@ func (c *Composer) newWallet(rec *record.Material) {
 	}
 }
 
-func (c *Composer) walletActivate(rec *record.Material) {
+func (c *Composer) accountActivate(rec *record.Material) {
 	direct := *rec.Virtual.GetActivate().Request.Record()
 	if req, ok := c.requests[direct]; ok {
 		origin := *req.Virtual.GetIncomingRequest().Reason.Record()

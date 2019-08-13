@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package transfer
+package deposit
 
 import (
 	"github.com/insolar/insolar/insolar"

@@ -18,22 +18,21 @@ package beauty
 
 import (
 	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 )
 
 type DepositUpdate struct {
-	id        insolar.ID
-	amount    string
-	withdrawn string
-	status    string
-	prevState string
+	ID        string
+	Amount    string
+	Balance   string
+	Status    string
+	PrevState string
 }
 
 func (u *DepositUpdate) Dump(tx *pg.Tx) error {
 	res, err := tx.Model(&Deposit{}).
-		Where("deposit_state=?", u.prevState).
-		Set("amount=?,wallet_state=?,withdrawn=?", u.amount, u.id.String(), u.withdrawn).
+		Where("deposit_state=?", u.PrevState).
+		Set("amount=?,wallet_state=?,balance=?", u.Amount, u.ID, u.Balance).
 		Update()
 	if err != nil {
 		return errors.Wrapf(err, "failed to update deposit state")
