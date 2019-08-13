@@ -27,7 +27,7 @@ import (
 	"github.com/insolar/observer/internal/beauty/burn"
 	"github.com/insolar/observer/internal/beauty/deposit"
 	"github.com/insolar/observer/internal/beauty/member"
-	"github.com/insolar/observer/internal/beauty/transfer"
+	"github.com/insolar/observer/internal/beauty/member/transfer"
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/beauty"
