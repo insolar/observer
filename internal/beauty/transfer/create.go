@@ -33,7 +33,7 @@ import (
 )
 
 func build(req *record.Material, res *record.Material) (*beauty.Transfer, error) {
-	// TODO: add eth_hash to transfer
+	// TODO: add wallet refs
 	callArguments := parseCallArguments(req.Virtual.GetIncomingRequest().Arguments)
 	pn := req.ID.Pulse()
 	callParams := parseTransferCallParams(callArguments)
@@ -57,7 +57,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		Fee:           transferResult.fee,
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
-		EthHash:       "TODO",
+		EthHash:       "",
 	}, nil
 }
 
