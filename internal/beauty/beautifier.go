@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 
+	"github.com/insolar/observer/internal/beauty/burn"
 	"github.com/insolar/observer/internal/beauty/deposit"
 	"github.com/insolar/observer/internal/beauty/member"
 	"github.com/insolar/observer/internal/beauty/transfer"
@@ -37,11 +38,13 @@ import (
 
 func NewBeautifier() *Beautifier {
 	return &Beautifier{
-		cfg:                  configuration.Default(),
-		memberComposer:       member.NewComposer(),
-		memberBalanceUpdater: member.NewBalanceUpdater(),
-		transferComposer:     transfer.NewComposer(),
-		depositComposer:      deposit.NewComposer(),
+		cfg:                      configuration.Default(),
+		memberComposer:           member.NewComposer(),
+		memberBalanceUpdater:     member.NewBalanceUpdater(),
+		transferComposer:         transfer.NewComposer(),
+		depositComposer:          deposit.NewComposer(),
+		migrationAddressComposer: burn.NewComposer(),
+		migrationAddressKeeper:   burn.NewKeeper(),
 	}
 }
 
@@ -52,10 +55,12 @@ type Beautifier struct {
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 
-	memberComposer       *member.Composer
-	memberBalanceUpdater *member.BalanceUpdater
-	transferComposer     *transfer.Composer
-	depositComposer      *deposit.Composer
+	memberComposer           *member.Composer
+	memberBalanceUpdater     *member.BalanceUpdater
+	transferComposer         *transfer.Composer
+	depositComposer          *deposit.Composer
+	migrationAddressComposer *burn.Composer
+	migrationAddressKeeper   *burn.MigrationAddressKeeper
 }
 
 type Record struct {
@@ -103,6 +108,9 @@ func (b *Beautifier) createTables() {
 		if err := db.CreateTable(&beauty.Deposit{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
 			log.Error(errors.Wrapf(err, "failed to create deposits table"))
 		}
+		if err := db.CreateTable(&beauty.MigrationAddress{}, &orm.CreateTableOptions{IfNotExists: true}); err != nil {
+			log.Error(errors.Wrapf(err, "failed to create migrations_addresses table"))
+		}
 	}
 }
 
@@ -111,6 +119,8 @@ func (b *Beautifier) process(rec *record.Material) {
 	b.memberBalanceUpdater.Process(rec)
 	b.transferComposer.Process(rec)
 	b.depositComposer.Process(rec)
+	b.migrationAddressComposer.Process(rec)
+	b.migrationAddressKeeper.Process(rec)
 }
 
 func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
@@ -124,6 +134,12 @@ func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		return err
 	}
 	if err := b.depositComposer.Dump(tx, pub); err != nil {
+		return err
+	}
+	if err := b.migrationAddressComposer.Dump(tx, pub); err != nil {
+		return err
+	}
+	if err := b.migrationAddressKeeper.Dump(tx, pub); err != nil {
 		return err
 	}
 	return nil
