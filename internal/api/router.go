@@ -23,6 +23,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/configuration"
@@ -46,6 +47,7 @@ func (r *Router) Init(ctx context.Context) error {
 	}
 	router := httprouter.New()
 	router.GET("/healthcheck", healthCheck)
+	router.GET("/metrics", metrics)
 	r.hs = &http.Server{Addr: r.cfg.API.Addr, Handler: router}
 	return nil
 }
@@ -71,4 +73,8 @@ func healthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, _ = fmt.Fprint(w, "OK")
+}
+
+func metrics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	promhttp.Handler().ServeHTTP(w, r)
 }

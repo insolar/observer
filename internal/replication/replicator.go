@@ -27,6 +27,8 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc"
 
 	log "github.com/sirupsen/logrus"
@@ -59,6 +61,9 @@ type Replicator struct {
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 
+	highestSyncPulseCollector prometheus.Gauge
+	processingTime            prometheus.Summary
+
 	sync.RWMutex
 	dataHandles []DataHandle
 	dumpHandles []DumpHandle
@@ -68,7 +73,19 @@ type Replicator struct {
 }
 
 func NewReplicator() *Replicator {
-	return &Replicator{stop: make(chan bool)}
+	collector := promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "observer_last_sync_pulse",
+		Help: "The last number that was replicated from HME.",
+	})
+	processingTime := promauto.NewSummary(prometheus.SummaryOpts{
+		Name: "observer_processing_duration_seconds",
+		Help: "The time that needs to replicate and beautify data.",
+	})
+	return &Replicator{
+		highestSyncPulseCollector: collector,
+		processingTime:            processingTime,
+		stop:                      make(chan bool),
+	}
 }
 
 func (r *Replicator) SubscribeOnData(handle DataHandle) {
@@ -109,14 +126,17 @@ func (r *Replicator) Start(ctx context.Context) error {
 	log.Infof("Starting replication from position (rn: %d, pulse: %d)", current.rn, current.pn)
 	req := r.makeRequest(current)
 	go func() {
+		startTime := time.Now()
 		for {
 			batch, pos := r.pull(req)
-			r.emit(current, batch)
+			r.emit(&startTime, current, batch)
 			if len(batch) < int(r.cfg.Replicator.BatchSize) {
 				if pos != current {
 					r.emitDump(pos.pn)
+					r.updateProcessingTime(startTime)
 				}
 				time.Sleep(r.cfg.Replicator.RequestDelay)
+				startTime = time.Now()
 			}
 			current = pos
 			req = r.makeRequest(current)
@@ -156,13 +176,15 @@ func (r *Replicator) pull(req *exporter.GetRecords) ([]dataMsg, position) {
 	return batch, position{pn: pulse, rn: number}
 }
 
-func (r *Replicator) emit(last position, batch []dataMsg) {
+func (r *Replicator) emit(start *time.Time, last position, batch []dataMsg) {
 	lastPulse := last.pn
 	for _, msg := range batch {
 		pn := msg.rec.ID.Pulse()
 		if pn != lastPulse {
 			r.emitDump(lastPulse)
 			lastPulse = pn
+			r.updateProcessingTime(*start)
+			*start = time.Now()
 		}
 		r.emitData(msg.rn, msg.rec)
 	}
@@ -199,6 +221,7 @@ func (r *Replicator) emitDump(pn insolar.PulseNumber) {
 	}
 	// emitting success transaction
 	emitter.emit()
+	r.updateStat(pn)
 }
 
 type successEmitter struct {
@@ -256,6 +279,7 @@ func (r *Replicator) currentPosition() position {
 		return position{pn: 0, rn: 0}
 	}
 	id := insolar.NewIDFromBytes(rec.Key)
+	r.setStat(id.Pulse())
 	return position{pn: id.Pulse(), rn: rec.Number}
 }
 
@@ -265,4 +289,17 @@ func (r *Replicator) makeRequest(pos position) *exporter.GetRecords {
 		PulseNumber:  pos.pn,
 		RecordNumber: pos.rn,
 	}
+}
+
+func (r *Replicator) setStat(pn insolar.PulseNumber) {
+	r.highestSyncPulseCollector.Set(float64(pn))
+}
+
+func (r *Replicator) updateStat(pn insolar.PulseNumber) {
+	r.highestSyncPulseCollector.Set(float64(pn))
+}
+
+func (r *Replicator) updateProcessingTime(start time.Time) {
+	diff := time.Since(start)
+	r.processingTime.Observe(diff.Seconds())
 }
