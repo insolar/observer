@@ -23,6 +23,8 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/beauty/burn"
 	"github.com/insolar/observer/internal/beauty/deposit"
@@ -38,14 +40,18 @@ import (
 )
 
 func NewBeautifier() *Beautifier {
+	migrationAddressGauge := promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "observer_available_migration_addresses_total",
+		Help: "Cache size of migration address composer",
+	})
 	return &Beautifier{
 		cfg:                      configuration.Default(),
 		memberComposer:           member.NewComposer(),
 		memberBalanceUpdater:     member.NewBalanceUpdater(),
 		transferComposer:         transfer.NewComposer(),
 		depositComposer:          deposit.NewComposer(),
-		migrationAddressComposer: burn.NewComposer(),
-		migrationAddressKeeper:   burn.NewKeeper(),
+		migrationAddressComposer: burn.NewComposer(migrationAddressGauge),
+		migrationAddressKeeper:   burn.NewKeeper(migrationAddressGauge),
 		depositTransferComposer:  depositTransfer.NewComposer(),
 		depositKeeper:            deposit.NewKeeper(),
 	}
@@ -93,6 +99,9 @@ func (b *Beautifier) Init(ctx context.Context) error {
 	}
 	if b.cfg.DB.CreateTables {
 		b.createTables()
+	}
+	if b.ConnectionHolder != nil {
+		b.migrationAddressComposer.Init(b.ConnectionHolder.DB())
 	}
 	return nil
 }

@@ -34,10 +34,11 @@ type MigrationAddressKeeper struct {
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.WasteMigrationAddress
 
-	stat *dumpStat
+	migrationAddressGauge prometheus.Gauge
+	stat                  *dumpStat
 }
 
-func NewKeeper() *MigrationAddressKeeper {
+func NewKeeper(migrationAddressGauge prometheus.Gauge) *MigrationAddressKeeper {
 	stat := &dumpStat{
 		cached: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "observer_migration_address_keeper_cached_total",
@@ -46,9 +47,10 @@ func NewKeeper() *MigrationAddressKeeper {
 	}
 
 	return &MigrationAddressKeeper{
-		requests: make(map[insolar.ID]*record.Material),
-		results:  make(map[insolar.ID]*record.Material),
-		stat:     stat,
+		requests:              make(map[insolar.ID]*record.Material),
+		results:               make(map[insolar.ID]*record.Material),
+		migrationAddressGauge: migrationAddressGauge,
+		stat:                  stat,
 	}
 }
 
@@ -67,6 +69,8 @@ func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) 
 	}
 
 	pub.Subscribe(func() {
+		subtrahend := len(k.cache) - len(deferred)
+		k.migrationAddressGauge.Sub(float64(subtrahend))
 		k.cache = deferred
 	})
 	return nil
