@@ -75,7 +75,6 @@ func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		}
 	}
 
-	log.Infof("balance updates=%d", len(u.cache))
 	var deferred []*beauty.BalanceUpdate
 	for _, upd := range u.cache {
 		if err := upd.Dump(tx); err != nil {

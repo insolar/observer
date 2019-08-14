@@ -26,6 +26,8 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/beauty"
@@ -65,12 +67,21 @@ type Composer struct {
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.Transfer
+
+	stat *dumpStat
 }
 
 func NewComposer() *Composer {
+	stat := &dumpStat{
+		cached: promauto.NewGauge(prometheus.GaugeOpts{
+			Name: "observer_member_transfer_composer_cached_total",
+			Help: "Cache size of migration address composer",
+		}),
+	}
 	return &Composer{
 		requests: make(map[insolar.ID]*record.Material),
 		results:  make(map[insolar.ID]*record.Material),
+		stat:     stat,
 	}
 }
 
@@ -156,7 +167,8 @@ func parseCallArguments(inArgs []byte) member.Request {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("new transfers=%d", len(c.cache))
+	c.updateStat()
+
 	for _, transfer := range c.cache {
 		if err := transfer.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump transfers")
@@ -167,4 +179,15 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		c.cache = []*beauty.Transfer{}
 	})
 	return nil
+}
+
+type dumpStat struct {
+	cached prometheus.Gauge
+}
+
+func (c *Composer) updateStat() {
+	requestCount := len(c.requests)
+	resultCount := len(c.results)
+
+	c.stat.cached.Set(float64(requestCount + resultCount))
 }

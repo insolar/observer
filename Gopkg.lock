@@ -398,11 +398,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e89f2cdede55684adbe44b5566f55838ad2aee1dff348d14b73ccf733607b671"
+  digest = "1:3d0064a167b99c02dce627df4aeb41d884059525236bcc895a1b1c562edb5b96"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
     "prometheus/internal",
+    "prometheus/promauto",
     "prometheus/promhttp",
   ]
   pruneopts = "UT"
@@ -755,6 +756,9 @@
     "github.com/insolar/insolar/network/consensus/common/pulse",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promauto",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/require",

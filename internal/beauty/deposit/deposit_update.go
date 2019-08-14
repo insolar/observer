@@ -33,6 +33,10 @@ type DepositKeeper struct {
 	cache []*beauty.DepositUpdate
 }
 
+func NewKeeper() *DepositKeeper {
+	return &DepositKeeper{}
+}
+
 func (k *DepositKeeper) Process(rec *record.Material) {
 	if isDepositAmend(rec) {
 		amd := rec.Virtual.GetAmend()
