@@ -25,9 +25,9 @@ import (
 type Pulse struct {
 	tableName struct{} `sql:"pulses"`
 
-	Pulse         insolar.PulseNumber
-	PulseDate     int64
-	Entropy       string
+	Pulse         insolar.PulseNumber `sql:",pk"`
+	PulseDate     int64               `sql:",notnull"`
+	Entropy       string              `sql:",notnull"`
 	RequestsCount uint32
 }
 
