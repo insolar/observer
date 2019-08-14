@@ -23,8 +23,6 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/configuration"
@@ -32,13 +30,6 @@ import (
 	"github.com/insolar/observer/internal/model/raw"
 	"github.com/insolar/observer/internal/replication"
 )
-
-type dumpStat struct {
-	records  prometheus.Counter
-	requests prometheus.Counter
-	results  prometheus.Counter
-	objects  prometheus.Counter
-}
 
 type Dumper struct {
 	Configurator     configuration.Configurator `inject:""`
@@ -50,31 +41,10 @@ type Dumper struct {
 	requests         []*raw.Request
 	results          []*raw.Result
 	objects          []*raw.Object
-	stat             *dumpStat
 }
 
 func NewDumper() *Dumper {
-	stat := &dumpStat{
-		records: promauto.NewCounter(prometheus.CounterOpts{
-			Name: "observer_records_total",
-			Help: "",
-		}),
-		requests: promauto.NewCounter(prometheus.CounterOpts{
-			Name: "observer_requests_total",
-			Help: "",
-		}),
-		results: promauto.NewCounter(prometheus.CounterOpts{
-			Name: "observer_results_total",
-			Help: "",
-		}),
-		objects: promauto.NewCounter(prometheus.CounterOpts{
-			Name: "observer_objects_total",
-			Help: "",
-		}),
-	}
-	return &Dumper{
-		stat: stat,
-	}
+	return &Dumper{}
 }
 
 func (d *Dumper) Init(ctx context.Context) error {
@@ -143,8 +113,6 @@ func (d *Dumper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	}
 
 	pub.Subscribe(func() {
-		d.updateStat()
-
 		d.records = []*raw.Record{}
 		d.requests = []*raw.Request{}
 		d.results = []*raw.Result{}
@@ -175,16 +143,4 @@ func (d *Dumper) buildUnpacked(rec *record.Material) {
 	case *record.Virtual_Deactivate:
 		d.objects = append(d.objects, parseDeactivate(rec))
 	}
-}
-
-func (d *Dumper) updateStat() {
-	recordCount := len(d.records)
-	requestCount := len(d.requests)
-	resultCount := len(d.results)
-	objectCount := len(d.objects)
-
-	d.stat.records.Add(float64(recordCount))
-	d.stat.requests.Add(float64(requestCount))
-	d.stat.results.Add(float64(resultCount))
-	d.stat.objects.Add(float64(objectCount))
 }

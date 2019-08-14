@@ -26,6 +26,8 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
@@ -54,11 +56,18 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 }
 
 func NewComposer() *Composer {
+	stat := &dumpStat{
+		cached: promauto.NewGauge(prometheus.GaugeOpts{
+			Name: "observer_member_composer_cached_total",
+			Help: "Cache size of migration address composer",
+		}),
+	}
 	return &Composer{
 		builders:  make(map[insolar.ID]*memberBuilder),
 		requests:  make(map[insolar.ID]*record.Material),
 		activates: make(map[insolar.ID]*record.Material),
 		results:   make(map[insolar.ID]*record.Material),
+		stat:      stat,
 	}
 }
 
@@ -70,6 +79,8 @@ type Composer struct {
 
 	sync.RWMutex
 	cache []*beauty.Member
+
+	stat *dumpStat
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -169,7 +180,8 @@ func (c *Composer) compose(b *memberBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("new members=%d", len(c.cache))
+	c.updateStat()
+
 	for _, member := range c.cache {
 		if err := member.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump members")
@@ -230,4 +242,17 @@ func parseCallArguments(inArgs []byte) member.Request {
 		}
 	}
 	return request
+}
+
+type dumpStat struct {
+	cached prometheus.Gauge
+}
+
+func (c *Composer) updateStat() {
+	requestCount := len(c.requests)
+	resultCount := len(c.results)
+	activatesCount := len(c.activates)
+	buildersCount := len(c.builders)
+
+	c.stat.cached.Set(float64(requestCount + resultCount + activatesCount + buildersCount))
 }

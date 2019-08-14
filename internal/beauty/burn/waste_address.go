@@ -21,6 +21,8 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
@@ -31,16 +33,28 @@ type MigrationAddressKeeper struct {
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.WasteMigrationAddress
+
+	stat *dumpStat
 }
 
 func NewKeeper() *MigrationAddressKeeper {
+	stat := &dumpStat{
+		cached: promauto.NewGauge(prometheus.GaugeOpts{
+			Name: "observer_migration_address_keeper_cached_total",
+			Help: "Cache size of migration address composer",
+		}),
+	}
+
 	return &MigrationAddressKeeper{
 		requests: make(map[insolar.ID]*record.Material),
 		results:  make(map[insolar.ID]*record.Material),
+		stat:     stat,
 	}
 }
 
 func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	k.updateStat()
+
 	deferred := []*beauty.WasteMigrationAddress{}
 	for _, addr := range k.cache {
 		if err := addr.Dump(tx); err != nil {
@@ -111,4 +125,11 @@ func isGetFreeMigrationAddress(rec *record.Material) bool {
 
 	in := v.IncomingRequest
 	return in.Method == "GetFreeMigrationAddress"
+}
+
+func (k *MigrationAddressKeeper) updateStat() {
+	requestCount := len(k.requests)
+	resultCount := len(k.results)
+
+	k.stat.cached.Set(float64(requestCount + resultCount))
 }

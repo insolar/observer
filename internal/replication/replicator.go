@@ -126,6 +126,7 @@ func (r *Replicator) Start(ctx context.Context) error {
 	log.Infof("Starting replication from position (rn: %d, pulse: %d)", current.rn, current.pn)
 	req := r.makeRequest(current)
 	go func() {
+		defer catchPanic()
 		startTime := time.Now()
 		for {
 			batch, pos := r.pull(req)
@@ -302,4 +303,10 @@ func (r *Replicator) updateStat(pn insolar.PulseNumber) {
 func (r *Replicator) updateProcessingTime(start time.Time) {
 	diff := time.Since(start)
 	r.processingTime.Observe(diff.Seconds())
+}
+
+func catchPanic() {
+	if err := recover(); err != nil {
+		log.Error(err)
+	}
 }

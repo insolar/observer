@@ -29,6 +29,8 @@ import (
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
@@ -70,14 +72,24 @@ type Composer struct {
 
 	sync.RWMutex
 	cache []*beauty.Deposit
+
+	stat *dumpStat
 }
 
 func NewComposer() *Composer {
+	stat := &dumpStat{
+		cached: promauto.NewGauge(prometheus.GaugeOpts{
+			Name: "observer_deposit_composer_cached_total",
+			Help: "Cache size of migration address composer",
+		}),
+	}
+
 	return &Composer{
 		requests:  make(map[insolar.ID]*record.Material),
 		results:   make(map[insolar.ID]*record.Material),
 		activates: make(map[insolar.ID]*record.Material),
 		builders:  make(map[insolar.ID]*depositBuilder),
+		stat:      stat,
 	}
 }
 
@@ -180,7 +192,6 @@ func (c *Composer) compose(b *depositBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("new deposits=%d", len(c.cache))
 	for _, dep := range c.cache {
 		if err := dep.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump deposits")
@@ -266,4 +277,17 @@ func isDepositNew(req *record.Material) bool {
 
 func isDepositActivate(act *record.Activate) bool {
 	return act.Image.Equal(*depositProxy.PrototypeReference)
+}
+
+type dumpStat struct {
+	cached prometheus.Gauge
+}
+
+func (c *Composer) updateStat() {
+	requestCount := len(c.requests)
+	resultCount := len(c.results)
+	activatesCount := len(c.activates)
+	buildersCount := len(c.builders)
+
+	c.stat.cached.Set(float64(requestCount + resultCount + activatesCount + buildersCount))
 }
