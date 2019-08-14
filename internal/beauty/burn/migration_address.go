@@ -61,7 +61,7 @@ func NewComposer(migrationAddressGauge prometheus.Gauge) *Composer {
 
 func (c *Composer) Init(db *pg.DB) {
 	count, err := db.Model(&beauty.MigrationAddress{}).
-		Where("wasted != TRUE").
+		Where("wasted != TRUE OR wasted IS NULL").
 		Count()
 	if err != nil {
 		return
