@@ -29,9 +29,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replication"
-	log "github.com/sirupsen/logrus"
 )
 
 type Composer struct {
@@ -39,10 +40,11 @@ type Composer struct {
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.MigrationAddress
 
-	stat *dumpStat
+	migrationAddressGauge prometheus.Gauge
+	stat                  *dumpStat
 }
 
-func NewComposer() *Composer {
+func NewComposer(migrationAddressGauge prometheus.Gauge) *Composer {
 	stat := &dumpStat{
 		cached: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "observer_migration_address_composer_cached_total",
@@ -50,10 +52,21 @@ func NewComposer() *Composer {
 		}),
 	}
 	return &Composer{
-		requests: make(map[insolar.ID]*record.Material),
-		results:  make(map[insolar.ID]*record.Material),
-		stat:     stat,
+		requests:              make(map[insolar.ID]*record.Material),
+		results:               make(map[insolar.ID]*record.Material),
+		migrationAddressGauge: migrationAddressGauge,
+		stat:                  stat,
 	}
+}
+
+func (c *Composer) Init(db *pg.DB) {
+	count, err := db.Model(&beauty.MigrationAddress{}).
+		Where("wasted != TRUE OR wasted IS NULL").
+		Count()
+	if err != nil {
+		return
+	}
+	c.migrationAddressGauge.Set(float64(count))
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -98,6 +111,7 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	}
 
 	pub.Subscribe(func() {
+		c.migrationAddressGauge.Add(float64(len(c.cache)))
 		c.cache = []*beauty.MigrationAddress{}
 	})
 	return nil
@@ -111,10 +125,14 @@ func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Mat
 	args := parseCallArguments(in.Arguments)
 	addresses := parseAddBurnAddressesCallParams(args)
 	pn := pulse.Number(req.ID.Pulse())
+	t, err := pn.AsApproximateTime()
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to convert AddBurnAddresses request pulse to time"))
+	}
 	for _, addr := range addresses {
 		c.cache = append(c.cache, &beauty.MigrationAddress{
 			Addr:      addr,
-			Timestamp: pn.AsApproximateTime().Unix(),
+			Timestamp: t.Unix(),
 			Wasted:    false,
 		})
 	}

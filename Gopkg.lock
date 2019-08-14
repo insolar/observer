@@ -200,7 +200,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fa015622489983b8d1c7d926a45b2573c060096c5bca158d277e064f1bc262dc"
+  digest = "1:880a2e95d47549004869db49b35237119ae3e3391760a07228a0891ce1434e22"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -261,7 +261,7 @@
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "f0b8b0aaa2b3ce4a0209a80d038569ed513fdc11"
+  revision = "4a33557edb672df3fba1eafefc583151627b3b00"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"

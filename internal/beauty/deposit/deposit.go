@@ -52,12 +52,20 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	id := b.act.ID
 	act := b.act.Virtual.GetActivate()
 	deposit := initialDepositState(act)
+	transferDate, err := pulse.Number(deposit.PulseDepositCreate).AsApproximateTime()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert deposit create pulse to time")
+	}
+	holdReleadDate, err := pulse.Number(deposit.PulseDepositUnHold).AsApproximateTime()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert deposit unhold pulse to time")
+	}
 	return &beauty.Deposit{
 		EthHash:         deposit.TxHash,
 		DepositRef:      act.Request.String(),
 		MemberRef:       callResult.memberRef,
-		TransferDate:    pulse.Number(deposit.PulseDepositCreate).AsApproximateTime().Unix(),
-		HoldReleaseDate: pulse.Number(deposit.PulseDepositUnHold).AsApproximateTime().Unix(),
+		TransferDate:    transferDate.Unix(),
+		HoldReleaseDate: holdReleadDate.Unix(),
 		Amount:          deposit.Amount,
 		Balance:         deposit.Balance,
 		DepositState:    id.String(),

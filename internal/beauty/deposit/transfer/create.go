@@ -44,6 +44,10 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
+	transferDate, err := pulse.Number(pn).AsApproximateTime()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
+	}
 	return &beauty.Transfer{
 		TxID:          insolar.NewReference(req.ID).String(),
 		Status:        transferResult.status,
@@ -51,7 +55,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		MemberFromRef: memberFrom.String(),
 		MemberToRef:   memberFrom.String(),
 		PulseNum:      pn,
-		TransferDate:  pulse.Number(pn).AsApproximateTime().Unix(),
+		TransferDate:  transferDate.Unix(),
 		Fee:           "0",
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
