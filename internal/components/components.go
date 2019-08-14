@@ -25,6 +25,7 @@ import (
 
 	"github.com/insolar/observer/internal/api"
 	"github.com/insolar/observer/internal/beauty"
+	"github.com/insolar/observer/internal/beauty/pulse"
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/raw"
@@ -44,6 +45,7 @@ func Prepare() *Components {
 		replication.NewReplicator(),
 		raw.NewDumper(),
 		beauty.NewBeautifier(),
+		pulse.NewKeeper(),
 		api.NewRouter(),
 	)
 

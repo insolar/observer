@@ -199,8 +199,8 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "INS-3221-transfer-to-deposit"
-  digest = "1:c2cc76d4190aa6917f9af8248a0e72830c01a722ecf2dc5abae49e082081d199"
+  branch = "master"
+  digest = "1:fa015622489983b8d1c7d926a45b2573c060096c5bca158d277e064f1bc262dc"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -261,7 +261,7 @@
     "platformpolicy/internal/sign",
   ]
   pruneopts = "UT"
-  revision = "0820db597faf9aa9fe647f14b3dd82f87416a810"
+  revision = "f0b8b0aaa2b3ce4a0209a80d038569ed513fdc11"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"

@@ -97,10 +97,6 @@ func (b *Beautifier) Init(ctx context.Context) error {
 	return nil
 }
 
-func (b *Beautifier) Start(ctx context.Context) error {
-	return nil
-}
-
 func (b *Beautifier) createTables() {
 	if b.ConnectionHolder != nil {
 		db := b.ConnectionHolder.DB()

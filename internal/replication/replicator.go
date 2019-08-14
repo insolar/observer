@@ -35,6 +35,7 @@ import (
 
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
+	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/model/raw"
 )
 
@@ -56,6 +57,12 @@ type OnDumpSuccess interface {
 	Subscribe(SuccessHandle)
 }
 
+type PulseHandle func(pn insolar.PulseNumber, entropy insolar.Entropy, timestamp int64)
+
+type OnPulse interface {
+	SubscribeOnPulse(handle PulseHandle)
+}
+
 type Replicator struct {
 	Configurator     configuration.Configurator `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
@@ -65,8 +72,9 @@ type Replicator struct {
 	processingTime            prometheus.Summary
 
 	sync.RWMutex
-	dataHandles []DataHandle
-	dumpHandles []DumpHandle
+	dataHandles  []DataHandle
+	dumpHandles  []DumpHandle
+	pulseHandles []PulseHandle
 
 	conn *grpc.ClientConn
 	stop chan bool
@@ -102,6 +110,13 @@ func (r *Replicator) SubscribeOnDump(handle DumpHandle) {
 	r.dumpHandles = append(r.dumpHandles, handle)
 }
 
+func (r *Replicator) SubscribeOnPulse(handle PulseHandle) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.pulseHandles = append(r.pulseHandles, handle)
+}
+
 func (r *Replicator) Init(ctx context.Context) error {
 	if r.Configurator != nil {
 		r.cfg = r.Configurator.Actual()
@@ -127,6 +142,7 @@ func (r *Replicator) Start(ctx context.Context) error {
 	req := r.makeRequest(current)
 	go func() {
 		defer catchPanic()
+
 		startTime := time.Now()
 		for {
 			batch, pos := r.pull(req)
@@ -136,6 +152,7 @@ func (r *Replicator) Start(ctx context.Context) error {
 					r.emitDump(pos.pn)
 					r.updateProcessingTime(startTime)
 				}
+				r.syncPulses()
 				time.Sleep(r.cfg.Replicator.RequestDelay)
 				startTime = time.Now()
 			}
@@ -150,13 +167,57 @@ func (r *Replicator) Start(ctx context.Context) error {
 	return nil
 }
 
+func (r *Replicator) syncPulses() {
+	lastSynced := r.lastSyncedPulse()
+	for {
+		next, entropy, timestamp := r.pullPulse(lastSynced)
+		if next == lastSynced {
+			return
+		}
+		r.emitPulse(next, entropy, timestamp)
+		r.emitDump(next)
+		r.updateStat(next)
+		lastSynced = next
+	}
+}
+
+func (r *Replicator) pullPulse(pn insolar.PulseNumber) (insolar.PulseNumber, insolar.Entropy, int64) {
+	req := &exporter.GetPulses{PulseNumber: pn, Count: 1}
+	ctx := context.Background()
+	client := exporter.NewPulseExporterClient(r.conn)
+	stream, err := client.Export(ctx, req)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
+		return pn, insolar.Entropy{}, 0
+	}
+
+	resp, err := stream.Recv()
+	if err == io.EOF {
+		return pn, insolar.Entropy{}, 0
+	}
+	if err != nil {
+		log.Error(errors.Wrapf(err, "received error value from gRPC stream"))
+		return pn, insolar.Entropy{}, 0
+	}
+	return resp.PulseNumber, resp.Entropy, resp.PulseTimestamp
+}
+
+func (r *Replicator) emitPulse(pn insolar.PulseNumber, entropy insolar.Entropy, timestamp int64) {
+	r.RLock()
+	defer r.RUnlock()
+
+	for _, handle := range r.pulseHandles {
+		handle(pn, entropy, timestamp)
+	}
+}
+
 func (r *Replicator) pull(req *exporter.GetRecords) ([]dataMsg, position) {
 	ctx := context.Background()
 	pulse, number := req.PulseNumber, req.RecordNumber
 	client := exporter.NewRecordExporterClient(r.conn)
 	stream, err := client.Export(ctx, req)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to get gRPC stream from expoter.Export method"))
+		log.Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
 		return []dataMsg{}, position{pn: pulse, rn: number}
 	}
 
@@ -203,7 +264,6 @@ func (r *Replicator) emitData(rn uint32, rec *record.Material) {
 func (r *Replicator) emitDump(pn insolar.PulseNumber) {
 	db := r.ConnectionHolder.DB()
 	emitter := &successEmitter{}
-	log.Infof("pulse=%d", pn)
 	for {
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
 			for _, handle := range r.dumpHandles {
@@ -222,7 +282,6 @@ func (r *Replicator) emitDump(pn insolar.PulseNumber) {
 	}
 	// emitting success transaction
 	emitter.emit()
-	r.updateStat(pn)
 }
 
 type successEmitter struct {
@@ -282,6 +341,17 @@ func (r *Replicator) currentPosition() position {
 	id := insolar.NewIDFromBytes(rec.Key)
 	r.setStat(id.Pulse())
 	return position{pn: id.Pulse(), rn: rec.Number}
+}
+
+func (r *Replicator) lastSyncedPulse() insolar.PulseNumber {
+	db := r.ConnectionHolder.DB()
+	pulse := &beauty.Pulse{}
+	err := db.Model(pulse).Last()
+	if err != nil {
+		log.Debug(errors.Wrapf(err, "failed to get last pulse from db"))
+		return 0
+	}
+	return pulse.Pulse
 }
 
 func (r *Replicator) makeRequest(pos position) *exporter.GetRecords {
