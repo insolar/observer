@@ -200,6 +200,8 @@ func (c *Composer) compose(b *depositBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump deposits")
+
 	for _, dep := range c.cache {
 		if err := dep.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump deposits")

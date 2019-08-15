@@ -136,6 +136,7 @@ func (b *Beautifier) process(rec *record.Material) {
 }
 
 func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump beautifier")
 	if err := b.memberComposer.Dump(tx, pub); err != nil {
 		return err
 	}

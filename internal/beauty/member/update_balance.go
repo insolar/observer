@@ -69,6 +69,8 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 }
 
 func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump member balances")
+
 	for _, acc := range u.technicalAccounts {
 		if err := acc.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump internal member")

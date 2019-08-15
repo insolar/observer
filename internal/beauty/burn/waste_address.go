@@ -55,6 +55,7 @@ func NewKeeper(migrationAddressGauge prometheus.Gauge) *MigrationAddressKeeper {
 }
 
 func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump wasted migration addresses")
 	k.updateStat()
 
 	deferred := []*beauty.WasteMigrationAddress{}

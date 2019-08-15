@@ -51,6 +51,8 @@ func (k *DepositKeeper) Process(rec *record.Material) {
 }
 
 func (k *DepositKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump deposit updates")
+
 	deferred := []*beauty.DepositUpdate{}
 	for _, upd := range k.cache {
 		if err := upd.Dump(tx); err != nil {
