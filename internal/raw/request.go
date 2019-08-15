@@ -36,7 +36,7 @@ func parseRequest(rec *record.Material) *raw.Request {
 		object = req.Object.String()
 	}
 	if nil != req.Prototype {
-		object = req.Prototype.String()
+		prototype = req.Prototype.String()
 	}
 	return &raw.Request{
 		RequestID:  insolar.NewReference(id).String(),
