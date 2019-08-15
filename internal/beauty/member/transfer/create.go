@@ -171,6 +171,8 @@ func parseCallArguments(inArgs []byte) member.Request {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump member transfers")
+
 	c.updateStat()
 
 	for _, transfer := range c.cache {

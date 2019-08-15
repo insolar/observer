@@ -86,6 +86,7 @@ func NewComposer() *Composer {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump deposit transfers")
 	c.updateStat()
 
 	for _, transfer := range c.cache {

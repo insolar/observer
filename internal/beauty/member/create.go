@@ -180,6 +180,7 @@ func (c *Composer) compose(b *memberBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump members")
 	c.updateStat()
 
 	for _, member := range c.cache {

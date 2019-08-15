@@ -19,6 +19,7 @@ package beauty
 import (
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type MigrationAddress struct {
@@ -30,11 +31,14 @@ type MigrationAddress struct {
 }
 
 func (a *MigrationAddress) Dump(tx *pg.Tx) error {
-	if _, err := tx.Model(a).
-		Where("addr=?", a.Addr).
-		OnConflict("DO NOTHING").
-		SelectOrInsert(); err != nil {
-		return errors.Wrapf(err, "failed to insert migration address")
+	if err := tx.Insert(a); err != nil {
+		log.Error(errors.Wrapf(err, "failed to insert migration address"))
 	}
+	// if _, err := tx.Model(a).
+	// 	Where("addr=?", a.Addr).
+	// 	OnConflict("DO NOTHING").
+	// 	SelectOrInsert(); err != nil {
+	// 	return errors.Wrapf(err, "failed to insert migration address")
+	// }
 	return nil
 }

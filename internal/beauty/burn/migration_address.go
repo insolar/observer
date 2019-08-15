@@ -102,9 +102,13 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump migration addresses")
+
 	c.updateStat()
 
+	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
+		// log.Infof("migration address inserting %d", i)
 		if err := addr.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}

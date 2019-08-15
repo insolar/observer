@@ -18,11 +18,16 @@ package replication
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
+	"time"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
 
@@ -32,25 +37,45 @@ func TestHeavy_Export(t *testing.T) {
 		grpc.MaxCallRecvMsgSize(1073741824),
 		grpc.MaxCallSendMsgSize(1073741824),
 	)
-	conn, err := grpc.Dial("127.0.0.1:5678", limits, grpc.WithInsecure())
-	client := exporter.NewRecordExporterClient(conn)
-	req := &exporter.GetRecords{Count: 1000, PulseNumber: 0, RecordNumber: 0}
-	stream, err := client.Export(ctx, req)
-	if err != nil {
-		t.Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
-	}
+	conn, err := grpc.Dial("127.0.0.1:5679", limits, grpc.WithInsecure())
+	require.NoError(t, err)
+
+	pn, rn := insolar.PulseNumber(0), uint32(0)
+	log.Infof("before cycle")
 	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
+		client := exporter.NewRecordExporterClient(conn)
+		req := &exporter.GetRecords{Count: 1000, PulseNumber: pn, RecordNumber: rn}
+		log.Infof("before export call")
+		stream, err := client.Export(ctx, req)
+		// client := exporter.NewPulseExporterClient(conn)
+		// req := &exporter.GetPulses{Count: 1, PulseNumber: 19627849}
+		// stream, err := client.Export(ctx, req)
 		if err != nil {
-			t.Error(errors.Wrapf(err, "received error value from gRPC stream"))
-			break
+			log.Infof(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method").Error())
+			return
 		}
-		n, rec := resp.RecordNumber, &resp.Record
-		pulse := rec.ID.Pulse()
-		t.Logf("received %d %d %s", n, pulse, rec.ID.String())
+		for {
+			fmt.Println("before recv")
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Error(errors.Wrapf(err, "received error value from gRPC stream"))
+				break
+			}
+			if resp == nil {
+				fmt.Println("resp is nil")
+				return
+			}
+			// t.Logf("pulse %d", resp.PulseNumber)
+			n, rec := resp.RecordNumber, &resp.Record
+			pulse := rec.ID.Pulse()
+			log.Infof("received %d %d %s \n", n, pulse, rec.ID.String())
+			pn = pulse
+			rn = n
+		}
+		log.Infof("stream finished")
+		time.Sleep(1 * time.Second)
 	}
-	t.Logf("stream finished")
 }

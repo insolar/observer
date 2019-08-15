@@ -82,6 +82,7 @@ func (k *Keeper) process(pn insolar.PulseNumber, entropy insolar.Entropy, timest
 }
 
 func (k *Keeper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump pulse keeper")
 	for _, p := range k.cache {
 		if err := p.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump pulse")

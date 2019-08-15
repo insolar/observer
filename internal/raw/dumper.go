@@ -91,6 +91,7 @@ func (d *Dumper) process(rn uint32, rec *record.Material) {
 }
 
 func (d *Dumper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump raw records")
 	for _, rec := range d.records {
 		if err := rec.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw records")
