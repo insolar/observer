@@ -54,3 +54,4 @@ network_cache
 
 *.lock
 scenario
+nocvs
