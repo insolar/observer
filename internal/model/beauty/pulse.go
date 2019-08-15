@@ -19,6 +19,7 @@ package beauty
 import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 )
 
@@ -32,8 +33,14 @@ type Pulse struct {
 }
 
 func (p *Pulse) Dump(tx *pg.Tx) error {
-	if err := tx.Insert(p); err != nil {
-		return errors.Wrapf(err, "failed to insert pulse")
+	res, err := tx.Model(p).
+		OnConflict("DO NOTHING").
+		Insert()
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert pulse %v", p)
+	}
+	if res.RowsAffected() < 1 {
+		log.Warn(errors.Errorf("pulse inserting conflict %v", p))
 	}
 	return nil
 }
