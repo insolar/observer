@@ -18,6 +18,7 @@ package burn
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -139,7 +140,7 @@ func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Mat
 	}
 	for _, addr := range addresses {
 		c.cache = append(c.cache, &beauty.MigrationAddress{
-			Addr:      addr,
+			Addr:      strings.ToLower(addr),
 			Timestamp: t.Unix(),
 			Wasted:    false,
 		})

@@ -18,6 +18,7 @@ package transfer
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -61,7 +62,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		Fee:           "0",
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
-		EthHash:       callParams.ethTxHash,
+		EthHash:       strings.ToLower(callParams.ethTxHash),
 	}, nil
 }
 
