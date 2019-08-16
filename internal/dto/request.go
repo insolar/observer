@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package raw
+package dto
 
 import (
 	"encoding/hex"

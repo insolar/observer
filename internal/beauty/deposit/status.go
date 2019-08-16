@@ -17,8 +17,11 @@
 package deposit
 
 import (
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
 const (
@@ -32,8 +35,9 @@ type depositStatus struct {
 	memberRef string
 }
 
-func parseMemberRef(payload []byte) depositStatus {
-	rets := parsePayload(payload)
+func parseMemberRef(rec *record.Material) depositStatus {
+	res := (*dto.Result)(rec)
+	rets := res.ParsePayload().Returns
 	if len(rets) < 2 {
 		return depositStatus{"NOT_ENOUGH_PAYLOAD_PARAMS", ""}
 	}

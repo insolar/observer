@@ -40,7 +40,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	callArguments := parseCallArguments(req.Virtual.GetIncomingRequest().Arguments)
 	pn := req.ID.Pulse()
 	callParams := parseTransferCallParams(callArguments)
-	transferResult := parseTransferResultPayload(res.Virtual.GetResult().Payload)
+	transferResult := parseTransferResultPayload(res)
 	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")

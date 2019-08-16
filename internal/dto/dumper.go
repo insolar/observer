@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package raw
+package dto
 
 import (
 	"context"
@@ -134,7 +134,7 @@ func (d *Dumper) buildRecord(rn uint32, rec *record.Material) {
 func (d *Dumper) buildUnpacked(rec *record.Material) {
 	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		d.results = append(d.results, parseResult(rec))
+		d.results = append(d.results, (*Result)(rec).MapModel())
 	case *record.Virtual_IncomingRequest:
 		d.requests = append(d.requests, parseRequest(rec))
 	case *record.Virtual_Activate:

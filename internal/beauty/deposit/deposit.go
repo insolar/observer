@@ -45,8 +45,7 @@ type depositBuilder struct {
 }
 
 func (b *depositBuilder) build() (*beauty.Deposit, error) {
-	res := b.res.Virtual.GetResult()
-	callResult := parseMemberRef(res.Payload)
+	callResult := parseMemberRef(b.res)
 	if callResult.status != SUCCESS {
 		return nil, errors.New("invalid create deposit result payload")
 	}

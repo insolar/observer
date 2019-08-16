@@ -48,7 +48,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 	if b.res.Virtual.GetResult().Payload == nil {
 		return nil, errors.New("member creation result payload is nil")
 	}
-	params := memberStatus(b.res.Virtual.GetResult().Payload)
+	params := memberStatus(b.res)
 	balance := accountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
 	if err != nil {

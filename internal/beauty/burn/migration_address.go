@@ -31,6 +31,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
@@ -191,9 +192,9 @@ func parseCallArguments(inArgs []byte) member.Request {
 	return request
 }
 
-func successResult(res *record.Material) bool {
-	payload := res.Virtual.GetResult().Payload
-	params := parsePayload(payload)
+func successResult(rec *record.Material) bool {
+	res := (*dto.Result)(rec)
+	params := res.ParsePayload().Returns
 	if len(params) < 2 {
 		log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
 		return false

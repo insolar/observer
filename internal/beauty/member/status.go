@@ -16,6 +16,12 @@
 
 package member
 
+import (
+	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/dto"
+)
+
 const (
 	PENDING  = "PENDING"
 	SUCCESS  = "SUCCESS"
@@ -28,8 +34,9 @@ type memberResultParams struct {
 	reference        string
 }
 
-func memberStatus(payload []byte) memberResultParams {
-	rets := parsePayload(payload)
+func memberStatus(rec *record.Material) memberResultParams {
+	res := (*dto.Result)(rec)
+	rets := res.ParsePayload().Returns
 	if len(rets) < 2 {
 		return memberResultParams{"NOT_ENOUGH_PAYLOAD_PARAMS", "", ""}
 	}

@@ -17,8 +17,11 @@
 package transfer
 
 import (
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
 const (
@@ -32,8 +35,9 @@ type txResult struct {
 	fee    string
 }
 
-func parseTransferResultPayload(payload []byte) txResult {
-	rets := parsePayload(payload)
+func parseTransferResultPayload(rec *record.Material) txResult {
+	res := (*dto.Result)(rec)
+	rets := res.ParsePayload().Returns
 	if len(rets) < 2 {
 		return txResult{status: "NOT_ENOUGH_PAYLOAD_PARAMS", fee: ""}
 	}

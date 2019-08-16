@@ -113,8 +113,7 @@ func (k *MigrationAddressKeeper) Process(rec *record.Material) {
 }
 
 func (k *MigrationAddressKeeper) processResult(rec *record.Material) {
-	res := rec.Virtual.GetResult()
-	addr := wastedAddress(res.Payload)
+	addr := wastedAddress(rec)
 	if addr.status != SUCCESS {
 		log.Debug(errors.Errorf("GetFreeMigrationAddress result status=%v", addr.status))
 		return

@@ -17,8 +17,11 @@
 package burn
 
 import (
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
 const (
@@ -32,8 +35,9 @@ type addressResult struct {
 	address string
 }
 
-func wastedAddress(payload []byte) addressResult {
-	rets := parsePayload(payload)
+func wastedAddress(rec *record.Material) addressResult {
+	res := (*dto.Result)(rec)
+	rets := res.ParsePayload().Returns
 	if len(rets) < 2 {
 		return addressResult{"NOT_ENOUGH_PAYLOAD_PARAMS", ""}
 	}
