@@ -31,7 +31,15 @@ func isNewWallet(rec *record.Material) bool {
 		return false
 	}
 	in := rec.Virtual.GetIncomingRequest()
-	return in.Method == "New" && in.Prototype.Equal(*proxyWallet.PrototypeReference)
+	if in.Method != "New" {
+		return false
+	}
+
+	if in.Prototype == nil {
+		return false
+	}
+
+	return in.Prototype.Equal(*proxyWallet.PrototypeReference)
 }
 
 func isWalletAmend(amd *record.Amend) bool {

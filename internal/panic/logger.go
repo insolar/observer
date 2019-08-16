@@ -14,28 +14,18 @@
 // limitations under the License.
 //
 
-package main
+package panic
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"fmt"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/internal/components"
 )
 
-func main() {
-	cmps := components.Prepare()
-	cmps.Start()
-	graceful(cmps.Stop)
-}
-
-func graceful(that func()) {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func Log(name string) {
+	if err := recover(); err != nil {
+		msg := fmt.Sprintf("%v", err)
+		log.Error(errors.Errorf("panic %s in component %s", msg, name))
+	}
 }

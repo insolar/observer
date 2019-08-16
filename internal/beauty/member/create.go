@@ -30,6 +30,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 	log "github.com/sirupsen/logrus"
 )
@@ -84,6 +85,8 @@ type Composer struct {
 }
 
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("member_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
@@ -215,6 +218,10 @@ func isMemberCreateRequest(req *record.Material) bool {
 }
 
 func parseCallArguments(inArgs []byte) member.Request {
+	if inArgs == nil {
+		log.Warn(errors.New("request.Arguments is nil"))
+		return member.Request{}
+	}
 	var args []interface{}
 	err := insolar.Deserialize(inArgs, &args)
 	if err != nil {

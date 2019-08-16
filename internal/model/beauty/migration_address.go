@@ -34,11 +34,5 @@ func (a *MigrationAddress) Dump(tx *pg.Tx) error {
 	if err := tx.Insert(a); err != nil {
 		log.Error(errors.Wrapf(err, "failed to insert migration address"))
 	}
-	// if _, err := tx.Model(a).
-	// 	Where("addr=?", a.Addr).
-	// 	OnConflict("DO NOTHING").
-	// 	SelectOrInsert(); err != nil {
-	// 	return errors.Wrapf(err, "failed to insert migration address")
-	// }
 	return nil
 }

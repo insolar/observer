@@ -37,6 +37,7 @@ import (
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/model/raw"
+	"github.com/insolar/observer/internal/panic"
 )
 
 type DataHandle func(uint32, *record.Material)
@@ -141,7 +142,7 @@ func (r *Replicator) Start(ctx context.Context) error {
 	log.Infof("Starting replication from position (rn: %d, pulse: %d)", current.rn, current.pn)
 	req := r.makeRequest(current)
 	go func() {
-		defer catchPanic()
+		defer panic.Log("replicator")
 
 		startTime := time.Now()
 		for {
@@ -383,10 +384,4 @@ func (r *Replicator) updateStat(pn insolar.PulseNumber) {
 func (r *Replicator) updateProcessingTime(start time.Time) {
 	diff := time.Since(start)
 	r.processingTime.Observe(diff.Seconds())
-}
-
-func catchPanic() {
-	if err := recover(); err != nil {
-		log.Error(err)
-	}
 }

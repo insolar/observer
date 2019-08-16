@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 	log "github.com/sirupsen/logrus"
 )
@@ -38,6 +39,8 @@ func NewBalanceUpdater() *BalanceUpdater {
 }
 
 func (u *BalanceUpdater) Process(rec *record.Material) {
+	defer panic.Log("member_balance_updater")
+
 	v, ok := rec.Virtual.Union.(*record.Virtual_Amend)
 	if !ok {
 		return

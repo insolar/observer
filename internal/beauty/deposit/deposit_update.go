@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 )
 
@@ -38,6 +39,8 @@ func NewKeeper() *DepositKeeper {
 }
 
 func (k *DepositKeeper) Process(rec *record.Material) {
+	defer panic.Log("deposit_keeper")
+
 	if isDepositAmend(rec) {
 		amd := rec.Virtual.GetAmend()
 		d := depositState(amd)

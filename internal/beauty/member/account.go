@@ -35,7 +35,13 @@ func isNewAccount(rec *record.Material) bool {
 		return false
 	}
 	in := rec.Virtual.GetIncomingRequest()
-	return in.Method == "New" && in.Prototype.Equal(*proxyAccount.PrototypeReference)
+	if in.Method != "New" {
+		return false
+	}
+	if in.Prototype == nil {
+		return false
+	}
+	return in.Prototype.Equal(*proxyAccount.PrototypeReference)
 }
 
 func isAccountAmend(amd *record.Amend) bool {

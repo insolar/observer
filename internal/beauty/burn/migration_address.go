@@ -32,6 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 )
 
@@ -70,6 +71,8 @@ func (c *Composer) Init(db *pg.DB) {
 }
 
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("migration_address_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()

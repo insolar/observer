@@ -33,6 +33,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 
 	log "github.com/sirupsen/logrus"
@@ -102,6 +103,8 @@ func NewComposer() *Composer {
 }
 
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("deposit_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
@@ -279,6 +282,10 @@ func isDepositNew(req *record.Material) bool {
 
 	in := v.IncomingRequest
 	if in.Method != "New" {
+		return false
+	}
+
+	if in.Prototype == nil {
 		return false
 	}
 
