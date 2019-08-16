@@ -59,6 +59,12 @@ func accountBalance(rec *record.Material) string {
 	default:
 		log.Error(errors.New("invalid record to get account memory"))
 	}
+
+	if memory == nil {
+		log.Warn(errors.New("account memory is nil"))
+		return "0"
+	}
+
 	acc := account.Account{}
 	if err := insolar.Deserialize(memory, &acc); err != nil {
 		log.Error(errors.New("failed to deserialize account memory"))

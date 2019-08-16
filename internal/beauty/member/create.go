@@ -29,10 +29,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
-	log "github.com/sirupsen/logrus"
 )
 
 type memberBuilder struct {
@@ -41,6 +42,12 @@ type memberBuilder struct {
 }
 
 func (b *memberBuilder) build() (*beauty.Member, error) {
+	if b.res == nil || b.act == nil {
+		return nil, errors.New("trying to create member from noncomplete builder")
+	}
+	if b.res.Virtual.GetResult().Payload == nil {
+		return nil, errors.New("member creation result payload is nil")
+	}
 	params := memberStatus(b.res.Virtual.GetResult().Payload)
 	balance := accountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
@@ -155,6 +162,11 @@ func (c *Composer) accountActivate(rec *record.Material) {
 	direct := *rec.Virtual.GetActivate().Request.Record()
 	if req, ok := c.requests[direct]; ok {
 		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		if origin.Equal(insolar.ID{}) {
+			delete(c.requests, origin)
+			return
+		}
+
 		if b, ok := c.builders[origin]; ok {
 			b.act = rec
 			c.compose(b)
