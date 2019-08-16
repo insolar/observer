@@ -18,6 +18,7 @@ package deposit
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
 	"github.com/go-pg/pg"
@@ -45,8 +46,7 @@ type depositBuilder struct {
 }
 
 func (b *depositBuilder) build() (*beauty.Deposit, error) {
-	res := b.res.Virtual.GetResult()
-	callResult := parseMemberRef(res.Payload)
+	callResult := parseMemberRef(b.res)
 	if callResult.status != SUCCESS {
 		return nil, errors.New("invalid create deposit result payload")
 	}
@@ -62,7 +62,7 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 		return nil, errors.Wrapf(err, "failed to convert deposit unhold pulse to time")
 	}
 	return &beauty.Deposit{
-		EthHash:         deposit.TxHash,
+		EthHash:         strings.ToLower(deposit.TxHash),
 		DepositRef:      act.Request.String(),
 		MemberRef:       callResult.memberRef,
 		TransferDate:    transferDate.Unix(),

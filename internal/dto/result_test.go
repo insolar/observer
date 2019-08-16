@@ -14,20 +14,4 @@
 // limitations under the License.
 //
 
-package deposit
-
-import (
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	log "github.com/sirupsen/logrus"
-)
-
-func parsePayload(payload []byte) []interface{} {
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
-	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
-		return []interface{}{}
-	}
-	return result.Returns
-}
+package dto

@@ -29,7 +29,7 @@ type Configuration struct {
 func Default() *Configuration {
 	return &Configuration{
 		API: API{
-			Addr: ":8080",
+			Addr: ":0",
 		},
 		Replicator: Replicator{
 			Addr:                  "127.0.0.1:5678",

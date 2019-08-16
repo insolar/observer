@@ -14,20 +14,37 @@
 // limitations under the License.
 //
 
-package transfer
+package dto
 
 import (
+	"encoding/hex"
+
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	log "github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/model/raw"
 )
 
-func parsePayload(payload []byte) []interface{} {
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
-	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
-		return []interface{}{}
+type Result record.Material
+
+func (r *Result) MapModel() *raw.Result {
+	if r == nil {
+		return nil
 	}
-	return result.Returns
+	res := r.Virtual.GetResult()
+	return &raw.Result{
+		ResultID: insolar.NewReference(r.ID).String(),
+		Request:  res.Request.String(),
+		Payload:  hex.EncodeToString(res.Payload),
+	}
+}
+
+func parseResult(rec *record.Material) *raw.Result {
+	id := rec.ID
+	res := rec.Virtual.GetResult()
+	return &raw.Result{
+		ResultID: insolar.NewReference(id).String(),
+		Request:  res.Request.String(),
+		Payload:  hex.EncodeToString(res.Payload),
+	}
 }
