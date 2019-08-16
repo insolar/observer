@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 	log "github.com/sirupsen/logrus"
 )
@@ -78,6 +79,8 @@ func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) 
 }
 
 func (k *MigrationAddressKeeper) Process(rec *record.Material) {
+	defer panic.Log("migration_address_keeper")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
