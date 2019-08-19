@@ -32,8 +32,9 @@ type Pulse struct {
 }
 
 func (p *Pulse) Dump(tx *pg.Tx) error {
-	if err := tx.Insert(p); err != nil {
-		return errors.Wrapf(err, "failed to insert pulse")
+	err := tx.Insert(p)
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert pulse %v", p)
 	}
 	return nil
 }

@@ -17,17 +17,19 @@
 package transfer
 
 import (
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	log "github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
-func parsePayload(payload []byte) []interface{} {
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
-	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
-		return []interface{}{}
+type txResult struct {
+	status dto.Status
+}
+
+func parseTransferResultPayload(rec *record.Material) txResult {
+	res := (*dto.Result)(rec)
+	if !res.IsSuccess() {
+		return txResult{status: dto.CANCELED}
 	}
-	return result.Returns
+	return txResult{status: dto.SUCCESS}
 }

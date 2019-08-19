@@ -22,10 +22,12 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
+	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 )
 
@@ -38,19 +40,28 @@ func NewKeeper() *DepositKeeper {
 }
 
 func (k *DepositKeeper) Process(rec *record.Material) {
+	defer panic.Log("deposit_keeper")
+
 	if isDepositAmend(rec) {
 		amd := rec.Virtual.GetAmend()
 		d := depositState(amd)
+		releaseTimestamp := int64(0)
+		if holdReleadDate, err := pulse.Number(d.PulseDepositUnHold).AsApproximateTime(); err == nil {
+			releaseTimestamp = holdReleadDate.Unix()
+		}
 		k.cache = append(k.cache, &beauty.DepositUpdate{
-			ID:        rec.ID.String(),
-			Amount:    d.Amount,
-			Balance:   d.Balance,
-			PrevState: amd.PrevState.String(),
+			ID:              rec.ID.String(),
+			HoldReleaseDate: releaseTimestamp,
+			Amount:          d.Amount,
+			Balance:         d.Balance,
+			PrevState:       amd.PrevState.String(),
 		})
 	}
 }
 
 func (k *DepositKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump deposit updates")
+
 	deferred := []*beauty.DepositUpdate{}
 	for _, upd := range k.cache {
 		if err := upd.Dump(tx); err != nil {

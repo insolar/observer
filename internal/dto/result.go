@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package raw
+package dto
 
 import (
 	"encoding/hex"
@@ -25,11 +25,15 @@ import (
 	"github.com/insolar/observer/internal/model/raw"
 )
 
-func parseResult(rec *record.Material) *raw.Result {
-	id := rec.ID
-	res := rec.Virtual.GetResult()
+type Result record.Material
+
+func (r *Result) MapModel() *raw.Result {
+	if r == nil {
+		return nil
+	}
+	res := r.Virtual.GetResult()
 	return &raw.Result{
-		ResultID: insolar.NewReference(id).String(),
+		ResultID: insolar.NewReference(r.ID).String(),
 		Request:  res.Request.String(),
 		Payload:  hex.EncodeToString(res.Payload),
 	}

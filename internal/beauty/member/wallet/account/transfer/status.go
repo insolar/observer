@@ -17,38 +17,23 @@
 package transfer
 
 import (
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-)
+	"github.com/insolar/insolar/insolar/record"
 
-const (
-	PENDING  = "PENDING"
-	SUCCESS  = "SUCCESS"
-	CANCELED = "CANCELED"
+	"github.com/insolar/observer/internal/dto"
 )
 
 type txResult struct {
-	status string
+	status dto.Status
 	fee    string
 }
 
-func parseTransferResultPayload(payload []byte) txResult {
-	rets := parsePayload(payload)
-	if len(rets) < 2 {
-		return txResult{status: "NOT_ENOUGH_PAYLOAD_PARAMS", fee: ""}
+func parseTransferResultPayload(rec *record.Material) txResult {
+	res := (*dto.Result)(rec)
+	if !res.IsSuccess() {
+		return txResult{dto.CANCELED, ""}
 	}
-	if rets[1] != nil {
-		if retError, ok := rets[1].(map[string]interface{}); ok {
-			if val, ok := retError["S"]; ok {
-				if msg, ok := val.(string); ok {
-					log.Debug(errors.New(msg))
-				}
-			}
-			return txResult{CANCELED, ""}
-		}
-		log.Error(errors.New("invalid error value in member.Transfer payload"))
-		return txResult{"INVALID_ERROR_VALUE", ""}
-	}
+
+	rets := res.ParsePayload().Returns
 	params, ok := rets[0].(map[string]interface{})
 	if !ok {
 		return txResult{status: "FIRST_PARAM_NOT_MAP", fee: ""}
@@ -61,5 +46,5 @@ func parseTransferResultPayload(payload []byte) txResult {
 	if !ok {
 		return txResult{status: "FEE_NOT_STRING", fee: ""}
 	}
-	return txResult{status: SUCCESS, fee: fee}
+	return txResult{status: dto.SUCCESS, fee: fee}
 }

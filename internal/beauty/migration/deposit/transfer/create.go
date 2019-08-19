@@ -17,36 +17,33 @@
 package transfer
 
 import (
-	"encoding/json"
+	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 )
 
 func build(req *record.Material, res *record.Material) (*beauty.Transfer, error) {
 	// TODO: add wallet refs
-	callArguments := parseCallArguments(req.Virtual.GetIncomingRequest().Arguments)
+	callArguments := (*dto.Request)(req).ParseMemberCallArguments()
 	pn := req.ID.Pulse()
 	callParams := parseTransferCallParams(callArguments)
-	transferResult := parseTransferResultPayload(res.Virtual.GetResult().Payload)
+	transferResult := parseTransferResultPayload(res)
 	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
-	}
-	memberTo, err := insolar.NewReferenceFromBase58(callParams.toMemberReference)
-	if err != nil {
-		return nil, errors.New("invalid toMemberReference")
 	}
 	transferDate, err := pulse.Number(pn).AsApproximateTime()
 	if err != nil {
@@ -54,16 +51,16 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	}
 	return &beauty.Transfer{
 		TxID:          insolar.NewReference(req.ID).String(),
-		Status:        transferResult.status,
+		Status:        string(transferResult.status),
 		Amount:        callParams.amount,
 		MemberFromRef: memberFrom.String(),
-		MemberToRef:   memberTo.String(),
+		MemberToRef:   memberFrom.String(),
 		PulseNum:      pn,
 		TransferDate:  transferDate.Unix(),
-		Fee:           transferResult.fee,
+		Fee:           "0",
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
-		EthHash:       "",
+		EthHash:       strings.ToLower(callParams.ethTxHash),
 	}, nil
 }
 
@@ -78,7 +75,7 @@ type Composer struct {
 func NewComposer() *Composer {
 	stat := &dumpStat{
 		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_member_transfer_composer_cached_total",
+			Name: "observer_deposit_transfer_composer_cached_total",
 			Help: "Cache size of migration address composer",
 		}),
 	}
@@ -89,7 +86,25 @@ func NewComposer() *Composer {
 	}
 }
 
+func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump deposit transfers")
+	c.updateStat()
+
+	for _, transfer := range c.cache {
+		if err := transfer.Dump(tx); err != nil {
+			return errors.Wrapf(err, "failed to dump deposit transfers")
+		}
+	}
+
+	pub.Subscribe(func() {
+		c.cache = []*beauty.Transfer{}
+	})
+	return nil
+}
+
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("deposit_transfer_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
@@ -135,54 +150,8 @@ func isTransferCall(req *record.Material) bool {
 		return false
 	}
 
-	args := parseCallArguments(in.Arguments)
-	return args.Params.CallSite == "member.transfer"
-}
-
-func parseCallArguments(inArgs []byte) member.Request {
-	var args []interface{}
-	err := insolar.Deserialize(inArgs, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
-}
-
-func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	c.updateStat()
-
-	for _, transfer := range c.cache {
-		if err := transfer.Dump(tx); err != nil {
-			return errors.Wrapf(err, "failed to dump transfers")
-		}
-	}
-
-	pub.Subscribe(func() {
-		c.cache = []*beauty.Transfer{}
-	})
-	return nil
+	args := (*dto.Request)(req).ParseMemberCallArguments()
+	return args.Params.CallSite == "deposit.transfer"
 }
 
 type dumpStat struct {

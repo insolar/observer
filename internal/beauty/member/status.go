@@ -16,35 +16,32 @@
 
 package member
 
-const (
-	PENDING  = "PENDING"
-	SUCCESS  = "SUCCESS"
-	CANCELED = "CANCELED"
+import (
+	"github.com/insolar/insolar/insolar/record"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
 type memberResultParams struct {
-	status           string
+	status           dto.Status
 	migrationAddress string
 	reference        string
 }
 
-func memberStatus(payload []byte) memberResultParams {
-	rets := parsePayload(payload)
-	if len(rets) < 2 {
-		return memberResultParams{"NOT_ENOUGH_PAYLOAD_PARAMS", "", ""}
+func memberStatus(rec *record.Material) memberResultParams {
+	res := (*dto.Result)(rec)
+	if !res.IsSuccess() {
+		return memberResultParams{dto.CANCELED, "", ""}
 	}
-	if retError, ok := rets[1].(error); ok {
-		if retError != nil {
-			return memberResultParams{CANCELED, "", ""}
-		}
-	}
+
+	rets := res.ParsePayload().Returns
 	params, ok := rets[0].(map[string]interface{})
 	if !ok {
 		return memberResultParams{"FIRST_PARAM_NOT_MAP", "", ""}
 	}
 	referenceInterface, ok := params["reference"]
 	if !ok {
-		return memberResultParams{SUCCESS, "", ""}
+		return memberResultParams{dto.SUCCESS, "", ""}
 	}
 	reference, ok := referenceInterface.(string)
 	if !ok {
@@ -53,11 +50,11 @@ func memberStatus(payload []byte) memberResultParams {
 
 	migrationAddressInterface, ok := params["migrationAddress"]
 	if !ok {
-		return memberResultParams{SUCCESS, "", reference}
+		return memberResultParams{dto.SUCCESS, "", reference}
 	}
 	migrationAddress, ok := migrationAddressInterface.(string)
 	if !ok {
 		return memberResultParams{"MIGRATION_ADDRESS_NOT_STRING", "", reference}
 	}
-	return memberResultParams{SUCCESS, migrationAddress, reference}
+	return memberResultParams{dto.SUCCESS, migrationAddress, reference}
 }

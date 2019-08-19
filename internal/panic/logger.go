@@ -14,20 +14,18 @@
 // limitations under the License.
 //
 
-package transfer
+package panic
 
 import (
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"fmt"
+
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
-func parsePayload(payload []byte) []interface{} {
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
-	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
-		return []interface{}{}
+func Log(name string) {
+	if err := recover(); err != nil {
+		msg := fmt.Sprintf("%v", err)
+		log.Error(errors.Errorf("panic %s in component %s", msg, name))
 	}
-	return result.Returns
 }

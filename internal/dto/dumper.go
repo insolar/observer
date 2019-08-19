@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package raw
+package dto
 
 import (
 	"context"
@@ -91,6 +91,7 @@ func (d *Dumper) process(rn uint32, rec *record.Material) {
 }
 
 func (d *Dumper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump raw records")
 	for _, rec := range d.records {
 		if err := rec.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw records")
@@ -133,9 +134,11 @@ func (d *Dumper) buildRecord(rn uint32, rec *record.Material) {
 func (d *Dumper) buildUnpacked(rec *record.Material) {
 	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		d.results = append(d.results, parseResult(rec))
+		result := (*Result)(rec)
+		d.results = append(d.results, result.MapModel())
 	case *record.Virtual_IncomingRequest:
-		d.requests = append(d.requests, parseRequest(rec))
+		request := (*Request)(rec)
+		d.requests = append(d.requests, request.MapModel())
 	case *record.Virtual_Activate:
 		d.objects = append(d.objects, parseActivate(rec))
 	case *record.Virtual_Amend:

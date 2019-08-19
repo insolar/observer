@@ -37,6 +37,7 @@ import (
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/model/raw"
+	"github.com/insolar/observer/internal/panic"
 )
 
 type DataHandle func(uint32, *record.Material)
@@ -141,14 +142,17 @@ func (r *Replicator) Start(ctx context.Context) error {
 	log.Infof("Starting replication from position (rn: %d, pulse: %d)", current.rn, current.pn)
 	req := r.makeRequest(current)
 	go func() {
-		defer catchPanic()
+		defer panic.Log("replicator")
 
 		startTime := time.Now()
 		for {
 			batch, pos := r.pull(req)
+			log.Infof("emitting batch")
 			r.emit(&startTime, current, batch)
+			log.Infof("after emit")
 			if len(batch) < int(r.cfg.Replicator.BatchSize) {
 				if pos != current {
+
 					r.emitDump(pos.pn)
 					r.updateProcessingTime(startTime)
 				}
@@ -191,12 +195,13 @@ func (r *Replicator) pullPulse(pn insolar.PulseNumber) (insolar.PulseNumber, ins
 		return pn, insolar.Entropy{}, 0
 	}
 
+	log.Infof("try to pull pulse %v", req)
 	resp, err := stream.Recv()
 	if err == io.EOF {
 		return pn, insolar.Entropy{}, 0
 	}
 	if err != nil {
-		log.Error(errors.Wrapf(err, "received error value from gRPC stream"))
+		log.Warn(errors.Wrapf(err, "received error value from pulses gRPC stream %v", req))
 		return pn, insolar.Entropy{}, 0
 	}
 	return resp.PulseNumber, resp.Entropy, resp.PulseTimestamp
@@ -222,19 +227,22 @@ func (r *Replicator) pull(req *exporter.GetRecords) ([]dataMsg, position) {
 	}
 
 	batch := []dataMsg{}
+	log.Infof("try to pull records from %v", req)
 	for {
 		resp, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			log.Error(errors.Wrapf(err, "received error value from gRPC stream"))
+			log.Error(errors.Wrapf(err, "received error value from records gRPC stream %v", req))
 			break
 		}
 		rec, rn := &resp.Record, resp.RecordNumber
 		batch = append(batch, dataMsg{rec: rec, rn: rn})
 		pulse, number = rec.ID.Pulse(), rn
+		log.Infof("received %d %d %s \n", rn, pulse, rec.ID.String())
 	}
+	log.Infof("records stream finished")
 	return batch, position{pn: pulse, rn: number}
 }
 
@@ -249,6 +257,7 @@ func (r *Replicator) emit(start *time.Time, last position, batch []dataMsg) {
 			*start = time.Now()
 		}
 		r.emitData(msg.rn, msg.rec)
+		log.Infof("emit %d %s", msg.rn, msg.rec.ID.String())
 	}
 }
 
@@ -262,6 +271,7 @@ func (r *Replicator) emitData(rn uint32, rec *record.Material) {
 }
 
 func (r *Replicator) emitDump(pn insolar.PulseNumber) {
+	log.Infof("emit dump")
 	db := r.ConnectionHolder.DB()
 	emitter := &successEmitter{}
 	for {
@@ -297,6 +307,7 @@ func (e *successEmitter) Subscribe(handle SuccessHandle) {
 }
 
 func (e *successEmitter) emit() {
+	log.Infof("emit success tx")
 	for _, h := range e.handlers {
 		h()
 	}
@@ -373,10 +384,4 @@ func (r *Replicator) updateStat(pn insolar.PulseNumber) {
 func (r *Replicator) updateProcessingTime(start time.Time) {
 	diff := time.Since(start)
 	r.processingTime.Observe(diff.Seconds())
-}
-
-func catchPanic() {
-	if err := recover(); err != nil {
-		log.Error(err)
-	}
 }

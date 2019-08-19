@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package member
+package account
 
 import (
 	"github.com/insolar/insolar/insolar"
@@ -25,24 +25,30 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func isAccountActivate(act *record.Activate) bool {
+func IsAccountActivate(act *record.Activate) bool {
 	return act.Image.Equal(*proxyAccount.PrototypeReference)
 }
 
-func isNewAccount(rec *record.Material) bool {
+func IsNewAccount(rec *record.Material) bool {
 	_, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
 	if !ok {
 		return false
 	}
 	in := rec.Virtual.GetIncomingRequest()
-	return in.Method == "New" && in.Prototype.Equal(*proxyAccount.PrototypeReference)
+	if in.Method != "New" {
+		return false
+	}
+	if in.Prototype == nil {
+		return false
+	}
+	return in.Prototype.Equal(*proxyAccount.PrototypeReference)
 }
 
-func isAccountAmend(amd *record.Amend) bool {
+func IsAccountAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*proxyAccount.PrototypeReference)
 }
 
-func accountBalance(rec *record.Material) string {
+func AccountBalance(rec *record.Material) string {
 	memory := []byte{}
 	balance := ""
 	switch v := rec.Virtual.Union.(type) {
@@ -53,6 +59,12 @@ func accountBalance(rec *record.Material) string {
 	default:
 		log.Error(errors.New("invalid record to get account memory"))
 	}
+
+	if memory == nil {
+		log.Warn(errors.New("account memory is nil"))
+		return "0"
+	}
+
 	acc := account.Account{}
 	if err := insolar.Deserialize(memory, &acc); err != nil {
 		log.Error(errors.New("failed to deserialize account memory"))

@@ -21,7 +21,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/insolar/insolar/log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/components"
 )

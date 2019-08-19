@@ -17,21 +17,22 @@
 package member
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/insolar/observer/internal/model/beauty"
-	"github.com/insolar/observer/internal/replication"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/beauty/member/wallet/account"
+	"github.com/insolar/observer/internal/dto"
+	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
+	"github.com/insolar/observer/internal/replication"
 )
 
 type memberBuilder struct {
@@ -40,8 +41,14 @@ type memberBuilder struct {
 }
 
 func (b *memberBuilder) build() (*beauty.Member, error) {
-	params := memberStatus(b.res.Virtual.GetResult().Payload)
-	balance := accountBalance(b.act)
+	if b.res == nil || b.act == nil {
+		return nil, errors.New("trying to create member from noncomplete builder")
+	}
+	if b.res.Virtual.GetResult().Payload == nil {
+		return nil, errors.New("member creation result payload is nil")
+	}
+	params := memberStatus(b.res)
+	balance := account.AccountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.New("invalid member reference")
@@ -51,7 +58,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
 		AccountState:     b.act.ID.String(),
-		Status:           params.status,
+		Status:           string(params.status),
 	}, nil
 }
 
@@ -84,6 +91,8 @@ type Composer struct {
 }
 
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("member_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
@@ -92,7 +101,7 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(req):
 				c.memberCreateResult(rec)
-			case isNewAccount(req):
+			case account.IsNewAccount(req):
 				c.newAccount(req)
 			}
 		} else {
@@ -104,7 +113,7 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(rec):
 				c.memberCreateResult(res)
-			case isNewAccount(rec):
+			case account.IsNewAccount(rec):
 				c.newAccount(rec)
 			}
 		} else {
@@ -117,7 +126,7 @@ func (c *Composer) Process(rec *record.Material) {
 			c.requests[rec.ID] = rec
 		}
 	case *record.Virtual_Activate:
-		if isAccountActivate(v.Activate) {
+		if account.IsAccountActivate(v.Activate) {
 			c.accountActivate(rec)
 		}
 	}
@@ -152,6 +161,11 @@ func (c *Composer) accountActivate(rec *record.Material) {
 	direct := *rec.Virtual.GetActivate().Request.Record()
 	if req, ok := c.requests[direct]; ok {
 		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		if origin.Equal(insolar.ID{}) {
+			delete(c.requests, origin)
+			return
+		}
+
 		if b, ok := c.builders[origin]; ok {
 			b.act = rec
 			c.compose(b)
@@ -180,6 +194,7 @@ func (c *Composer) compose(b *memberBuilder) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump members")
 	c.updateStat()
 
 	for _, member := range c.cache {
@@ -205,43 +220,12 @@ func isMemberCreateRequest(req *record.Material) bool {
 		return false
 	}
 
-	args := parseCallArguments(in.Arguments)
+	args := (*dto.Request)(req).ParseMemberCallArguments()
 	switch args.Params.CallSite {
 	case "member.create", "member.migrationCreate":
 		return true
 	}
 	return false
-}
-
-func parseCallArguments(inArgs []byte) member.Request {
-	var args []interface{}
-	err := insolar.Deserialize(inArgs, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
 }
 
 type dumpStat struct {

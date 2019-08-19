@@ -14,26 +14,29 @@
 // limitations under the License.
 //
 
-package member
+package dto
 
 import (
-	"github.com/insolar/insolar/insolar/record"
-	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/log"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 )
 
-func isWalletActivate(act *record.Activate) bool {
-	return act.Image.Equal(*proxyWallet.PrototypeReference)
-}
-
-func isNewWallet(rec *record.Material) bool {
-	_, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
-	if !ok {
-		return false
+func (r *Result) ParsePayload() foundation.Result {
+	if r == nil {
+		log.Warn("call ParsePayload of nil")
+		return foundation.Result{}
 	}
-	in := rec.Virtual.GetIncomingRequest()
-	return in.Method == "New" && in.Prototype.Equal(*proxyWallet.PrototypeReference)
-}
-
-func isWalletAmend(amd *record.Amend) bool {
-	return amd.Image.Equal(*proxyWallet.PrototypeReference)
+	payload := r.Virtual.GetResult().Payload
+	if payload == nil {
+		log.Warn("trying to parse nil Result.Payload")
+		return foundation.Result{}
+	}
+	result := foundation.Result{}
+	err := insolar.Deserialize(payload, &result)
+	if err != nil {
+		log.Warnf("failed to parse payload as foundation.Result{}")
+		return foundation.Result{}
+	}
+	return result
 }

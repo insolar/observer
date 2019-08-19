@@ -14,16 +14,14 @@
 // limitations under the License.
 //
 
-package burn
+package migration
 
 import (
-	"encoding/json"
+	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,7 +29,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
 )
 
@@ -70,6 +70,8 @@ func (c *Composer) Init(db *pg.DB) {
 }
 
 func (c *Composer) Process(rec *record.Material) {
+	defer panic.Log("migration_address_composer")
+
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
 		origin := *v.Result.Request.Record()
@@ -102,9 +104,13 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump migration addresses")
+
 	c.updateStat()
 
+	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
+		// log.Infof("migration address inserting %d", i)
 		if err := addr.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}
@@ -118,11 +124,11 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 }
 
 func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Material) {
-	if !successResult(res) {
+	result := (*dto.Result)(res)
+	if !result.IsSuccess() {
 		return
 	}
-	in := req.Virtual.GetIncomingRequest()
-	args := parseCallArguments(in.Arguments)
+	args := (*dto.Request)(req).ParseMemberCallArguments()
 	addresses := parseAddBurnAddressesCallParams(args)
 	pn := pulse.Number(req.ID.Pulse())
 	t, err := pn.AsApproximateTime()
@@ -131,7 +137,7 @@ func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Mat
 	}
 	for _, addr := range addresses {
 		c.cache = append(c.cache, &beauty.MigrationAddress{
-			Addr:      addr,
+			Addr:      strings.ToLower(addr),
 			Timestamp: t.Unix(),
 			Wasted:    false,
 		})
@@ -149,73 +155,8 @@ func isAddBurnAddresses(rec *record.Material) bool {
 		return false
 	}
 
-	args := parseCallArguments(in.Arguments)
+	args := (*dto.Request)(rec).ParseMemberCallArguments()
 	return args.Params.CallSite == "migration.addBurnAddresses"
-}
-
-func parseCallArguments(inArgs []byte) member.Request {
-	var args []interface{}
-	err := insolar.Deserialize(inArgs, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
-}
-
-func successResult(res *record.Material) bool {
-	payload := res.Virtual.GetResult().Payload
-	params := parsePayload(payload)
-	if len(params) < 2 {
-		log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
-		return false
-	}
-	ret1 := params[1]
-	if ret1 != nil {
-		errMap, ok := ret1.(map[string]interface{})
-		if !ok {
-			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
-			return false
-		}
-
-		strRepresentation, ok := errMap["S"]
-		if !ok {
-			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
-			return false
-		}
-
-		msg, ok := strRepresentation.(string)
-		if !ok {
-			log.Error(errors.New("failed to parse migration.addBurnAddresses result payload"))
-			return false
-		}
-
-		log.Debug(errors.New(msg))
-		return false
-	}
-
-	return true
 }
 
 type dumpStat struct {

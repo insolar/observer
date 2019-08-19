@@ -23,9 +23,12 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/internal/model/beauty"
-	"github.com/insolar/observer/internal/replication"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/beauty/member/wallet/account"
+	"github.com/insolar/observer/internal/model/beauty"
+	"github.com/insolar/observer/internal/panic"
+	"github.com/insolar/observer/internal/replication"
 )
 
 type BalanceUpdater struct {
@@ -38,11 +41,13 @@ func NewBalanceUpdater() *BalanceUpdater {
 }
 
 func (u *BalanceUpdater) Process(rec *record.Material) {
+	defer panic.Log("member_balance_updater")
+
 	v, ok := rec.Virtual.Union.(*record.Virtual_Amend)
 	if !ok {
 		return
 	}
-	if !isAccountAmend(v.Amend) {
+	if !account.IsAccountAmend(v.Amend) {
 		return
 	}
 	u.processAccountAmend(rec.ID, rec)
@@ -50,7 +55,7 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 
 func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material) {
 	amd := rec.Virtual.GetAmend()
-	balance := accountBalance(rec)
+	balance := account.AccountBalance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
 		randomRef := gen.Reference()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{
@@ -69,6 +74,8 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 }
 
 func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump member balances")
+
 	for _, acc := range u.technicalAccounts {
 		if err := acc.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump internal member")

@@ -14,20 +14,17 @@
 // limitations under the License.
 //
 
-package deposit
+package dto
 
 import (
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	log "github.com/sirupsen/logrus"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func parsePayload(payload []byte) []interface{} {
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
-	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
-		return []interface{}{}
-	}
-	return result.Returns
+func TestRequest_MapModel(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		request := (*Request)(nil)
+		require.Nil(t, request.MapModel())
+	})
 }
