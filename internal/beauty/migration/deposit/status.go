@@ -18,42 +18,22 @@ package deposit
 
 import (
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/dto"
 )
 
-const (
-	PENDING  = "PENDING"
-	SUCCESS  = "SUCCESS"
-	CANCELED = "CANCELED"
-)
-
 type depositStatus struct {
-	status    string
+	status    dto.Status
 	memberRef string
 }
 
 func parseMemberRef(rec *record.Material) depositStatus {
 	res := (*dto.Result)(rec)
-	rets := res.ParsePayload().Returns
-	if len(rets) < 2 {
-		return depositStatus{"NOT_ENOUGH_PAYLOAD_PARAMS", ""}
+	if !res.IsSuccess() {
+		return depositStatus{dto.CANCELED, ""}
 	}
 
-	if rets[1] != nil {
-		if retError, ok := rets[1].(map[string]interface{}); ok {
-			if val, ok := retError["S"]; ok {
-				if msg, ok := val.(string); ok {
-					log.Debug(errors.New(msg))
-				}
-			}
-			return depositStatus{CANCELED, ""}
-		}
-		log.Error(errors.New("invalid error value in GetMigrationAddress payload"))
-		return depositStatus{"INVALID_ERROR_VALUE", ""}
-	}
+	rets := res.ParsePayload().Returns
 
 	resultMap, ok := rets[0].(map[string]interface{})
 	if !ok {
@@ -69,5 +49,5 @@ func parseMemberRef(rec *record.Material) depositStatus {
 		return depositStatus{"MEMBER_REFERENCE_IS_NOT_STRING", ""}
 	}
 
-	return depositStatus{SUCCESS, memberRef}
+	return depositStatus{dto.SUCCESS, memberRef}
 }

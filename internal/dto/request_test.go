@@ -14,27 +14,17 @@
 // limitations under the License.
 //
 
-package beauty
+package dto
 
 import (
-	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/insolar"
-	"github.com/pkg/errors"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-type Pulse struct {
-	tableName struct{} `sql:"pulses"`
-
-	Pulse         insolar.PulseNumber `sql:",pk"`
-	PulseDate     int64               `sql:",notnull"`
-	Entropy       string              `sql:",notnull"`
-	RequestsCount uint32
-}
-
-func (p *Pulse) Dump(tx *pg.Tx) error {
-	err := tx.Insert(p)
-	if err != nil {
-		return errors.Wrapf(err, "failed to insert pulse %v", p)
-	}
-	return nil
+func TestRequest_MapModel(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		request := (*Request)(nil)
+		require.Nil(t, request.MapModel())
+	})
 }

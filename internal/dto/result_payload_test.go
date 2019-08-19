@@ -25,23 +25,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeWith(payload []byte) *Result {
+func makeResultWith(payload []byte) *Result {
 	return &Result{Virtual: record.Virtual{Union: &record.Virtual_Result{Result: &record.Result{Payload: payload}}}}
 }
 
-func TestParse(t *testing.T) {
+func TestResult_ParsePayload(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var result *Result
 		require.Equal(t, foundation.Result{}, result.ParsePayload())
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		res := makeWith([]byte{})
+		res := makeResultWith([]byte{})
 		require.Equal(t, foundation.Result{}, res.ParsePayload())
 	})
 
 	t.Run("nonsense", func(t *testing.T) {
-		res := makeWith([]byte{1, 2, 3})
+		res := makeResultWith([]byte{1, 2, 3})
 		require.Equal(t, foundation.Result{}, res.ParsePayload())
 	})
 
@@ -56,7 +56,7 @@ func TestParse(t *testing.T) {
 		}
 		payload, err := insolar.Serialize(initial)
 		require.NoError(t, err)
-		res := makeWith(payload)
+		res := makeResultWith(payload)
 		require.Equal(t, expected, res.ParsePayload())
 	})
 }

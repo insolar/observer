@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package burn
+package migration
 
 import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
@@ -33,13 +33,13 @@ func parseAddBurnAddressesCallParams(request member.Request) []string {
 		return []string{}
 	}
 
-	addressesInterfaces, ok := burnAddresses.([]interface{})
+	interfaces, ok := burnAddresses.([]interface{})
 	if !ok {
 		log.Warnf(`failed to cast CallParams["burnAddresses"] to []interface{}`)
 		return []string{}
 	}
 	addresses := []string{}
-	for _, a := range addressesInterfaces {
+	for _, a := range interfaces {
 		if v, ok := a.(string); ok {
 			addresses = append(addresses, v)
 		} else {

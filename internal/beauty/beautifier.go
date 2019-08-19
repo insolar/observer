@@ -26,11 +26,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/insolar/observer/internal/beauty/burn"
-	"github.com/insolar/observer/internal/beauty/deposit"
-	depositTransfer "github.com/insolar/observer/internal/beauty/deposit/transfer"
 	"github.com/insolar/observer/internal/beauty/member"
-	"github.com/insolar/observer/internal/beauty/member/transfer"
+	"github.com/insolar/observer/internal/beauty/member/wallet/account/transfer"
+	"github.com/insolar/observer/internal/beauty/migration"
+	"github.com/insolar/observer/internal/beauty/migration/deposit"
+	depositTransfer "github.com/insolar/observer/internal/beauty/migration/deposit/transfer"
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/beauty"
@@ -50,8 +50,8 @@ func NewBeautifier() *Beautifier {
 		memberBalanceUpdater:     member.NewBalanceUpdater(),
 		transferComposer:         transfer.NewComposer(),
 		depositComposer:          deposit.NewComposer(),
-		migrationAddressComposer: burn.NewComposer(migrationAddressGauge),
-		migrationAddressKeeper:   burn.NewKeeper(migrationAddressGauge),
+		migrationAddressComposer: migration.NewComposer(migrationAddressGauge),
+		migrationAddressKeeper:   migration.NewKeeper(migrationAddressGauge),
 		depositTransferComposer:  depositTransfer.NewComposer(),
 		depositKeeper:            deposit.NewKeeper(),
 	}
@@ -68,8 +68,8 @@ type Beautifier struct {
 	memberBalanceUpdater     *member.BalanceUpdater
 	transferComposer         *transfer.Composer
 	depositComposer          *deposit.Composer
-	migrationAddressComposer *burn.Composer
-	migrationAddressKeeper   *burn.MigrationAddressKeeper
+	migrationAddressComposer *migration.Composer
+	migrationAddressKeeper   *migration.Keeper
 	depositTransferComposer  *depositTransfer.Composer
 	depositKeeper            *deposit.DepositKeeper
 }

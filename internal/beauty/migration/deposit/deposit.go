@@ -17,7 +17,7 @@
 package deposit
 
 import (
-	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -25,14 +25,13 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
@@ -45,9 +44,13 @@ type depositBuilder struct {
 	act *record.Material
 }
 
+func (b *depositBuilder) String() string {
+	return fmt.Sprintf("res: %v act: %v", b.res, b.act)
+}
+
 func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	callResult := parseMemberRef(b.res)
-	if callResult.status != SUCCESS {
+	if callResult.status != dto.SUCCESS {
 		return nil, errors.New("invalid create deposit result payload")
 	}
 	id := b.act.ID
@@ -55,18 +58,15 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	deposit := initialDepositState(act)
 	transferDate, err := pulse.Number(deposit.PulseDepositCreate).AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deposit create pulse to time")
+		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", deposit.PulseDepositCreate)
 	}
-	holdReleadDate, err := pulse.Number(deposit.PulseDepositUnHold).AsApproximateTime()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deposit unhold pulse to time")
-	}
+
 	return &beauty.Deposit{
 		EthHash:         strings.ToLower(deposit.TxHash),
 		DepositRef:      act.Request.String(),
 		MemberRef:       callResult.memberRef,
 		TransferDate:    transferDate.Unix(),
-		HoldReleaseDate: holdReleadDate.Unix(),
+		HoldReleaseDate: 0,
 		Amount:          deposit.Amount,
 		Balance:         deposit.Balance,
 		DepositState:    id.String(),
@@ -193,6 +193,8 @@ func (c *Composer) compose(b *depositBuilder) {
 	deposit, err := b.build()
 	if err == nil {
 		c.cache = append(c.cache, deposit)
+	} else {
+		log.Error(err)
 	}
 
 	direct := *b.act.Virtual.GetActivate().Request.Record()
@@ -219,37 +221,6 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	return nil
 }
 
-func parseCallArguments(inArgs []byte) member.Request {
-	var args []interface{}
-	err := insolar.Deserialize(inArgs, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
-}
-
 func initialDepositState(act *record.Activate) *deposit.Deposit {
 	d := deposit.Deposit{}
 	err := insolar.Deserialize(act.Memory, &d)
@@ -270,7 +241,7 @@ func isDepositMigrationCall(rec *record.Material) bool {
 		return false
 	}
 
-	args := parseCallArguments(in.Arguments)
+	args := (*dto.Request)(rec).ParseMemberCallArguments()
 	return args.Params.CallSite == "deposit.migration"
 }
 

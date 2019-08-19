@@ -14,34 +14,37 @@
 // limitations under the License.
 //
 
-package member
+package transfer
 
 import (
 	"github.com/insolar/insolar/insolar/record"
-	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
+
+	"github.com/insolar/observer/internal/dto"
 )
 
-func isWalletActivate(act *record.Activate) bool {
-	return act.Image.Equal(*proxyWallet.PrototypeReference)
+type txResult struct {
+	status dto.Status
+	fee    string
 }
 
-func isNewWallet(rec *record.Material) bool {
-	_, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
+func parseTransferResultPayload(rec *record.Material) txResult {
+	res := (*dto.Result)(rec)
+	if !res.IsSuccess() {
+		return txResult{dto.CANCELED, ""}
+	}
+
+	rets := res.ParsePayload().Returns
+	params, ok := rets[0].(map[string]interface{})
 	if !ok {
-		return false
+		return txResult{status: "FIRST_PARAM_NOT_MAP", fee: ""}
 	}
-	in := rec.Virtual.GetIncomingRequest()
-	if in.Method != "New" {
-		return false
+	feeInterface, ok := params["fee"]
+	if !ok {
+		return txResult{status: "FEE_PARAM_NOT_EXIST", fee: ""}
 	}
-
-	if in.Prototype == nil {
-		return false
+	fee, ok := feeInterface.(string)
+	if !ok {
+		return txResult{status: "FEE_NOT_STRING", fee: ""}
 	}
-
-	return in.Prototype.Equal(*proxyWallet.PrototypeReference)
-}
-
-func isWalletAmend(amd *record.Amend) bool {
-	return amd.Image.Equal(*proxyWallet.PrototypeReference)
+	return txResult{status: dto.SUCCESS, fee: fee}
 }

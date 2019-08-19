@@ -38,13 +38,3 @@ func (r *Result) MapModel() *raw.Result {
 		Payload:  hex.EncodeToString(res.Payload),
 	}
 }
-
-func parseResult(rec *record.Material) *raw.Result {
-	id := rec.ID
-	res := rec.Virtual.GetResult()
-	return &raw.Result{
-		ResultID: insolar.NewReference(id).String(),
-		Request:  res.Request.String(),
-		Payload:  hex.EncodeToString(res.Payload),
-	}
-}

@@ -22,17 +22,17 @@ import (
 )
 
 type DepositUpdate struct {
-	ID        string
-	Amount    string
-	Balance   string
-	Status    string
-	PrevState string
+	ID              string
+	HoldReleaseDate int64
+	Amount          string
+	Balance         string
+	PrevState       string
 }
 
 func (u *DepositUpdate) Dump(tx *pg.Tx) error {
 	res, err := tx.Model(&Deposit{}).
 		Where("deposit_state=?", u.PrevState).
-		Set("amount=?,wallet_state=?,balance=?", u.Amount, u.ID, u.Balance).
+		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", u.Amount, u.ID, u.Balance, u.HoldReleaseDate).
 		Update()
 	if err != nil {
 		return errors.Wrapf(err, "failed to update deposit state")

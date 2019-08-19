@@ -23,10 +23,12 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/beauty/member/wallet/account"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
-	log "github.com/sirupsen/logrus"
 )
 
 type BalanceUpdater struct {
@@ -45,7 +47,7 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 	if !ok {
 		return
 	}
-	if !isAccountAmend(v.Amend) {
+	if !account.IsAccountAmend(v.Amend) {
 		return
 	}
 	u.processAccountAmend(rec.ID, rec)
@@ -53,7 +55,7 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 
 func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material) {
 	amd := rec.Virtual.GetAmend()
-	balance := accountBalance(rec)
+	balance := account.AccountBalance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
 		randomRef := gen.Reference()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{

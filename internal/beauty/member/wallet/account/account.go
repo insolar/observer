@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package member
+package account
 
 import (
 	"github.com/insolar/insolar/insolar"
@@ -25,11 +25,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func isAccountActivate(act *record.Activate) bool {
+func IsAccountActivate(act *record.Activate) bool {
 	return act.Image.Equal(*proxyAccount.PrototypeReference)
 }
 
-func isNewAccount(rec *record.Material) bool {
+func IsNewAccount(rec *record.Material) bool {
 	_, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
 	if !ok {
 		return false
@@ -44,11 +44,11 @@ func isNewAccount(rec *record.Material) bool {
 	return in.Prototype.Equal(*proxyAccount.PrototypeReference)
 }
 
-func isAccountAmend(amd *record.Amend) bool {
+func IsAccountAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*proxyAccount.PrototypeReference)
 }
 
-func accountBalance(rec *record.Material) string {
+func AccountBalance(rec *record.Material) string {
 	memory := []byte{}
 	balance := ""
 	switch v := rec.Virtual.Union.(type) {
