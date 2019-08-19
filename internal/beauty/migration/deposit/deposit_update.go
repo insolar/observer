@@ -22,6 +22,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
+	"github.com/insolar/insolar/network/consensus/common/pulse"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -44,11 +45,16 @@ func (k *DepositKeeper) Process(rec *record.Material) {
 	if isDepositAmend(rec) {
 		amd := rec.Virtual.GetAmend()
 		d := depositState(amd)
+		releaseTimestamp := int64(0)
+		if holdReleadDate, err := pulse.Number(d.PulseDepositUnHold).AsApproximateTime(); err == nil {
+			releaseTimestamp = holdReleadDate.Unix()
+		}
 		k.cache = append(k.cache, &beauty.DepositUpdate{
-			ID:        rec.ID.String(),
-			Amount:    d.Amount,
-			Balance:   d.Balance,
-			PrevState: amd.PrevState.String(),
+			ID:              rec.ID.String(),
+			HoldReleaseDate: releaseTimestamp,
+			Amount:          d.Amount,
+			Balance:         d.Balance,
+			PrevState:       amd.PrevState.String(),
 		})
 	}
 }

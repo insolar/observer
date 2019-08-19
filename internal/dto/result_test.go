@@ -15,3 +15,16 @@
 //
 
 package dto
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestResult_MapModel(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		result := (*Result)(nil)
+		require.Nil(t, result.MapModel())
+	})
+}

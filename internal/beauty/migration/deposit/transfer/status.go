@@ -18,39 +18,18 @@ package transfer
 
 import (
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/dto"
 )
 
-const (
-	PENDING  = "PENDING"
-	SUCCESS  = "SUCCESS"
-	CANCELED = "CANCELED"
-)
-
 type txResult struct {
-	status string
+	status dto.Status
 }
 
 func parseTransferResultPayload(rec *record.Material) txResult {
 	res := (*dto.Result)(rec)
-	rets := res.ParsePayload().Returns
-	if len(rets) < 2 {
-		return txResult{status: "NOT_ENOUGH_PAYLOAD_PARAMS"}
+	if !res.IsSuccess() {
+		return txResult{status: dto.CANCELED}
 	}
-	if rets[1] != nil {
-		if retError, ok := rets[1].(map[string]interface{}); ok {
-			if val, ok := retError["S"]; ok {
-				if msg, ok := val.(string); ok {
-					log.Debug(errors.New(msg))
-				}
-			}
-			return txResult{CANCELED}
-		}
-		log.Error(errors.New("invalid error value in deposit.Transfer payload"))
-		return txResult{"INVALID_ERROR_VALUE"}
-	}
-	return txResult{status: SUCCESS}
+	return txResult{status: dto.SUCCESS}
 }

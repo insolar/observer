@@ -14,23 +14,24 @@
 // limitations under the License.
 //
 
-package burn
+package migration
 
 import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
-	log "github.com/sirupsen/logrus"
 )
 
-type MigrationAddressKeeper struct {
+type Keeper struct {
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.WasteMigrationAddress
@@ -39,7 +40,7 @@ type MigrationAddressKeeper struct {
 	stat                  *dumpStat
 }
 
-func NewKeeper(migrationAddressGauge prometheus.Gauge) *MigrationAddressKeeper {
+func NewKeeper(migrationAddressGauge prometheus.Gauge) *Keeper {
 	stat := &dumpStat{
 		cached: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "observer_migration_address_keeper_cached_total",
@@ -47,7 +48,7 @@ func NewKeeper(migrationAddressGauge prometheus.Gauge) *MigrationAddressKeeper {
 		}),
 	}
 
-	return &MigrationAddressKeeper{
+	return &Keeper{
 		requests:              make(map[insolar.ID]*record.Material),
 		results:               make(map[insolar.ID]*record.Material),
 		migrationAddressGauge: migrationAddressGauge,
@@ -55,30 +56,7 @@ func NewKeeper(migrationAddressGauge prometheus.Gauge) *MigrationAddressKeeper {
 	}
 }
 
-func (k *MigrationAddressKeeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
-	log.Infof("dump wasted migration addresses")
-	k.updateStat()
-
-	deferred := []*beauty.WasteMigrationAddress{}
-	for _, addr := range k.cache {
-		if err := addr.Dump(tx); err != nil {
-			deferred = append(deferred, addr)
-		}
-	}
-
-	for _, addr := range deferred {
-		log.Infof("Deferred migration address %s", addr.Addr)
-	}
-
-	pub.Subscribe(func() {
-		subtrahend := len(k.cache) - len(deferred)
-		k.migrationAddressGauge.Sub(float64(subtrahend))
-		k.cache = deferred
-	})
-	return nil
-}
-
-func (k *MigrationAddressKeeper) Process(rec *record.Material) {
+func (k *Keeper) Process(rec *record.Material) {
 	defer panic.Log("migration_address_keeper")
 
 	switch v := rec.Virtual.Union.(type) {
@@ -112,15 +90,38 @@ func (k *MigrationAddressKeeper) Process(rec *record.Material) {
 	}
 }
 
-func (k *MigrationAddressKeeper) processResult(rec *record.Material) {
-	addr := wastedAddress(rec)
-	if addr.status != SUCCESS {
-		log.Debug(errors.Errorf("GetFreeMigrationAddress result status=%v", addr.status))
-		return
+func (k *Keeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+	log.Infof("dump wasted migration addresses")
+	k.updateStat()
+
+	deferred := []*beauty.WasteMigrationAddress{}
+	for _, addr := range k.cache {
+		if err := addr.Dump(tx); err != nil {
+			deferred = append(deferred, addr)
+		}
 	}
 
+	for _, addr := range deferred {
+		log.Infof("Deferred migration address %s", addr.Addr)
+	}
+
+	pub.Subscribe(func() {
+		subtrahend := len(k.cache) - len(deferred)
+		k.migrationAddressGauge.Sub(float64(subtrahend))
+		k.cache = deferred
+	})
+	return nil
+}
+
+func (k *Keeper) processResult(rec *record.Material) {
+	result := (*dto.Result)(rec)
+	if !result.IsSuccess() {
+		return
+	}
+	addr := wastedAddress(result)
+
 	k.cache = append(k.cache, &beauty.WasteMigrationAddress{
-		Addr: addr.address,
+		Addr: addr,
 	})
 }
 
@@ -134,7 +135,16 @@ func isGetFreeMigrationAddress(rec *record.Material) bool {
 	return in.Method == "GetFreeMigrationAddress"
 }
 
-func (k *MigrationAddressKeeper) updateStat() {
+func wastedAddress(result *dto.Result) string {
+	rets := result.ParsePayload().Returns
+	address, ok := rets[0].(string)
+	if !ok {
+		return ""
+	}
+	return address
+}
+
+func (k *Keeper) updateStat() {
 	requestCount := len(k.requests)
 	resultCount := len(k.results)
 

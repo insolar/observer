@@ -17,20 +17,19 @@
 package member
 
 import (
-	"encoding/json"
 	"sync"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/beauty/member/wallet/account"
+	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replication"
@@ -49,7 +48,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		return nil, errors.New("member creation result payload is nil")
 	}
 	params := memberStatus(b.res)
-	balance := accountBalance(b.act)
+	balance := account.AccountBalance(b.act)
 	ref, err := insolar.NewReferenceFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.New("invalid member reference")
@@ -59,7 +58,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
 		AccountState:     b.act.ID.String(),
-		Status:           params.status,
+		Status:           string(params.status),
 	}, nil
 }
 
@@ -102,7 +101,7 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(req):
 				c.memberCreateResult(rec)
-			case isNewAccount(req):
+			case account.IsNewAccount(req):
 				c.newAccount(req)
 			}
 		} else {
@@ -114,7 +113,7 @@ func (c *Composer) Process(rec *record.Material) {
 			switch {
 			case isMemberCreateRequest(rec):
 				c.memberCreateResult(res)
-			case isNewAccount(rec):
+			case account.IsNewAccount(rec):
 				c.newAccount(rec)
 			}
 		} else {
@@ -127,7 +126,7 @@ func (c *Composer) Process(rec *record.Material) {
 			c.requests[rec.ID] = rec
 		}
 	case *record.Virtual_Activate:
-		if isAccountActivate(v.Activate) {
+		if account.IsAccountActivate(v.Activate) {
 			c.accountActivate(rec)
 		}
 	}
@@ -221,47 +220,12 @@ func isMemberCreateRequest(req *record.Material) bool {
 		return false
 	}
 
-	args := parseCallArguments(in.Arguments)
+	args := (*dto.Request)(req).ParseMemberCallArguments()
 	switch args.Params.CallSite {
 	case "member.create", "member.migrationCreate":
 		return true
 	}
 	return false
-}
-
-func parseCallArguments(inArgs []byte) member.Request {
-	if inArgs == nil {
-		log.Warn(errors.New("request.Arguments is nil"))
-		return member.Request{}
-	}
-	var args []interface{}
-	err := insolar.Deserialize(inArgs, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
 }
 
 type dumpStat struct {

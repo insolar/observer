@@ -18,17 +18,30 @@ package dto
 
 import (
 	"encoding/hex"
+	"reflect"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/raw"
 )
 
-func parseRequest(rec *record.Material) *raw.Request {
-	id := rec.ID
-	req := rec.Virtual.GetIncomingRequest()
-	var base, object, prototype = "", "", ""
+type Request record.Material
+
+func (r *Request) MapModel() *raw.Request {
+	if r == nil {
+		return nil
+	}
+
+	v, ok := r.Virtual.Union.(*record.Virtual_IncomingRequest)
+	if !ok {
+		log.Errorf("trying to use %s as IncomingRequest", reflect.TypeOf(r.Virtual.Union).String())
+		return nil
+	}
+
+	req := v.IncomingRequest
+	base, object, prototype := "", "", ""
 	if nil != req.Base {
 		base = req.Base.String()
 	}
@@ -39,7 +52,7 @@ func parseRequest(rec *record.Material) *raw.Request {
 		prototype = req.Prototype.String()
 	}
 	return &raw.Request{
-		RequestID:  insolar.NewReference(id).String(),
+		RequestID:  insolar.NewReference(r.ID).String(),
 		Caller:     req.Caller.String(),
 		ReturnMode: req.ReturnMode.String(),
 		Base:       base,

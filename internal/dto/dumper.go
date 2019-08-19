@@ -134,9 +134,11 @@ func (d *Dumper) buildRecord(rn uint32, rec *record.Material) {
 func (d *Dumper) buildUnpacked(rec *record.Material) {
 	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		d.results = append(d.results, (*Result)(rec).MapModel())
+		result := (*Result)(rec)
+		d.results = append(d.results, result.MapModel())
 	case *record.Virtual_IncomingRequest:
-		d.requests = append(d.requests, parseRequest(rec))
+		request := (*Request)(rec)
+		d.requests = append(d.requests, request.MapModel())
 	case *record.Virtual_Activate:
 		d.objects = append(d.objects, parseActivate(rec))
 	case *record.Virtual_Amend:
