@@ -17,6 +17,8 @@
 package dto
 
 import (
+	"runtime/debug"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
@@ -24,7 +26,8 @@ import (
 
 func (r *Result) ParsePayload() foundation.Result {
 	if r == nil {
-		log.Warn("call ParsePayload of nil")
+		log.Errorf("trying to use nil dto.Result receiver")
+		debug.PrintStack()
 		return foundation.Result{}
 	}
 	payload := r.Virtual.GetResult().Payload

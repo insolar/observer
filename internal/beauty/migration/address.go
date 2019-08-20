@@ -77,8 +77,11 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := *v.Result.Request.Record()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
-			if isAddBurnAddresses(req) {
-				c.processAddBurnAddresses(req, rec)
+			request := (*dto.Request)(req)
+			if request.IsIncoming() {
+				if isAddBurnAddresses(req) {
+					c.processAddBurnAddresses(req, rec)
+				}
 			}
 		} else {
 			c.results[origin] = rec
@@ -145,17 +148,12 @@ func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Mat
 }
 
 func isAddBurnAddresses(rec *record.Material) bool {
-	v, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
-	if !ok {
+	request := (*dto.Request)(rec)
+	if !request.IsMemberCall() {
 		return false
 	}
 
-	in := v.IncomingRequest
-	if in.Method != "Call" {
-		return false
-	}
-
-	args := (*dto.Request)(rec).ParseMemberCallArguments()
+	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "migration.addBurnAddresses"
 }
 

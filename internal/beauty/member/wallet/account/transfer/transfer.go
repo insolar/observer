@@ -95,9 +95,12 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := *v.Result.Request.Record()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
-			if isTransferCall(req) {
-				if transfer, err := build(req, rec); err == nil {
-					c.cache = append(c.cache, transfer)
+			request := (*dto.Request)(req)
+			if request.IsIncoming() {
+				if isTransferCall(request) {
+					if transfer, err := build(req, rec); err == nil {
+						c.cache = append(c.cache, transfer)
+					}
 				}
 			}
 		} else {
@@ -107,7 +110,8 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := rec.ID
 		if res, ok := c.results[origin]; ok {
 			delete(c.results, origin)
-			if isTransferCall(rec) {
+			request := (*dto.Request)(rec)
+			if isTransferCall(request) {
 				if transfer, err := build(rec, res); err == nil {
 					c.cache = append(c.cache, transfer)
 				}
@@ -125,17 +129,12 @@ func (c *Composer) Process(rec *record.Material) {
 	}
 }
 
-func isTransferCall(req *record.Material) bool {
-	v, ok := req.Virtual.Union.(*record.Virtual_IncomingRequest)
-	if !ok {
-		return false
-	}
-	in := v.IncomingRequest
-	if in.Method != "Call" {
+func isTransferCall(request *dto.Request) bool {
+	if !request.IsMemberCall() {
 		return false
 	}
 
-	args := (*dto.Request)(req).ParseMemberCallArguments()
+	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "member.transfer"
 }
 

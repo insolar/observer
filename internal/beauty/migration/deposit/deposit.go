@@ -110,11 +110,14 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := *v.Result.Request.Record()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
-			switch {
-			case isDepositMigrationCall(req):
-				c.processResult(rec)
-			case isDepositNew(req):
-				c.processDepositNew(req)
+			request := (*dto.Request)(req)
+			if request.IsIncoming() {
+				switch {
+				case isDepositMigrationCall(req):
+					c.processResult(rec)
+				case isDepositNew(req):
+					c.processDepositNew(req)
+				}
 			}
 		} else {
 			c.results[origin] = rec
@@ -231,17 +234,12 @@ func initialDepositState(act *record.Activate) *deposit.Deposit {
 }
 
 func isDepositMigrationCall(rec *record.Material) bool {
-	v, ok := rec.Virtual.Union.(*record.Virtual_IncomingRequest)
-	if !ok {
+	request := (*dto.Request)(rec)
+	if !request.IsMemberCall() {
 		return false
 	}
 
-	in := v.IncomingRequest
-	if in.Method != "Call" {
-		return false
-	}
-
-	args := (*dto.Request)(rec).ParseMemberCallArguments()
+	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "deposit.migration"
 }
 
