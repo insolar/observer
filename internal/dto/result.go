@@ -18,9 +18,11 @@ package dto
 
 import (
 	"encoding/hex"
+	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/log"
 
 	"github.com/insolar/observer/internal/model/raw"
 )
@@ -29,6 +31,8 @@ type Result record.Material
 
 func (r *Result) MapModel() *raw.Result {
 	if r == nil {
+		log.Errorf("trying to use nil dto.Result receiver")
+		debug.PrintStack()
 		return nil
 	}
 	res := r.Virtual.GetResult()

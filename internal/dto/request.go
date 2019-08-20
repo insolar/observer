@@ -19,6 +19,7 @@ package dto
 import (
 	"encoding/hex"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -31,12 +32,15 @@ type Request record.Material
 
 func (r *Request) MapModel() *raw.Request {
 	if r == nil {
+		log.Errorf("trying to use nil dto.Request receiver")
+		debug.PrintStack()
 		return nil
 	}
 
 	v, ok := r.Virtual.Union.(*record.Virtual_IncomingRequest)
 	if !ok {
 		log.Errorf("trying to use %s as IncomingRequest", reflect.TypeOf(r.Virtual.Union).String())
+		debug.PrintStack()
 		return nil
 	}
 
@@ -62,4 +66,12 @@ func (r *Request) MapModel() *raw.Request {
 		Arguments:  hex.EncodeToString(req.Arguments),
 		Reason:     req.Reason.String(),
 	}
+}
+
+func (r *Request) IsIncoming() bool {
+	if r == nil {
+		return false
+	}
+	_, ok := r.Virtual.Union.(*record.Virtual_IncomingRequest)
+	return ok
 }

@@ -98,11 +98,14 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := *v.Result.Request.Record()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
-			switch {
-			case isMemberCreateRequest(req):
-				c.memberCreateResult(rec)
-			case account.IsNewAccount(req):
-				c.newAccount(req)
+			request := (*dto.Request)(req)
+			if request.IsIncoming() {
+				switch {
+				case isMemberCreateRequest(req):
+					c.memberCreateResult(rec)
+				case account.IsNewAccount(req):
+					c.newAccount(req)
+				}
 			}
 		} else {
 			c.results[origin] = rec
@@ -133,6 +136,7 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) memberCreateResult(rec *record.Material) {
+	log.Infof("member result")
 	origin := *rec.Virtual.GetResult().Request.Record()
 	if b, ok := c.builders[origin]; ok {
 		b.res = rec
@@ -143,6 +147,7 @@ func (c *Composer) memberCreateResult(rec *record.Material) {
 }
 
 func (c *Composer) newAccount(rec *record.Material) {
+	log.Infof("new account")
 	direct := rec.ID
 	if act, ok := c.activates[direct]; ok {
 		origin := *rec.Virtual.GetIncomingRequest().Reason.Record()
@@ -158,6 +163,7 @@ func (c *Composer) newAccount(rec *record.Material) {
 }
 
 func (c *Composer) accountActivate(rec *record.Material) {
+	log.Infof("account activate")
 	direct := *rec.Virtual.GetActivate().Request.Record()
 	if req, ok := c.requests[direct]; ok {
 		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
@@ -211,16 +217,15 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 }
 
 func isMemberCreateRequest(req *record.Material) bool {
-	_, ok := req.Virtual.Union.(*record.Virtual_IncomingRequest)
-	if !ok {
-		return false
-	}
-	in := req.Virtual.GetIncomingRequest()
-	if in.Method != "Call" {
+	request := (*dto.Request)(req)
+	log.Infof("args %v", request.Virtual.GetIncomingRequest())
+	if !request.IsMemberCall() {
 		return false
 	}
 
-	args := (*dto.Request)(req).ParseMemberCallArguments()
+	log.Infof("member call")
+
+	args := request.ParseMemberCallArguments()
 	switch args.Params.CallSite {
 	case "member.create", "member.migrationCreate":
 		return true
