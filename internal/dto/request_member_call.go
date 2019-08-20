@@ -19,41 +19,45 @@ package dto
 import (
 	"encoding/json"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
-	proxyMember "github.com/insolar/insolar/logicrunner/builtin/proxy/member"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 func (r *Request) IsMemberCall() bool {
 	if r == nil {
+		log.Errorf("trying to use nil dto.Request receiver")
+		debug.PrintStack()
 		return false
 	}
 
 	v, ok := r.Virtual.Union.(*record.Virtual_IncomingRequest)
 	if !ok {
 		log.Errorf("trying to use %s as IncomingRequest", reflect.TypeOf(r.Virtual.Union).String())
+		debug.PrintStack()
 		return false
 	}
 
 	req := v.IncomingRequest
-	if req.Prototype == nil {
-		return false
-	}
-
-	if !req.Prototype.Equal(*proxyMember.PrototypeReference) {
-		return false
-	}
+	// TODO: uncomment Prototype check
+	// if req.Prototype == nil {
+	// 	return false
+	// }
+	// if !req.Prototype.Equal(*proxyMember.PrototypeReference) {
+	// 	return false
+	// }
 	return req.Method == "Call"
 }
 
 func (r *Request) ParseMemberCallArguments() member.Request {
 	if !r.IsMemberCall() {
 		log.Errorf("trying to parse member call arguments of not member call")
+		debug.PrintStack()
 		return member.Request{}
 	}
 
