@@ -79,8 +79,8 @@ func (c *Composer) Process(rec *record.Material) {
 			delete(c.requests, origin)
 			request := (*dto.Request)(req)
 			if request.IsIncoming() {
-				if isAddBurnAddresses(req) {
-					c.processAddBurnAddresses(req, rec)
+				if isAddMigrationAddresses(req) {
+					c.processAddMigrationAddresses(req, rec)
 				}
 			}
 		} else {
@@ -90,8 +90,8 @@ func (c *Composer) Process(rec *record.Material) {
 		origin := rec.ID
 		if res, ok := c.results[origin]; ok {
 			delete(c.results, origin)
-			if isAddBurnAddresses(rec) {
-				c.processAddBurnAddresses(rec, res)
+			if isAddMigrationAddresses(rec) {
+				c.processAddMigrationAddresses(rec, res)
 			}
 		} else {
 			c.requests[origin] = rec
@@ -113,7 +113,6 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 
 	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
-		// log.Infof("migration address inserting %d", i)
 		if err := addr.Dump(tx); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}
@@ -126,17 +125,17 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 	return nil
 }
 
-func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Material) {
+func (c *Composer) processAddMigrationAddresses(req *record.Material, res *record.Material) {
 	result := (*dto.Result)(res)
 	if !result.IsSuccess() {
 		return
 	}
 	args := (*dto.Request)(req).ParseMemberCallArguments()
-	addresses := parseAddBurnAddressesCallParams(args)
+	addresses := parseAddMigrationAddressesCallParams(args)
 	pn := pulse.Number(req.ID.Pulse())
 	t, err := pn.AsApproximateTime()
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to convert AddBurnAddresses request pulse to time"))
+		log.Error(errors.Wrapf(err, "failed to convert AddMigrationAddresses request pulse to time"))
 	}
 	for _, addr := range addresses {
 		c.cache = append(c.cache, &beauty.MigrationAddress{
@@ -147,14 +146,14 @@ func (c *Composer) processAddBurnAddresses(req *record.Material, res *record.Mat
 	}
 }
 
-func isAddBurnAddresses(rec *record.Material) bool {
+func isAddMigrationAddresses(rec *record.Material) bool {
 	request := (*dto.Request)(rec)
 	if !request.IsMemberCall() {
 		return false
 	}
 
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "migration.addBurnAddresses"
+	return args.Params.CallSite == "migration.addAddresses"
 }
 
 type dumpStat struct {

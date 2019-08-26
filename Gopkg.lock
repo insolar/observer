@@ -197,7 +197,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:54664680deae4f3846ec32f97cccd78443ce4ae9b3c81cf52bdd3e9c9bd07a51"
+  digest = "1:880a2e95d47549004869db49b35237119ae3e3391760a07228a0891ce1434e22"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -232,7 +232,6 @@
     "logicrunner/builtin/foundation",
     "logicrunner/builtin/foundation/safemath",
     "logicrunner/builtin/proxy/account",
-    "logicrunner/builtin/proxy/costcenter",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/nodedomain",
@@ -740,7 +739,6 @@
     "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
     "github.com/insolar/insolar/logicrunner/builtin/foundation",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/account",
-    "github.com/insolar/insolar/logicrunner/builtin/proxy/costcenter",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/member",
     "github.com/insolar/insolar/network/consensus/common/pulse",
