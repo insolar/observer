@@ -136,7 +136,6 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) memberCreateResult(rec *record.Material) {
-	log.Infof("member result")
 	origin := *rec.Virtual.GetResult().Request.Record()
 	if b, ok := c.builders[origin]; ok {
 		b.res = rec
@@ -147,7 +146,6 @@ func (c *Composer) memberCreateResult(rec *record.Material) {
 }
 
 func (c *Composer) newAccount(rec *record.Material) {
-	log.Infof("new account")
 	direct := rec.ID
 	if act, ok := c.activates[direct]; ok {
 		origin := *rec.Virtual.GetIncomingRequest().Reason.Record()
@@ -163,7 +161,6 @@ func (c *Composer) newAccount(rec *record.Material) {
 }
 
 func (c *Composer) accountActivate(rec *record.Material) {
-	log.Infof("account activate")
 	direct := *rec.Virtual.GetActivate().Request.Record()
 	if req, ok := c.requests[direct]; ok {
 		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
@@ -218,12 +215,9 @@ func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 
 func isMemberCreateRequest(req *record.Material) bool {
 	request := (*dto.Request)(req)
-	log.Infof("args %v", request.Virtual.GetIncomingRequest())
 	if !request.IsMemberCall() {
 		return false
 	}
-
-	log.Infof("member call")
 
 	args := request.ParseMemberCallArguments()
 	switch args.Params.CallSite {
