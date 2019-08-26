@@ -22,7 +22,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
-	"github.com/insolar/insolar/network/consensus/common/pulse"
+	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 

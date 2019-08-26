@@ -26,7 +26,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
-	"github.com/insolar/insolar/network/consensus/common/pulse"
+	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -56,9 +56,9 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	id := b.act.ID
 	act := b.act.Virtual.GetActivate()
 	deposit := initialDepositState(act)
-	transferDate, err := pulse.Number(deposit.PulseDepositCreate).AsApproximateTime()
+	transferDate, err := pulse.Number(b.act.ID.Pulse()).AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", deposit.PulseDepositCreate)
+		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", b.act.ID.Pulse())
 	}
 
 	return &beauty.Deposit{
@@ -114,8 +114,10 @@ func (c *Composer) Process(rec *record.Material) {
 			if request.IsIncoming() {
 				switch {
 				case isDepositMigrationCall(req):
+					log.Infof("deposit.migration Call")
 					c.processResult(rec)
 				case isDepositNew(req):
+					log.Infof("deposit.New")
 					c.processDepositNew(req)
 				}
 			}
@@ -128,8 +130,10 @@ func (c *Composer) Process(rec *record.Material) {
 			delete(c.results, id)
 			switch {
 			case isDepositMigrationCall(rec):
+				log.Infof("deposit.migration Call")
 				c.processResult(res)
 			case isDepositNew(rec):
+				log.Infof("deposit.New")
 				c.processDepositNew(rec)
 			}
 		} else {
@@ -144,6 +148,7 @@ func (c *Composer) Process(rec *record.Material) {
 		}
 	case *record.Virtual_Activate:
 		if isDepositActivate(v.Activate) {
+			log.Infof("deposit.Activate")
 			c.processDepositActivate(rec)
 		}
 	}
