@@ -21,21 +21,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func parseAddBurnAddressesCallParams(request member.Request) []string {
+func parseAddMigrationAddressesCallParams(request member.Request) []string {
 	callParams, ok := request.Params.CallParams.(map[string]interface{})
 	if !ok {
 		log.Warnf("failed to cast CallParams to map[string]interface{}")
 		return []string{}
 	}
-	burnAddresses, ok := callParams["burnAddresses"]
+	migrationAddresses, ok := callParams["migrationAddresses"]
 	if !ok {
-		log.Warnf(`failed to get CallParams["burnAddresses"]`)
+		log.Warnf(`failed to get CallParams["migrationAddresses"]`)
 		return []string{}
 	}
 
-	interfaces, ok := burnAddresses.([]interface{})
+	interfaces, ok := migrationAddresses.([]interface{})
 	if !ok {
-		log.Warnf(`failed to cast CallParams["burnAddresses"] to []interface{}`)
+		log.Warnf(`failed to cast CallParams["migrationAddresses"] to []interface{}`)
 		return []string{}
 	}
 	addresses := []string{}
@@ -43,7 +43,7 @@ func parseAddBurnAddressesCallParams(request member.Request) []string {
 		if v, ok := a.(string); ok {
 			addresses = append(addresses, v)
 		} else {
-			log.Warnf(`failed to cast CallParams["burnAddresses"][i] to string`)
+			log.Warnf(`failed to cast CallParams["migrationAddresses"][i] to string`)
 			return []string{}
 		}
 	}
