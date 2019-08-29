@@ -95,7 +95,7 @@ func (c *Composer) Process(rec *record.Material) {
 
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		origin := *v.Result.Request.Record()
+		origin := *v.Result.Request.GetLocal()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
 			request := (*dto.Request)(req)
@@ -136,7 +136,7 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) memberCreateResult(rec *record.Material) {
-	origin := *rec.Virtual.GetResult().Request.Record()
+	origin := *rec.Virtual.GetResult().Request.GetLocal()
 	if b, ok := c.builders[origin]; ok {
 		b.res = rec
 		c.compose(b)
@@ -148,7 +148,7 @@ func (c *Composer) memberCreateResult(rec *record.Material) {
 func (c *Composer) newAccount(rec *record.Material) {
 	direct := rec.ID
 	if act, ok := c.activates[direct]; ok {
-		origin := *rec.Virtual.GetIncomingRequest().Reason.Record()
+		origin := *rec.Virtual.GetIncomingRequest().Reason.GetLocal()
 		if b, ok := c.builders[origin]; ok {
 			b.act = act
 			c.compose(b)
@@ -161,9 +161,9 @@ func (c *Composer) newAccount(rec *record.Material) {
 }
 
 func (c *Composer) accountActivate(rec *record.Material) {
-	direct := *rec.Virtual.GetActivate().Request.Record()
+	direct := *rec.Virtual.GetActivate().Request.GetLocal()
 	if req, ok := c.requests[direct]; ok {
-		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		origin := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
 		if origin.Equal(insolar.ID{}) {
 			delete(c.requests, origin)
 			return
@@ -189,8 +189,8 @@ func (c *Composer) compose(b *memberBuilder) {
 		c.cache = append(c.cache, member)
 	}
 
-	direct := *b.act.Virtual.GetActivate().Request.Record()
-	origin := *b.res.Virtual.GetResult().Request.Record()
+	direct := *b.act.Virtual.GetActivate().Request.GetLocal()
+	origin := *b.res.Virtual.GetResult().Request.GetLocal()
 	delete(c.activates, direct)
 	delete(c.requests, direct)
 	delete(c.builders, origin)

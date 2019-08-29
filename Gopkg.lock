@@ -214,7 +214,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:76685401e5c35b588f4cd6e6283a3b5f08a04876581d8578b5f07ae6bcee90c4"
+  digest = "1:d81edcf7c1f3640a3f072dc85a46ba2f4d972a9aa1cea387d5029ec990422e93"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -264,9 +264,10 @@
     "platformpolicy/internal/hash",
     "platformpolicy/internal/sign",
     "pulse",
+    "reference",
   ]
   pruneopts = "UT"
-  revision = "6cced8e54e02320de894bee25f8f47bd7e0ec7e2"
+  revision = "51f4ecb548b35f723db07fef4dc4ba8a5db1a9e9"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -738,7 +739,6 @@
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",
-    "github.com/insolar/insolar/insolar/pulse",
     "github.com/insolar/insolar/insolar/record",
     "github.com/insolar/insolar/ledger/heavy/exporter",
     "github.com/insolar/insolar/log",
@@ -750,6 +750,7 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/account",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/member",
+    "github.com/insolar/insolar/pulse",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",

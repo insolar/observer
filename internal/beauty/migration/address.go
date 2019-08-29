@@ -74,7 +74,7 @@ func (c *Composer) Process(rec *record.Material) {
 
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		origin := *v.Result.Request.Record()
+		origin := *v.Result.Request.GetLocal()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
 			request := (*dto.Request)(req)

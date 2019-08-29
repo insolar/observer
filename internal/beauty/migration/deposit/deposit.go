@@ -107,7 +107,7 @@ func (c *Composer) Process(rec *record.Material) {
 
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		origin := *v.Result.Request.Record()
+		origin := *v.Result.Request.GetLocal()
 		if req, ok := c.requests[origin]; ok {
 			delete(c.requests, origin)
 			request := (*dto.Request)(req)
@@ -155,7 +155,7 @@ func (c *Composer) Process(rec *record.Material) {
 }
 
 func (c *Composer) processResult(res *record.Material) {
-	origin := *res.Virtual.GetResult().Request.Record()
+	origin := *res.Virtual.GetResult().Request.GetLocal()
 	if b, ok := c.builders[origin]; ok {
 		b.res = res
 		c.compose(b)
@@ -167,7 +167,7 @@ func (c *Composer) processResult(res *record.Material) {
 func (c *Composer) processDepositNew(req *record.Material) {
 	direct := req.ID
 	if act, ok := c.activates[direct]; ok {
-		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		origin := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
 		if b, ok := c.builders[origin]; ok {
 			b.act = act
 			c.compose(b)
@@ -180,9 +180,9 @@ func (c *Composer) processDepositNew(req *record.Material) {
 }
 
 func (c *Composer) processDepositActivate(rec *record.Material) {
-	direct := *rec.Virtual.GetActivate().Request.Record()
+	direct := *rec.Virtual.GetActivate().Request.GetLocal()
 	if req, ok := c.requests[direct]; ok {
-		origin := *req.Virtual.GetIncomingRequest().Reason.Record()
+		origin := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
 		if b, ok := c.builders[origin]; ok {
 			b.act = rec
 			c.compose(b)
@@ -205,8 +205,8 @@ func (c *Composer) compose(b *depositBuilder) {
 		log.Error(err)
 	}
 
-	direct := *b.act.Virtual.GetActivate().Request.Record()
-	origin := *b.res.Virtual.GetResult().Request.Record()
+	direct := *b.act.Virtual.GetActivate().Request.GetLocal()
+	origin := *b.res.Virtual.GetResult().Request.GetLocal()
 	delete(c.activates, direct)
 	delete(c.requests, direct)
 	delete(c.builders, origin)
