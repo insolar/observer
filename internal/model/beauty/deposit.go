@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -34,7 +34,7 @@ type Deposit struct {
 	DepositState    string `sql:",notnull"`
 }
 
-func (d *Deposit) Dump(tx *pg.Tx) error {
+func (d *Deposit) Dump(tx orm.DB) error {
 	if err := tx.Insert(d); err != nil {
 		return errors.Wrapf(err, "failed to insert deposit")
 	}

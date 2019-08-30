@@ -19,50 +19,52 @@ package beauty
 import (
 	"context"
 
-	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/component"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/insolar/observer/internal/beauty/member"
-	"github.com/insolar/observer/internal/beauty/member/wallet/account/transfer"
 	"github.com/insolar/observer/internal/beauty/migration"
 	"github.com/insolar/observer/internal/beauty/migration/deposit"
-	depositTransfer "github.com/insolar/observer/internal/beauty/migration/deposit/transfer"
+	"github.com/insolar/observer/internal/beauty/transfer"
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
+	"github.com/insolar/observer/internal/metrics"
 	"github.com/insolar/observer/internal/model/beauty"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 
 	log "github.com/sirupsen/logrus"
 )
 
 func NewBeautifier() *Beautifier {
-	migrationAddressGauge := promauto.NewGauge(prometheus.GaugeOpts{
+	migrationAddressGauge := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "observer_available_migration_addresses_total",
 		Help: "Cache size of migration address composer",
 	})
 	return &Beautifier{
 		cfg:                      configuration.Default(),
+		cmps:                     component.NewManager(nil),
 		memberComposer:           member.NewComposer(),
 		memberBalanceUpdater:     member.NewBalanceUpdater(),
 		transferComposer:         transfer.NewComposer(),
 		depositComposer:          deposit.NewComposer(),
 		migrationAddressComposer: migration.NewComposer(migrationAddressGauge),
 		migrationAddressKeeper:   migration.NewKeeper(migrationAddressGauge),
-		depositTransferComposer:  depositTransfer.NewComposer(),
 		depositKeeper:            deposit.NewKeeper(),
 	}
 }
 
 type Beautifier struct {
 	Configurator     configuration.Configurator `inject:""`
-	OnData           replication.OnData         `inject:""`
-	OnDump           replication.OnDump         `inject:""`
+	Metrics          metrics.Registry           `inject:""`
+	OnData           replicator.OnData          `inject:""`
+	OnDump           replicator.OnDump          `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
+
+	cmps *component.Manager
 
 	memberComposer           *member.Composer
 	memberBalanceUpdater     *member.BalanceUpdater
@@ -70,7 +72,6 @@ type Beautifier struct {
 	depositComposer          *deposit.Composer
 	migrationAddressComposer *migration.Composer
 	migrationAddressKeeper   *migration.Keeper
-	depositTransferComposer  *depositTransfer.Composer
 	depositKeeper            *deposit.DepositKeeper
 }
 
@@ -89,6 +90,7 @@ func (b *Beautifier) Init(ctx context.Context) error {
 	} else {
 		b.cfg = configuration.Default()
 	}
+
 	if b.OnData != nil {
 		b.OnData.SubscribeOnData(func(recordNumber uint32, rec *record.Material) {
 			b.process(rec)
@@ -102,6 +104,17 @@ func (b *Beautifier) Init(ctx context.Context) error {
 	}
 	if b.ConnectionHolder != nil {
 		b.migrationAddressComposer.Init(b.ConnectionHolder.DB())
+	}
+
+	if b.Metrics != nil {
+		b.cmps.Inject(
+			b.Metrics,
+			b.transferComposer,
+		)
+		err := b.cmps.Init(ctx)
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to init beautifier subcomponents"))
+		}
 	}
 	return nil
 }
@@ -131,11 +144,10 @@ func (b *Beautifier) process(rec *record.Material) {
 	b.depositComposer.Process(rec)
 	b.migrationAddressComposer.Process(rec)
 	b.migrationAddressKeeper.Process(rec)
-	b.depositTransferComposer.Process(rec)
 	b.depositKeeper.Process(rec)
 }
 
-func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (b *Beautifier) dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump beautifier")
 	if err := b.memberComposer.Dump(tx, pub); err != nil {
 		return err
@@ -153,9 +165,6 @@ func (b *Beautifier) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
 		return err
 	}
 	if err := b.migrationAddressKeeper.Dump(tx, pub); err != nil {
-		return err
-	}
-	if err := b.depositTransferComposer.Dump(tx, pub); err != nil {
 		return err
 	}
 	if err := b.depositKeeper.Dump(tx, pub); err != nil {

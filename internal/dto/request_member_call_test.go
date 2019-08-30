@@ -79,3 +79,7 @@ func TestRequest_ParseMemberCallArguments(t *testing.T) {
 		require.Equal(t, emptyResult, actual)
 	})
 }
+
+func TestRequest_ParseMemberContractCallParams(t *testing.T) {
+
+}

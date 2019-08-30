@@ -17,7 +17,7 @@
 package raw
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -34,7 +34,7 @@ type Object struct {
 	Type      string
 }
 
-func (r *Object) Dump(tx *pg.Tx) error {
+func (r *Object) Dump(tx orm.DB) error {
 	if err := tx.Insert(r); err != nil {
 		return errors.Wrapf(err, "failed to insert object")
 	}

@@ -17,55 +17,86 @@
 package transfer
 
 import (
-	"github.com/go-pg/pg"
+	"context"
+	"encoding/hex"
+
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/dto"
+	"github.com/insolar/observer/internal/metrics"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
+
+type transferCallParams struct {
+	Amount            string `json:"amount"`
+	ToMemberReference string `json:"toMemberReference"`
+	EthTxHash         string `json:"ethTxHash"`
+}
+
+type transferResult struct {
+	Fee string `json:"fee"`
+}
 
 func build(req *record.Material, res *record.Material) (*beauty.Transfer, error) {
 	// TODO: add wallet refs
-	callArguments := (*dto.Request)(req).ParseMemberCallArguments()
+	request := (*dto.Request)(req)
+	result := (*dto.Result)(res)
+	callArguments := request.ParseMemberCallArguments()
 	pn := req.ID.Pulse()
-	callParams := parseTransferCallParams(callArguments)
-	transferResult := parseTransferResultPayload(res)
+	callParams := &transferCallParams{}
+	request.ParseMemberContractCallParams(callParams)
+	status := dto.SUCCESS
+	if !result.IsSuccess() {
+		status = dto.CANCELED
+	}
+	resultValue := &transferResult{Fee: "0"}
+	result.ParseFirstPayloadValue(resultValue)
 	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
-	memberTo, err := insolar.NewReferenceFromBase58(callParams.toMemberReference)
-	if err != nil {
-		return nil, errors.New("invalid toMemberReference")
+	to := ""
+	switch callArguments.Params.CallSite {
+	case "member.transfer":
+		memberTo, err := insolar.NewReferenceFromBase58(callParams.ToMemberReference)
+		if err != nil {
+			return nil, errors.New("invalid toMemberReference")
+		}
+		to = memberTo.String()
+	case "deposit.transfer":
+		to = memberFrom.String()
 	}
+
 	transferDate, err := pulse.Number(pn).AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}
 	return &beauty.Transfer{
 		TxID:          insolar.NewReference(req.ID).String(),
-		Status:        string(transferResult.status),
-		Amount:        callParams.amount,
+		Status:        string(status),
+		Amount:        callParams.Amount,
 		MemberFromRef: memberFrom.String(),
-		MemberToRef:   memberTo.String(),
+		MemberToRef:   to,
 		PulseNum:      pn,
 		TransferDate:  transferDate.Unix(),
-		Fee:           transferResult.fee,
+		Fee:           resultValue.Fee,
 		WalletFromRef: "TODO",
 		WalletToRef:   "TODO",
-		EthHash:       "",
+		EthHash:       callParams.EthTxHash,
 	}, nil
 }
 
 type Composer struct {
+	Metrics metrics.Registry `inject:""`
+
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.Transfer
@@ -75,8 +106,8 @@ type Composer struct {
 
 func NewComposer() *Composer {
 	stat := &dumpStat{
-		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_member_transfer_composer_cached_total",
+		cached: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "observer_transfer_composer_cached_total",
 			Help: "Cache size of migration address composer",
 		}),
 	}
@@ -85,6 +116,13 @@ func NewComposer() *Composer {
 		results:  make(map[insolar.ID]*record.Material),
 		stat:     stat,
 	}
+}
+
+func (c *Composer) Init(ctx context.Context) error {
+	if c.Metrics != nil {
+		c.Metrics.Register(c.stat.cached)
+	}
+	return nil
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -98,6 +136,10 @@ func (c *Composer) Process(rec *record.Material) {
 			request := (*dto.Request)(req)
 			if request.IsIncoming() {
 				if isTransferCall(request) {
+					transferCall, _ := req.Marshal()
+					log.Infof("transfer call: %s", hex.EncodeToString(transferCall))
+					transferResult, _ := rec.Marshal()
+					log.Infof("transfer result: %s", hex.EncodeToString(transferResult))
 					if transfer, err := build(req, rec); err == nil {
 						c.cache = append(c.cache, transfer)
 					}
@@ -112,6 +154,10 @@ func (c *Composer) Process(rec *record.Material) {
 			delete(c.results, origin)
 			request := (*dto.Request)(rec)
 			if isTransferCall(request) {
+				transferCall, _ := rec.Marshal()
+				log.Infof("transfer call: %s", hex.EncodeToString(transferCall))
+				transferResult, _ := res.Marshal()
+				log.Infof("transfer result: %s", hex.EncodeToString(transferResult))
 				if transfer, err := build(rec, res); err == nil {
 					c.cache = append(c.cache, transfer)
 				}
@@ -135,10 +181,14 @@ func isTransferCall(request *dto.Request) bool {
 	}
 
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "member.transfer"
+	switch args.Params.CallSite {
+	case "member.transfer", "deposit.transfer":
+		return true
+	}
+	return false
 }
 
-func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump member transfers")
 
 	c.updateStat()

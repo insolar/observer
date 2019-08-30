@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 )
@@ -39,7 +39,7 @@ type Transfer struct {
 	EthHash       string              `sql:",notnull"`
 }
 
-func (m *Transfer) Dump(tx *pg.Tx) error {
+func (m *Transfer) Dump(tx orm.DB) error {
 	if err := tx.Insert(m); err != nil {
 		return errors.Wrapf(err, "failed to insert transfer")
 	}

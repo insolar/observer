@@ -23,7 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/insolar/observer/internal/components"
+	"github.com/insolar/observer/components"
 )
 
 func main() {

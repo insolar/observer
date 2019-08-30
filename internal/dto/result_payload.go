@@ -17,6 +17,7 @@
 package dto
 
 import (
+	"encoding/json"
 	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
@@ -42,4 +43,22 @@ func (r *Result) ParsePayload() foundation.Result {
 		return foundation.Result{}
 	}
 	return result
+}
+
+func (r *Result) ParseFirstPayloadValue(v interface{}) {
+	if !r.IsSuccess() {
+		return
+	}
+
+	returns := r.ParsePayload().Returns
+	data, err := json.Marshal(returns[0])
+	if err != nil {
+		log.Warn("failed to marshal Payload.Returns[0]")
+		debug.PrintStack()
+	}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		log.Warn("failed to unmarshal Payload.Returns[0]")
+		debug.PrintStack()
+	}
 }

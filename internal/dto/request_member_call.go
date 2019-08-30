@@ -95,3 +95,20 @@ func (r *Request) ParseMemberCallArguments() member.Request {
 	}
 	return request
 }
+
+func (r *Request) ParseMemberContractCallParams(v interface{}) {
+	if !r.IsMemberCall() {
+		return
+	}
+	args := r.ParseMemberCallArguments()
+	data, err := json.Marshal(args.Params.CallParams)
+	if err != nil {
+		log.Warn("failed to marshal CallParams")
+		debug.PrintStack()
+	}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		log.Warn("failed to unmarshal CallParams")
+		debug.PrintStack()
+	}
+}

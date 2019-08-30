@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +28,7 @@ type Fee struct {
 	Percent  uint
 }
 
-func (f *Fee) Dump(tx *pg.Tx) error {
+func (f *Fee) Dump(tx orm.DB) error {
 	if err := tx.Insert(f); err != nil {
 		return errors.Wrapf(err, "failed to insert fee")
 	}

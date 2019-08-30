@@ -19,7 +19,6 @@ package dto
 import (
 	"context"
 
-	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
@@ -28,13 +27,13 @@ import (
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/raw"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type Dumper struct {
 	Configurator     configuration.Configurator `inject:""`
-	OnData           replication.OnData         `inject:""`
-	OnDump           replication.OnDump         `inject:""`
+	OnData           replicator.OnData          `inject:""`
+	OnDump           replicator.OnDump          `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 	records          []*raw.Record
@@ -90,7 +89,7 @@ func (d *Dumper) process(rn uint32, rec *record.Material) {
 	d.buildUnpacked(rec)
 }
 
-func (d *Dumper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (d *Dumper) dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump raw records")
 	for _, rec := range d.records {
 		if err := rec.Dump(tx); err != nil {

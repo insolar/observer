@@ -22,8 +22,9 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/internal/configuration"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/configuration"
 )
 
 type ConnectionHolder interface {

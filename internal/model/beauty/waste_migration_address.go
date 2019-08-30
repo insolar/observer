@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -25,7 +25,7 @@ type WasteMigrationAddress struct {
 	Addr string
 }
 
-func (a *WasteMigrationAddress) Dump(tx *pg.Tx) error {
+func (a *WasteMigrationAddress) Dump(tx orm.DB) error {
 	res, err := tx.Model(&MigrationAddress{}).
 		Where("addr=?", a.Addr).
 		Set("wasted=true").
