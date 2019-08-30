@@ -18,10 +18,14 @@ package migration
 
 import (
 	"strings"
+	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/logicrunner/builtin/contract/migrationshard"
+	proxyShard "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard"
 	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,7 +36,7 @@ import (
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type Composer struct {
@@ -103,10 +107,19 @@ func (c *Composer) Process(rec *record.Material) {
 		} else {
 			c.requests[origin] = rec
 		}
+	case *record.Virtual_Activate:
+		act := rec.Virtual.GetActivate()
+		if isMigrationShardActivate(act) {
+			t, err := pulse.Number(rec.ID.Pulse()).AsApproximateTime()
+			if err != nil {
+				return
+			}
+			c.processShardActivate(t, act)
+		}
 	}
 }
 
-func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump migration addresses")
 
 	c.updateStat()
@@ -154,6 +167,33 @@ func isAddMigrationAddresses(rec *record.Material) bool {
 
 	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "migration.addAddresses"
+}
+
+func (c *Composer) processShardActivate(t time.Time, act *record.Activate) {
+	addresses := migrationShardActivate(act)
+	for _, addr := range addresses {
+		c.cache = append(c.cache, &beauty.MigrationAddress{
+			Addr:      strings.ToLower(addr),
+			Timestamp: t.Unix(),
+			Wasted:    false,
+		})
+	}
+}
+
+func isMigrationShardActivate(act *record.Activate) bool {
+	return act.Image.Equal(*proxyShard.PrototypeReference)
+}
+
+func migrationShardActivate(act *record.Activate) []string {
+	if act.Memory == nil {
+		return []string{}
+	}
+	shard := &migrationshard.MigrationShard{}
+	err := insolar.Deserialize(act.Memory, shard)
+	if err != nil {
+		return []string{}
+	}
+	return shard.FreeMigrationAddresses
 }
 
 type dumpStat struct {

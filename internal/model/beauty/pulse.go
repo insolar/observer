@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 )
@@ -31,7 +31,7 @@ type Pulse struct {
 	RequestsCount uint32
 }
 
-func (p *Pulse) Dump(tx *pg.Tx) error {
+func (p *Pulse) Dump(tx orm.DB) error {
 	err := tx.Insert(p)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert pulse %v", p)

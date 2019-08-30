@@ -30,7 +30,6 @@ func parseActivate(rec *record.Material) *raw.Object {
 	act := rec.Virtual.GetActivate()
 	return &raw.Object{
 		ObjectID: insolar.NewReference(id).String(),
-		Domain:   act.Domain.String(),
 		Request:  act.Request.String(),
 		Memory:   hex.EncodeToString(act.Memory),
 		Image:    act.Image.String(),
@@ -44,7 +43,6 @@ func parseAmend(rec *record.Material) *raw.Object {
 	amend := rec.Virtual.GetAmend()
 	return &raw.Object{
 		ObjectID:  insolar.NewReference(id).String(),
-		Domain:    amend.Domain.String(),
 		Request:   amend.Request.String(),
 		Memory:    hex.EncodeToString(amend.Memory),
 		Image:     amend.Image.String(),
@@ -58,7 +56,6 @@ func parseDeactivate(rec *record.Material) *raw.Object {
 	deact := rec.Virtual.GetDeactivate()
 	return &raw.Object{
 		ObjectID:  insolar.NewReference(id).String(),
-		Domain:    deact.Domain.String(),
 		Request:   deact.Request.String(),
 		PrevState: deact.PrevState.String(),
 		Type:      "DEACTIVATE",

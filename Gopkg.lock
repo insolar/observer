@@ -213,10 +213,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d81edcf7c1f3640a3f072dc85a46ba2f4d972a9aa1cea387d5029ec990422e93"
+  digest = "1:7f4cd638d36dd3612107d1609baaafae598ffd7e06781525216cb17323e43516"
   name = "github.com/insolar/insolar"
   packages = [
+    "api/requester",
     "component",
     "configuration",
     "insolar",
@@ -247,12 +247,14 @@
     "logicrunner/builtin/contract/deposit",
     "logicrunner/builtin/contract/member",
     "logicrunner/builtin/contract/member/signer",
+    "logicrunner/builtin/contract/migrationshard",
     "logicrunner/builtin/foundation",
     "logicrunner/builtin/foundation/safemath",
     "logicrunner/builtin/proxy/account",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/migrationadmin",
+    "logicrunner/builtin/proxy/migrationshard",
     "logicrunner/builtin/proxy/nodedomain",
     "logicrunner/builtin/proxy/rootdomain",
     "logicrunner/builtin/proxy/wallet",
@@ -267,7 +269,8 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "51f4ecb548b35f723db07fef4dc4ba8a5db1a9e9"
+  revision = "6fc1d9ba35d1b31eae5a63f2e08b5295bdbf1bf1"
+  version = "v0.9.0-rc4"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -736,6 +739,7 @@
   input-imports = [
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
+    "github.com/insolar/insolar/api/requester",
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",
@@ -746,10 +750,12 @@
     "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member/signer",
+    "github.com/insolar/insolar/logicrunner/builtin/contract/migrationshard",
     "github.com/insolar/insolar/logicrunner/builtin/foundation",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/account",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/member",
+    "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
     "github.com/insolar/insolar/pulse",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",

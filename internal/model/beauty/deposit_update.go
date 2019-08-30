@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +29,7 @@ type DepositUpdate struct {
 	PrevState       string
 }
 
-func (u *DepositUpdate) Dump(tx *pg.Tx) error {
+func (u *DepositUpdate) Dump(tx orm.DB) error {
 	res, err := tx.Model(&Deposit{}).
 		Where("deposit_state=?", u.PrevState).
 		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", u.Amount, u.ID, u.Balance, u.HoldReleaseDate).

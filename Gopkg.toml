@@ -26,8 +26,8 @@
 
 
 [[constraint]]
-  branch = "master"
   name = "github.com/insolar/insolar"
+  version = "v0.9.0-rc4"
 
 [[constraint]]
   name = "google.golang.org/grpc"

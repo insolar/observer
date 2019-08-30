@@ -19,7 +19,7 @@ package member
 import (
 	"sync"
 
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
@@ -32,7 +32,7 @@ import (
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type memberBuilder struct {
@@ -196,7 +196,7 @@ func (c *Composer) compose(b *memberBuilder) {
 	delete(c.builders, origin)
 }
 
-func (c *Composer) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump members")
 	c.updateStat()
 

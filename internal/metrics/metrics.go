@@ -14,30 +14,29 @@
 // limitations under the License.
 //
 
-package raw
+package metrics
 
 import (
-	"github.com/go-pg/pg/orm"
-	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-type Request struct {
-	tableName struct{} `sql:"requests"`
+type Collector prometheus.Collector
 
-	RequestID  string `sql:",pk,column_name:request_id"`
-	Caller     string
-	ReturnMode string
-	Base       string
-	Object     string
-	Prototype  string
-	Method     string
-	Arguments  string
-	Reason     string
+type Registry interface {
+	Register(Collector)
 }
 
-func (r *Request) Dump(tx orm.DB) error {
-	if err := tx.Insert(r); err != nil {
-		return errors.Wrapf(err, "failed to insert request")
+func New() Registry {
+	register := prometheus.NewRegistry()
+	return &metrics{
+		register: register,
 	}
-	return nil
+}
+
+type metrics struct {
+	register prometheus.Registerer
+}
+
+func (m *metrics) Register(collector Collector) {
+	m.register.MustRegister(collector)
 }

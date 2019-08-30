@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +27,7 @@ type BalanceUpdate struct {
 	Balance   string
 }
 
-func (u *BalanceUpdate) Dump(tx *pg.Tx) error {
+func (u *BalanceUpdate) Dump(tx orm.DB) error {
 	res, err := tx.Model(&Member{}).
 		Where("account_state=?", u.PrevState).
 		Set("balance=?,account_state=?", u.Balance, u.ID).
