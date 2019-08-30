@@ -61,7 +61,7 @@ func (k *Keeper) Process(rec *record.Material) {
 
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Result:
-		origin := *v.Result.Request.Record()
+		origin := *v.Result.Request.GetLocal()
 		if req, ok := k.requests[origin]; ok {
 			delete(k.requests, origin)
 			if isGetFreeMigrationAddress(req) {
