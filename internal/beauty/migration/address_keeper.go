@@ -17,7 +17,7 @@
 package migration
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,7 +28,7 @@ import (
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type Keeper struct {
@@ -90,7 +90,7 @@ func (k *Keeper) Process(rec *record.Material) {
 	}
 }
 
-func (k *Keeper) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (k *Keeper) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump wasted migration addresses")
 	k.updateStat()
 

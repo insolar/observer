@@ -16,8 +16,10 @@
 
 package model
 
-import "github.com/go-pg/pg"
+import (
+	"github.com/go-pg/pg/orm"
+)
 
 type Dumper interface {
-	Dump(tx *pg.Tx) error
+	Dump(tx orm.DB) error
 }

@@ -29,7 +29,8 @@ import (
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/dto"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/metrics"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type Components struct {
@@ -41,8 +42,9 @@ func Prepare() *Components {
 
 	manager.Inject(
 		configuration.Load(),
+		metrics.New(),
 		db.NewConnectionHolder(),
-		replication.NewReplicator(),
+		replicator.NewReplicator(),
 		dto.NewDumper(),
 		beauty.NewBeautifier(),
 		pulse.NewKeeper(),

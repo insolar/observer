@@ -17,7 +17,7 @@
 package member
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
@@ -28,7 +28,7 @@ import (
 	"github.com/insolar/observer/internal/beauty/member/wallet/account"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type BalanceUpdater struct {
@@ -73,7 +73,7 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 	})
 }
 
-func (u *BalanceUpdater) Dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (u *BalanceUpdater) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump member balances")
 
 	for _, acc := range u.technicalAccounts {

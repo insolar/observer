@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package replication
+package replicator
 
 import (
 	"context"
@@ -23,18 +23,19 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
+	"github.com/insolar/observer/internal/metrics"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/model/raw"
 	"github.com/insolar/observer/internal/panic"
@@ -46,7 +47,7 @@ type OnData interface {
 	SubscribeOnData(handle DataHandle)
 }
 
-type DumpHandle func(tx *pg.Tx, pub OnDumpSuccess) error
+type DumpHandle func(tx orm.DB, pub OnDumpSuccess) error
 
 type OnDump interface {
 	SubscribeOnDump(DumpHandle)
@@ -54,6 +55,7 @@ type OnDump interface {
 
 type SuccessHandle func()
 
+//go:generate minimock -i OnDumpSuccess -o ./ -s _mock.go -g
 type OnDumpSuccess interface {
 	Subscribe(SuccessHandle)
 }
@@ -66,6 +68,7 @@ type OnPulse interface {
 
 type Replicator struct {
 	Configurator     configuration.Configurator `inject:""`
+	Metrics          metrics.Registry           `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 
@@ -82,11 +85,11 @@ type Replicator struct {
 }
 
 func NewReplicator() *Replicator {
-	collector := promauto.NewGauge(prometheus.GaugeOpts{
+	collector := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "observer_last_sync_pulse",
 		Help: "The last number that was replicated from HME.",
 	})
-	processingTime := promauto.NewSummary(prometheus.SummaryOpts{
+	processingTime := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name: "observer_processing_duration_seconds",
 		Help: "The time that needs to replicate and beautify data.",
 	})
@@ -124,6 +127,12 @@ func (r *Replicator) Init(ctx context.Context) error {
 	} else {
 		r.cfg = configuration.Default()
 	}
+
+	if r.Metrics != nil {
+		r.Metrics.Register(r.highestSyncPulseCollector)
+		r.Metrics.Register(r.processingTime)
+	}
+
 	limits := grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(r.cfg.Replicator.MaxTransportMsg),
 		grpc.MaxCallSendMsgSize(r.cfg.Replicator.MaxTransportMsg),

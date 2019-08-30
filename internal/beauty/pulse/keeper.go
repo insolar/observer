@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/hex"
 
-	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -30,13 +29,13 @@ import (
 	"github.com/insolar/observer/internal/db"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
-	"github.com/insolar/observer/internal/replication"
+	"github.com/insolar/observer/internal/replicator"
 )
 
 type Keeper struct {
 	Configurator     configuration.Configurator `inject:""`
-	OnPulse          replication.OnPulse        `inject:""`
-	OnDump           replication.OnDump         `inject:""`
+	OnPulse          replicator.OnPulse         `inject:""`
+	OnDump           replicator.OnDump          `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 
@@ -84,7 +83,7 @@ func (k *Keeper) process(pn insolar.PulseNumber, entropy insolar.Entropy, timest
 	})
 }
 
-func (k *Keeper) dump(tx *pg.Tx, pub replication.OnDumpSuccess) error {
+func (k *Keeper) dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump pulse keeper")
 	for _, p := range k.cache {
 		if err := p.Dump(tx); err != nil {

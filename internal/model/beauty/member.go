@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +32,7 @@ type Member struct {
 	Status           string
 }
 
-func (m *Member) Dump(tx *pg.Tx) error {
+func (m *Member) Dump(tx orm.DB) error {
 	if err := tx.Insert(m); err != nil {
 		return errors.Wrapf(err, "failed to insert member")
 	}

@@ -27,4 +27,9 @@ func TestRequest_MapModel(t *testing.T) {
 		request := (*Request)(nil)
 		require.Nil(t, request.MapModel())
 	})
+
+	t.Run("not_incoming_request", func(t *testing.T) {
+		request := (*Request)(makeResultWith([]byte{1, 2, 3}))
+		require.Nil(t, request.MapModel())
+	})
 }

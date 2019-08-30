@@ -17,7 +17,7 @@
 package beauty
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -30,7 +30,7 @@ type MigrationAddress struct {
 	Wasted    bool
 }
 
-func (a *MigrationAddress) Dump(tx *pg.Tx) error {
+func (a *MigrationAddress) Dump(tx orm.DB) error {
 	if err := tx.Insert(a); err != nil {
 		log.Error(errors.Wrapf(err, "failed to insert migration address"))
 	}

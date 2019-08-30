@@ -17,7 +17,7 @@
 package raw
 
 import (
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +30,7 @@ type Record struct {
 	Number uint32
 }
 
-func (r *Record) Dump(tx *pg.Tx) error {
+func (r *Record) Dump(tx orm.DB) error {
 	if err := tx.Insert(r); err != nil {
 		return errors.Wrapf(err, "failed to insert record")
 	}
