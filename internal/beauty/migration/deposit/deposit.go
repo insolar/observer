@@ -26,6 +26,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
+	daemonProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -79,6 +80,10 @@ type Composer struct {
 	activates map[insolar.ID]*record.Material
 	builders  map[insolar.ID]*depositBuilder
 
+	daemonCalls  map[insolar.ID]*record.Material
+	newForDaemon map[insolar.ID]*record.Material
+	newForAct    map[insolar.ID]*record.Material
+
 	sync.RWMutex
 	cache []*beauty.Deposit
 
@@ -94,11 +99,14 @@ func NewComposer() *Composer {
 	}
 
 	return &Composer{
-		requests:  make(map[insolar.ID]*record.Material),
-		results:   make(map[insolar.ID]*record.Material),
-		activates: make(map[insolar.ID]*record.Material),
-		builders:  make(map[insolar.ID]*depositBuilder),
-		stat:      stat,
+		requests:     make(map[insolar.ID]*record.Material),
+		results:      make(map[insolar.ID]*record.Material),
+		activates:    make(map[insolar.ID]*record.Material),
+		builders:     make(map[insolar.ID]*depositBuilder),
+		daemonCalls:  make(map[insolar.ID]*record.Material),
+		newForDaemon: make(map[insolar.ID]*record.Material),
+		newForAct:    make(map[insolar.ID]*record.Material),
+		stat:         stat,
 	}
 }
 
@@ -132,6 +140,9 @@ func (c *Composer) Process(rec *record.Material) {
 			case isDepositMigrationCall(rec):
 				log.Infof("deposit.migration Call")
 				c.processResult(res)
+			case isDaemonMigrationCall(rec):
+				log.Infof("migrationdaemon.DepositMigrationCall")
+				c.processDaemonMigrationCall(rec)
 			case isDepositNew(rec):
 				log.Infof("deposit.New")
 				c.processDepositNew(rec)
@@ -156,42 +167,94 @@ func (c *Composer) Process(rec *record.Material) {
 
 func (c *Composer) processResult(res *record.Material) {
 	origin := *res.Virtual.GetResult().Request.GetLocal()
-	if b, ok := c.builders[origin]; ok {
-		b.res = res
-		c.compose(b)
-	} else {
+	b, ok := c.builders[origin]
+	if !ok {
 		c.builders[origin] = &depositBuilder{res: res}
+		return
 	}
+
+	b.res = res
+	c.compose(b)
 }
 
 func (c *Composer) processDepositNew(req *record.Material) {
 	direct := req.ID
-	if act, ok := c.activates[direct]; ok {
-		origin := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
-		if b, ok := c.builders[origin]; ok {
-			b.act = act
-			c.compose(b)
-		} else {
-			c.builders[origin] = &depositBuilder{act: act}
-		}
-	} else {
-		c.requests[direct] = req
+	daemonCallID := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
+	daemonCall, ok := c.daemonCalls[daemonCallID]
+	if !ok {
+		c.newForDaemon[daemonCallID] = req
+		c.newForAct[direct] = req
+		return
 	}
+
+	act, ok := c.activates[direct]
+	if !ok {
+		c.newForDaemon[daemonCallID] = req
+		c.newForAct[direct] = req
+		return
+	}
+
+	origin := *daemonCall.Virtual.GetIncomingRequest().Reason.GetLocal()
+
+	b, ok := c.builders[origin]
+	if !ok {
+		c.builders[origin] = &depositBuilder{act: act}
+		return
+	}
+
+	b.act = act
+	c.compose(b)
 }
 
 func (c *Composer) processDepositActivate(rec *record.Material) {
 	direct := *rec.Virtual.GetActivate().Request.GetLocal()
-	if req, ok := c.requests[direct]; ok {
-		origin := *req.Virtual.GetIncomingRequest().Reason.GetLocal()
-		if b, ok := c.builders[origin]; ok {
-			b.act = rec
-			c.compose(b)
-		} else {
-			c.builders[origin] = &depositBuilder{act: rec}
-		}
-	} else {
+	newCall, ok := c.newForAct[direct]
+	if !ok {
 		c.activates[direct] = rec
+		return
 	}
+
+	daemonCallID := *newCall.Virtual.GetIncomingRequest().Reason.GetLocal()
+	daemonCall, ok := c.daemonCalls[daemonCallID]
+	if !ok {
+		c.activates[direct] = rec
+		return
+	}
+
+	origin := *daemonCall.Virtual.GetIncomingRequest().Reason.GetLocal()
+
+	b, ok := c.builders[origin]
+	if !ok {
+		c.builders[origin] = &depositBuilder{act: rec}
+		return
+	}
+
+	b.act = rec
+	c.compose(b)
+}
+
+func (c *Composer) processDaemonMigrationCall(rec *record.Material) {
+	origin := *rec.Virtual.GetIncomingRequest().Reason.GetLocal()
+	newCall, ok := c.newForDaemon[rec.ID]
+	if !ok {
+		c.daemonCalls[rec.ID] = rec
+		return
+	}
+	direct := newCall.ID
+	act, ok := c.activates[direct]
+	if !ok {
+		c.daemonCalls[rec.ID] = rec
+		return
+	}
+
+	b, ok := c.builders[origin]
+	if !ok {
+		c.builders[origin] = &depositBuilder{act: act}
+		return
+	}
+
+	b.act = act
+	c.compose(b)
 }
 
 func (c *Composer) compose(b *depositBuilder) {
@@ -207,8 +270,12 @@ func (c *Composer) compose(b *depositBuilder) {
 
 	direct := *b.act.Virtual.GetActivate().Request.GetLocal()
 	origin := *b.res.Virtual.GetResult().Request.GetLocal()
+	newCall := c.newForAct[direct]
+	daemonCallID := *newCall.Virtual.GetIncomingRequest().Reason.GetLocal()
 	delete(c.activates, direct)
-	delete(c.requests, direct)
+	delete(c.newForAct, direct)
+	delete(c.newForDaemon, daemonCallID)
+	delete(c.daemonCalls, daemonCallID)
 	delete(c.builders, origin)
 }
 
@@ -246,6 +313,24 @@ func isDepositMigrationCall(rec *record.Material) bool {
 
 	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "deposit.migration"
+}
+
+func isDaemonMigrationCall(req *record.Material) bool {
+	v, ok := req.Virtual.Union.(*record.Virtual_IncomingRequest)
+	if !ok {
+		return false
+	}
+
+	in := v.IncomingRequest
+	if in.Method != "DepositMigrationCall" {
+		return false
+	}
+
+	if in.Prototype == nil {
+		return false
+	}
+
+	return in.Prototype.Equal(*daemonProxy.PrototypeReference)
 }
 
 func isDepositNew(req *record.Material) bool {
