@@ -213,10 +213,9 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:7f4cd638d36dd3612107d1609baaafae598ffd7e06781525216cb17323e43516"
+  digest = "1:78044fb4e46946c588f16673bb4aacfae49304dc081c9292b2c890d71f1dc864"
   name = "github.com/insolar/insolar"
   packages = [
-    "api/requester",
     "component",
     "configuration",
     "insolar",
@@ -251,9 +250,11 @@
     "logicrunner/builtin/foundation",
     "logicrunner/builtin/foundation/safemath",
     "logicrunner/builtin/proxy/account",
+    "logicrunner/builtin/proxy/costcenter",
     "logicrunner/builtin/proxy/deposit",
     "logicrunner/builtin/proxy/member",
     "logicrunner/builtin/proxy/migrationadmin",
+    "logicrunner/builtin/proxy/migrationdaemon",
     "logicrunner/builtin/proxy/migrationshard",
     "logicrunner/builtin/proxy/nodedomain",
     "logicrunner/builtin/proxy/rootdomain",
@@ -269,8 +270,7 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "6fc1d9ba35d1b31eae5a63f2e08b5295bdbf1bf1"
-  version = "v0.9.0-rc4"
+  revision = "4012d634ade63b94b154df95ce02b988596a5e40"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -739,7 +739,6 @@
   input-imports = [
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
-    "github.com/insolar/insolar/api/requester",
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",
