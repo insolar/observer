@@ -14,22 +14,10 @@
 // limitations under the License.
 //
 
-package transfer
+package observer
 
 import (
 	"github.com/insolar/insolar/insolar/record"
-
-	"github.com/insolar/observer/internal/dto"
 )
 
-type txResult struct {
-	status dto.Status
-}
-
-func parseTransferResultPayload(rec *record.Material) txResult {
-	res := (*dto.Result)(rec)
-	if !res.IsSuccess() {
-		return txResult{status: dto.CANCELED}
-	}
-	return txResult{status: dto.SUCCESS}
-}
+type Deactivate record.Material
