@@ -147,6 +147,10 @@ func (r *Replicator) Init(ctx context.Context) error {
 }
 
 func (r *Replicator) Start(ctx context.Context) error {
+	pulse, err := r.lastSyncedPulse()
+	if err != nil {
+		return err
+	}
 	current := r.currentPosition()
 	log.Infof("Starting replication from position (rn: %d, pulse: %d)", current.rn, current.pn)
 	req := r.makeRequest(current)
@@ -165,7 +169,7 @@ func (r *Replicator) Start(ctx context.Context) error {
 					r.emitDump(pos.pn)
 					r.updateProcessingTime(startTime)
 				}
-				r.syncPulses()
+				pulse = r.syncPulses(pulse)
 				time.Sleep(r.cfg.Replicator.RequestDelay)
 				startTime = time.Now()
 			}
@@ -180,12 +184,12 @@ func (r *Replicator) Start(ctx context.Context) error {
 	return nil
 }
 
-func (r *Replicator) syncPulses() {
-	lastSynced := r.lastSyncedPulse()
+func (r *Replicator) syncPulses(pn insolar.PulseNumber) insolar.PulseNumber {
+	lastSynced := pn
 	for {
 		next, entropy, timestamp := r.pullPulse(lastSynced)
 		if next == lastSynced {
-			return
+			return next
 		}
 		r.emitPulse(next, entropy, timestamp)
 		r.emitDump(next)
@@ -363,15 +367,21 @@ func (r *Replicator) currentPosition() position {
 	return position{pn: id.Pulse(), rn: rec.Number}
 }
 
-func (r *Replicator) lastSyncedPulse() insolar.PulseNumber {
+func (r *Replicator) lastSyncedPulse() (insolar.PulseNumber, error) {
 	db := r.ConnectionHolder.DB()
-	pulse := &beauty.Pulse{}
-	err := db.Model(pulse).Last()
+	count, err := db.Model(&beauty.Pulse{}).Count()
 	if err != nil {
-		log.Debug(errors.Wrapf(err, "failed to get last pulse from db"))
-		return 0
+		return 0, errors.Wrapf(err, "failed request to db")
 	}
-	return pulse.Pulse
+	if count == 0 {
+		return 0, nil
+	}
+	pulse := &beauty.Pulse{}
+	err = db.Model(pulse).Last()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get last pulse from db")
+	}
+	return pulse.Pulse, nil
 }
 
 func (r *Replicator) makeRequest(pos position) *exporter.GetRecords {

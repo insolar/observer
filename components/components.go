@@ -62,6 +62,8 @@ func (c *Components) Start() {
 
 	if err := c.manager.Start(ctx); err != nil {
 		log.Error(err)
+		c.Stop()
+		return
 	}
 }
 
