@@ -124,6 +124,9 @@ func (c *Composer) Process(rec *record.Material) {
 				case isDepositMigrationCall(req):
 					log.Infof("deposit.migration Call")
 					c.processResult(rec)
+				case isDaemonMigrationCall(req):
+					log.Infof("migrationdaemon.DepositMigrationCall")
+					c.processDaemonMigrationCall(req)
 				case isDepositNew(req):
 					log.Infof("deposit.New")
 					c.processDepositNew(req)
