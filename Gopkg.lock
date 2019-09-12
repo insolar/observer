@@ -213,7 +213,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:19d4d9e4edeaf09c4bc0be528bd3c6af80e5a62dd408a0918870b7c55ce31f43"
+  digest = "1:f45d989edbc197cf72fcf8a61ce51b586eea3583b1d0fd28e19053bd986113c0"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -270,8 +270,8 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "5942c49a59a1597174b60f0eeb8738ce1e7036d9"
-  version = "v0.9.1-rc1"
+  revision = "d34946620626da70b28b4afd63d743409b118c35"
+  version = "v0.9.3"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
