@@ -213,7 +213,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:f45d989edbc197cf72fcf8a61ce51b586eea3583b1d0fd28e19053bd986113c0"
+  digest = "1:9d51eb4d2aadd187e2cc6ba7e050ad44a0166adc16b0daeffae84ce17f128c58"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -227,6 +227,7 @@
     "insolar/gen",
     "insolar/genesisrefs",
     "insolar/jet",
+    "insolar/node",
     "insolar/payload",
     "insolar/pulse",
     "insolar/record",
@@ -261,6 +262,7 @@
     "logicrunner/builtin/proxy/wallet",
     "logicrunner/common",
     "logicrunner/goplugin/rpctypes",
+    "logicrunner/metrics",
     "longbits",
     "network/consensus/common/cryptkit",
     "platformpolicy",
@@ -270,8 +272,8 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "d34946620626da70b28b4afd63d743409b118c35"
-  version = "v0.9.3"
+  revision = "755d1f740ecef451e5cac07071d9dc853a7f0f5e"
+  version = "v0.9.5"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
