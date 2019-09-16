@@ -213,7 +213,8 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:9d51eb4d2aadd187e2cc6ba7e050ad44a0166adc16b0daeffae84ce17f128c58"
+  branch = "INS-3538-tuning-observer"
+  digest = "1:2a5fa71968c16b1007dcfb8454e576356a4330f40d7e08e268fa27e768186819"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -272,8 +273,7 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "755d1f740ecef451e5cac07071d9dc853a7f0f5e"
-  version = "v0.9.5"
+  revision = "2622b769b12a697084d9100d381700a00a43a882"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"

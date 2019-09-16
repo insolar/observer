@@ -250,6 +250,9 @@ func (r *Replicator) pull(req *exporter.GetRecords) ([]dataMsg, position) {
 			log.Error(errors.Wrapf(err, "received error value from records gRPC stream %v", req))
 			break
 		}
+		if resp.ShouldIterateFrom != nil {
+			return batch, position{pn: *resp.ShouldIterateFrom, rn: 0}
+		}
 		rec, rn := &resp.Record, resp.RecordNumber
 		batch = append(batch, dataMsg{rec: rec, rn: rn})
 		pulse, number = rec.ID.Pulse(), rn
