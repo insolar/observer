@@ -27,7 +27,8 @@
 
 [[constraint]]
   name = "github.com/insolar/insolar"
-  version = "v0.9.5"
+#  version = "v0.9.5"
+  branch = "INS-3538-tuning-observer"
 
 [[constraint]]
   name = "google.golang.org/grpc"
