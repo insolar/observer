@@ -28,6 +28,7 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
+	proxyDaemon "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
@@ -87,7 +88,7 @@ func makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *
 				IncomingRequest: &record.IncomingRequest{
 					Method:    "DepositMigrationCall",
 					Arguments: args,
-					Prototype: proxyDeposit.PrototypeReference,
+					Prototype: proxyDaemon.PrototypeReference,
 					Reason:    reason,
 				},
 			},

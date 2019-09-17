@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/insolar/insolar/insolar"
@@ -24,6 +25,7 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
+	proxyDaemon "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -32,14 +34,63 @@ import (
 
 type DepositCollector struct {
 	log       *logrus.Logger
-	collector *BoundCollector
+	results   observer.ResultCollector
+	activates observer.ActivateCollector
+	halfChain observer.ChainCollector
+	chains    observer.ChainCollector
 }
 
 func NewDepositCollector(log *logrus.Logger) *DepositCollector {
-	collector := NewBoundCollector(isDepositMigrationCall, successResult, isDepositNew, isDepositActivate)
+	results := NewResultCollector(isDepositMigrationCall, successResult)
+	activates := NewActivateCollector(isDepositNew, isDepositActivate)
+	resultRelation := &RelationDesc{
+		Is:     isCoupledResult,
+		Origin: coupledResultOrigin,
+		Proper: isCoupledResult,
+	}
+	activateRelation := &RelationDesc{
+		Is:     isCoupledActivate,
+		Origin: coupledActivateOrigin,
+		Proper: isCoupledActivate,
+	}
+	daemonCall := &RelationDesc{
+		Is: isDaemonMigrationCall,
+		Origin: func(chain interface{}) insolar.ID {
+			request := observer.CastToRequest(chain)
+			return request.ID
+		},
+		Proper: isDaemonMigrationCall,
+	}
+	daemonRelation := &RelationDesc{
+		Is: func(chain interface{}) bool {
+			c, ok := chain.(*observer.Chain)
+			if !ok {
+				return false
+			}
+			return isDaemonMigrationCall(c.Parent)
+		},
+		Origin: func(chain interface{}) insolar.ID {
+			c, ok := chain.(*observer.Chain)
+			if !ok {
+				return insolar.ID{}
+			}
+			request := observer.CastToRequest(c.Parent)
+			return request.Reason()
+		},
+		Proper: func(chain interface{}) bool {
+			c, ok := chain.(*observer.Chain)
+			if !ok {
+				return false
+			}
+			return isDaemonMigrationCall(c.Parent)
+		},
+	}
 	return &DepositCollector{
 		log:       log,
-		collector: collector,
+		results:   results,
+		activates: activates,
+		halfChain: NewChainCollector(daemonCall, activateRelation),
+		chains:    NewChainCollector(resultRelation, daemonRelation),
 	}
 }
 
@@ -49,12 +100,30 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 	}
 	log := c.log
 
-	couple := c.collector.Collect(rec)
-	if couple == nil {
+	res := c.results.Collect(rec)
+	act := c.activates.Collect(rec)
+	half := c.halfChain.Collect(rec)
+
+	if act != nil {
+		half = c.halfChain.Collect(act)
+	}
+
+	var chain *observer.Chain
+	if res != nil {
+		chain = c.chains.Collect(res)
+	}
+
+	if half != nil {
+		chain = c.chains.Collect(half)
+	}
+
+	if chain == nil {
 		return nil
 	}
 
-	d, err := c.build(couple.Activate, couple.Result)
+	coupleAct, coupleRes := c.unwrapDepositChain(chain)
+
+	d, err := c.build(coupleAct, coupleRes)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -74,6 +143,24 @@ func isDepositMigrationCall(chain interface{}) bool {
 
 	args := request.ParseMemberCallArguments()
 	return args.Params.CallSite == "deposit.migration"
+}
+
+func isDaemonMigrationCall(chain interface{}) bool {
+	request := observer.CastToRequest(chain)
+	if !request.IsIncoming() {
+		return false
+	}
+
+	in := request.Virtual.GetIncomingRequest()
+	if in.Method != "DepositMigrationCall" {
+		return false
+	}
+
+	if in.Prototype == nil {
+		return false
+	}
+
+	return in.Prototype.Equal(*proxyDaemon.PrototypeReference)
 }
 
 func isDepositNew(chain interface{}) bool {
@@ -143,4 +230,32 @@ func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.De
 		log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
+}
+
+func (c *DepositCollector) unwrapDepositChain(chain *observer.Chain) (*observer.Activate, *observer.Result) {
+	log := c.log
+
+	half := chain.Child.(*observer.Chain)
+	coupledAct, ok := half.Child.(*observer.CoupledActivate)
+	if !ok {
+		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Child)))
+		return nil, nil
+	}
+	if coupledAct.Activate == nil {
+		log.Error(errors.New("invalid coupled activate chain, child is nil"))
+		return nil, nil
+	}
+	actRecord := coupledAct.Activate
+
+	coupledRes, ok := chain.Parent.(*observer.CoupledResult)
+	if !ok {
+		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Parent)))
+		return nil, nil
+	}
+	if coupledRes.Result == nil {
+		log.Error(errors.New("invalid coupled result chain, child is nil"))
+		return nil, nil
+	}
+	resRecord := coupledRes.Result
+	return actRecord, resRecord
 }
