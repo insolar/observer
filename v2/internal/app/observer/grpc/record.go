@@ -79,6 +79,8 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, er
 			model := (*observer.Record)(&resp.Record)
 			batch = append(batch, model)
 
+			// TODO: apply WLT-1076 requirements
+
 			f.request.PulseNumber = model.ID.Pulse()
 			f.request.RecordNumber = resp.RecordNumber
 		}

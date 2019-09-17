@@ -69,6 +69,33 @@ func makeDepositMigrationCall(pn insolar.PulseNumber) *observer.Record {
 	return (*observer.Record)(rec)
 }
 
+func makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "DepositMigrationCall",
+					Arguments: args,
+					Prototype: proxyDeposit.PrototypeReference,
+					Reason:    reason,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
 func makeNewDepositRequest(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
 	signature := ""
 	pulseTimeStamp := 0
@@ -131,7 +158,9 @@ func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
 	out := makeOutgouingRequest()
 	call := makeDepositMigrationCall(pn)
 	callRef := *insolar.NewReference(call.ID)
-	newDeposit := makeNewDepositRequest(pn, callRef)
+	daemonCall := makeMigrationDaemonCall(pn, callRef)
+	daemonCallRef := *insolar.NewReference(daemonCall.ID)
+	newDeposit := makeNewDepositRequest(pn, daemonCallRef)
 	depositRef := *insolar.NewReference(newDeposit.ID)
 	depositActivate := makeDepositActivate(pn, balance, amount, txHash, depositRef)
 	records := []*observer.Record{
@@ -141,6 +170,8 @@ func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&migrationdaemon.DepositMigrationResult{
 			Reference: memberRef.String(),
 		}, nil}}),
+		daemonCall,
+		makeResultWith(daemonCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		newDeposit,
 		makeResultWith(newDeposit.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		depositActivate,
