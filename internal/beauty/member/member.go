@@ -49,12 +49,12 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 	}
 	params := memberStatus(b.res)
 	balance := account.AccountBalance(b.act)
-	ref, err := insolar.NewReferenceFromBase58(params.reference)
+	id, err := insolar.NewIDFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make reference from %s", params.reference)
 	}
 	return &beauty.Member{
-		MemberRef:        ref.Bytes(),
+		MemberRef:        id.Bytes(),
 		Balance:          balance,
 		MigrationAddress: params.migrationAddress,
 		AccountState:     b.act.ID.Bytes(),
