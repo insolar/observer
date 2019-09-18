@@ -196,12 +196,12 @@ func (c *Composer) compose(b *memberBuilder) {
 	delete(c.builders, origin)
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
 	log.Infof("dump members")
 	c.updateStat()
 
 	for _, member := range c.cache {
-		if err := member.Dump(tx); err != nil {
+		if err := member.Dump(tx, errorCounter); err != nil {
 			return errors.Wrapf(err, "failed to dump members")
 		}
 	}

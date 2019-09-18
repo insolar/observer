@@ -19,6 +19,8 @@ package beauty
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Deposit struct {
@@ -34,9 +36,15 @@ type Deposit struct {
 	DepositState    string `sql:",notnull"`
 }
 
-func (d *Deposit) Dump(tx orm.DB) error {
-	if err := tx.Insert(d); err != nil {
+func (d *Deposit) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(d).OnConflict("DO NOTHING").Insert(d)
+	if err != nil {
 		return errors.Wrapf(err, "failed to insert deposit")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert deposit: %v", d)
 	}
 	return nil
 }

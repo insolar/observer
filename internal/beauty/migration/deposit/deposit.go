@@ -282,11 +282,11 @@ func (c *Composer) compose(b *depositBuilder) {
 	delete(c.builders, origin)
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
 	log.Infof("dump deposits")
 
 	for _, dep := range c.cache {
-		if err := dep.Dump(tx); err != nil {
+		if err := dep.Dump(tx, errorCounter); err != nil {
 			return errors.Wrapf(err, "failed to dump deposits")
 		}
 	}

@@ -29,6 +29,7 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc"
 
 	log "github.com/sirupsen/logrus"
@@ -47,7 +48,7 @@ type OnData interface {
 	SubscribeOnData(handle DataHandle)
 }
 
-type DumpHandle func(tx orm.DB, pub OnDumpSuccess) error
+type DumpHandle func(tx orm.DB, pub OnDumpSuccess, errors prometheus.Counter) error
 
 type OnDump interface {
 	SubscribeOnDump(DumpHandle)
@@ -72,6 +73,7 @@ type Replicator struct {
 	ConnectionHolder db.ConnectionHolder        `inject:""`
 	cfg              *configuration.Configuration
 
+	errorCounter              prometheus.Counter
 	highestSyncPulseCollector prometheus.Gauge
 	processingTime            prometheus.Summary
 
@@ -85,6 +87,10 @@ type Replicator struct {
 }
 
 func NewReplicator() *Replicator {
+	errorCounter := promauto.NewCounter(prometheus.CounterOpts{
+		Name: "observer_error_counter",
+		Help: "The total error count that was happened at observer.",
+	})
 	collector := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "observer_last_sync_pulse",
 		Help: "The last number that was replicated from HME.",
@@ -94,6 +100,7 @@ func NewReplicator() *Replicator {
 		Help: "The time that needs to replicate and beautify data.",
 	})
 	return &Replicator{
+		errorCounter:              errorCounter,
 		highestSyncPulseCollector: collector,
 		processingTime:            processingTime,
 		stop:                      make(chan bool),
@@ -293,7 +300,7 @@ func (r *Replicator) emitDump(pn insolar.PulseNumber) {
 	for {
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
 			for _, handle := range r.dumpHandles {
-				if err := handle(tx, emitter); err != nil {
+				if err := handle(tx, emitter, r.errorCounter); err != nil {
 					return err
 				}
 			}

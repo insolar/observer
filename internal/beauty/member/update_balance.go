@@ -22,6 +22,7 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	log "github.com/sirupsen/logrus"
 
@@ -73,11 +74,11 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 	})
 }
 
-func (u *BalanceUpdater) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (u *BalanceUpdater) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
 	log.Infof("dump member balances")
 
 	for _, acc := range u.technicalAccounts {
-		if err := acc.Dump(tx); err != nil {
+		if err := acc.Dump(tx, errorCounter); err != nil {
 			return errors.Wrapf(err, "failed to dump internal member")
 		}
 	}

@@ -19,6 +19,8 @@ package beauty
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Member struct {
@@ -32,9 +34,15 @@ type Member struct {
 	Status           string
 }
 
-func (m *Member) Dump(tx orm.DB) error {
-	if err := tx.Insert(m); err != nil {
+func (m *Member) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(m).OnConflict("DO NOTHING").Insert(m)
+	if err != nil {
 		return errors.Wrapf(err, "failed to insert member")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert member: %v", m)
 	}
 	return nil
 }

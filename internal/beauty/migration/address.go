@@ -119,14 +119,14 @@ func (c *Composer) Process(rec *record.Material) {
 	}
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
 	log.Infof("dump migration addresses")
 
 	c.updateStat()
 
 	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
-		if err := addr.Dump(tx); err != nil {
+		if err := addr.Dump(tx, errorCounter); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}
 	}

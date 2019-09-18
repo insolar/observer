@@ -19,6 +19,8 @@ package raw
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Object struct {
@@ -34,9 +36,15 @@ type Object struct {
 	Type      string
 }
 
-func (r *Object) Dump(tx orm.DB) error {
-	if err := tx.Insert(r); err != nil {
+func (o *Object) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(o).OnConflict("DO NOTHING").Insert(o)
+	if err != nil {
 		return errors.Wrapf(err, "failed to insert object")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert object: %v", o)
 	}
 	return nil
 }
