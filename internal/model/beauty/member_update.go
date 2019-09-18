@@ -22,8 +22,8 @@ import (
 )
 
 type BalanceUpdate struct {
-	ID        string
-	PrevState string
+	ID        []byte
+	PrevState []byte
 	Balance   string
 }
 

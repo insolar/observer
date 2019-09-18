@@ -29,16 +29,16 @@ type Transfer struct {
 	tableName struct{} `sql:"transactions"`
 
 	ID            uint                `sql:",pk_id"`
-	TxID          string              `sql:",notnull"`
+	TxID          []byte              `sql:",notnull"`
 	Amount        string              `sql:",notnull"`
 	Fee           string              `sql:",notnull"`
 	TransferDate  int64               `sql:",notnull"`
 	PulseNum      insolar.PulseNumber `sql:",notnull"`
 	Status        string              `sql:",notnull"`
-	MemberFromRef string              `sql:",notnull"`
-	MemberToRef   string              `sql:",notnull"`
-	WalletFromRef string              `sql:",notnull"`
-	WalletToRef   string              `sql:",notnull"`
+	MemberFromRef []byte              `sql:",notnull"`
+	MemberToRef   []byte              `sql:",notnull"`
+	WalletFromRef []byte              `sql:",notnull"`
+	WalletToRef   []byte              `sql:",notnull"`
 	EthHash       string              `sql:",notnull"`
 }
 

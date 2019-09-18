@@ -50,11 +50,11 @@ func (k *DepositKeeper) Process(rec *record.Material) {
 			releaseTimestamp = holdReleadDate.Unix()
 		}
 		k.cache = append(k.cache, &beauty.DepositUpdate{
-			ID:              rec.ID.String(),
+			ID:              rec.ID.Bytes(),
 			HoldReleaseDate: releaseTimestamp,
 			Amount:          d.Amount,
 			Balance:         d.Balance,
-			PrevState:       amd.PrevState.String(),
+			PrevState:       amd.PrevState.Bytes(),
 		})
 	}
 }
