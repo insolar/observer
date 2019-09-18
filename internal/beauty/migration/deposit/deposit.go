@@ -61,16 +61,20 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", b.act.ID.Pulse())
 	}
+	memberRef, err := insolar.NewReferenceFromBase58(callResult.memberRef)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create reference from string %s", callResult.memberRef)
+	}
 
 	return &beauty.Deposit{
 		EthHash:         strings.ToLower(deposit.TxHash),
-		DepositRef:      act.Request.String(),
-		MemberRef:       callResult.memberRef,
+		DepositRef:      act.Request.Bytes(),
+		MemberRef:       memberRef.Bytes(),
 		TransferDate:    transferDate.Unix(),
 		HoldReleaseDate: 0,
 		Amount:          deposit.Amount,
 		Balance:         deposit.Balance,
-		DepositState:    id.String(),
+		DepositState:    id.Bytes(),
 	}, nil
 }
 

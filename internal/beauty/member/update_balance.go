@@ -60,16 +60,16 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
 		randomRef := gen.Reference()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{
-			MemberRef:    randomRef.String(),
+			MemberRef:    randomRef.Bytes(),
 			Balance:      balance,
-			AccountState: id.String(),
+			AccountState: id.Bytes(),
 			Status:       "INTERNAL",
 		})
 		return
 	}
 	u.cache = append(u.cache, &beauty.BalanceUpdate{
-		ID:        id.String(),
-		PrevState: amd.PrevState.String(),
+		ID:        id.Bytes(),
+		PrevState: amd.PrevState.Bytes(),
 		Balance:   balance,
 	})
 }

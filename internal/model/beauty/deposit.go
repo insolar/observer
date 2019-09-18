@@ -27,13 +27,13 @@ type Deposit struct {
 	tableName struct{} `sql:"deposits"`
 
 	EthHash         string `sql:",pk"`
-	DepositRef      string `sql:",notnull"`
-	MemberRef       string `sql:",notnull"`
+	DepositRef      []byte `sql:",notnull"`
+	MemberRef       []byte `sql:",notnull"`
 	TransferDate    int64  `sql:",notnull"`
 	HoldReleaseDate int64  `sql:",notnull"`
 	Amount          string `sql:",notnull"`
 	Balance         string `sql:",notnull"`
-	DepositState    string `sql:",notnull"`
+	DepositState    []byte `sql:",notnull"`
 }
 
 func (d *Deposit) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
