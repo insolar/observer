@@ -20,6 +20,8 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Pulse struct {
@@ -31,10 +33,15 @@ type Pulse struct {
 	RequestsCount uint32
 }
 
-func (p *Pulse) Dump(tx orm.DB) error {
-	err := tx.Insert(p)
+func (p *Pulse) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(p).OnConflict("DO NOTHING").Insert(p)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert pulse %v", p)
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert pulse: %v", p)
 	}
 	return nil
 }
