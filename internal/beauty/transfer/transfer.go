@@ -59,14 +59,14 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	}
 	resultValue := &transferResult{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
-	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
+	memberFrom, err := insolar.NewIDFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	to := []byte{}
 	switch callArguments.Params.CallSite {
 	case "member.transfer":
-		memberTo, err := insolar.NewReferenceFromBase58(callParams.ToMemberReference)
+		memberTo, err := insolar.NewIDFromBase58(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
 		}
