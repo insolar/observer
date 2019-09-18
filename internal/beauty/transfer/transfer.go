@@ -188,13 +188,13 @@ func isTransferCall(request *dto.Request) bool {
 	return false
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
 	log.Infof("dump member transfers")
 
 	c.updateStat()
 
 	for _, transfer := range c.cache {
-		if err := transfer.Dump(tx); err != nil {
+		if err := transfer.Dump(tx, errorCounter); err != nil {
 			return errors.Wrapf(err, "failed to dump transfers")
 		}
 	}

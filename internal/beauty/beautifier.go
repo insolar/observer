@@ -147,21 +147,21 @@ func (b *Beautifier) process(rec *record.Material) {
 	b.depositKeeper.Process(rec)
 }
 
-func (b *Beautifier) dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
+func (b *Beautifier) dump(tx orm.DB, pub replicator.OnDumpSuccess, errors prometheus.Counter) error {
 	log.Infof("dump beautifier")
-	if err := b.memberComposer.Dump(tx, pub); err != nil {
+	if err := b.memberComposer.Dump(tx, pub, errors); err != nil {
 		return err
 	}
-	if err := b.memberBalanceUpdater.Dump(tx, pub); err != nil {
+	if err := b.memberBalanceUpdater.Dump(tx, pub, errors); err != nil {
 		return err
 	}
-	if err := b.transferComposer.Dump(tx, pub); err != nil {
+	if err := b.transferComposer.Dump(tx, pub, errors); err != nil {
 		return err
 	}
-	if err := b.depositComposer.Dump(tx, pub); err != nil {
+	if err := b.depositComposer.Dump(tx, pub, errors); err != nil {
 		return err
 	}
-	if err := b.migrationAddressComposer.Dump(tx, pub); err != nil {
+	if err := b.migrationAddressComposer.Dump(tx, pub, errors); err != nil {
 		return err
 	}
 	if err := b.migrationAddressKeeper.Dump(tx, pub); err != nil {

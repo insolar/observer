@@ -18,8 +18,11 @@ package beauty
 
 import (
 	"github.com/go-pg/pg/orm"
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type Transfer struct {
@@ -39,9 +42,15 @@ type Transfer struct {
 	EthHash       string              `sql:",notnull"`
 }
 
-func (m *Transfer) Dump(tx orm.DB) error {
-	if err := tx.Insert(m); err != nil {
+func (t *Transfer) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(t).OnConflict("DO NOTHING").Insert(t)
+	if err != nil {
 		return errors.Wrapf(err, "failed to insert transfer")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert transfer: %v", t)
 	}
 	return nil
 }

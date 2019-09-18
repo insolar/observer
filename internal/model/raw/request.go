@@ -19,6 +19,8 @@ package raw
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Request struct {
@@ -35,9 +37,15 @@ type Request struct {
 	Reason     string
 }
 
-func (r *Request) Dump(tx orm.DB) error {
-	if err := tx.Insert(r); err != nil {
+func (r *Request) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(r).OnConflict("DO NOTHING").Insert(r)
+	if err != nil {
 		return errors.Wrapf(err, "failed to insert request")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert request: %v", r)
 	}
 	return nil
 }

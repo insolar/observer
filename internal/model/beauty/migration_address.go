@@ -19,7 +19,8 @@ package beauty
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type MigrationAddress struct {
@@ -30,9 +31,15 @@ type MigrationAddress struct {
 	Wasted    bool
 }
 
-func (a *MigrationAddress) Dump(tx orm.DB) error {
-	if err := tx.Insert(a); err != nil {
-		log.Error(errors.Wrapf(err, "failed to insert migration address"))
+func (a *MigrationAddress) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+	res, err := tx.Model(a).OnConflict("DO NOTHING").Insert(a)
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert migration address")
+	}
+
+	if res.RowsAffected() == 0 {
+		errorCounter.Inc()
+		logrus.Errorf("Failed to insert migration address: %v", a)
 	}
 	return nil
 }
