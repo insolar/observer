@@ -27,15 +27,44 @@ import (
 )
 
 type MigrationAddressCollector struct {
+	results observer.ResultCollector
 }
 
 func NewMigrationAddressesCollector() *MigrationAddressCollector {
-	return &MigrationAddressCollector{}
+	results := NewResultCollector(isAddMigrationAddresses, successResult)
+	return &MigrationAddressCollector{
+		results: results,
+	}
 }
 
 func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.MigrationAddress {
 	defer panic.Log("migration_address_collector")
 
+	if rec == nil {
+		return nil
+	}
+
+	// This code block collects addresses from incoming request.
+	couple := c.results.Collect(rec)
+	if couple != nil {
+		result := couple.Result
+		if !result.IsSuccess() {
+			return nil
+		}
+		request := couple.Request
+		params := &addAddresses{}
+		request.ParseMemberContractCallParams(params)
+		addresses := []*observer.MigrationAddress{}
+		for _, addr := range params.MigrationAddresses {
+			addresses = append(addresses, &observer.MigrationAddress{
+				Addr:  addr,
+				Pulse: request.ID.Pulse(),
+			})
+		}
+		return addresses
+	}
+
+	// This code block collects addresses from genesis record.
 	activate := observer.CastToActivate(rec)
 	if !activate.IsActivate() {
 		return nil
@@ -56,6 +85,10 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 	return addresses
 }
 
+type addAddresses struct {
+	MigrationAddresses []string `json:"migrationAddresses"`
+}
+
 func isMigrationShardActivate(act *record.Activate) bool {
 	return act.Image.Equal(*proxyShard.PrototypeReference)
 }
@@ -70,4 +103,18 @@ func migrationShardActivate(act *record.Activate) []string {
 		return []string{}
 	}
 	return shard.FreeMigrationAddresses
+}
+
+func isAddMigrationAddresses(chain interface{}) bool {
+	request := observer.CastToRequest(chain)
+	if !request.IsIncoming() {
+		return false
+	}
+
+	if !request.IsMemberCall() {
+		return false
+	}
+
+	args := request.ParseMemberCallArguments()
+	return args.Params.CallSite == "migration.addAddresses"
 }
