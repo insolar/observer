@@ -21,10 +21,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/v2/configuration"
+	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer/postgres"
+	"github.com/insolar/observer/v2/observability"
 )
 
-func initDB(cfg *configuration.Configuration, obs *Observability, conn *Connectivity) {
+func initDB(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
 	log := obs.Log()
 	if cfg == nil {
 		return

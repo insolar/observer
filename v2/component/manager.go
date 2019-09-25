@@ -37,8 +37,8 @@ type Manager struct {
 
 func Prepare() *Manager {
 	cfg := configuration.Load()
-	obs := makeObservability()
-	conn := makeConnectivity(cfg, obs)
+	obs := observability.makeObservability()
+	conn := connectivity.makeConnectivity(cfg, obs)
 	return &Manager{
 		stop:     make(chan bool, 1),
 		fetch:    makeFetcher(cfg, obs, conn),

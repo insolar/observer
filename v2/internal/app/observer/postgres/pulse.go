@@ -19,9 +19,14 @@ package postgres
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/internal/pkg/cycle"
+	"github.com/insolar/observer/v2/observability"
 )
 
 type PulseSchema struct {
@@ -33,32 +38,76 @@ type PulseSchema struct {
 }
 
 type PulseStorage struct {
-	log *logrus.Logger
-	db  orm.DB
+	cfg          *configuration.Configuration
+	log          *logrus.Logger
+	errorCounter prometheus.Counter
+	db           orm.DB
 }
 
-func NewPulseStorage(log *logrus.Logger, db orm.DB) *PulseStorage {
+func NewPulseStorage(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) *PulseStorage {
+	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "observer_pulse_storage_error_counter",
+		Help: "",
+	})
+	obs.Metrics().MustRegister(errorCounter)
 	return &PulseStorage{
-		log: log,
-		db:  db,
+		cfg:          cfg,
+		log:          obs.Log(),
+		errorCounter: errorCounter,
+		db:           db,
 	}
 }
 
 func (s *PulseStorage) Insert(model *observer.Pulse) error {
-	log := s.log
 	if model == nil {
-		log.Warnf("trying to insert nil pulse model")
+		s.log.Warnf("trying to insert nil pulse model")
 		return nil
 	}
 	row := pulseSchema(model)
-	return s.db.Insert(row)
+	res, err := s.db.Model(row).
+		OnConflict("DO NOTHING").
+		Insert(row)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert pulse %v", row)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("pulse_row", row).
+			Errorf("failed to insert pulse")
+	}
+	return nil
 }
 
 func (s *PulseStorage) Last() *observer.Pulse {
-	log := s.log
+	var (
+		count int
+		err   error
+	)
+	cycle.UntilError(func() error {
+		count, err = s.db.Model(&PulseSchema{}).Count()
+		if err != nil {
+			s.log.Error(errors.Wrapf(err, "failed request to db"))
+		}
+		return err
+	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+
+	if err != nil {
+		return nil
+	}
+
+	if count == 0 {
+		return &observer.Pulse{}
+	}
 	pulse := &PulseSchema{}
-	if err := s.db.Model(pulse).Last(); err != nil {
-		log.Debug("failed to find last pulse row")
+	err = s.db.Model(pulse).
+		Order("pulse DESC").
+		Limit(1).
+		Select()
+
+	if err != nil {
+		s.log.Debug("failed to find last pulse row")
 		return nil
 	}
 	model := &observer.Pulse{
@@ -66,17 +115,13 @@ func (s *PulseStorage) Last() *observer.Pulse {
 		Timestamp: pulse.PulseDate,
 	}
 	if err := model.Entropy.Unmarshal(pulse.Entropy); err != nil {
-		log.WithField("entropy", pulse.Entropy).
+		s.log.WithField("entropy", pulse.Entropy).
 			Debug("failed to unmarshal entropy from db schema to model")
 	}
 	return model
 }
 
 func pulseSchema(model *observer.Pulse) *PulseSchema {
-	if model == nil {
-		return nil
-	}
-
 	return &PulseSchema{
 		Pulse:     uint32(model.Number),
 		PulseDate: model.Timestamp,

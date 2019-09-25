@@ -18,11 +18,12 @@ package component
 
 import (
 	"github.com/insolar/observer/v2/internal/app/observer/collecting"
+	"github.com/insolar/observer/v2/observability"
 )
 
-func makeBeautifier(obs *Observability) func(*raw) *beauty {
+func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
-	metric := makeBeautyMetrics(obs, "collected")
+	metric := observability.MakeBeautyMetrics(obs, "collected")
 
 	transfers := collecting.NewTransferCollector(log)
 	addresses := collecting.NewMigrationAddressesCollector()

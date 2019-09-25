@@ -10,6 +10,7 @@ type dbMock struct {
 	insert   func(model ...interface{}) error
 	model    func(model ...interface{}) *orm.Query
 	queryOne func(model, query interface{}, params ...interface{}) (orm.Result, error)
+	query    func(model, query interface{}, params ...interface{}) (orm.Result, error)
 }
 
 func (m *dbMock) Insert(model ...interface{}) error {
@@ -22,6 +23,10 @@ func (m *dbMock) Model(model ...interface{}) *orm.Query {
 
 func (m *dbMock) QueryOne(model, query interface{}, params ...interface{}) (orm.Result, error) {
 	return m.queryOne(model, query, params...)
+}
+
+func (m *dbMock) Query(model, query interface{}, params ...interface{}) (orm.Result, error) {
+	return m.query(model, query, params...)
 }
 
 type resultMock struct {

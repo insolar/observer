@@ -19,21 +19,23 @@ package component
 import (
 	"github.com/go-pg/pg"
 
+	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer/postgres"
+	"github.com/insolar/observer/v2/observability"
 )
 
-func makeStorer(obs *Observability, conn *Connectivity) func(*beauty) {
+func makeStorer(obs *observability.Observability, conn *connectivity.Connectivity) func(*beauty) {
 	log := obs.Log()
-	db := conn.PG().DB()
+	db := conn.PG()
 
-	metric := makeBeautyMetrics(obs, "stored")
+	metric := observability.MakeBeautyMetrics(obs, "stored")
 	return func(b *beauty) {
 		if b == nil {
 			return
 		}
 
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
-			transfers := postgres.NewTransferStorage(tx)
+			transfers := postgres.NewTransferStorage(obs, tx)
 			for _, transfer := range b.transfers {
 				err := transfers.Insert(transfer)
 				if err != nil {

@@ -19,9 +19,12 @@ package postgres
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/observability"
 )
 
 type RecordSchema struct {
@@ -34,30 +37,50 @@ type RecordSchema struct {
 }
 
 type RecordStorage struct {
-	log *logrus.Logger
-	db  orm.DB
+	log          *logrus.Logger
+	errorCounter prometheus.Counter
+	db           orm.DB
 }
 
-func NewRecordStorage(log *logrus.Logger, db orm.DB) *RecordStorage {
+func NewRecordStorage(obs *observability.Observability, db orm.DB) *RecordStorage {
+	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "observer_record_storage_error_counter",
+		Help: "",
+	})
+	obs.Metrics().MustRegister(errorCounter)
 	return &RecordStorage{
-		log: log,
-		db:  db,
+		log:          obs.Log(),
+		errorCounter: errorCounter,
+		db:           db,
 	}
 }
 
 func (s *RecordStorage) Insert(model *observer.Record) error {
+	if model == nil {
+		s.log.Warnf("trying to insert nil record model")
+		return nil
+	}
 	row := recordSchema(model)
-	if row != nil {
-		return s.db.Insert(row)
+	res, err := s.db.Model(row).
+		OnConflict("DO NOTHING").
+		Insert(row)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert record %v", row)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("record_row", row).
+			Errorf("failed to insert record")
 	}
 	return nil
 }
 
 func (s *RecordStorage) Last() *observer.Record {
-	log := s.log
 	record := &RecordSchema{}
 	if err := s.db.Model(record).Last(); err != nil {
-		log.Debug("failed to find last records row")
+		s.log.Debug("failed to find last records row")
 		return nil
 	}
 	model := &observer.Record{}
@@ -77,14 +100,7 @@ func (s *RecordStorage) Count(by insolar.PulseNumber) uint32 {
 }
 
 func recordSchema(model *observer.Record) *RecordSchema {
-	if model == nil {
-		return nil
-	}
-
-	data, err := model.Marshal()
-	if err != nil {
-		return nil
-	}
+	data, _ := model.Marshal()
 	return &RecordSchema{
 		Pulse: uint32(model.ID.Pulse()),
 		Key:   model.ID.Bytes(),

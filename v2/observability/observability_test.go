@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package component
+package observability
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ import (
 )
 
 func Test_makeBeautyMetrics(t *testing.T) {
-	obs := makeObservability()
-	metrics := makeBeautyMetrics(obs, "processed")
+	obs := Make()
+	metrics := MakeBeautyMetrics(obs, "processed")
 	require.NotNil(t, metrics)
 }

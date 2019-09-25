@@ -18,6 +18,8 @@ package configuration
 
 import (
 	"time"
+
+	"github.com/insolar/observer/v2/internal/pkg/cycle"
 )
 
 type Configuration struct {
@@ -39,8 +41,10 @@ func Default() *Configuration {
 			TransactionRetryDelay: 3 * time.Second,
 		},
 		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
-			CreateTables: false,
+			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
+			Attempts:        cycle.INFINITY,
+			AttemptInterval: 3 * time.Second,
+			CreateTables:    false,
 		},
 	}
 }

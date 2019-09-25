@@ -22,18 +22,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/v2/configuration"
+	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer/grpc"
 	"github.com/insolar/observer/v2/internal/app/observer/postgres"
+	"github.com/insolar/observer/v2/observability"
 )
 
-func makeFetcher(cfg *configuration.Configuration, obs *Observability, conn *Connectivity) func() *raw {
+func makeFetcher(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *raw {
 	log := obs.Log()
+	db := conn.PG()
 	lastPulse, recordCounter := fetchingMetrics(obs)
-	db := conn.PG().DB()
-	pulseClient := exporter.NewPulseExporterClient(conn.GRPC().Conn())
-	recordClient := exporter.NewRecordExporterClient(conn.GRPC().Conn())
-	pulses := grpc.NewPulseFetcher(pulseClient, postgres.NewPulseStorage(log, db))
-	records := grpc.NewRecordFetcher(cfg, recordClient, postgres.NewRecordStorage(log, db))
+	pulseClient := exporter.NewPulseExporterClient(conn.GRPC())
+	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
+	pulses := grpc.NewPulseFetcher(pulseClient, postgres.NewPulseStorage(cfg, obs, db))
+	records := grpc.NewRecordFetcher(cfg, recordClient, postgres.NewRecordStorage(obs, db))
 	return func() *raw {
 		pulse, err := pulses.Fetch()
 		if err != nil {
@@ -41,7 +43,8 @@ func makeFetcher(cfg *configuration.Configuration, obs *Observability, conn *Con
 			return nil
 		}
 		lastPulse.Set(float64(pulse.Number))
-		log.Infof("fetched %d pulse", pulse.Number)
+		log.WithField("number", pulse.Number).
+			Infof("fetched pulse record")
 
 		batch, err := records.Fetch(pulse.Number)
 		if err != nil {
@@ -49,12 +52,13 @@ func makeFetcher(cfg *configuration.Configuration, obs *Observability, conn *Con
 			return nil
 		}
 		recordCounter.Add(float64(len(batch)))
-		log.Infof("fetched %d records", len(batch))
+		log.WithField("batch_size", len(batch)).
+			Infof("fetched records")
 		return &raw{pulse: pulse, batch: batch}
 	}
 }
 
-func fetchingMetrics(obs *Observability) (prometheus.Gauge, prometheus.Counter) {
+func fetchingMetrics(obs *observability.Observability) (prometheus.Gauge, prometheus.Counter) {
 	log := obs.Log()
 	metrics := obs.Metrics()
 	lastPulse := prometheus.NewGauge(prometheus.GaugeOpts{

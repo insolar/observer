@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package component
+package observability
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func makeObservability() *Observability {
+func Make() *Observability {
 	return &Observability{
 		log:     logrus.New(),
 		metrics: prometheus.NewRegistry(),
@@ -45,7 +45,7 @@ func (o *Observability) Metrics() *prometheus.Registry {
 	return o.metrics
 }
 
-func makeBeautyMetrics(obs *Observability, action string) *beautyMetrics {
+func MakeBeautyMetrics(obs *Observability, action string) *beautyMetrics {
 	metrics := obs.Metrics()
 	counters := &beautyMetrics{}
 	v := reflect.ValueOf(counters).Elem()

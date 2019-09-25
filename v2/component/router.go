@@ -27,9 +27,10 @@ import (
 
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/pkg/panic"
+	"github.com/insolar/observer/v2/observability"
 )
 
-func NewRouter(cfg *configuration.Configuration, obs *Observability) *Router {
+func NewRouter(cfg *configuration.Configuration, obs *observability.Observability) *Router {
 	router := httprouter.New()
 	hs := &http.Server{Addr: cfg.API.Addr, Handler: router}
 	r := &Router{
@@ -43,7 +44,7 @@ func NewRouter(cfg *configuration.Configuration, obs *Observability) *Router {
 
 type Router struct {
 	hs  *http.Server
-	obs *Observability
+	obs *observability.Observability
 }
 
 func (r *Router) Start() {

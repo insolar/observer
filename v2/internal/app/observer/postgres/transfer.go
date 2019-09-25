@@ -19,8 +19,12 @@ package postgres
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/observability"
 )
 
 type TransferSchema struct {
@@ -41,17 +45,41 @@ type TransferSchema struct {
 }
 
 type TransferStorage struct {
-	db orm.DB
+	log          *logrus.Logger
+	errorCounter prometheus.Counter
+	db           orm.DB
 }
 
-func NewTransferStorage(db orm.DB) *TransferStorage {
-	return &TransferStorage{db: db}
+func NewTransferStorage(obs *observability.Observability, db orm.DB) *TransferStorage {
+	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "observer_transfer_storage_error_counter",
+		Help: "",
+	})
+	obs.Metrics().MustRegister(errorCounter)
+	return &TransferStorage{
+		log:          obs.Log(),
+		errorCounter: errorCounter,
+		db:           db,
+	}
 }
 
 func (s *TransferStorage) Insert(model *observer.DepositTransfer) error {
+	if model == nil {
+		s.log.Warnf("trying to insert nil pulse model")
+		return nil
+	}
 	row := transferSchema(model)
-	if row != nil {
-		return s.db.Insert(row)
+	res, err := s.db.Model().
+		OnConflict("DO NOTHING").
+		Insert(row)
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to insert transfer %v", row)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("transfer_row", row).Errorf("failed to insert transfer")
 	}
 	return nil
 }

@@ -14,17 +14,30 @@
 // limitations under the License.
 //
 
-package configuration
+package cycle
 
 import (
+	"math"
 	"time"
-
-	"github.com/insolar/observer/v2/internal/pkg/cycle"
 )
 
-type DB struct {
-	URL             string
-	Attempts        cycle.Limit
-	AttemptInterval time.Duration
-	CreateTables    bool
+type Limit int
+
+const (
+	INFINITY Limit = math.MaxInt32
+)
+
+func UntilError(f func() error, interval time.Duration, attempts Limit) {
+	counter := Limit(1)
+	for {
+		err := f()
+		if err != nil {
+			if counter >= attempts {
+				return
+			}
+			time.Sleep(interval)
+			continue
+		}
+		return
+	}
 }
