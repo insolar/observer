@@ -22,9 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/v2/configuration"
-	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer"
-	"github.com/insolar/observer/v2/observability"
 )
 
 func Test_makeStorer(t *testing.T) {
