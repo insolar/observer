@@ -18,11 +18,11 @@ package postgres
 
 import (
 	"errors"
-	"reflect"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/stretchr/testify/require"
@@ -122,7 +122,7 @@ func TestPulseStorage_Last(t *testing.T) {
 			return orm.NewQuery(db, model...)
 		}
 		db.queryOne = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
-			return nil, nil
+			return makeResult(obs.Log()), pg.ErrNoRows
 		}
 		cfg.DB.Attempts = 1
 		cfg.DB.AttemptInterval = time.Nanosecond
@@ -130,33 +130,6 @@ func TestPulseStorage_Last(t *testing.T) {
 
 		storage := NewPulseStorage(cfg, obs, db)
 		require.Equal(t, empty, storage.Last())
-	})
-
-	t.Run("connection_error_on_second_query", func(t *testing.T) {
-		cfg := configuration.Default()
-		obs := observability.Make()
-		expected := &observer.Pulse{Number: insolar.GenesisPulse.PulseNumber}
-		db := &dbMock{}
-		db.model = func(model ...interface{}) *orm.Query {
-			return orm.NewQuery(db, model...)
-		}
-		db.queryOne = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
-			switch reflect.TypeOf(model) {
-			case reflect.TypeOf(orm.Scan()):
-				m, err := orm.NewModel(model)
-				require.NoError(t, err)
-				buf := []byte(strconv.Itoa(1))
-				err = m.ScanColumn(0, "count(*)", buf)
-				require.NoError(t, err)
-				return makeResult(obs.Log(), expected), nil
-			}
-			return nil, errors.New("dial tcp [::1]:5432: connect: connection refused")
-		}
-		cfg.DB.Attempts = 1
-		cfg.DB.AttemptInterval = time.Nanosecond
-
-		storage := NewPulseStorage(cfg, obs, db)
-		require.Nil(t, storage.Last())
 	})
 
 	t.Run("existing_pulse", func(t *testing.T) {
@@ -168,21 +141,11 @@ func TestPulseStorage_Last(t *testing.T) {
 			return orm.NewQuery(db, model...)
 		}
 		db.queryOne = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
-			switch reflect.TypeOf(model) {
-			case reflect.TypeOf(orm.Scan()):
-				m, err := orm.NewModel(model)
-				require.NoError(t, err)
-				buf := []byte(strconv.Itoa(1))
-				err = m.ScanColumn(0, "count(*)", buf)
-				require.NoError(t, err)
-				return makeResult(obs.Log(), expected), nil
-			default:
-				m, err := orm.NewModel(model)
-				require.NoError(t, err)
-				err = m.ScanColumn(0, "pulse", []byte(strconv.Itoa(int(expected.Number))))
-				require.NoError(t, err)
-				return makeResult(obs.Log(), expected), nil
-			}
+			m, err := orm.NewModel(model)
+			require.NoError(t, err)
+			err = m.ScanColumn(0, "pulse", []byte(strconv.Itoa(int(expected.Number))))
+			require.NoError(t, err)
+			return makeResult(obs.Log(), expected), nil
 		}
 
 		storage := NewPulseStorage(cfg, obs, db)

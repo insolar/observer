@@ -82,27 +82,9 @@ func (s *PulseStorage) Insert(model *observer.Pulse) error {
 }
 
 func (s *PulseStorage) Last() *observer.Pulse {
-	var (
-		count int
-		err   error
-	)
-	cycle.UntilError(func() error {
-		count, err = s.db.Model(&PulseSchema{}).Count()
-		if err != nil {
-			s.log.Error(errors.Wrapf(err, "failed request to db"))
-		}
-		return err
-	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
-
-	if err != nil {
-		return nil
-	}
-
-	if count == 0 {
-		return &observer.Pulse{}
-	}
-
+	var err error
 	pulse := &PulseSchema{}
+
 	cycle.UntilError(func() error {
 		err = s.db.Model(pulse).
 			Order("pulse DESC").
@@ -118,6 +100,11 @@ func (s *PulseStorage) Last() *observer.Pulse {
 		s.log.Debug("failed to find last pulse row")
 		return nil
 	}
+
+	if err == pg.ErrNoRows {
+		return &observer.Pulse{}
+	}
+
 	model := &observer.Pulse{
 		Number:    insolar.PulseNumber(pulse.Pulse),
 		Timestamp: pulse.PulseDate,
