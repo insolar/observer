@@ -17,6 +17,7 @@
 package postgres
 
 import (
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -100,13 +101,20 @@ func (s *PulseStorage) Last() *observer.Pulse {
 	if count == 0 {
 		return &observer.Pulse{}
 	}
-	pulse := &PulseSchema{}
-	err = s.db.Model(pulse).
-		Order("pulse DESC").
-		Limit(1).
-		Select()
 
-	if err != nil {
+	pulse := &PulseSchema{}
+	cycle.UntilError(func() error {
+		err = s.db.Model(pulse).
+			Order("pulse DESC").
+			Limit(1).
+			Select()
+		if err != nil && err != pg.ErrNoRows {
+			s.log.Error(errors.Wrapf(err, "failed request to db"))
+		}
+		return err
+	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+
+	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find last pulse row")
 		return nil
 	}

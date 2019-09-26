@@ -20,8 +20,10 @@ import (
 	"time"
 
 	"github.com/insolar/observer/v2/configuration"
+	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer"
 	"github.com/insolar/observer/v2/internal/pkg/panic"
+	"github.com/insolar/observer/v2/observability"
 )
 
 type Manager struct {
@@ -37,8 +39,8 @@ type Manager struct {
 
 func Prepare() *Manager {
 	cfg := configuration.Load()
-	obs := observability.makeObservability()
-	conn := connectivity.makeConnectivity(cfg, obs)
+	obs := observability.Make()
+	conn := connectivity.Make(cfg, obs)
 	return &Manager{
 		stop:     make(chan bool, 1),
 		fetch:    makeFetcher(cfg, obs, conn),

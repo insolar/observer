@@ -32,7 +32,7 @@ func initDB(cfg *configuration.Configuration, obs *observability.Observability, 
 		return
 	}
 	if cfg.DB.CreateTables {
-		db := conn.PG().DB()
+		db := conn.PG()
 
 		err := db.CreateTable(&postgres.TransferSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {

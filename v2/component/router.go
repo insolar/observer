@@ -75,8 +75,8 @@ func (r *Router) healthCheck(w http.ResponseWriter, _ *http.Request, _ httproute
 
 func (r *Router) metrics(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	ops := promhttp.HandlerOpts{
-		ErrorLog: r.obs.log,
+		ErrorLog: r.obs.Log(),
 	}
-	handler := promhttp.HandlerFor(r.obs.metrics, ops)
+	handler := promhttp.HandlerFor(r.obs.Metrics(), ops)
 	handler.ServeHTTP(w, req)
 }

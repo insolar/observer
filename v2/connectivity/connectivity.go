@@ -25,7 +25,7 @@ import (
 	"github.com/insolar/observer/v2/observability"
 )
 
-func makeConnectivity(cfg *configuration.Configuration, obs *observability.Observability) *Connectivity {
+func Make(cfg *configuration.Configuration, obs *observability.Observability) *Connectivity {
 	log := obs.Log()
 	return &Connectivity{
 		pg: func() *pg.DB {
