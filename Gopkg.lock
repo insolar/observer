@@ -213,7 +213,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:bdee2b565419c7104170df30fae02791d29aca08984aeb909ce8a8d1dd0ed617"
+  digest = "1:da4bbcbb3c8f4d3df01b72806902b913a992d70536001f76fe6e439ea08450d1"
   name = "github.com/insolar/insolar"
   packages = [
     "component",
@@ -242,6 +242,11 @@
     "ledger/heavy/exporter",
     "ledger/object",
     "log",
+    "log/critlog",
+    "log/inssyslog",
+    "log/logadapter",
+    "log/logmetrics",
+    "log/zlogadapter",
     "logicrunner/artifacts",
     "logicrunner/builtin/contract/account",
     "logicrunner/builtin/contract/deposit",
@@ -264,6 +269,7 @@
     "logicrunner/goplugin/rpctypes",
     "logicrunner/metrics",
     "longbits",
+    "network/consensus/common/args",
     "network/consensus/common/cryptkit",
     "platformpolicy",
     "platformpolicy/internal/hash",
@@ -272,8 +278,8 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "1d32434df857f1946d3ee6c6ffdea89b8c3a81d8"
-  version = "v0.9.6"
+  revision = "0f858965b888ecc0207ca22bec630c4d8640813a"
+  version = "v0.9.8"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -462,7 +468,7 @@
   version = "v3.0.3"
 
 [[projects]]
-  digest = "1:c5670264a83df105fabb1577aeacf89da55faac9ef18cebfc2640f7b27e74407"
+  digest = "1:fc03341aafbf39a31b220e73ced14b3af0b928af973b232533c843af8b1d49d2"
   name = "github.com/rs/zerolog"
   packages = [
     ".",
@@ -472,8 +478,8 @@
     "internal/json",
   ]
   pruneopts = "UT"
-  revision = "acf3980132bfcdc48638724e6e3d9e5749b85999"
-  version = "v1.14.3"
+  revision = "b806a5ecbe5347ad9ef05121fea8f4acc65fa5fc"
+  version = "v1.15.0"
 
 [[projects]]
   branch = "master"
@@ -747,7 +753,6 @@
     "github.com/insolar/insolar/insolar/gen",
     "github.com/insolar/insolar/insolar/record",
     "github.com/insolar/insolar/ledger/heavy/exporter",
-    "github.com/insolar/insolar/log",
     "github.com/insolar/insolar/logicrunner/builtin/contract/account",
     "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
     "github.com/insolar/insolar/logicrunner/builtin/contract/member",
