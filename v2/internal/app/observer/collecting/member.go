@@ -42,7 +42,7 @@ func NewMemberCollector() *MemberCollector {
 }
 
 func (c *MemberCollector) Collect(rec *observer.Record) *observer.Member {
-	defer panic.Log("member_collector")
+	defer panic.Catch("member_collector")
 
 	if rec == nil {
 		return nil

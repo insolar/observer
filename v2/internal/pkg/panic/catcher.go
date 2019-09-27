@@ -17,21 +17,16 @@
 package panic
 
 import (
-	"testing"
+	"fmt"
+	"runtime/debug"
 
-	"github.com/stretchr/testify/require"
+	log "github.com/sirupsen/logrus"
 )
 
-func TestLog(t *testing.T) {
-	t.Run("not_panics", func(t *testing.T) {
-		require.NotPanics(t, func() { Log("module_name") })
-	})
-
-	t.Run("catch_panic", func(t *testing.T) {
-		require.NotPanics(t, func() {
-			defer Log("module_with_panic")
-
-			panic("smth wrong")
-		})
-	})
+func Catch(name string) {
+	if err := recover(); err != nil {
+		msg := fmt.Sprintf("%v", err)
+		log.Errorf("panic %s in component %s", msg, name)
+		debug.PrintStack()
+	}
 }

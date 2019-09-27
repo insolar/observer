@@ -50,7 +50,7 @@ type Router struct {
 func (r *Router) Start() {
 	log := r.obs.Log()
 	go func() {
-		defer panic.Log("component.Router")
+		defer panic.Catch("component.Router")
 
 		err := r.hs.ListenAndServe()
 		if err != http.ErrServerClosed {

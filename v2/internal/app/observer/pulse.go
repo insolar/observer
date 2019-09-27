@@ -32,5 +32,5 @@ type PulseStorage interface {
 }
 
 type PulseFetcher interface {
-	Fetch() (*Pulse, error)
+	Fetch(insolar.PulseNumber) (*Pulse, error)
 }

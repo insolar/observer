@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 
@@ -27,28 +28,20 @@ import (
 )
 
 type PulseFetcher struct {
-	client  exporter.PulseExporterClient
-	pulses  observer.PulseStorage
-	request *exporter.GetPulses
+	client exporter.PulseExporterClient
 }
 
-func NewPulseFetcher(client exporter.PulseExporterClient, pulses observer.PulseStorage) *PulseFetcher {
-	last := pulses.Last()
-	request := &exporter.GetPulses{Count: 1}
-	if last != nil {
-		pulse := last.Number
-		request.PulseNumber = pulse
-	}
+func NewPulseFetcher(client exporter.PulseExporterClient) *PulseFetcher {
 	return &PulseFetcher{
-		client:  client,
-		request: request,
+		client: client,
 	}
 }
 
-func (f *PulseFetcher) Fetch() (*observer.Pulse, error) {
+func (f *PulseFetcher) Fetch(pulse insolar.PulseNumber) (*observer.Pulse, error) {
 	ctx := context.Background()
 	client := f.client
-	stream, err := client.Export(ctx, f.request)
+	request := &exporter.GetPulses{Count: 1, PulseNumber: pulse}
+	stream, err := client.Export(ctx, request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
 	}
@@ -58,14 +51,12 @@ func (f *PulseFetcher) Fetch() (*observer.Pulse, error) {
 		return nil, errors.Wrapf(err, "HME returns empty pulse stream")
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "received error value from pulses gRPC stream %v", f.request)
+		return nil, errors.Wrapf(err, "received error value from pulses gRPC stream %v", request)
 	}
 	model := &observer.Pulse{
 		Number:    resp.PulseNumber,
 		Entropy:   resp.Entropy,
 		Timestamp: resp.PulseTimestamp,
 	}
-
-	f.request.PulseNumber = model.Number
 	return model, nil
 }

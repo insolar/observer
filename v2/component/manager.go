@@ -53,7 +53,7 @@ func Prepare() *Manager {
 
 func (m *Manager) Start() {
 	go func() {
-		defer panic.Log("component.Manager")
+		defer panic.Catch("component.Manager")
 
 		m.router.Start()
 		defer m.router.Stop()

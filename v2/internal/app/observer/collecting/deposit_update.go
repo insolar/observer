@@ -39,7 +39,7 @@ func NewDepositUpdateCollector(log *logrus.Logger) *DepositUpdateCollector {
 }
 
 func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.DepositUpdate {
-	defer panic.Log("deposit_update_collector")
+	defer panic.Catch("deposit_update_collector")
 
 	if rec == nil {
 		return nil

@@ -42,7 +42,7 @@ func NewTransferCollector(log *logrus.Logger) *TransferCollector {
 }
 
 func (c *TransferCollector) Collect(record *observer.Record) *observer.DepositTransfer {
-	defer panic.Log("transfer_collector")
+	defer panic.Catch("transfer_collector")
 	log := c.log
 
 	couple := c.collector.Collect(record)

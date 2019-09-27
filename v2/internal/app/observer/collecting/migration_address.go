@@ -38,7 +38,7 @@ func NewMigrationAddressesCollector() *MigrationAddressCollector {
 }
 
 func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.MigrationAddress {
-	defer panic.Log("migration_address_collector")
+	defer panic.Catch("migration_address_collector")
 
 	if rec == nil {
 		return nil

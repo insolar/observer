@@ -39,13 +39,9 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return nil
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
 		require.Nil(t, pulse)
 	})
@@ -59,13 +55,9 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return &observer.Pulse{}
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
 		require.Nil(t, pulse)
 	})
@@ -80,13 +72,9 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return nil
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.NoError(t, err)
 		require.Equal(t, expected, pulse)
 	})
@@ -101,13 +89,9 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return &observer.Pulse{}
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.NoError(t, err)
 		require.Equal(t, expected, pulse)
 	})
@@ -117,13 +101,9 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return nil, errors.New("failed export")
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return nil
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
 		require.Nil(t, pulse)
 	})
@@ -137,25 +117,12 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		storage := &pulseStorage{}
-		storage.last = func() *observer.Pulse {
-			return nil
-		}
-		fetcher := NewPulseFetcher(client, storage)
+		fetcher := NewPulseFetcher(client)
 
-		pulse, err := fetcher.Fetch()
+		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
 		require.Nil(t, pulse)
 	})
-}
-
-type pulseStorage struct {
-	observer.PulseStorage
-	last func() *observer.Pulse
-}
-
-func (s *pulseStorage) Last() *observer.Pulse {
-	return s.last()
 }
 
 type pulseClient struct {

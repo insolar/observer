@@ -33,7 +33,7 @@ func NewWastingCollector() *WastingCollector {
 }
 
 func (c *WastingCollector) Collect(rec *observer.Record) *observer.Wasting {
-	defer panic.Log("wasting_collector")
+	defer panic.Catch("wasting_collector")
 
 	if rec == nil {
 		return nil
