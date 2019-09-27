@@ -21,8 +21,8 @@ import (
 	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	log "github.com/sirupsen/logrus"
 )
 
 func (r *Result) ParsePayload() foundation.Result {
