@@ -26,11 +26,11 @@ import (
 type Member struct {
 	tableName struct{} `sql:"members"`
 
-	MemberRef        string `sql:",pk"`
+	MemberRef        []byte `sql:",pk"`
 	Balance          string `sql:",notnull"`
 	MigrationAddress string
-	WalletRef        string
-	AccountState     string `sql:",notnull"`
+	WalletRef        []byte
+	AccountState     []byte `sql:",notnull"`
 	Status           string
 }
 

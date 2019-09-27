@@ -22,11 +22,11 @@ import (
 )
 
 type DepositUpdate struct {
-	ID              string
+	ID              []byte
 	HoldReleaseDate int64
 	Amount          string
 	Balance         string
-	PrevState       string
+	PrevState       []byte
 }
 
 func (u *DepositUpdate) Dump(tx orm.DB) error {

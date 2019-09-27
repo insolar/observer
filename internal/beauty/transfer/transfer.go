@@ -59,20 +59,20 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	}
 	resultValue := &transferResult{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
-	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
+	memberFrom, err := insolar.NewIDFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
-	to := ""
+	to := []byte{}
 	switch callArguments.Params.CallSite {
 	case "member.transfer":
-		memberTo, err := insolar.NewReferenceFromBase58(callParams.ToMemberReference)
+		memberTo, err := insolar.NewIDFromBase58(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
 		}
-		to = memberTo.String()
+		to = memberTo.Bytes()
 	case "deposit.transfer":
-		to = memberFrom.String()
+		to = memberFrom.Bytes()
 	}
 
 	transferDate, err := pulse.Number(pn).AsApproximateTime()
@@ -80,16 +80,16 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}
 	return &beauty.Transfer{
-		TxID:          insolar.NewReference(req.ID).String(),
+		TxID:          req.ID.Bytes(),
 		Status:        string(status),
 		Amount:        callParams.Amount,
-		MemberFromRef: memberFrom.String(),
+		MemberFromRef: memberFrom.Bytes(),
 		MemberToRef:   to,
 		PulseNum:      pn,
 		TransferDate:  transferDate.Unix(),
 		Fee:           resultValue.Fee,
-		WalletFromRef: "TODO",
-		WalletToRef:   "TODO",
+		WalletFromRef: []byte{},
+		WalletToRef:   []byte{},
 		EthHash:       callParams.EthTxHash,
 	}, nil
 }
