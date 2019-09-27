@@ -18,15 +18,36 @@ package component
 
 import (
 	"github.com/go-pg/pg/orm"
-	"github.com/pkg/errors"
-
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer/postgres"
 	"github.com/insolar/observer/v2/observability"
+	"github.com/pkg/errors"
 )
 
-func initDB(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
+func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *state {
+	createTables(cfg, obs, conn)
+	initCache()
+	last := MustKnowPulse(cfg, obs, conn.PG())
+	return func() *state {
+		return &state{
+			last: last,
+		}
+	}
+}
+
+func MustKnowPulse(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) insolar.PulseNumber {
+	pulses := postgres.NewPulseStorage(cfg, obs, db)
+	p := pulses.Last()
+	if p == nil {
+		panic("Something wrong with DB. Most likely failed to connect to the DB" +
+			" in the allotted number of attempts.")
+	}
+	return p.Number
+}
+
+func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
 	log := obs.Log()
 	if cfg == nil {
 		return
@@ -39,4 +60,18 @@ func initDB(cfg *configuration.Configuration, obs *observability.Observability, 
 			log.Error(errors.Wrapf(err, "failed to create transfers table"))
 		}
 	}
+}
+
+func initCache() {
+	// TODO:
+	//  1. If dump file exists:
+	//  - Load cache from dump file
+	//  - Remove file
+	//  2. Else if dump record exists in DB:
+	//  - Load cache from DB
+	//  - Delete record
+	//  3. Else if DB connection is alive:
+	//  - Init empty cache
+	//  4. Else:
+	//  - Panic
 }

@@ -45,6 +45,11 @@ func (o *Observability) Metrics() *prometheus.Registry {
 	return o.metrics
 }
 
+func (o *Observability) Counter(name string) prometheus.Counter {
+	// TODO: return counter or register new
+	return nil
+}
+
 func MakeBeautyMetrics(obs *Observability, action string) *beautyMetrics {
 	metrics := obs.Metrics()
 	counters := &beautyMetrics{}

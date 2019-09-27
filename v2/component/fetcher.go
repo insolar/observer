@@ -17,7 +17,6 @@
 package component
 
 import (
-	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
@@ -30,7 +29,7 @@ import (
 	"github.com/insolar/observer/v2/observability"
 )
 
-func makeFetcher(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *raw {
+func makeFetcher(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func(insolar.PulseNumber) *raw {
 	log := obs.Log()
 	db := conn.PG()
 	lastPulse, recordCounter := fetchingMetrics(obs)
@@ -38,8 +37,7 @@ func makeFetcher(cfg *configuration.Configuration, obs *observability.Observabil
 	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
 	pulses := grpc.NewPulseFetcher(pulseClient)
 	records := grpc.NewRecordFetcher(cfg, recordClient, postgres.NewRecordStorage(obs, db))
-	last := MustKnowPulse(cfg, obs, db)
-	return func() *raw {
+	return func(last insolar.PulseNumber) *raw {
 		pulse, err := pulses.Fetch(last)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
@@ -59,16 +57,6 @@ func makeFetcher(cfg *configuration.Configuration, obs *observability.Observabil
 			Infof("fetched records")
 		return &raw{pulse: pulse, batch: batch}
 	}
-}
-
-func MustKnowPulse(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) insolar.PulseNumber {
-	pulses := postgres.NewPulseStorage(cfg, obs, db)
-	p := pulses.Last()
-	if p == nil {
-		panic("Something wrong with DB. Most likely failed to connect to the DB" +
-			" in the allotted number of attempts.")
-	}
-	return p.Number
 }
 
 func fetchingMetrics(obs *observability.Observability) (prometheus.Gauge, prometheus.Counter) {
