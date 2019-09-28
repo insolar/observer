@@ -109,4 +109,5 @@ type beauty struct {
 	updates   []*observer.DepositUpdate
 	addresses []*observer.MigrationAddress
 	wastings  []*observer.Wasting
+	users     []*observer.User
 }

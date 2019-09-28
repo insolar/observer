@@ -27,6 +27,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 	transfers := collecting.NewTransferCollector(log)
 	addresses := collecting.NewMigrationAddressesCollector()
+	users := collecting.NewUserCollector(log)
 
 	return func(d *raw) *beauty {
 		if d == nil {
@@ -38,6 +39,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			transfer := transfers.Collect(rec)
 			if transfer != nil {
 				b.transfers = append(b.transfers, transfer)
+			}
+
+			user := users.Collect(rec)
+			if user != nil {
+				b.users = append(b.users, user)
 			}
 
 			b.addresses = append(b.addresses, addresses.Collect(rec)...)

@@ -29,21 +29,23 @@ func makeStorer(obs *observability.Observability, conn *connectivity.Connectivit
 	db := conn.PG()
 
 	metric := observability.MakeBeautyMetrics(obs, "stored")
+	users := postgres.NewUserStorage(obs, db)
+
 	return func(b *beauty) {
 		if b == nil {
 			return
 		}
 
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
-			transfers := postgres.NewTransferStorage(obs, tx)
-			for _, transfer := range b.transfers {
-				err := transfers.Insert(transfer)
+			for _, user := range b.users {
+				err := users.Insert(user)
 				if err != nil {
 					return err
 				}
 			}
 			return nil
 		})
+
 		if err != nil {
 			log.Error(err)
 			return
