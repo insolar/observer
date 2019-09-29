@@ -14,7 +14,7 @@ $(BIN_DIR):
 
 .PHONY: $(OBSERVER)
 $(OBSERVER):
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -o $(BIN_DIR)/$(OBSERVER) ./v2/cmd/observer/*.go
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)

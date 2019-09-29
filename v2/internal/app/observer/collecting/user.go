@@ -1,7 +1,6 @@
 package collecting
 
 import (
-	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
@@ -89,9 +88,6 @@ func isUserCreationCall(chain interface{}) bool {
 		return false
 	}
 	args := request.ParseMemberCallArguments()
-	if args.Params.CallSite == "user.create" {
-		fmt.Println("WUT2 OK")
-	}
 	return args.Params.CallSite == "user.create"
 }
 
