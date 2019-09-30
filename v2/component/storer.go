@@ -30,6 +30,8 @@ func makeStorer(obs *observability.Observability, conn *connectivity.Connectivit
 
 	metric := observability.MakeBeautyMetrics(obs, "stored")
 	users := postgres.NewUserStorage(obs, db)
+	groups := postgres.NewGroupStorage(obs, db)
+	ug := postgres.NewUserGroupStorage(obs, db)
 
 	return func(b *beauty) {
 		if b == nil {
@@ -39,6 +41,19 @@ func makeStorer(obs *observability.Observability, conn *connectivity.Connectivit
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
 			for _, user := range b.users {
 				err := users.Insert(user)
+				if err != nil {
+					return err
+				}
+			}
+
+			for _, group := range b.groups {
+				err := groups.Insert(group)
+				if err != nil {
+					return err
+				}
+			}
+			for _, group := range b.groups {
+				err := ug.Insert(group)
 				if err != nil {
 					return err
 				}

@@ -110,4 +110,5 @@ type beauty struct {
 	addresses []*observer.MigrationAddress
 	wastings  []*observer.Wasting
 	users     []*observer.User
+	groups    []*observer.Group
 }
