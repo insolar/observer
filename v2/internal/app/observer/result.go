@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,7 +74,8 @@ func (r *Result) ParsePayload() foundation.Result {
 	result := foundation.Result{}
 	err := insolar.Deserialize(payload, &result)
 	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
+		log.WithField("payload", payload).
+			Warn(errors.Wrapf(err, "failed to parse payload as foundation.Result{}"))
 		return foundation.Result{}
 	}
 	return result
