@@ -36,7 +36,7 @@ func makeFetcher(
 	lastPulse, recordCounter := fetchingMetrics(obs)
 	pulseClient := exporter.NewPulseExporterClient(conn.GRPC())
 	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
-	pulses := grpc.NewPulseFetcher(pulseClient)
+	pulses := grpc.NewPulseFetcher(cfg, obs, pulseClient)
 	records := grpc.NewRecordFetcher(cfg, obs, recordClient)
 	return func(s *state) *raw {
 		pulse, err := pulses.Fetch(s.last)

@@ -17,7 +17,10 @@
 package observer
 
 import (
+	"encoding/hex"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -94,4 +97,16 @@ func TestResult_IsSuccess(t *testing.T) {
 
 		require.True(t, successResult.IsSuccess())
 	})
+}
+
+func TestStrangeResultPayload(t *testing.T) {
+	const raw = "016a0141e7de6b3161067eccc401021a0b22eb667307576df524c05a0a221f8d0000000000000000000000000000000000000000000000000000000000000000"
+	buf, err := hex.DecodeString(raw)
+	require.NoError(t, err)
+	var v interface{}
+	err = insolar.Deserialize(buf, &v)
+	logrus.Infof("%T %v", v, v)
+	ref := insolar.NewReferenceFromBytes(buf)
+	logrus.Infof("ref %v", ref.String())
+	require.NoError(t, err)
 }

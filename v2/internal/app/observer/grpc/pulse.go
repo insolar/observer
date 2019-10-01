@@ -20,6 +20,13 @@ import (
 	"context"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/v2/observability"
+
+	"github.com/insolar/observer/v2/configuration"
+	"github.com/insolar/observer/v2/internal/pkg/cycle"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
@@ -28,11 +35,18 @@ import (
 )
 
 type PulseFetcher struct {
+	cfg    *configuration.Configuration
+	log    *logrus.Logger
 	client exporter.PulseExporterClient
 }
 
-func NewPulseFetcher(client exporter.PulseExporterClient) *PulseFetcher {
+func NewPulseFetcher(
+	cfg *configuration.Configuration,
+	obs *observability.Observability,
+	client exporter.PulseExporterClient) *PulseFetcher {
 	return &PulseFetcher{
+		cfg:    cfg,
+		log:    obs.Log(),
 		client: client,
 	}
 }
@@ -41,18 +55,27 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 	ctx := context.Background()
 	client := f.client
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
-	stream, err := client.Export(ctx, request)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
-	}
+	var (
+		err  error
+		resp *exporter.Pulse
+	)
+	cycle.UntilError(func() error {
+		var stream exporter.PulseExporter_ExportClient
+		stream, err = client.Export(ctx, request)
+		if err != nil {
+			f.log.WithField("request", request).
+				Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
+			return err
+		}
 
-	resp, err := stream.Recv()
-	if err == io.EOF {
-		return nil, errors.Wrapf(err, "HME returns empty pulse stream")
-	}
-	if err != nil {
-		return nil, errors.Wrapf(err, "received error value from pulses gRPC stream %v", request)
-	}
+		resp, err = stream.Recv()
+		if err != nil && err != io.EOF {
+			f.log.WithField("request", request).
+				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
+		}
+		return err
+	}, f.cfg.Replicator.RequestDelay, cycle.INFINITY)
+
 	model := &observer.Pulse{
 		Number:    resp.PulseNumber,
 		Entropy:   resp.Entropy,

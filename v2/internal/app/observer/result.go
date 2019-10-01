@@ -17,9 +17,12 @@
 package observer
 
 import (
+	"bytes"
 	"encoding/json"
 	"reflect"
 	"runtime/debug"
+
+	"github.com/ugorji/go/codec"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -71,11 +74,20 @@ func (r *Result) ParsePayload() foundation.Result {
 		log.Warn("trying to parse nil Result.Payload")
 		return foundation.Result{}
 	}
+
 	result := foundation.Result{}
 	err := insolar.Deserialize(payload, &result)
 	if err != nil {
-		log.WithField("payload", payload).
-			Warn(errors.Wrapf(err, "failed to parse payload as foundation.Result{}"))
+		var v interface{}
+		ch := new(codec.CborHandle)
+		ch.MapType = reflect.TypeOf(map[string]interface{}(nil))
+		intErr := codec.NewDecoder(bytes.NewBuffer(payload), ch).Decode(&v)
+		_ = intErr
+		log.Warnf("SMTH %T | %x", v, payload)
+		log.WithFields(log.Fields{
+			"request_id": r.Request().String(),
+			"smth":       v,
+		}).Warn(errors.Wrapf(err, "failed to parse payload as foundation.Result{}"))
 		return foundation.Result{}
 	}
 	return result
