@@ -33,7 +33,7 @@ type Manager struct {
 
 	cfg      *configuration.Configuration
 	init     func() *state
-	fetch    func(insolar.PulseNumber) *raw
+	fetch    func(*state) *raw
 	beautify func(*raw) *beauty
 	store    func(*beauty)
 
@@ -87,7 +87,7 @@ func (m *Manager) needStop() bool {
 }
 
 func (m *Manager) run(s *state) {
-	raw := m.fetch(s.last)
+	raw := m.fetch(s)
 	beauty := m.beautify(raw)
 	m.store(beauty)
 	s.last = raw.pulse.Number
@@ -96,8 +96,9 @@ func (m *Manager) run(s *state) {
 }
 
 type raw struct {
-	pulse *observer.Pulse
-	batch []*observer.Record
+	pulse             *observer.Pulse
+	batch             []*observer.Record
+	shouldIterateFrom insolar.PulseNumber
 }
 
 type beauty struct {
@@ -120,4 +121,11 @@ type beauty struct {
 
 type state struct {
 	last insolar.PulseNumber
+	rp   RecordPosition
+}
+
+type RecordPosition struct {
+	Last              insolar.PulseNumber
+	RN                uint32
+	ShouldIterateFrom insolar.PulseNumber
 }

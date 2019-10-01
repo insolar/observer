@@ -46,11 +46,10 @@ type PulseStorage struct {
 }
 
 func NewPulseStorage(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) *PulseStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_pulse_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &PulseStorage{
 		cfg:          cfg,
 		log:          obs.Log(),

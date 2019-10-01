@@ -30,9 +30,11 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 	createTables(cfg, obs, conn)
 	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
+	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
 	return func() *state {
 		return &state{
 			last: last,
+			rp:   recordPosition,
 		}
 	}
 }
@@ -47,6 +49,18 @@ func MustKnowPulse(cfg *configuration.Configuration, obs *observability.Observab
 	return p.Number
 }
 
+func MustKnowRecordPosition(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) RecordPosition {
+	records := postgres.NewRecordStorage(cfg, obs, db)
+	rec := records.Last()
+	if rec == nil {
+		panic("Something wrong with DB. Most likely failed to connect to the DB" +
+			" in the allotted number of attempts.")
+	}
+	pulse := rec.ID.Pulse()
+	rn := records.Count(pulse)
+	return RecordPosition{Last: pulse, RN: rn}
+}
+
 func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
 	log := obs.Log()
 	if cfg == nil {
@@ -55,7 +69,17 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 	if cfg.DB.CreateTables {
 		db := conn.PG()
 
-		err := db.CreateTable(&postgres.TransferSchema{}, &orm.CreateTableOptions{IfNotExists: true})
+		err := db.CreateTable(&postgres.PulseSchema{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create transfers table"))
+		}
+
+		err = db.CreateTable(&postgres.RecordSchema{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create transfers table"))
+		}
+
+		err = db.CreateTable(&postgres.TransferSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create transfers table"))
 		}
