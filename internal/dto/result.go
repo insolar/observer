@@ -22,7 +22,7 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/model/raw"
 )

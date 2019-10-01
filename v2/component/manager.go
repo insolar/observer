@@ -19,6 +19,8 @@ package component
 import (
 	"time"
 
+	"github.com/insolar/insolar/insolar"
+
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer"
@@ -30,7 +32,8 @@ type Manager struct {
 	stop chan bool
 
 	cfg      *configuration.Configuration
-	fetch    func() *raw
+	init     func() *state
+	fetch    func(*state) *raw
 	beautify func(*raw) *beauty
 	store    func(*beauty)
 
@@ -43,6 +46,7 @@ func Prepare() *Manager {
 	conn := connectivity.Make(cfg, obs)
 	return &Manager{
 		stop:     make(chan bool, 1),
+		init:     makeInitter(cfg, obs, conn),
 		fetch:    makeFetcher(cfg, obs, conn),
 		beautify: makeBeautifier(obs),
 		store:    makeStorer(obs, conn),
@@ -57,8 +61,10 @@ func (m *Manager) Start() {
 
 		m.router.Start()
 		defer m.router.Stop()
+
+		state := m.init()
 		for {
-			m.cycle()
+			m.run(state)
 			if m.needStop() {
 				return
 			}
@@ -80,17 +86,19 @@ func (m *Manager) needStop() bool {
 	return false
 }
 
-func (m *Manager) cycle() {
-	data := m.fetch()
-	beauty := m.beautify(data)
+func (m *Manager) run(s *state) {
+	raw := m.fetch(s)
+	beauty := m.beautify(raw)
 	m.store(beauty)
+	s.last = raw.pulse.Number
 
 	time.Sleep(m.cfg.Replicator.RequestDelay)
 }
 
 type raw struct {
-	pulse *observer.Pulse
-	batch []*observer.Record
+	pulse             *observer.Pulse
+	batch             []*observer.Record
+	shouldIterateFrom insolar.PulseNumber
 }
 
 type beauty struct {
@@ -111,4 +119,15 @@ type beauty struct {
 	wastings  []*observer.Wasting
 	users     []*observer.User
 	groups    []*observer.Group
+}
+
+type state struct {
+	last insolar.PulseNumber
+	rp   RecordPosition
+}
+
+type RecordPosition struct {
+	Last              insolar.PulseNumber
+	RN                uint32
+	ShouldIterateFrom insolar.PulseNumber
 }

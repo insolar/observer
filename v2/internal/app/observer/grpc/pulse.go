@@ -37,10 +37,10 @@ func NewPulseFetcher(client exporter.PulseExporterClient) *PulseFetcher {
 	}
 }
 
-func (f *PulseFetcher) Fetch(pulse insolar.PulseNumber) (*observer.Pulse, error) {
+func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) {
 	ctx := context.Background()
 	client := f.client
-	request := &exporter.GetPulses{Count: 1, PulseNumber: pulse}
+	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
 	stream, err := client.Export(ctx, request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")

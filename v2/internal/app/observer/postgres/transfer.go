@@ -51,11 +51,10 @@ type TransferStorage struct {
 }
 
 func NewTransferStorage(obs *observability.Observability, db orm.DB) *TransferStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_transfer_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &TransferStorage{
 		log:          obs.Log(),
 		errorCounter: errorCounter,
@@ -69,9 +68,9 @@ func (s *TransferStorage) Insert(model *observer.DepositTransfer) error {
 		return nil
 	}
 	row := transferSchema(model)
-	res, err := s.db.Model().
+	res, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
-		Insert(row)
+		Insert()
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert transfer %v", row)

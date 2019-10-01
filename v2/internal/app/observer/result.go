@@ -18,14 +18,14 @@ package observer
 
 import (
 	"encoding/json"
-	"errors"
 	"reflect"
 	"runtime/debug"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type Result record.Material
@@ -74,7 +74,8 @@ func (r *Result) ParsePayload() foundation.Result {
 	result := foundation.Result{}
 	err := insolar.Deserialize(payload, &result)
 	if err != nil {
-		log.Warnf("failed to parse payload as foundation.Result{}")
+		log.WithField("payload", payload).
+			Warn(errors.Wrapf(err, "failed to parse payload as foundation.Result{}"))
 		return foundation.Result{}
 	}
 	return result
@@ -116,36 +117,12 @@ func (r *Result) IsSuccess() bool {
 		return false
 	}
 
-	if len(result.Returns) < 2 {
-		log.Warn("in parsed Result.Payload as foundation.Result, field Returns has less than 2 values")
-		return false
+	for i := 0; i < len(result.Returns); i++ {
+		if _, ok := result.Returns[i].(**foundation.Error); ok {
+			return false
+		}
 	}
 
-	// result.Returns[1] should contains serialized error of contract execution
-	ret1 := result.Returns[1]
-	if ret1 != nil {
-		errMap, ok := ret1.(map[string]interface{})
-		if !ok {
-			log.Warn("error in foundation.Result.Returns[1] is not serialized as map")
-			return false
-		}
-
-		strRepresentation, ok := errMap["S"]
-		if !ok {
-			log.Warn(`error in foundation.Result.Returns[1] is serialized as map but didn't has "S" value`)
-			return false
-		}
-
-		msg, ok := strRepresentation.(string)
-		if !ok {
-			log.Warnf(`error in foundation.Result.Returns[1] is serialized as map, has "S" value, but value is not string type (actual type: %s)'`,
-				reflect.TypeOf(strRepresentation))
-			return false
-		}
-
-		log.Debug(errors.New(msg))
-		return false
-	}
 	return true
 }
 

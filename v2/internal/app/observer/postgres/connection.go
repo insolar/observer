@@ -18,9 +18,9 @@ package postgres
 
 import (
 	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type ConnectionHolder struct {

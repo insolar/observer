@@ -17,13 +17,16 @@
 package postgres
 
 import (
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/internal/pkg/cycle"
 	"github.com/insolar/observer/v2/observability"
 )
 
@@ -37,18 +40,19 @@ type RecordSchema struct {
 }
 
 type RecordStorage struct {
+	cfg          *configuration.Configuration
 	log          *logrus.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }
 
-func NewRecordStorage(obs *observability.Observability, db orm.DB) *RecordStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+func NewRecordStorage(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) *RecordStorage {
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_record_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &RecordStorage{
+		cfg:          cfg,
 		log:          obs.Log(),
 		errorCounter: errorCounter,
 		db:           db,
@@ -78,14 +82,34 @@ func (s *RecordStorage) Insert(model *observer.Record) error {
 }
 
 func (s *RecordStorage) Last() *observer.Record {
+	var err error
 	record := &RecordSchema{}
-	if err := s.db.Model(record).Last(); err != nil {
-		s.log.Debug("failed to find last records row")
+
+	cycle.UntilError(func() error {
+		err = s.db.Model(record).
+			Order("pulse DESC").
+			Limit(1).
+			Select()
+		if err != nil && err != pg.ErrNoRows {
+			s.log.Error(errors.Wrapf(err, "failed request to db"))
+		}
+		return err
+	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+
+	if err != nil && err != pg.ErrNoRows {
+		s.log.Debug("failed to find last record row")
 		return nil
 	}
+
+	if err == pg.ErrNoRows {
+		return &observer.Record{}
+	}
+
 	model := &observer.Record{}
-	err := model.Unmarshal(record.Value)
+	err = model.Unmarshal(record.Value)
 	if err != nil {
+		s.log.WithField("record_value", record.Value).
+			Debug("failed to unmarshal record.Value from db schema to model")
 		return nil
 	}
 	return model

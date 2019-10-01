@@ -23,12 +23,15 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/observability"
 )
 
 type RecordFetcher struct {
+	log     *logrus.Logger
 	client  exporter.RecordExporterClient
 	records observer.RecordStorage
 	request *exporter.GetRecords
@@ -36,56 +39,56 @@ type RecordFetcher struct {
 
 func NewRecordFetcher(
 	cfg *configuration.Configuration,
+	obs *observability.Observability,
 	client exporter.RecordExporterClient,
-	records observer.RecordStorage,
 ) *RecordFetcher {
-	last := records.Last()
 	request := &exporter.GetRecords{Count: cfg.Replicator.BatchSize}
-	if last != nil {
-		pulse := last.ID.Pulse()
-		request.PulseNumber = pulse
-		request.RecordNumber = records.Count(pulse)
-	}
 	return &RecordFetcher{
+		log:     obs.Log(),
 		client:  client,
 		request: request,
 	}
 }
 
-func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, error) {
+func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, insolar.PulseNumber, error) {
 	ctx := context.Background()
 	client := f.client
 
 	f.request.PulseNumber = pulse
 	f.request.RecordNumber = 0
-	stream, err := client.Export(ctx, f.request)
-	if err != nil {
-		return []*observer.Record{}, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
-	}
 
 	batch := []*observer.Record{}
+	shouldIterateFrom := insolar.PulseNumber(0)
 	for {
+		stream, err := client.Export(ctx, f.request)
+		if err != nil {
+			return batch, shouldIterateFrom, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
+		}
+
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
-				return batch, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
+				return batch, 0, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
 			}
+
+			if resp.ShouldIterateFrom != nil {
+				shouldIterateFrom = *resp.ShouldIterateFrom
+			}
+
 			if resp.Record.ID.Pulse() != pulse {
-				return batch, nil
+				return batch, shouldIterateFrom, nil
 			}
 			model := (*observer.Record)(&resp.Record)
 			batch = append(batch, model)
-
-			// TODO: apply WLT-1076 requirements
 
 			f.request.PulseNumber = model.ID.Pulse()
 			f.request.RecordNumber = resp.RecordNumber
 		}
 		if f.request.Count != uint32(len(batch)) {
-			return batch, nil
+			return batch, shouldIterateFrom, nil
 		}
 	}
 }
