@@ -60,25 +60,31 @@ func (r *Result) Request() insolar.ID {
 	return *id
 }
 
-func (r *Result) ParsePayload() foundation.Result {
+func (r *Result) ParsePayload() (foundation.Result, error) {
 	if r == nil {
 		log.Errorf("trying to use nil dto.Result receiver")
 		debug.PrintStack()
-		return foundation.Result{}
+		return foundation.Result{}, nil
 	}
 	payload := r.Virtual.GetResult().Payload
 	if payload == nil {
 		log.Warn("trying to parse nil Result.Payload")
-		return foundation.Result{}
+		return foundation.Result{}, nil
 	}
-	result := foundation.Result{}
-	err := insolar.Deserialize(payload, &result)
+
+	var firstValue interface{}
+	var contractErr *foundation.Error
+	requestErr, err := foundation.UnmarshalMethodResult(payload, &firstValue, &contractErr)
+
 	if err != nil {
-		log.WithField("payload", payload).
-			Warn(errors.Wrapf(err, "failed to parse payload as foundation.Result{}"))
-		return foundation.Result{}
+		return foundation.Result{}, errors.Wrap(err, "failed to unmarshal result payload")
 	}
-	return result
+
+	result := foundation.Result{
+		Error:   requestErr,
+		Returns: []interface{}{firstValue, contractErr},
+	}
+	return result, nil
 }
 
 func (r *Result) ParseFirstPayloadValue(v interface{}) {
@@ -86,7 +92,11 @@ func (r *Result) ParseFirstPayloadValue(v interface{}) {
 		return
 	}
 
-	returns := r.ParsePayload().Returns
+	result, err := r.ParsePayload()
+	if err != nil {
+		return
+	}
+	returns := result.Returns
 	data, err := json.Marshal(returns[0])
 	if err != nil {
 		log.Warn("failed to marshal Payload.Returns[0]")
@@ -112,14 +122,19 @@ func (r *Result) IsSuccess() bool {
 		return false
 	}
 
-	result := r.ParsePayload()
+	result, err := r.ParsePayload()
+	if err != nil {
+		return false
+	}
 	if result.Error != nil {
 		return false
 	}
 
 	for i := 0; i < len(result.Returns); i++ {
-		if _, ok := result.Returns[i].(**foundation.Error); ok {
-			return false
+		if e, ok := result.Returns[i].(*foundation.Error); ok {
+			if e != nil {
+				return false
+			}
 		}
 	}
 

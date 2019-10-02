@@ -19,7 +19,7 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/insolar/observer/internal/configuration"
+	"github.com/insolar/observer/v2/configuration"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

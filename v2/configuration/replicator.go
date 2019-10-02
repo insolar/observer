@@ -18,12 +18,15 @@ package configuration
 
 import (
 	"time"
+
+	"github.com/insolar/observer/v2/internal/pkg/cycle"
 )
 
 type Replicator struct {
 	Addr                  string
 	MaxTransportMsg       int
-	RequestDelay          time.Duration
+	Attempts              cycle.Limit
+	AttemptInterval       time.Duration
 	BatchSize             uint32
 	TransactionRetryDelay time.Duration
 }

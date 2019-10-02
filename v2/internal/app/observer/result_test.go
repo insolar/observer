@@ -32,17 +32,23 @@ func makeResultWith(payload []byte) *Result {
 func TestResult_ParsePayload(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var result *Result
-		require.Equal(t, foundation.Result{}, result.ParsePayload())
+		res, err := result.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, foundation.Result{}, res)
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		res := makeResultWith([]byte{})
-		require.Equal(t, foundation.Result{}, res.ParsePayload())
+		res := makeResultWith(nil)
+		result, err := res.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, foundation.Result{}, result)
 	})
 
 	t.Run("nonsense", func(t *testing.T) {
 		res := makeResultWith([]byte{1, 2, 3})
-		require.Equal(t, foundation.Result{}, res.ParsePayload())
+		result, err := res.ParsePayload()
+		require.Error(t, err)
+		require.Equal(t, foundation.Result{}, result)
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
@@ -52,12 +58,14 @@ func TestResult_ParsePayload(t *testing.T) {
 		}
 		expected := foundation.Result{
 			Error:   &foundation.Error{S: "request error msg"},
-			Returns: []interface{}{"return value", map[string]interface{}{"S": "contract error msg"}},
+			Returns: []interface{}{"return value", &foundation.Error{S: "contract error msg"}},
 		}
 		payload, err := insolar.Serialize(initial)
 		require.NoError(t, err)
 		res := makeResultWith(payload)
-		require.Equal(t, expected, res.ParsePayload())
+		result, err := res.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, expected, result)
 	})
 }
 

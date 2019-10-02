@@ -20,9 +20,9 @@ import "github.com/insolar/insolar/insolar"
 
 // Transfer describes token moving between the insolar members.
 type Transfer struct {
-	TxID      insolar.Reference
-	From      insolar.Reference
-	To        insolar.Reference
+	TxID      insolar.ID
+	From      insolar.ID
+	To        insolar.ID
 	Amount    string
 	Fee       string
 	Timestamp int64

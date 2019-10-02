@@ -44,7 +44,10 @@ func Make(cfg *configuration.Configuration, obs *observability.Observability) *C
 			log.Infof("trying connect to %s...", cfg.Replicator.Addr)
 
 			// We omit error here because connect happens in background.
-			conn, _ := grpc.Dial(cfg.Replicator.Addr, limits, grpc.WithInsecure())
+			conn, err := grpc.Dial(cfg.Replicator.Addr, limits, grpc.WithInsecure())
+			if err != nil {
+				log.Fatal(errors.Wrapf(err, "failed to grpc.Dial"))
+			}
 			return conn
 		}(),
 	}

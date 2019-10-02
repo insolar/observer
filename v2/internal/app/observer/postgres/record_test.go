@@ -23,19 +23,22 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
 	"github.com/insolar/observer/v2/observability"
 )
 
 func TestRecordStorage_Insert(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
+		cfg := configuration.Default()
 		obs := observability.Make()
-		storage := NewRecordStorage(obs, nil)
+		storage := NewRecordStorage(cfg, obs, nil)
 
 		require.NoError(t, storage.Insert(nil))
 	})
 
 	t.Run("insert_with_err", func(t *testing.T) {
+		cfg := configuration.Default()
 		obs := observability.Make()
 		db := &dbMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -44,13 +47,14 @@ func TestRecordStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return nil, errors.New("something wrong")
 		}
-		storage := NewRecordStorage(obs, db)
+		storage := NewRecordStorage(cfg, obs, db)
 		empty := &observer.Record{}
 
 		require.Error(t, storage.Insert(empty))
 	})
 
 	t.Run("insert_with_conflict", func(t *testing.T) {
+		cfg := configuration.Default()
 		obs := observability.Make()
 		db := &dbMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -59,13 +63,14 @@ func TestRecordStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return makeResult(obs.Log()), nil
 		}
-		storage := NewRecordStorage(obs, db)
+		storage := NewRecordStorage(cfg, obs, db)
 		empty := &observer.Record{}
 
 		require.NoError(t, storage.Insert(empty))
 	})
 
 	t.Run("empty", func(t *testing.T) {
+		cfg := configuration.Default()
 		obs := observability.Make()
 		empty := &observer.Record{}
 		db := &dbMock{}
@@ -75,7 +80,7 @@ func TestRecordStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return makeResult(obs.Log(), empty), nil
 		}
-		storage := NewRecordStorage(obs, db)
+		storage := NewRecordStorage(cfg, obs, db)
 
 		err := storage.Insert(empty)
 		require.NoError(t, err)

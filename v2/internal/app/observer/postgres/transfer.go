@@ -31,16 +31,14 @@ type TransferSchema struct {
 	tableName struct{} `sql:"transactions"`
 
 	ID            uint                `sql:",pk_id"`
-	TxID          string              `sql:",unique"`
+	TxID          []byte              `sql:",unique"`
 	Amount        string              `sql:",notnull"`
 	Fee           string              `sql:",notnull"`
 	TransferDate  int64               `sql:",notnull"`
 	PulseNum      insolar.PulseNumber `sql:",notnull"`
 	Status        string              `sql:",notnull"`
-	MemberFromRef string              `sql:",notnull"`
-	MemberToRef   string              `sql:",notnull"`
-	WalletFromRef string              `sql:",notnull"`
-	WalletToRef   string              `sql:",notnull"`
+	MemberFromRef []byte              `sql:",notnull"`
+	MemberToRef   []byte              `sql:",notnull"`
 	EthHash       string              `sql:",notnull"`
 }
 
@@ -85,14 +83,14 @@ func (s *TransferStorage) Insert(model *observer.DepositTransfer) error {
 
 func transferSchema(model *observer.DepositTransfer) *TransferSchema {
 	return &TransferSchema{
-		TxID:          model.TxID.String(),
+		TxID:          model.TxID.Bytes(),
 		Amount:        model.Amount,
 		Fee:           model.Fee,
 		TransferDate:  model.Timestamp,
 		PulseNum:      model.Pulse,
 		Status:        "SUCCESS",
-		MemberFromRef: model.From.String(),
-		MemberToRef:   model.To.String(),
+		MemberFromRef: model.From.Bytes(),
+		MemberToRef:   model.To.Bytes(),
 
 		EthHash: model.EthHash,
 	}

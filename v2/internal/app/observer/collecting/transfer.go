@@ -19,10 +19,8 @@ package collecting
 import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/v2/internal/app/observer"
 	"github.com/insolar/observer/v2/internal/pkg/panic"
@@ -41,17 +39,16 @@ func NewTransferCollector(log *logrus.Logger) *TransferCollector {
 	return c
 }
 
-func (c *TransferCollector) Collect(record *observer.Record) *observer.DepositTransfer {
+func (c *TransferCollector) Collect(rec *observer.Record) *observer.DepositTransfer {
 	defer panic.Catch("transfer_collector")
-	log := c.log
 
-	couple := c.collector.Collect(record)
+	couple := c.collector.Collect(rec)
 	if couple == nil {
 		return nil
 	}
 	transfer, err := c.build(couple.Request, couple.Result)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build transfer"))
+		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
 		return nil
 	}
 	return transfer
@@ -71,7 +68,6 @@ func (c *TransferCollector) isTransferCall(chain interface{}) bool {
 	args := request.ParseMemberCallArguments()
 	switch args.Params.CallSite {
 	case "member.transfer", "deposit.transfer":
-		log.Infof("transfer call")
 		return true
 	}
 	return false
@@ -89,25 +85,25 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 	request.ParseMemberContractCallParams(callParams)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
-	memberFrom, err := insolar.NewReferenceFromBase58(callArguments.Params.Reference)
+	memberFrom, err := insolar.NewIDFromBase58(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
 	if callArguments.Params.CallSite == "member.transfer" {
-		memberTo, err = insolar.NewReferenceFromBase58(callParams.ToMemberReference)
+		memberTo, err = insolar.NewIDFromBase58(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
 		}
 	}
 
-	transferDate, err := pulse.Number(pn).AsApproximateTime()
+	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}
 	return &observer.DepositTransfer{
 		Transfer: observer.Transfer{
-			TxID:      *insolar.NewReference(request.ID),
+			TxID:      request.ID,
 			Amount:    callParams.Amount,
 			From:      *memberFrom,
 			To:        *memberTo,

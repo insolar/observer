@@ -93,6 +93,9 @@ func (s *RecordStorage) Last() *observer.Record {
 		if err != nil && err != pg.ErrNoRows {
 			s.log.Error(errors.Wrapf(err, "failed request to db"))
 		}
+		if err == pg.ErrNoRows {
+			return nil
+		}
 		return err
 	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
 
