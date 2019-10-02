@@ -17,28 +17,18 @@
 package main
 
 import (
-	"os"
-	"os/signal"
 	"syscall"
+	"testing"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/stretchr/testify/require"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func Test_main(t *testing.T) {
+	stopped := make(chan bool, 1)
+	go func() {
+		main()
+		stopped <- true
+	}()
+	stop <- syscall.SIGINT
+	require.True(t, <-stopped)
 }

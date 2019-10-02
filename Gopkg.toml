@@ -27,15 +27,20 @@
 
 [[constraint]]
   name = "github.com/insolar/insolar"
-  version = "v0.9.9"
+  version = "v0.9.14"
 
 [[constraint]]
   name = "google.golang.org/grpc"
   version = "=1.19.0"
 
 [[constraint]]
+  name = "github.com/go-pg/pg"
+  version = "=v6.14.5"
+
+[[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.1"
+
 
 [[constraint]]
   branch = "master"

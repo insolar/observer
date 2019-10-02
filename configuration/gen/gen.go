@@ -17,28 +17,21 @@
 package main
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"io/ioutil"
 
+	"github.com/insolar/observer/configuration"
+
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"gopkg.in/yaml.v2"
 )
 
-var stop = make(chan os.Signal, 1)
-
 func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+	cfg := configuration.Default()
+	out, _ := yaml.Marshal(cfg)
+	err := ioutil.WriteFile(configuration.ConfigFilePath, out, 0644)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to write config file"))
+		return
+	}
 }

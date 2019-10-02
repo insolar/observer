@@ -14,31 +14,24 @@
 // limitations under the License.
 //
 
-package main
+package panic
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"testing"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/stretchr/testify/require"
 )
 
-var stop = make(chan os.Signal, 1)
+func TestLog(t *testing.T) {
+	t.Run("not_panics", func(t *testing.T) {
+		require.NotPanics(t, func() { Catch("module_name") })
+	})
 
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
+	t.Run("catch_panic", func(t *testing.T) {
+		require.NotPanics(t, func() {
+			defer Catch("module_with_panic")
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+			panic("smth wrong")
+		})
+	})
 }
