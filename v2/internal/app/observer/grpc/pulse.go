@@ -74,7 +74,11 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
 		}
 		return err
-	}, f.cfg.Replicator.RequestDelay, cycle.INFINITY)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "exceeded attempts of getting pulse record from HME")
+	}
 
 	model := &observer.Pulse{
 		Number:    resp.PulseNumber,

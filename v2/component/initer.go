@@ -19,11 +19,12 @@ package component
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/connectivity"
 	"github.com/insolar/observer/v2/internal/app/observer/postgres"
 	"github.com/insolar/observer/v2/observability"
-	"github.com/pkg/errors"
 )
 
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *state {

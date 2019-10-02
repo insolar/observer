@@ -108,8 +108,8 @@ func makeTransfer() ([]*observer.DepositTransfer, []*observer.Record) {
 	pn := insolar.GenesisPulse.PulseNumber
 	amount := "42"
 	fee := "7"
-	from := *insolar.NewReference(gen.IDWithPulse(pn))
-	to := *insolar.NewReference(gen.IDWithPulse(pn))
+	from := gen.IDWithPulse(pn)
+	to := gen.IDWithPulse(pn)
 	out := makeOutgouingRequest()
 	call := makeTransferCall(amount, from.String(), to.String(), pn)
 	records := []*observer.Record{
@@ -125,7 +125,7 @@ func makeTransfer() ([]*observer.DepositTransfer, []*observer.Record) {
 	}
 	transfer := &observer.DepositTransfer{
 		Transfer: observer.Transfer{
-			TxID:      *insolar.NewReference(call.ID),
+			TxID:      call.ID,
 			From:      from,
 			To:        to,
 			Amount:    amount,

@@ -95,7 +95,7 @@ func (m *Manager) run(s *state) {
 		s.last = raw.pulse.Number
 	}
 
-	time.Sleep(m.cfg.Replicator.RequestDelay)
+	time.Sleep(m.cfg.Replicator.AttemptInterval)
 }
 
 type raw struct {

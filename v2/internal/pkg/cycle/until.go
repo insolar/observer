@@ -28,6 +28,7 @@ const (
 )
 
 func UntilError(f func() error, interval time.Duration, attempts Limit) {
+	// TODO: catch external interruptions
 	counter := Limit(1)
 	for {
 		err := f()

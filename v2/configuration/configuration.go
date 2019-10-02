@@ -36,7 +36,8 @@ func Default() *Configuration {
 		Replicator: Replicator{
 			Addr:                  "127.0.0.1:5678",
 			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
+			Attempts:              cycle.INFINITY,
+			AttemptInterval:       10 * time.Second,
 			BatchSize:             1000,
 			TransactionRetryDelay: 3 * time.Second,
 		},

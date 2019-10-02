@@ -17,10 +17,7 @@
 package observer
 
 import (
-	"encoding/hex"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -35,17 +32,23 @@ func makeResultWith(payload []byte) *Result {
 func TestResult_ParsePayload(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var result *Result
-		require.Equal(t, foundation.Result{}, result.ParsePayload())
+		res, err := result.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, foundation.Result{}, res)
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		res := makeResultWith([]byte{})
-		require.Equal(t, foundation.Result{}, res.ParsePayload())
+		res := makeResultWith(nil)
+		result, err := res.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, foundation.Result{}, result)
 	})
 
 	t.Run("nonsense", func(t *testing.T) {
 		res := makeResultWith([]byte{1, 2, 3})
-		require.Equal(t, foundation.Result{}, res.ParsePayload())
+		result, err := res.ParsePayload()
+		require.Error(t, err)
+		require.Equal(t, foundation.Result{}, result)
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
@@ -55,12 +58,14 @@ func TestResult_ParsePayload(t *testing.T) {
 		}
 		expected := foundation.Result{
 			Error:   &foundation.Error{S: "request error msg"},
-			Returns: []interface{}{"return value", map[string]interface{}{"S": "contract error msg"}},
+			Returns: []interface{}{"return value", &foundation.Error{S: "contract error msg"}},
 		}
 		payload, err := insolar.Serialize(initial)
 		require.NoError(t, err)
 		res := makeResultWith(payload)
-		require.Equal(t, expected, res.ParsePayload())
+		result, err := res.ParsePayload()
+		require.NoError(t, err)
+		require.Equal(t, expected, result)
 	})
 }
 
@@ -97,16 +102,4 @@ func TestResult_IsSuccess(t *testing.T) {
 
 		require.True(t, successResult.IsSuccess())
 	})
-}
-
-func TestStrangeResultPayload(t *testing.T) {
-	const raw = "016a0141e7de6b3161067eccc401021a0b22eb667307576df524c05a0a221f8d0000000000000000000000000000000000000000000000000000000000000000"
-	buf, err := hex.DecodeString(raw)
-	require.NoError(t, err)
-	var v interface{}
-	err = insolar.Deserialize(buf, &v)
-	logrus.Infof("%T %v", v, v)
-	ref := insolar.NewReferenceFromBytes(buf)
-	logrus.Infof("ref %v", ref.String())
-	require.NoError(t, err)
 }

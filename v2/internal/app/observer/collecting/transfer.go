@@ -19,10 +19,8 @@ package collecting
 import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/v2/internal/app/observer"
 	"github.com/insolar/observer/v2/internal/pkg/panic"
@@ -43,31 +41,6 @@ func NewTransferCollector(log *logrus.Logger) *TransferCollector {
 
 func (c *TransferCollector) Collect(rec *observer.Record) *observer.DepositTransfer {
 	defer panic.Catch("transfer_collector")
-
-	req := observer.CastToRequest(rec)
-	if req.IsIncoming() {
-		prototype := ""
-		if req.Virtual.GetIncomingRequest().Prototype != nil {
-			prototype = req.Virtual.GetIncomingRequest().Prototype.String()
-		}
-		c.log.WithFields(log.Fields{
-			"id":        req.ID.String(),
-			"method":    req.Virtual.GetIncomingRequest().Method,
-			"prototype": prototype,
-		}).Warnf("incoming request")
-	}
-
-	if req.IsOutgoing() {
-		prototype := ""
-		if req.Virtual.GetOutgoingRequest().Prototype != nil {
-			prototype = req.Virtual.GetOutgoingRequest().Prototype.String()
-		}
-		c.log.WithFields(log.Fields{
-			"id":        req.ID.String(),
-			"method":    req.Virtual.GetOutgoingRequest().Method,
-			"prototype": prototype,
-		}).Warnf("outgoing request")
-	}
 
 	couple := c.collector.Collect(rec)
 	if couple == nil {
@@ -95,7 +68,6 @@ func (c *TransferCollector) isTransferCall(chain interface{}) bool {
 	args := request.ParseMemberCallArguments()
 	switch args.Params.CallSite {
 	case "member.transfer", "deposit.transfer":
-		log.Infof("transfer call")
 		return true
 	}
 	return false
@@ -125,7 +97,7 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 		}
 	}
 
-	transferDate, err := pulse.Number(pn).AsApproximateTime()
+	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}

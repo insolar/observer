@@ -26,27 +26,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/v2/observability"
 )
 
 func TestPulseFetcher_Fetch(t *testing.T) {
-	t.Run("empty_history", func(t *testing.T) {
-		stream := &pulseStream{}
-		stream.recv = func() (*exporter.Pulse, error) {
-			return nil, io.EOF
-		}
-		client := &pulseClient{}
-		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
-			return stream, nil
-		}
-		fetcher := NewPulseFetcher(client)
-
-		pulse, err := fetcher.Fetch(0)
-		require.Error(t, err)
-		require.Nil(t, pulse)
-	})
-
 	t.Run("empty_stream", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make()
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
 			return nil, io.EOF
@@ -55,14 +43,17 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		fetcher := NewPulseFetcher(client)
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
 		require.Nil(t, pulse)
 	})
 
-	t.Run("empty_history_and_one_pulse", func(t *testing.T) {
+	t.Run("one_pulse", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make()
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
@@ -72,7 +63,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		fetcher := NewPulseFetcher(client)
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		pulse, err := fetcher.Fetch(0)
 		require.NoError(t, err)
@@ -80,6 +72,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make()
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
@@ -89,7 +83,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		fetcher := NewPulseFetcher(client)
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		pulse, err := fetcher.Fetch(0)
 		require.NoError(t, err)
@@ -97,11 +92,14 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("failed_export", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make()
 		client := &pulseClient{}
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return nil, errors.New("failed export")
 		}
-		fetcher := NewPulseFetcher(client)
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
@@ -109,6 +107,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("failed_recv", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make()
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
 			return nil, errors.New("failed recv")
@@ -117,7 +117,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		fetcher := NewPulseFetcher(client)
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		pulse, err := fetcher.Fetch(0)
 		require.Error(t, err)
