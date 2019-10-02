@@ -90,7 +90,10 @@ func (m *Manager) run(s *state) {
 	raw := m.fetch(s)
 	beauty := m.beautify(raw)
 	m.store(beauty)
-	s.last = raw.pulse.Number
+
+	if raw != nil {
+		s.last = raw.pulse.Number
+	}
 
 	time.Sleep(m.cfg.Replicator.RequestDelay)
 }

@@ -761,7 +761,6 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
     "github.com/insolar/insolar/pulse",
-    "github.com/jbenet/go-base58",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
