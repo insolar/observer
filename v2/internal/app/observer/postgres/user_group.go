@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/v2/configuration"
 	"github.com/insolar/observer/v2/internal/app/observer"
 	"github.com/insolar/observer/v2/observability"
@@ -43,7 +44,20 @@ func (s *UserGroupStorage) Insert(model *observer.Group) error {
 		s.log.Warnf("trying to insert nil user-group model")
 		return nil
 	}
-	row := userGroupSchema(model)
+	for _, u := range model.Members {
+		// regular roles
+		row := userGroupMemberSchema(model, u, 2)
+		err := s.insertRow(row)
+		if err != nil {
+			return err
+		}
+	}
+	// chairmen or creator
+	row := userGroupMemberSchema(model, model.ChairMan, 1)
+	return s.insertRow(row)
+}
+
+func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	res, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
 		Insert(row)
@@ -60,10 +74,10 @@ func (s *UserGroupStorage) Insert(model *observer.Group) error {
 	return nil
 }
 
-func userGroupSchema(model *observer.Group) *UserGroupSchema {
+func userGroupMemberSchema(group *observer.Group, userRef insolar.Reference, role int) *UserGroupSchema {
 	return &UserGroupSchema{
-		UserRef:  model.ChairMan,
-		GroupRef: model.Ref.Bytes(),
-		Role:     1,
+		UserRef:  userRef.Bytes(),
+		GroupRef: group.Ref.Bytes(),
+		Role:     role,
 	}
 }

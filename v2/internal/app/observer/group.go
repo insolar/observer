@@ -7,8 +7,9 @@ type Group struct {
 	Title      string
 	Goal       string
 	Purpose    string
-	ChairMan   []byte // Owner
+	ChairMan   insolar.Reference // Owner
 	Membership []insolar.Reference
+	Members    []insolar.Reference
 	Status     string
 }
 

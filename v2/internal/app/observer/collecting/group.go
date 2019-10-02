@@ -79,6 +79,7 @@ type Group struct {
 	Goal       string
 	Purpose    string
 	Membership []insolar.Reference
+	Members    []insolar.Reference
 }
 
 func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
@@ -103,9 +104,9 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 		return nil
 	}
 
-	coupleAct, coupleRes := c.unwrapGroupChain(chain)
+	coupleAct, coupleRes, request := c.unwrapGroupChain(chain)
 
-	g, err := c.build(coupleAct, coupleRes)
+	g, err := c.build(coupleAct, coupleRes, request)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to build group"))
 		return nil
@@ -113,7 +114,11 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 	return g
 }
 
-func (c *GroupCollector) build(act *observer.Activate, res *observer.Result) (*observer.Group, error) {
+type Members struct {
+	Members []insolar.Reference
+}
+
+func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
 	if res == nil || act == nil {
 		return nil, errors.New("trying to create group from non complete builder")
 	}
@@ -132,13 +137,18 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result) (*o
 	activate := act.Virtual.GetActivate()
 	state := c.initialGroupState(activate)
 
+	members := &Members{}
+
+	req.ParseMemberContractCallParams(members)
+
 	return &observer.Group{
 		Ref:        *ref,
 		Title:      state.Title,
-		ChairMan:   state.ChairMan.Bytes(),
+		ChairMan:   state.ChairMan,
 		Goal:       state.Goal,
 		Purpose:    state.Purpose,
 		Membership: state.Membership,
+		Members:    members.Members,
 		Status:     "SUCCESS",
 	}, nil
 }
@@ -213,29 +223,31 @@ func (c *GroupCollector) initialGroupState(act *record.Activate) *Group {
 	return &g
 }
 
-func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Activate, *observer.Result) {
+func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Activate, *observer.Result, *observer.Request) {
 
 	half := chain.Child.(*observer.Chain)
 	coupledAct, ok := half.Child.(*observer.CoupledActivate)
 	if !ok {
 		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Child)))
-		return nil, nil
+		return nil, nil, nil
 	}
 	if coupledAct.Activate == nil {
 		log.Error(errors.New("invalid coupled activate chain, child is nil"))
-		return nil, nil
+		return nil, nil, nil
 	}
 	actRecord := coupledAct.Activate
 
 	coupledRes, ok := chain.Parent.(*observer.CoupledResult)
 	if !ok {
 		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Parent)))
-		return nil, nil
+		return nil, nil, nil
 	}
 	if coupledRes.Result == nil {
 		log.Error(errors.New("invalid coupled result chain, child is nil"))
-		return nil, nil
+		return nil, nil, nil
 	}
 	resRecord := coupledRes.Result
-	return actRecord, resRecord
+	reqRecord := coupledRes.Request
+
+	return actRecord, resRecord, reqRecord
 }

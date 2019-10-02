@@ -69,7 +69,7 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		Ref:        model.Ref.Bytes(),
 		Title:      model.Title,
 		Goal:       model.Goal,
-		GroupOwner: model.ChairMan,
+		GroupOwner: model.ChairMan.Bytes(),
 		Purpose:    model.Purpose,
 		Status:     model.Status,
 	}
