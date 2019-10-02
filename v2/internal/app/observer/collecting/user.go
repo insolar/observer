@@ -1,6 +1,7 @@
 package collecting
 
 import (
+	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
@@ -71,6 +72,7 @@ func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*ob
 		return nil, err
 	}
 
+	fmt.Println("Insert new user ref:", ref.String())
 	return &observer.User{
 		UserRef:   *ref,
 		KYCStatus: user.KYCStatus,

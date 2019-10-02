@@ -15,6 +15,7 @@ type UserGroupSchema struct {
 
 	UserRef  []byte
 	GroupRef []byte
+	Role     int
 }
 
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
@@ -63,5 +64,6 @@ func userGroupSchema(model *observer.Group) *UserGroupSchema {
 	return &UserGroupSchema{
 		UserRef:  model.ChairMan,
 		GroupRef: model.Ref.Bytes(),
+		Role:     1,
 	}
 }

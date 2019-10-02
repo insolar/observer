@@ -62,8 +62,6 @@ func makeFetcher(
 		recordCounter.Add(float64(len(batch)))
 		log.WithField("batch_size", len(batch)).
 			Infof("fetched records")
-
-		last = pulse.Number
 		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
 	}
 }
