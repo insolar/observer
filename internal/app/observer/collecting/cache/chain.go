@@ -14,31 +14,39 @@
 // limitations under the License.
 //
 
-package main
+package cache
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/insolar/insolar/insolar"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+type Cache struct {
+	Cache map[insolar.ID]interface{}
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func New() *Cache {
+	return &Cache{
+		Cache: make(map[insolar.ID]interface{}),
+	}
+}
+
+func (c *Cache) Set(key insolar.ID, value interface{}) {
+	c.Cache[key] = value
+}
+
+func (c *Cache) Get(key insolar.ID) interface{} {
+	v, ok := c.Cache[key]
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+func (c *Cache) Has(key insolar.ID) bool {
+	_, ok := c.Cache[key]
+	return ok
+}
+
+func (c *Cache) Delete(key insolar.ID) {
+	delete(c.Cache, key)
 }

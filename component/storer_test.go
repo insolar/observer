@@ -14,31 +14,29 @@
 // limitations under the License.
 //
 
-package main
+package component
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"testing"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/connectivity"
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 )
 
-var stop = make(chan os.Signal, 1)
+func Test_makeStorer(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make()
+	conn := connectivity.Make(cfg, obs)
+	storer := makeStorer(cfg, obs, conn)
 
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+	b := &beauty{
+		transfers: []*observer.DepositTransfer{{}},
+	}
+	require.NotPanics(t, func() {
+		storer(b)
+	})
 }

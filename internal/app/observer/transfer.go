@@ -14,31 +14,31 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
-import (
-	"os"
-	"os/signal"
-	"syscall"
+import "github.com/insolar/insolar/insolar"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
-)
-
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+// Transfer describes token moving between the insolar members.
+type Transfer struct {
+	TxID      insolar.ID
+	From      insolar.ID
+	To        insolar.ID
+	Amount    string
+	Fee       string
+	Timestamp int64
+	Pulse     insolar.PulseNumber
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+// DepositTransfer describes token moving from deposit account to the insolar member account.
+type DepositTransfer struct {
+	Transfer
+	EthHash string
+}
+
+type TransferStorage interface {
+	Insert(*Transfer) error
+}
+
+type TransferCollector interface {
+	Collect(*Record) *DepositTransfer
 }

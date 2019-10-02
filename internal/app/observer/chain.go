@@ -14,31 +14,27 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/insolar/insolar/insolar"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+type Cache interface {
+	Set(insolar.ID, interface{})
+	Get(insolar.ID) interface{}
+	Has(insolar.ID) bool
+	Delete(insolar.ID)
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type Predicate func(interface{}) bool
+type OriginFunc func(interface{}) insolar.ID
+
+type Chain struct {
+	Parent interface{}
+	Child  interface{}
+}
+
+type ChainCollector interface {
+	Collect(interface{}) *Chain
 }
