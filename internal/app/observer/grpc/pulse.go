@@ -83,6 +83,7 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 		Number:    resp.PulseNumber,
 		Entropy:   resp.Entropy,
 		Timestamp: resp.PulseTimestamp,
+		Nodes:     resp.Nodes,
 	}
 	return model, nil
 }

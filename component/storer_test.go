@@ -36,7 +36,8 @@ func Test_makeStorer(t *testing.T) {
 	b := &beauty{
 		transfers: []*observer.DepositTransfer{{}},
 	}
+	s := &state{}
 	require.NotPanics(t, func() {
-		storer(b)
+		storer(b, s)
 	})
 }

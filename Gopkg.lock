@@ -197,11 +197,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:1fe85cce94223adf8939ebc8904ec7045ee98585d94e4ec9dafd8a2c3e17b2dc"
+  digest = "1:5a30562e588025d60d8db37500eb620004a6c4d091b796dc36b996b836683403"
   name = "github.com/insolar/insolar"
   packages = [
     "api/requester",
-    "component",
     "configuration",
     "insolar",
     "insolar/bits",
@@ -734,7 +733,6 @@
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
     "github.com/insolar/insolar/api/requester",
-    "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",
     "github.com/insolar/insolar/insolar/record",
@@ -752,14 +750,12 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
     "github.com/insolar/insolar/pulse",
-    "github.com/jbenet/go-base58",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
-    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "google.golang.org/grpc",
     "gopkg.in/yaml.v2",

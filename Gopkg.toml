@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/insolar/insolar"
-  version = "v0.9.14"
+  version = "v0.9.15"
 
 [[constraint]]
   name = "google.golang.org/grpc"

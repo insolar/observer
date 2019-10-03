@@ -31,7 +31,7 @@ import (
 type ResultSchema struct {
 	tableName struct{} `sql:"results"`
 
-	ResultID string `sql:",pk,column_name:result_id"`
+	ResultID string `sql:"result_id,pk"`
 	Request  string
 	Payload  string
 }

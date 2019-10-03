@@ -31,7 +31,7 @@ import (
 type RequestSchema struct {
 	tableName struct{} `sql:"requests"`
 
-	RequestID  string `sql:",pk,column_name:request_id"`
+	RequestID  string `sql:"request_id,pk"`
 	Caller     string
 	ReturnMode string
 	Base       string
