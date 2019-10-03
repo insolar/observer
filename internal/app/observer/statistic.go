@@ -14,21 +14,18 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"syscall"
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"github.com/insolar/insolar/insolar"
 )
 
-func Test_main(t *testing.T) {
-	stopped := make(chan bool, 1)
-	go func() {
-		main()
-		stopped <- true
-	}()
-	stop <- syscall.SIGINT
-	require.True(t, <-stopped)
+type Statistic struct {
+	Pulse              insolar.PulseNumber
+	Transfers          int
+	TotalTransfers     int
+	TotalMembers       int
+	MaxTransfers       int
+	LastMonthTransfers int
+	Nodes              int
 }

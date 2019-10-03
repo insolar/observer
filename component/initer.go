@@ -23,6 +23,7 @@ import (
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/observability"
 )
@@ -32,10 +33,12 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
+	stat := MustKnowPreviousStatistic(cfg, obs, conn.PG())
 	return func() *state {
 		return &state{
 			last: last,
 			rp:   recordPosition,
+			stat: stat,
 		}
 	}
 }
@@ -60,6 +63,16 @@ func MustKnowRecordPosition(cfg *configuration.Configuration, obs *observability
 	pulse := rec.ID.Pulse()
 	rn := records.Count(pulse)
 	return RecordPosition{Last: pulse, RN: rn}
+}
+
+func MustKnowPreviousStatistic(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) observer.Statistic {
+	statistics := postgres.NewStatisticStorage(cfg, obs, db)
+	s := statistics.Last()
+	if s == nil {
+		panic("Something wrong with DB. Most likely failed to connect to the DB" +
+			" in the allotted number of attempts.")
+	}
+	return *s
 }
 
 func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
@@ -113,6 +126,11 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 		err = db.CreateTable(&postgres.MigrationAddressSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create migration_addresses table"))
+		}
+
+		err = db.CreateTable(&postgres.StatisticSchema{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create statistics table"))
 		}
 	}
 }

@@ -86,6 +86,7 @@ func (s *RecordStorage) Last() *observer.Record {
 	record := &RecordSchema{}
 
 	cycle.UntilError(func() error {
+		s.log.Info("trying to get last record from db")
 		err = s.db.Model(record).
 			Order("pulse DESC").
 			Limit(1).

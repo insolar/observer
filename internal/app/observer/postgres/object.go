@@ -32,7 +32,7 @@ import (
 type ObjectSchema struct {
 	tableName struct{} `sql:"objects"`
 
-	ObjectID  string `sql:",pk,column_name:object_id"`
+	ObjectID  string `sql:"object_id,pk"`
 	Domain    string
 	Request   string
 	Memory    string
