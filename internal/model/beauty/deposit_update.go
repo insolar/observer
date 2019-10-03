@@ -17,8 +17,13 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type DepositUpdate struct {
@@ -29,17 +34,22 @@ type DepositUpdate struct {
 	PrevState       []byte
 }
 
-func (u *DepositUpdate) Dump(tx orm.DB) error {
+func (u *DepositUpdate) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(&Deposit{}).
 		Where("deposit_state=?", u.PrevState).
 		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", u.Amount, u.ID, u.Balance, u.HoldReleaseDate).
 		Update()
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to update deposit state")
 
 	}
 	if res.RowsAffected() != 1 {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Errorf("failed to update deposit state rows_affected=%d", res.RowsAffected())
 	}
+
+	stats.Record(ctx, depositsUpdated.M(1))
+
 	return nil
 }

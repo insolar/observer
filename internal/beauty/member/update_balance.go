@@ -75,8 +75,6 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 }
 
 func (u *BalanceUpdater) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Infof("dump member balances")
-
 	for _, acc := range u.technicalAccounts {
 		if err := acc.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump internal member")
@@ -85,7 +83,7 @@ func (u *BalanceUpdater) Dump(ctx context.Context, tx orm.DB, pub replicator.OnD
 
 	var deferred []*beauty.BalanceUpdate
 	for _, upd := range u.cache {
-		if err := upd.Dump(tx); err != nil {
+		if err := upd.Dump(ctx, tx); err != nil {
 			deferred = append(deferred, upd)
 		}
 	}
@@ -94,6 +92,7 @@ func (u *BalanceUpdater) Dump(ctx context.Context, tx orm.DB, pub replicator.OnD
 		log.Debugf("Wallet update %v", upd)
 	}
 	pub.Subscribe(func() {
+		log.Infof("dumped %v member balance(s)", len(u.cache)-len(deferred))
 		u.cache = deferred
 		u.technicalAccounts = []*beauty.Member{}
 	})

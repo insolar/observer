@@ -32,6 +32,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/beauty/metrics"
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
@@ -58,7 +59,7 @@ func (c *Composer) Init(ctx context.Context, db *pg.DB) {
 	if err != nil {
 		return
 	}
-	stats.Record(ctx, migrationAddresses.M(int64(count)))
+	stats.Record(ctx, beauty.MigrationAddresses.M(int64(count)))
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -112,14 +113,11 @@ func (c *Composer) Dump(
 	tx orm.DB,
 	pub replicator.OnDumpSuccess,
 ) error {
-	log.Info("dump migration addresses")
-
 	stats.Record(
 		ctx,
-		migrationAddressCache.M(int64(len(c.requests)+len(c.results))),
+		metrics.MigrationAddressCache.M(int64(len(c.requests)+len(c.results))),
 	)
 
-	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
 		if err := addr.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
@@ -127,7 +125,7 @@ func (c *Composer) Dump(
 	}
 
 	pub.Subscribe(func() {
-		stats.Record(ctx, migrationAddresses.M(int64(len(c.cache))))
+		log.Infof("dumped %d migration address(es)", len(c.cache))
 		c.cache = []*beauty.MigrationAddress{}
 	})
 	return nil

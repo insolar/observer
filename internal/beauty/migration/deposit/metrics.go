@@ -17,14 +17,8 @@
 package deposit
 
 import (
-	"github.com/insolar/insolar/instrumentation/insmetrics"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-)
-
-var (
-	depositCache = insmetrics.MustTagKey("deposit_cache")
 )
 
 var (
@@ -42,7 +36,6 @@ func init() {
 			Description: depositCacheCount.Description(),
 			Measure:     depositCacheCount,
 			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{depositCache},
 		},
 	)
 	if err != nil {

@@ -17,8 +17,13 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type BalanceUpdate struct {
@@ -27,16 +32,19 @@ type BalanceUpdate struct {
 	Balance   string
 }
 
-func (u *BalanceUpdate) Dump(tx orm.DB) error {
+func (u *BalanceUpdate) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(&Member{}).
 		Where("account_state=?", u.PrevState).
 		Set("balance=?,account_state=?", u.Balance, u.ID).
 		Update()
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to update member balance")
 	}
 	if res.RowsAffected() != 1 {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Errorf("failed to update member balance rows_affected=%d", res.RowsAffected())
 	}
+
 	return nil
 }

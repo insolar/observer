@@ -225,7 +225,7 @@ func (r *Replicator) pull(ctx context.Context, req *exporter.GetRecords) ([]data
 	defer func() {
 		endPull := float64(time.Since(startPull).Nanoseconds()) / 1e6
 		stats.Record(ctx,
-			processingTime.M(endPull),
+			pullRecordsTime.M(endPull),
 		)
 	}()
 

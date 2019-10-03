@@ -280,8 +280,6 @@ func (c *Composer) Dump(
 	tx orm.DB,
 	pub replicator.OnDumpSuccess,
 ) error {
-	log.Info("dump deposits")
-
 	stats.Record(ctx,
 		depositCacheCount.M(
 			int64(len(c.requests)+
@@ -303,6 +301,8 @@ func (c *Composer) Dump(
 	pub.Subscribe(func() {
 		c.Lock()
 		defer c.Unlock()
+
+		log.Infof("dumped %v deposit(s)", len(c.cache))
 		c.cache = []*beauty.Deposit{}
 	})
 	return nil

@@ -50,5 +50,8 @@ func (d *Deposit) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert deposit: %v", d)
 	}
+
+	stats.Record(ctx, deposits.M(1))
+
 	return nil
 }

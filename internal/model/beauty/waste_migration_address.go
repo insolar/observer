@@ -17,26 +17,35 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type WasteMigrationAddress struct {
 	Addr string
 }
 
-func (a *WasteMigrationAddress) Dump(tx orm.DB) error {
+func (a *WasteMigrationAddress) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(&MigrationAddress{}).
 		Where("addr=?", a.Addr).
 		Set("wasted=true").
 		Update()
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to update migration address")
 	}
 
 	if res.RowsAffected() != 1 {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Errorf("failed to update migration address rows_affected=%d", res.RowsAffected())
 	}
+
+	stats.Record(ctx, wastedMigrationAddresses.M(1))
 
 	return nil
 }

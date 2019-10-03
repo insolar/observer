@@ -38,6 +38,7 @@ type MigrationAddress struct {
 func (a *MigrationAddress) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(a).OnConflict("DO NOTHING").Insert(a)
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to insert migration address")
 	}
 
@@ -45,5 +46,8 @@ func (a *MigrationAddress) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert migration address: %v", a)
 	}
+
+	stats.Record(ctx, MigrationAddresses.M(1))
+
 	return nil
 }

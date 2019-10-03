@@ -26,6 +26,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/internal/beauty/metrics"
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
@@ -84,16 +85,14 @@ func (k *Keeper) Dump(
 	tx orm.DB,
 	pub replicator.OnDumpSuccess,
 ) error {
-	log.Info("dump wasted migration addresses")
-
 	stats.Record(
 		ctx,
-		migrationKeeperCache.M(int64(len(k.requests)+len(k.results))),
+		metrics.MigrationKeeperCache.M(int64(len(k.requests)+len(k.results))),
 	)
 
 	var deferred []*beauty.WasteMigrationAddress
 	for _, addr := range k.cache {
-		if err := addr.Dump(tx); err != nil {
+		if err := addr.Dump(ctx, tx); err != nil {
 			deferred = append(deferred, addr)
 		}
 	}
@@ -103,7 +102,7 @@ func (k *Keeper) Dump(
 	}
 
 	pub.Subscribe(func() {
-		stats.Record(ctx, migrationAddressDefers.M(int64(len(deferred))))
+		log.Infof("dumped %v wasted migration address(es)", len(k.cache)-len(deferred))
 		k.cache = deferred
 	})
 	return nil

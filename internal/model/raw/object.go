@@ -50,5 +50,8 @@ func (o *Object) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert object: %v", o)
 	}
+
+	stats.Record(ctx, rawObjectsDumped.M(1))
+
 	return nil
 }

@@ -131,7 +131,7 @@ func (b *Beautifier) process(rec *record.Material) {
 }
 
 func (b *Beautifier) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Infof("dump beautifier")
+	log.Infof("dump beautifier...")
 	if err := b.memberComposer.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (b *Beautifier) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpS
 	if err := b.migrationAddressKeeper.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.depositKeeper.Dump(tx, pub); err != nil {
+	if err := b.depositKeeper.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
 	return nil

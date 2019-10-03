@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.opencensus.io/stats"
 
+	"github.com/insolar/observer/internal/beauty/metrics"
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
@@ -169,11 +170,9 @@ func isTransferCall(request *dto.Request) bool {
 }
 
 func (c *Composer) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Info("dump member transfers")
-
 	stats.Record(
 		ctx,
-		transferCacheCount.M(int64(len(c.requests)+len(c.results))),
+		metrics.TransferCacheCount.M(int64(len(c.requests)+len(c.results))),
 	)
 
 	for _, transfer := range c.cache {
@@ -183,6 +182,8 @@ func (c *Composer) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuc
 	}
 
 	pub.Subscribe(func() {
+		log.Infof("dumped %v member transfer(s)", len(c.cache))
+
 		c.cache = []*beauty.Transfer{}
 	})
 	return nil

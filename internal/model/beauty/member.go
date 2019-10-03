@@ -49,5 +49,7 @@ func (m *Member) Dump(ctx context.Context, tx orm.DB) error {
 		logrus.Errorf("Failed to insert member: %v", m)
 	}
 
+	stats.Record(ctx, membersDumped.M(1))
+
 	return nil
 }

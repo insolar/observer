@@ -28,6 +28,7 @@ import (
 	"go.opencensus.io/stats"
 
 	"github.com/insolar/observer/internal/beauty/member/wallet/account"
+	"github.com/insolar/observer/internal/beauty/metrics"
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
@@ -191,11 +192,9 @@ func (c *Composer) Dump(
 	tx orm.DB,
 	pub replicator.OnDumpSuccess,
 ) error {
-	log.Info("dump members")
-
 	stats.Record(
 		ctx,
-		memberCacheCount.M(
+		metrics.MembersCacheCount.M(
 			int64(len(c.requests)+
 				len(c.results)+
 				len(c.activates)+
@@ -208,9 +207,12 @@ func (c *Composer) Dump(
 			return errors.Wrapf(err, "failed to dump members")
 		}
 	}
+
 	pub.Subscribe(func() {
 		c.Lock()
 		defer c.Unlock()
+
+		log.Infof("dumped %v member(s)", len(c.cache))
 		c.cache = []*beauty.Member{}
 	})
 	return nil

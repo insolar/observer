@@ -88,7 +88,6 @@ func (k *Keeper) dump(
 	tx orm.DB,
 	pub replicator.OnDumpSuccess,
 ) error {
-	log.Info("dump pulse keeper")
 	for _, p := range k.cache {
 		if err := p.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump pulse")
@@ -96,6 +95,8 @@ func (k *Keeper) dump(
 	}
 
 	pub.Subscribe(func() {
+		log.Infof("dumped %d pulse(s)", len(k.cache))
+
 		k.cache = []*beauty.Pulse{}
 	})
 	return nil

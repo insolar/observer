@@ -17,6 +17,8 @@
 package deposit
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -58,21 +60,20 @@ func (k *Keeper) Process(rec *record.Material) {
 	}
 }
 
-func (k *Keeper) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Infof("dump deposit updates")
-
+func (k *Keeper) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
 	var deferred []*beauty.DepositUpdate
 	for _, upd := range k.cache {
-		if err := upd.Dump(tx); err != nil {
+		if err := upd.Dump(ctx, tx); err != nil {
 			deferred = append(deferred, upd)
 		}
 	}
 
 	for _, upd := range deferred {
-		log.Infof("Deposit update %v", upd)
+		log.Debugf("Deposit update %v", upd)
 	}
 
 	pub.Subscribe(func() {
+		log.Infof("dumped %v deposit update(s)", len(k.cache)-len(deferred))
 		k.cache = deferred
 	})
 	return nil

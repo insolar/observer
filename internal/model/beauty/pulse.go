@@ -40,6 +40,7 @@ type Pulse struct {
 func (p *Pulse) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(p).OnConflict("DO NOTHING").Insert(p)
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to insert pulse %v", p)
 	}
 
@@ -47,5 +48,8 @@ func (p *Pulse) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert pulse: %v", p)
 	}
+
+	stats.Record(ctx, pulsesDumped.M(1))
+
 	return nil
 }

@@ -90,7 +90,6 @@ func (d *Dumper) process(rn uint32, rec *record.Material) {
 }
 
 func (d *Dumper) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Infof("dump raw records")
 	for _, rec := range d.records {
 		if err := rec.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw records")
@@ -111,6 +110,15 @@ func (d *Dumper) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSucce
 			return errors.Wrapf(err, "failed to dump raw objects")
 		}
 	}
+
+	log.Infof(
+		"dumped %v raw record(s): %v record(s), %v request(s), %v result(s), %v object(s)",
+		len(d.records)+len(d.requests)+len(d.results)+len(d.objects),
+		len(d.records),
+		len(d.requests),
+		len(d.results),
+		len(d.objects),
+	)
 
 	pub.Subscribe(func() {
 		d.records = []*raw.Record{}

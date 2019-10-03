@@ -49,6 +49,7 @@ type Transfer struct {
 func (t *Transfer) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(t).OnConflict("DO NOTHING").Insert(t)
 	if err != nil {
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		return errors.Wrapf(err, "failed to insert transfer")
 	}
 
@@ -56,5 +57,8 @@ func (t *Transfer) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert transfer: %v", t)
 	}
+
+	stats.Record(ctx, membersTransfers.M(1))
+
 	return nil
 }

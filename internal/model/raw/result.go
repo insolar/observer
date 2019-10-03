@@ -45,5 +45,8 @@ func (r *Result) Dump(ctx context.Context, tx orm.DB) error {
 		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert result: %v", r)
 	}
+
+	stats.Record(ctx, rawResultsDumped.M(1))
+
 	return nil
 }
