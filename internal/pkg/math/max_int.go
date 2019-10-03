@@ -14,24 +14,11 @@
 // limitations under the License.
 //
 
-package observer
+package math
 
-import (
-	"github.com/insolar/insolar/insolar"
-)
-
-type Pulse struct {
-	Number    insolar.PulseNumber
-	Entropy   insolar.Entropy
-	Timestamp int64
-	Nodes     []insolar.Node
-}
-
-type PulseStorage interface {
-	Insert(*Pulse) error
-	Last() *Pulse
-}
-
-type PulseFetcher interface {
-	Fetch(insolar.PulseNumber) (*Pulse, error)
+func Max(x int, y int) int {
+	if x >= y {
+		return x
+	}
+	return y
 }

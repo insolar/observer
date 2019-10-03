@@ -19,7 +19,7 @@ package component
 import (
 	"github.com/sirupsen/logrus"
 
-	filtering2 "github.com/insolar/observer/internal/app/observer/filtering"
+	"github.com/insolar/observer/internal/app/observer/filtering"
 	"github.com/insolar/observer/observability"
 )
 
@@ -31,11 +31,11 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 			return nil
 		}
 
-		filtering2.NewBalanceFilter().Filter(b.balances, b.members)
-		filtering2.NewDepositUpdateFilter().Filter(b.updates, b.deposits)
-		filtering2.NewWastingFilter().Filter(b.wastings, b.addresses)
+		filtering.NewBalanceFilter().Filter(b.balances, b.members)
+		filtering.NewDepositUpdateFilter().Filter(b.updates, b.deposits)
+		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
 
-		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering2.NewSeparatorFilter().
+		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering.NewSeparatorFilter().
 			Filter(b.records)
 
 		log.Info("items successfully filtered")

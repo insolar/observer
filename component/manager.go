@@ -36,7 +36,7 @@ type Manager struct {
 	fetch    func(*state) *raw
 	beautify func(*raw) *beauty
 	filter   func(*beauty) *beauty
-	store    func(*beauty)
+	store    func(*beauty, *state) *observer.Statistic
 
 	router *Router
 }
@@ -92,10 +92,14 @@ func (m *Manager) run(s *state) {
 	raw := m.fetch(s)
 	beauty := m.beautify(raw)
 	collapsed := m.filter(beauty)
-	m.store(collapsed)
+	statistic := m.store(collapsed, s)
 
 	if raw != nil {
 		s.last = raw.pulse.Number
+	}
+
+	if statistic != nil {
+		s.stat = *statistic
 	}
 
 	time.Sleep(m.cfg.Replicator.AttemptInterval)
@@ -128,6 +132,7 @@ type beauty struct {
 type state struct {
 	last insolar.PulseNumber
 	rp   RecordPosition
+	stat observer.Statistic
 }
 
 type RecordPosition struct {

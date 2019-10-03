@@ -85,6 +85,7 @@ func (s *PulseStorage) Last() *observer.Pulse {
 	pulse := &PulseSchema{}
 
 	cycle.UntilError(func() error {
+		s.log.Info("trying to get last pulse from db")
 		err = s.db.Model(pulse).
 			Order("pulse DESC").
 			Limit(1).
