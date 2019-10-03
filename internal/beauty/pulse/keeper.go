@@ -23,7 +23,6 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/configuration"
@@ -84,10 +83,14 @@ func (k *Keeper) process(pn insolar.PulseNumber, entropy insolar.Entropy, timest
 	})
 }
 
-func (k *Keeper) dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
-	log.Infof("dump pulse keeper")
+func (k *Keeper) dump(
+	ctx context.Context,
+	tx orm.DB,
+	pub replicator.OnDumpSuccess,
+) error {
+	log.Info("dump pulse keeper")
 	for _, p := range k.cache {
-		if err := p.Dump(tx, errorCounter); err != nil {
+		if err := p.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump pulse")
 		}
 	}

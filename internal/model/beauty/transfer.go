@@ -17,12 +17,16 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
-	"github.com/prometheus/client_golang/prometheus"
+	"go.opencensus.io/stats"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type Transfer struct {
@@ -42,14 +46,14 @@ type Transfer struct {
 	EthHash       string              `sql:",notnull"`
 }
 
-func (t *Transfer) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+func (t *Transfer) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(t).OnConflict("DO NOTHING").Insert(t)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert transfer")
 	}
 
 	if res.RowsAffected() == 0 {
-		errorCounter.Inc()
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert transfer: %v", t)
 	}
 	return nil

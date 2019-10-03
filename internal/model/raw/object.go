@@ -17,10 +17,14 @@
 package raw
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type Object struct {
@@ -36,14 +40,14 @@ type Object struct {
 	Type      string
 }
 
-func (o *Object) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+func (o *Object) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(o).OnConflict("DO NOTHING").Insert(o)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert object")
 	}
 
 	if res.RowsAffected() == 0 {
-		errorCounter.Inc()
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert object: %v", o)
 	}
 	return nil

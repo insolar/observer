@@ -17,11 +17,12 @@
 package migration
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opencensus.io/stats"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,24 +36,12 @@ type Keeper struct {
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.WasteMigrationAddress
-
-	migrationAddressGauge prometheus.Gauge
-	stat                  *dumpStat
 }
 
-func NewKeeper(migrationAddressGauge prometheus.Gauge) *Keeper {
-	stat := &dumpStat{
-		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_migration_address_keeper_cached_total",
-			Help: "Cache size of migration address composer",
-		}),
-	}
-
+func NewKeeper() *Keeper {
 	return &Keeper{
-		requests:              make(map[insolar.ID]*record.Material),
-		results:               make(map[insolar.ID]*record.Material),
-		migrationAddressGauge: migrationAddressGauge,
-		stat:                  stat,
+		requests: make(map[insolar.ID]*record.Material),
+		results:  make(map[insolar.ID]*record.Material),
 	}
 }
 
@@ -90,11 +79,19 @@ func (k *Keeper) Process(rec *record.Material) {
 	}
 }
 
-func (k *Keeper) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
-	log.Infof("dump wasted migration addresses")
-	k.updateStat()
+func (k *Keeper) Dump(
+	ctx context.Context,
+	tx orm.DB,
+	pub replicator.OnDumpSuccess,
+) error {
+	log.Info("dump wasted migration addresses")
 
-	deferred := []*beauty.WasteMigrationAddress{}
+	stats.Record(
+		ctx,
+		migrationKeeperCache.M(int64(len(k.requests)+len(k.results))),
+	)
+
+	var deferred []*beauty.WasteMigrationAddress
 	for _, addr := range k.cache {
 		if err := addr.Dump(tx); err != nil {
 			deferred = append(deferred, addr)
@@ -106,8 +103,7 @@ func (k *Keeper) Dump(tx orm.DB, pub replicator.OnDumpSuccess) error {
 	}
 
 	pub.Subscribe(func() {
-		subtrahend := len(k.cache) - len(deferred)
-		k.migrationAddressGauge.Sub(float64(subtrahend))
+		stats.Record(ctx, migrationAddressDefers.M(int64(len(deferred))))
 		k.cache = deferred
 	})
 	return nil
@@ -142,11 +138,4 @@ func wastedAddress(result *dto.Result) string {
 		return ""
 	}
 	return address
-}
-
-func (k *Keeper) updateStat() {
-	requestCount := len(k.requests)
-	resultCount := len(k.results)
-
-	k.stat.cached.Set(float64(requestCount + resultCount))
 }

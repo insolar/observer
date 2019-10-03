@@ -17,16 +17,15 @@
 package member
 
 import (
+	"context"
 	"sync"
 
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-
 	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/stats"
 
 	"github.com/insolar/observer/internal/beauty/member/wallet/account"
 	"github.com/insolar/observer/internal/dto"
@@ -48,7 +47,7 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 		return nil, errors.New("member creation result payload is nil")
 	}
 	params := memberStatus(b.res)
-	balance := account.AccountBalance(b.act)
+	balance := account.Balance(b.act)
 	id, err := insolar.NewIDFromBase58(params.reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make reference from %s", params.reference)
@@ -63,18 +62,11 @@ func (b *memberBuilder) build() (*beauty.Member, error) {
 }
 
 func NewComposer() *Composer {
-	stat := &dumpStat{
-		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_member_composer_cached_total",
-			Help: "Cache size of migration address composer",
-		}),
-	}
 	return &Composer{
 		builders:  make(map[insolar.ID]*memberBuilder),
 		requests:  make(map[insolar.ID]*record.Material),
 		activates: make(map[insolar.ID]*record.Material),
 		results:   make(map[insolar.ID]*record.Material),
-		stat:      stat,
 	}
 }
 
@@ -86,8 +78,6 @@ type Composer struct {
 
 	sync.RWMutex
 	cache []*beauty.Member
-
-	stat *dumpStat
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -196,12 +186,25 @@ func (c *Composer) compose(b *memberBuilder) {
 	delete(c.builders, origin)
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
-	log.Infof("dump members")
-	c.updateStat()
+func (c *Composer) Dump(
+	ctx context.Context,
+	tx orm.DB,
+	pub replicator.OnDumpSuccess,
+) error {
+	log.Info("dump members")
+
+	stats.Record(
+		ctx,
+		memberCacheCount.M(
+			int64(len(c.requests)+
+				len(c.results)+
+				len(c.activates)+
+				len(c.builders),
+			)),
+	)
 
 	for _, member := range c.cache {
-		if err := member.Dump(tx, errorCounter); err != nil {
+		if err := member.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump members")
 		}
 	}
@@ -225,17 +228,4 @@ func isMemberCreateRequest(req *record.Material) bool {
 		return true
 	}
 	return false
-}
-
-type dumpStat struct {
-	cached prometheus.Gauge
-}
-
-func (c *Composer) updateStat() {
-	requestCount := len(c.requests)
-	resultCount := len(c.results)
-	activatesCount := len(c.activates)
-	buildersCount := len(c.builders)
-
-	c.stat.cached.Set(float64(requestCount + resultCount + activatesCount + buildersCount))
 }

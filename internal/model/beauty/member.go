@@ -17,10 +17,14 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type Member struct {
@@ -34,15 +38,16 @@ type Member struct {
 	Status           string
 }
 
-func (m *Member) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+func (m *Member) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(m).OnConflict("DO NOTHING").Insert(m)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert member")
 	}
 
 	if res.RowsAffected() == 0 {
-		errorCounter.Inc()
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert member: %v", m)
 	}
+
 	return nil
 }

@@ -24,6 +24,7 @@ type Configuration struct {
 	API        API
 	Replicator Replicator
 	DB         DB
+	Metrics    Metrics
 }
 
 func Default() *Configuration {
@@ -34,13 +35,18 @@ func Default() *Configuration {
 		Replicator: Replicator{
 			Addr:                  "127.0.0.1:5678",
 			MaxTransportMsg:       1073741824,
-			RequestDelay:          10 * time.Second,
-			BatchSize:             1000,
+			RequestDelay:          5 * time.Second,
+			BatchSize:             10000,
 			TransactionRetryDelay: 3 * time.Second,
 		},
 		DB: DB{
-			URL:          "postgres://postgres@localhost/postgres?sslmode=disable",
+			URL:          "postgres://localhost:5432/ilyamarkin?sslmode=disable",
 			CreateTables: false,
+		},
+		Metrics: Metrics{
+			ListenAddress:   "0.0.0.0:9090",
+			Namespace:       "insolar_observer",
+			ReportingPeriod: 1 * time.Second,
 		},
 	}
 }

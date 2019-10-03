@@ -13,23 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-package transfer
+package configuration
 
 import (
-	"github.com/insolar/insolar/insolar/record"
-
-	"github.com/insolar/observer/internal/dto"
+	"time"
 )
 
-type txResult struct {
-	status dto.Status
-}
-
-func parseTransferResultPayload(rec *record.Material) txResult {
-	res := (*dto.Result)(rec)
-	if !res.IsSuccess() {
-		return txResult{status: dto.CANCELED}
-	}
-	return txResult{status: dto.SUCCESS}
+// Metrics holds configuration for metrics publishing.
+type Metrics struct {
+	ListenAddress string
+	Namespace     string
+	// ReportingPeriod defines exporter reporting period
+	// if zero, exporter uses default value (1s)
+	ReportingPeriod time.Duration
 }

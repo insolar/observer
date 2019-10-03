@@ -22,7 +22,6 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/configuration"
@@ -90,25 +89,25 @@ func (d *Dumper) process(rn uint32, rec *record.Material) {
 	d.buildUnpacked(rec)
 }
 
-func (d *Dumper) dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
+func (d *Dumper) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump raw records")
 	for _, rec := range d.records {
-		if err := rec.Dump(tx, errorCounter); err != nil {
+		if err := rec.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw records")
 		}
 	}
 	for _, req := range d.requests {
-		if err := req.Dump(tx, errorCounter); err != nil {
+		if err := req.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw requests")
 		}
 	}
 	for _, res := range d.results {
-		if err := res.Dump(tx, errorCounter); err != nil {
+		if err := res.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw results")
 		}
 	}
 	for _, obj := range d.objects {
-		if err := obj.Dump(tx, errorCounter); err != nil {
+		if err := obj.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump raw objects")
 		}
 	}

@@ -17,10 +17,14 @@
 package beauty
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"go.opencensus.io/stats"
+
+	"github.com/insolar/observer/internal/model"
 )
 
 type MigrationAddress struct {
@@ -31,14 +35,14 @@ type MigrationAddress struct {
 	Wasted    bool
 }
 
-func (a *MigrationAddress) Dump(tx orm.DB, errorCounter prometheus.Counter) error {
+func (a *MigrationAddress) Dump(ctx context.Context, tx orm.DB) error {
 	res, err := tx.Model(a).OnConflict("DO NOTHING").Insert(a)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert migration address")
 	}
 
 	if res.RowsAffected() == 0 {
-		errorCounter.Inc()
+		stats.Record(ctx, model.ErrorsCount.M(1))
 		logrus.Errorf("Failed to insert migration address: %v", a)
 	}
 	return nil

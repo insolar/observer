@@ -17,6 +17,7 @@
 package migration
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -26,10 +27,8 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/migrationshard"
 	proxyShard "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard"
-	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opencensus.io/stats"
 
 	log "github.com/sirupsen/logrus"
 
@@ -43,34 +42,23 @@ type Composer struct {
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.MigrationAddress
-
-	migrationAddressGauge prometheus.Gauge
-	stat                  *dumpStat
 }
 
-func NewComposer(migrationAddressGauge prometheus.Gauge) *Composer {
-	stat := &dumpStat{
-		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_migration_address_composer_cached_total",
-			Help: "Cache size of migration address composer",
-		}),
-	}
+func NewComposer() *Composer {
 	return &Composer{
-		requests:              make(map[insolar.ID]*record.Material),
-		results:               make(map[insolar.ID]*record.Material),
-		migrationAddressGauge: migrationAddressGauge,
-		stat:                  stat,
+		requests: make(map[insolar.ID]*record.Material),
+		results:  make(map[insolar.ID]*record.Material),
 	}
 }
 
-func (c *Composer) Init(db *pg.DB) {
+func (c *Composer) Init(ctx context.Context, db *pg.DB) {
 	count, err := db.Model(&beauty.MigrationAddress{}).
 		Where("wasted != TRUE OR wasted IS NULL").
 		Count()
 	if err != nil {
 		return
 	}
-	c.migrationAddressGauge.Set(float64(count))
+	stats.Record(ctx, migrationAddresses.M(int64(count)))
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -110,7 +98,7 @@ func (c *Composer) Process(rec *record.Material) {
 	case *record.Virtual_Activate:
 		act := rec.Virtual.GetActivate()
 		if isMigrationShardActivate(act) {
-			t, err := pulse.Number(rec.ID.Pulse()).AsApproximateTime()
+			t, err := rec.ID.Pulse().AsApproximateTime()
 			if err != nil {
 				return
 			}
@@ -119,20 +107,27 @@ func (c *Composer) Process(rec *record.Material) {
 	}
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
-	log.Infof("dump migration addresses")
+func (c *Composer) Dump(
+	ctx context.Context,
+	tx orm.DB,
+	pub replicator.OnDumpSuccess,
+) error {
+	log.Info("dump migration addresses")
 
-	c.updateStat()
+	stats.Record(
+		ctx,
+		migrationAddressCache.M(int64(len(c.requests)+len(c.results))),
+	)
 
 	log.Infof("dump %d addresses", len(c.cache))
 	for _, addr := range c.cache {
-		if err := addr.Dump(tx, errorCounter); err != nil {
+		if err := addr.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump migration addresses addr=%s", addr.Addr)
 		}
 	}
 
 	pub.Subscribe(func() {
-		c.migrationAddressGauge.Add(float64(len(c.cache)))
+		stats.Record(ctx, migrationAddresses.M(int64(len(c.cache))))
 		c.cache = []*beauty.MigrationAddress{}
 	})
 	return nil
@@ -145,7 +140,7 @@ func (c *Composer) processAddMigrationAddresses(req *record.Material, res *recor
 	}
 	args := (*dto.Request)(req).ParseMemberCallArguments()
 	addresses := parseAddMigrationAddressesCallParams(args)
-	pn := pulse.Number(req.ID.Pulse())
+	pn := req.ID.Pulse()
 	t, err := pn.AsApproximateTime()
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to convert AddMigrationAddresses request pulse to time"))
@@ -194,15 +189,4 @@ func migrationShardActivate(act *record.Activate) []string {
 		return []string{}
 	}
 	return shard.FreeMigrationAddresses
-}
-
-type dumpStat struct {
-	cached prometheus.Gauge
-}
-
-func (c *Composer) updateStat() {
-	requestCount := len(c.requests)
-	resultCount := len(c.results)
-
-	c.stat.cached.Set(float64(requestCount + resultCount))
 }

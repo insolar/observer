@@ -42,7 +42,7 @@ func Prepare() *Components {
 
 	manager.Inject(
 		configuration.Load(),
-		metrics.New(),
+		metrics.NewMetrics(),
 		db.NewConnectionHolder(),
 		replicator.NewReplicator(),
 		dto.NewDumper(),

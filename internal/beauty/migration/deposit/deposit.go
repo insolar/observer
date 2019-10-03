@@ -17,6 +17,7 @@
 package deposit
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -27,10 +28,8 @@ import (
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	daemonProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
-	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opencensus.io/stats"
 
 	"github.com/insolar/observer/internal/dto"
 	"github.com/insolar/observer/internal/model/beauty"
@@ -56,8 +55,8 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	}
 	id := b.act.ID
 	act := b.act.Virtual.GetActivate()
-	deposit := initialDepositState(act)
-	transferDate, err := pulse.Number(b.act.ID.Pulse()).AsApproximateTime()
+	depo := initialDepositState(act)
+	transferDate, err := b.act.ID.Pulse().AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", b.act.ID.Pulse())
 	}
@@ -67,13 +66,13 @@ func (b *depositBuilder) build() (*beauty.Deposit, error) {
 	}
 
 	return &beauty.Deposit{
-		EthHash:         strings.ToLower(deposit.TxHash),
+		EthHash:         strings.ToLower(depo.TxHash),
 		DepositRef:      act.Request.GetLocal().Bytes(),
 		MemberRef:       memberID.Bytes(),
 		TransferDate:    transferDate.Unix(),
 		HoldReleaseDate: 0,
-		Amount:          deposit.Amount,
-		Balance:         deposit.Balance,
+		Amount:          depo.Amount,
+		Balance:         depo.Balance,
 		DepositState:    id.Bytes(),
 	}, nil
 }
@@ -90,18 +89,9 @@ type Composer struct {
 
 	sync.RWMutex
 	cache []*beauty.Deposit
-
-	stat *dumpStat
 }
 
 func NewComposer() *Composer {
-	stat := &dumpStat{
-		cached: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_deposit_composer_cached_total",
-			Help: "Cache size of migration address composer",
-		}),
-	}
-
 	return &Composer{
 		requests:     make(map[insolar.ID]*record.Material),
 		results:      make(map[insolar.ID]*record.Material),
@@ -110,7 +100,6 @@ func NewComposer() *Composer {
 		daemonCalls:  make(map[insolar.ID]*record.Material),
 		newForDaemon: make(map[insolar.ID]*record.Material),
 		newForAct:    make(map[insolar.ID]*record.Material),
-		stat:         stat,
 	}
 }
 
@@ -268,9 +257,9 @@ func (c *Composer) compose(b *depositBuilder) {
 	c.Lock()
 	defer c.Unlock()
 
-	deposit, err := b.build()
+	depo, err := b.build()
 	if err == nil {
-		c.cache = append(c.cache, deposit)
+		c.cache = append(c.cache, depo)
 	} else {
 		log.Error(err)
 	}
@@ -286,11 +275,27 @@ func (c *Composer) compose(b *depositBuilder) {
 	delete(c.builders, origin)
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
-	log.Infof("dump deposits")
+func (c *Composer) Dump(
+	ctx context.Context,
+	tx orm.DB,
+	pub replicator.OnDumpSuccess,
+) error {
+	log.Info("dump deposits")
+
+	stats.Record(ctx,
+		depositCacheCount.M(
+			int64(len(c.requests)+
+				len(c.results)+
+				len(c.activates)+
+				len(c.builders)+
+				len(c.newForAct)+
+				len(c.newForDaemon)+
+				len(c.daemonCalls),
+			)),
+	)
 
 	for _, dep := range c.cache {
-		if err := dep.Dump(tx, errorCounter); err != nil {
+		if err := dep.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump deposits")
 		}
 	}
@@ -360,17 +365,4 @@ func isDepositNew(req *record.Material) bool {
 
 func isDepositActivate(act *record.Activate) bool {
 	return act.Image.Equal(*depositProxy.PrototypeReference)
-}
-
-type dumpStat struct {
-	cached prometheus.Gauge
-}
-
-func (c *Composer) updateStat() {
-	requestCount := len(c.requests)
-	resultCount := len(c.results)
-	activatesCount := len(c.activates)
-	buildersCount := len(c.builders)
-
-	c.stat.cached.Set(float64(requestCount + resultCount + activatesCount + buildersCount))
 }

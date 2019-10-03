@@ -23,7 +23,6 @@ import (
 	"github.com/insolar/insolar/component"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/internal/beauty/member"
 	"github.com/insolar/observer/internal/beauty/migration"
@@ -31,7 +30,6 @@ import (
 	"github.com/insolar/observer/internal/beauty/transfer"
 	"github.com/insolar/observer/internal/configuration"
 	"github.com/insolar/observer/internal/db"
-	"github.com/insolar/observer/internal/metrics"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/replicator"
 
@@ -39,10 +37,6 @@ import (
 )
 
 func NewBeautifier() *Beautifier {
-	migrationAddressGauge := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "observer_available_migration_addresses_total",
-		Help: "Cache size of migration address composer",
-	})
 	return &Beautifier{
 		cfg:                      configuration.Default(),
 		cmps:                     component.NewManager(nil),
@@ -50,15 +44,14 @@ func NewBeautifier() *Beautifier {
 		memberBalanceUpdater:     member.NewBalanceUpdater(),
 		transferComposer:         transfer.NewComposer(),
 		depositComposer:          deposit.NewComposer(),
-		migrationAddressComposer: migration.NewComposer(migrationAddressGauge),
-		migrationAddressKeeper:   migration.NewKeeper(migrationAddressGauge),
+		migrationAddressComposer: migration.NewComposer(),
+		migrationAddressKeeper:   migration.NewKeeper(),
 		depositKeeper:            deposit.NewKeeper(),
 	}
 }
 
 type Beautifier struct {
 	Configurator     configuration.Configurator `inject:""`
-	Metrics          metrics.Registry           `inject:""`
 	OnData           replicator.OnData          `inject:""`
 	OnDump           replicator.OnDump          `inject:""`
 	ConnectionHolder db.ConnectionHolder        `inject:""`
@@ -72,7 +65,7 @@ type Beautifier struct {
 	depositComposer          *deposit.Composer
 	migrationAddressComposer *migration.Composer
 	migrationAddressKeeper   *migration.Keeper
-	depositKeeper            *deposit.DepositKeeper
+	depositKeeper            *deposit.Keeper
 }
 
 type Record struct {
@@ -103,19 +96,9 @@ func (b *Beautifier) Init(ctx context.Context) error {
 		b.createTables()
 	}
 	if b.ConnectionHolder != nil {
-		b.migrationAddressComposer.Init(b.ConnectionHolder.DB())
+		b.migrationAddressComposer.Init(ctx, b.ConnectionHolder.DB())
 	}
 
-	if b.Metrics != nil {
-		b.cmps.Inject(
-			b.Metrics,
-			b.transferComposer,
-		)
-		err := b.cmps.Init(ctx)
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to init beautifier subcomponents"))
-		}
-	}
 	return nil
 }
 
@@ -147,24 +130,24 @@ func (b *Beautifier) process(rec *record.Material) {
 	b.depositKeeper.Process(rec)
 }
 
-func (b *Beautifier) dump(tx orm.DB, pub replicator.OnDumpSuccess, errors prometheus.Counter) error {
+func (b *Beautifier) dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump beautifier")
-	if err := b.memberComposer.Dump(tx, pub, errors); err != nil {
+	if err := b.memberComposer.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.memberBalanceUpdater.Dump(tx, pub, errors); err != nil {
+	if err := b.memberBalanceUpdater.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.transferComposer.Dump(tx, pub, errors); err != nil {
+	if err := b.transferComposer.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.depositComposer.Dump(tx, pub, errors); err != nil {
+	if err := b.depositComposer.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.migrationAddressComposer.Dump(tx, pub, errors); err != nil {
+	if err := b.migrationAddressComposer.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
-	if err := b.migrationAddressKeeper.Dump(tx, pub); err != nil {
+	if err := b.migrationAddressKeeper.Dump(ctx, tx, pub); err != nil {
 		return err
 	}
 	if err := b.depositKeeper.Dump(tx, pub); err != nil {

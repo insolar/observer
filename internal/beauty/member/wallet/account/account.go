@@ -48,8 +48,8 @@ func IsAccountAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*proxyAccount.PrototypeReference)
 }
 
-func AccountBalance(rec *record.Material) string {
-	memory := []byte{}
+func Balance(rec *record.Material) string {
+	var memory []byte
 	balance := ""
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Activate:

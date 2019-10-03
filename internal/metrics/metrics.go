@@ -17,26 +17,77 @@
 package metrics
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	"context"
+	"net/http"
+	"time"
+
+	"contrib.go.opencensus.io/exporter/prometheus"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"go.opencensus.io/stats/view"
+
+	"github.com/insolar/observer/internal/configuration"
 )
 
-type Collector prometheus.Collector
-
-type Registry interface {
-	Register(Collector)
-}
-
-func New() Registry {
-	register := prometheus.NewRegistry()
-	return &metrics{
-		register: register,
-	}
+func NewMetrics() *metrics {
+	return &metrics{}
 }
 
 type metrics struct {
-	register prometheus.Registerer
+	Configurator configuration.Configurator `inject:""`
+	cfg          configuration.Metrics
+
+	server *http.Server
 }
 
-func (m *metrics) Register(collector Collector) {
-	m.register.MustRegister(collector)
+func (m *metrics) Init(ctx context.Context) error {
+	if m.Configurator != nil {
+		m.cfg = m.Configurator.Actual().Metrics
+	} else {
+		m.cfg = configuration.Default().Metrics
+	}
+
+	pe, err := prometheus.NewExporter(prometheus.Options{
+		Namespace: m.cfg.Namespace,
+	})
+	if err != nil {
+		logrus.Fatalf("Failed to create the Prometheus stats exporter: %v", err)
+	}
+
+	view.SetReportingPeriod(m.cfg.ReportingPeriod)
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", pe)
+
+	m.server = &http.Server{
+		Addr:    m.cfg.ListenAddress,
+		Handler: mux,
+	}
+
+	return nil
+}
+
+func (m *metrics) Start(ctx context.Context) error {
+	// Now finally run the Prometheus exporter as a scrape endpoint.
+	go func() {
+		if err := m.server.ListenAndServe(); err != nil {
+			logrus.Fatalf("Failed to run Prometheus scrape endpoint: %v", err)
+		}
+	}()
+
+	return nil
+}
+
+func (m *metrics) Stop(ctx context.Context) error {
+	if m.server == nil {
+		return nil
+	}
+
+	const timeOut = 3
+	logrus.Info("Shutting down metrics server")
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(timeOut)*time.Second)
+	defer cancel()
+
+	err := m.server.Shutdown(ctxWithTimeout)
+	return errors.Wrap(err, "Can't gracefully stop metrics server")
 }

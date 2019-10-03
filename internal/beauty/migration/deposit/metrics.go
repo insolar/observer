@@ -14,36 +14,38 @@
 // limitations under the License.
 //
 
-package raw
+package deposit
 
 import (
-	"context"
-
-	"github.com/go-pg/pg/orm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/instrumentation/insmetrics"
 	"go.opencensus.io/stats"
-
-	"github.com/insolar/observer/internal/model"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 )
 
-type Result struct {
-	tableName struct{} `sql:"results"`
+var (
+	depositCache = insmetrics.MustTagKey("deposit_cache")
+)
 
-	ResultID string `sql:",pk,column_name:result_id"`
-	Request  string
-	Payload  string
-}
+var (
+	depositCacheCount = stats.Int64(
+		"deposit_cache_count",
+		"count of deposit's cached utility records",
+		stats.UnitDimensionless,
+	)
+)
 
-func (r *Result) Dump(ctx context.Context, tx orm.DB) error {
-	res, err := tx.Model(r).OnConflict("DO NOTHING").Insert(r)
+func init() {
+	err := view.Register(
+		&view.View{
+			Name:        depositCacheCount.Name(),
+			Description: depositCacheCount.Description(),
+			Measure:     depositCacheCount,
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{depositCache},
+		},
+	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert result")
+		panic(err)
 	}
-
-	if res.RowsAffected() == 0 {
-		stats.Record(ctx, model.ErrorsCount.M(1))
-		logrus.Errorf("Failed to insert result: %v", r)
-	}
-	return nil
 }

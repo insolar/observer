@@ -17,13 +17,13 @@
 package member
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/beauty/member/wallet/account"
@@ -56,7 +56,7 @@ func (u *BalanceUpdater) Process(rec *record.Material) {
 
 func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material) {
 	amd := rec.Virtual.GetAmend()
-	balance := account.AccountBalance(rec)
+	balance := account.Balance(rec)
 	if amd.PrevState.Pulse() == insolar.GenesisPulse.PulseNumber {
 		randomRef := gen.Reference()
 		u.technicalAccounts = append(u.technicalAccounts, &beauty.Member{
@@ -74,11 +74,11 @@ func (u *BalanceUpdater) processAccountAmend(id insolar.ID, rec *record.Material
 	})
 }
 
-func (u *BalanceUpdater) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
+func (u *BalanceUpdater) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
 	log.Infof("dump member balances")
 
 	for _, acc := range u.technicalAccounts {
-		if err := acc.Dump(tx, errorCounter); err != nil {
+		if err := acc.Dump(ctx, tx); err != nil {
 			return errors.Wrapf(err, "failed to dump internal member")
 		}
 	}
@@ -91,7 +91,7 @@ func (u *BalanceUpdater) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCoun
 	}
 
 	for _, upd := range deferred {
-		log.Infof("Wallet update %v", upd)
+		log.Debugf("Wallet update %v", upd)
 	}
 	pub.Subscribe(func() {
 		u.cache = deferred

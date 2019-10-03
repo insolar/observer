@@ -416,12 +416,11 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3d0064a167b99c02dce627df4aeb41d884059525236bcc895a1b1c562edb5b96"
+  digest = "1:e89f2cdede55684adbe44b5566f55838ad2aee1dff348d14b73ccf733607b671"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
     "prometheus/internal",
-    "prometheus/promauto",
     "prometheus/promhttp",
   ]
   pruneopts = "UT"
@@ -437,7 +436,7 @@
   revision = "14fe0d1b01d4d5fc031dd4bec1823bd3ebbe8016"
 
 [[projects]]
-  digest = "1:8dcedf2e8f06c7f94e48267dea0bc0be261fa97b377f3ae3e87843a92a549481"
+  digest = "1:f119e3205d3a1f0f19dbd7038eb37528e2c6f0933269dc344e305951fb87d632"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -445,19 +444,20 @@
     "model",
   ]
   pruneopts = "UT"
-  revision = "31bed53e4047fd6c510e43a941f90cb31be0972a"
-  version = "v0.6.0"
+  revision = "287d3e634a1e550c9e463dd7e5a75a422c614505"
+  version = "v0.7.0"
 
 [[projects]]
-  digest = "1:366f5aa02ff6c1e2eccce9ca03a22a6d983da89eecff8a89965401764534eb7c"
+  digest = "1:a210815b437763623ecca8eb91e6a0bf4f2d6773c5a6c9aec0e28f19e5fd6deb"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
     "internal/fs",
+    "internal/util",
   ]
   pruneopts = "UT"
-  revision = "3f98efb27840a48a7a2898ec80be07674d19f9c8"
-  version = "v0.0.3"
+  revision = "499c85531f756d1129edd26485a5f73871eeb308"
+  version = "v0.0.5"
 
 [[projects]]
   digest = "1:4853aea8a727b1cc962f687688aef22ce0dd040a9f695c07f303559e4595a152"
@@ -746,12 +746,14 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "contrib.go.opencensus.io/exporter/prometheus",
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
     "github.com/insolar/insolar/component",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",
     "github.com/insolar/insolar/insolar/record",
+    "github.com/insolar/insolar/instrumentation/insmetrics",
     "github.com/insolar/insolar/ledger/heavy/exporter",
     "github.com/insolar/insolar/logicrunner/builtin/contract/account",
     "github.com/insolar/insolar/logicrunner/builtin/contract/deposit",
@@ -764,16 +766,15 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/member",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
-    "github.com/insolar/insolar/pulse",
     "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
-    "github.com/prometheus/client_golang/prometheus",
-    "github.com/prometheus/client_golang/prometheus/promauto",
-    "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "go.opencensus.io/stats",
+    "go.opencensus.io/stats/view",
+    "go.opencensus.io/tag",
     "google.golang.org/grpc",
     "gopkg.in/yaml.v2",
   ]

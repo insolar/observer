@@ -23,13 +23,11 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/stats"
 
 	"github.com/insolar/observer/internal/dto"
-	"github.com/insolar/observer/internal/metrics"
 	"github.com/insolar/observer/internal/model/beauty"
 	"github.com/insolar/observer/internal/panic"
 	"github.com/insolar/observer/internal/replicator"
@@ -63,7 +61,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
-	to := []byte{}
+	var to []byte
 	switch callArguments.Params.CallSite {
 	case "member.transfer":
 		memberTo, err := insolar.NewIDFromBase58(callParams.ToMemberReference)
@@ -75,7 +73,7 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 		to = memberFrom.Bytes()
 	}
 
-	transferDate, err := pulse.Number(pn).AsApproximateTime()
+	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}
@@ -95,34 +93,16 @@ func build(req *record.Material, res *record.Material) (*beauty.Transfer, error)
 }
 
 type Composer struct {
-	Metrics metrics.Registry `inject:""`
-
 	requests map[insolar.ID]*record.Material
 	results  map[insolar.ID]*record.Material
 	cache    []*beauty.Transfer
-
-	stat *dumpStat
 }
 
 func NewComposer() *Composer {
-	stat := &dumpStat{
-		cached: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "observer_transfer_composer_cached_total",
-			Help: "Cache size of migration address composer",
-		}),
-	}
 	return &Composer{
 		requests: make(map[insolar.ID]*record.Material),
 		results:  make(map[insolar.ID]*record.Material),
-		stat:     stat,
 	}
-}
-
-func (c *Composer) Init(ctx context.Context) error {
-	if c.Metrics != nil {
-		c.Metrics.Register(c.stat.cached)
-	}
-	return nil
 }
 
 func (c *Composer) Process(rec *record.Material) {
@@ -188,14 +168,17 @@ func isTransferCall(request *dto.Request) bool {
 	return false
 }
 
-func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter prometheus.Counter) error {
-	log.Infof("dump member transfers")
+func (c *Composer) Dump(ctx context.Context, tx orm.DB, pub replicator.OnDumpSuccess) error {
+	log.Info("dump member transfers")
 
-	c.updateStat()
+	stats.Record(
+		ctx,
+		transferCacheCount.M(int64(len(c.requests)+len(c.results))),
+	)
 
 	for _, transfer := range c.cache {
-		if err := transfer.Dump(tx, errorCounter); err != nil {
-			return errors.Wrapf(err, "failed to dump transfers")
+		if err := transfer.Dump(ctx, tx); err != nil {
+			return errors.Wrap(err, "failed to dump transfers")
 		}
 	}
 
@@ -203,15 +186,4 @@ func (c *Composer) Dump(tx orm.DB, pub replicator.OnDumpSuccess, errorCounter pr
 		c.cache = []*beauty.Transfer{}
 	})
 	return nil
-}
-
-type dumpStat struct {
-	cached prometheus.Gauge
-}
-
-func (c *Composer) updateStat() {
-	requestCount := len(c.requests)
-	resultCount := len(c.results)
-
-	c.stat.cached.Set(float64(requestCount + resultCount))
 }

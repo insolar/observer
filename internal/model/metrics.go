@@ -14,36 +14,31 @@
 // limitations under the License.
 //
 
-package raw
+package model
 
 import (
-	"context"
-
-	"github.com/go-pg/pg/orm"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"go.opencensus.io/stats"
-
-	"github.com/insolar/observer/internal/model"
+	"go.opencensus.io/stats/view"
 )
 
-type Result struct {
-	tableName struct{} `sql:"results"`
+var (
+	ErrorsCount = stats.Int64(
+		"errors_count",
+		"total count of errors that were happened at observer",
+		stats.UnitDimensionless,
+	)
+)
 
-	ResultID string `sql:",pk,column_name:result_id"`
-	Request  string
-	Payload  string
-}
-
-func (r *Result) Dump(ctx context.Context, tx orm.DB) error {
-	res, err := tx.Model(r).OnConflict("DO NOTHING").Insert(r)
+func init() {
+	err := view.Register(
+		&view.View{
+			Name:        ErrorsCount.Name(),
+			Description: ErrorsCount.Description(),
+			Measure:     ErrorsCount,
+			Aggregation: view.Count(),
+		},
+	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert result")
+		panic(err)
 	}
-
-	if res.RowsAffected() == 0 {
-		stats.Record(ctx, model.ErrorsCount.M(1))
-		logrus.Errorf("Failed to insert result: %v", r)
-	}
-	return nil
 }
