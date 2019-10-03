@@ -18,6 +18,7 @@ package component
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -37,6 +38,9 @@ func Test_makeStorer(t *testing.T) {
 		transfers: []*observer.DepositTransfer{{}},
 	}
 	s := &state{}
+
+	cfg.DB.Attempts = 1
+	cfg.DB.AttemptInterval = time.Nanosecond
 	require.NotPanics(t, func() {
 		storer(b, s)
 	})
