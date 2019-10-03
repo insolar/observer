@@ -14,31 +14,26 @@
 // limitations under the License.
 //
 
-package main
+package filtering
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/insolar/observer/internal/app/observer"
 )
 
-var stop = make(chan os.Signal, 1)
+type WastingFilter struct{}
 
-func main() {
-	defer panic.Catch("main")
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+func NewWastingFilter() *WastingFilter {
+	return &WastingFilter{}
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func (*WastingFilter) Filter(wastings map[string]*observer.Wasting, addresses map[string]*observer.MigrationAddress) {
+	// We try to apply migration address wasting in memory.
+	for key, wasting := range wastings {
+		addr, ok := addresses[wasting.Addr]
+		if !ok {
+			continue
+		}
+		addr.Wasted = true
+		delete(wastings, key)
+	}
 }
