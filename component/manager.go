@@ -123,8 +123,8 @@ type beauty struct {
 	updates   map[insolar.ID]*observer.DepositUpdate
 	addresses map[string]*observer.MigrationAddress
 	wastings  map[string]*observer.Wasting
-	users     map[insolar.ID]*observer.User
-	groups    map[insolar.ID]*observer.Group
+	users     map[insolar.Reference]*observer.User
+	groups    map[insolar.Reference]*observer.Group
 }
 
 type state struct {

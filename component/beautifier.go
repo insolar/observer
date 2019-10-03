@@ -38,6 +38,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	updates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
+	// SAIV
+
+	users := collecting.NewUserCollector(log)
+	groups := collecting.NewGroupCollector(log)
+
 	return func(r *raw) *beauty {
 		if r == nil {
 			return nil
@@ -52,6 +57,8 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			balances:  make(map[insolar.ID]*observer.Balance),
 			updates:   make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:  make(map[string]*observer.Wasting),
+			users:     make(map[insolar.Reference]*observer.User),
+			groups:    make(map[insolar.Reference]*observer.Group),
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -73,6 +80,16 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 			for _, address := range addresses.Collect(rec) {
 				b.addresses[address.Addr] = address
+			}
+
+			user := users.Collect(rec)
+			if user != nil {
+				b.users[user.UserRef] = user
+			}
+
+			group := groups.Collect(rec)
+			if group != nil {
+				b.groups[group.Ref] = group
 			}
 
 			// updates

@@ -5,7 +5,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/insolar/observer/v2/internal/app/observer"
+	observer2 "github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"reflect"
@@ -13,10 +13,10 @@ import (
 
 type GroupCollector struct {
 	log       *logrus.Logger
-	results   observer.ResultCollector
-	activates observer.ActivateCollector
-	halfChain observer.ChainCollector
-	chains    observer.ChainCollector
+	results   observer2.ResultCollector
+	activates observer2.ActivateCollector
+	halfChain observer2.ChainCollector
+	chains    observer2.ChainCollector
 }
 
 func NewGroupCollector(log *logrus.Logger) *GroupCollector {
@@ -35,29 +35,29 @@ func NewGroupCollector(log *logrus.Logger) *GroupCollector {
 	userCreateGroupCall := &RelationDesc{
 		Is: isUserGroupCreateCall,
 		Origin: func(chain interface{}) insolar.ID {
-			request := observer.CastToRequest(chain)
+			request := observer2.CastToRequest(chain)
 			return request.ID
 		},
 		Proper: isUserGroupCreateCall,
 	}
 	userRelation := &RelationDesc{
 		Is: func(chain interface{}) bool {
-			c, ok := chain.(*observer.Chain)
+			c, ok := chain.(*observer2.Chain)
 			if !ok {
 				return false
 			}
 			return isUserGroupCreateCall(c.Parent)
 		},
 		Origin: func(chain interface{}) insolar.ID {
-			c, ok := chain.(*observer.Chain)
+			c, ok := chain.(*observer2.Chain)
 			if !ok {
 				return insolar.ID{}
 			}
-			request := observer.CastToRequest(c.Parent)
+			request := observer2.CastToRequest(c.Parent)
 			return request.Reason()
 		},
 		Proper: func(chain interface{}) bool {
-			c, ok := chain.(*observer.Chain)
+			c, ok := chain.(*observer2.Chain)
 			if !ok {
 				return false
 			}
@@ -82,7 +82,7 @@ type Group struct {
 	Members    []insolar.Reference
 }
 
-func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
+func (c *GroupCollector) Collect(rec *observer2.Record) *observer2.Group {
 	res := c.results.Collect(rec)
 	act := c.activates.Collect(rec)
 	half := c.halfChain.Collect(rec)
@@ -91,7 +91,7 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 		half = c.halfChain.Collect(act)
 	}
 
-	var chain *observer.Chain
+	var chain *observer2.Chain
 	if res != nil {
 		chain = c.chains.Collect(res)
 	}
@@ -118,7 +118,7 @@ type Members struct {
 	Members []insolar.Reference
 }
 
-func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
+func (c *GroupCollector) build(act *observer2.Activate, res *observer2.Result, req *observer2.Request) (*observer2.Group, error) {
 	if res == nil || act == nil {
 		return nil, errors.New("trying to create group from non complete builder")
 	}
@@ -141,7 +141,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 
 	req.ParseMemberContractCallParams(members)
 
-	return &observer.Group{
+	return &observer2.Group{
 		Ref:        *ref,
 		Title:      state.Title,
 		ChairMan:   state.ChairMan,
@@ -154,7 +154,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 }
 
 func isUserGroupCreateCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
+	request := observer2.CastToRequest(chain)
 	if !request.IsIncoming() {
 		return false
 	}
@@ -171,7 +171,7 @@ func isUserGroupCreateCall(chain interface{}) bool {
 	return in.Prototype.Equal(*prototypeRef)
 }
 func isGroupActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
+	activate := observer2.CastToActivate(chain)
 	if !activate.IsActivate() {
 		return false
 	}
@@ -182,7 +182,7 @@ func isGroupActivate(chain interface{}) bool {
 	return act.Image.Equal(*prototypeRef)
 }
 func isGroupCreationCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
+	request := observer2.CastToRequest(chain)
 	if !request.IsIncoming() {
 		return false
 	}
@@ -195,7 +195,7 @@ func isGroupCreationCall(chain interface{}) bool {
 	return args.Params.CallSite == "group.create"
 }
 func isGroupNew(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
+	request := observer2.CastToRequest(chain)
 	if !request.IsIncoming() {
 		return false
 	}
@@ -223,10 +223,10 @@ func (c *GroupCollector) initialGroupState(act *record.Activate) *Group {
 	return &g
 }
 
-func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Activate, *observer.Result, *observer.Request) {
+func (c *GroupCollector) unwrapGroupChain(chain *observer2.Chain) (*observer2.Activate, *observer2.Result, *observer2.Request) {
 
-	half := chain.Child.(*observer.Chain)
-	coupledAct, ok := half.Child.(*observer.CoupledActivate)
+	half := chain.Child.(*observer2.Chain)
+	coupledAct, ok := half.Child.(*observer2.CoupledActivate)
 	if !ok {
 		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Child)))
 		return nil, nil, nil
@@ -237,7 +237,7 @@ func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Acti
 	}
 	actRecord := coupledAct.Activate
 
-	coupledRes, ok := chain.Parent.(*observer.CoupledResult)
+	coupledRes, ok := chain.Parent.(*observer2.CoupledResult)
 	if !ok {
 		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Parent)))
 		return nil, nil, nil

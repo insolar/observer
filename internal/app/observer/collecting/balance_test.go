@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"github.com/insolar/observer/internal/app/observer"
 	"testing"
 
 	"github.com/insolar/insolar/insolar"
@@ -27,8 +28,6 @@ import (
 	"github.com/insolar/insolar/pulse"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-
-	"github.com/insolar/observer/internal/app/observer"
 )
 
 func makeAccountAmend(pn insolar.PulseNumber, balance string, prev insolar.ID) *observer.Record {

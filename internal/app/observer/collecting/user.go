@@ -5,7 +5,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/insolar/observer/v2/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

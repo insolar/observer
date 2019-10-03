@@ -19,10 +19,9 @@ package collecting
 import (
 	"github.com/insolar/insolar/insolar/record"
 	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/panic"
+	"github.com/sirupsen/logrus"
 )
 
 type BalanceCollector struct {

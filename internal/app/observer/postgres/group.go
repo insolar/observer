@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
-	"github.com/insolar/observer/v2/configuration"
-	"github.com/insolar/observer/v2/internal/app/observer"
-	"github.com/insolar/observer/v2/observability"
+	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -23,11 +23,10 @@ type GroupSchema struct {
 }
 
 func NewGroupStorage(obs *observability.Observability, db orm.DB) *GroupStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_group_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &GroupStorage{
 		log:          obs.Log(),
 		errorCounter: errorCounter,

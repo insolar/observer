@@ -125,6 +125,30 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			users := postgres.NewUserStorage(obs, tx)
+			for _, user := range b.users {
+				err := users.Insert(user)
+				if err != nil {
+					return err
+				}
+			}
+
+			groups := postgres.NewGroupStorage(obs, tx)
+			for _, group := range b.groups {
+				err := groups.Insert(group)
+				if err != nil {
+					return err
+				}
+			}
+
+			ug := postgres.NewUserGroupStorage(obs, tx)
+			for _, group := range b.groups {
+				err := ug.Insert(group)
+				if err != nil {
+					return err
+				}
+			}
+
 			// updates
 
 			for _, balance := range b.balances {

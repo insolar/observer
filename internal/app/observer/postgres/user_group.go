@@ -3,9 +3,9 @@ package postgres
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/observer/v2/configuration"
-	"github.com/insolar/observer/v2/internal/app/observer"
-	"github.com/insolar/observer/v2/observability"
+	"github.com/insolar/observer/configuration"
+	observer2 "github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -17,14 +17,14 @@ type UserGroupSchema struct {
 	UserRef  []byte
 	GroupRef []byte
 	Role     int
+	Status   int
 }
 
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_user_group_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &UserGroupStorage{
 		log:          obs.Log(),
 		errorCounter: errorCounter,
@@ -39,21 +39,26 @@ type UserGroupStorage struct {
 	db           orm.DB
 }
 
-func (s *UserGroupStorage) Insert(model *observer.Group) error {
+func (s *UserGroupStorage) Insert(model *observer2.Group) error {
 	if model == nil {
 		s.log.Warnf("trying to insert nil user-group model")
 		return nil
 	}
+	// User status
+	// 1	invited
+	// 2	active
+	// 3	rejected
+	// 4	expelled
 	for _, u := range model.Members {
-		// regular roles
-		row := userGroupMemberSchema(model, u, 2)
+		// regular roles with invited status
+		row := userGroupMemberSchema(model, u, 2, 1)
 		err := s.insertRow(row)
 		if err != nil {
 			return err
 		}
 	}
-	// chairmen or creator
-	row := userGroupMemberSchema(model, model.ChairMan, 1)
+	// chairmen or creator with active status
+	row := userGroupMemberSchema(model, model.ChairMan, 1, 2)
 	return s.insertRow(row)
 }
 
@@ -74,10 +79,11 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	return nil
 }
 
-func userGroupMemberSchema(group *observer.Group, userRef insolar.Reference, role int) *UserGroupSchema {
+func userGroupMemberSchema(group *observer2.Group, userRef insolar.Reference, role int, status int) *UserGroupSchema {
 	return &UserGroupSchema{
 		UserRef:  userRef.Bytes(),
 		GroupRef: group.Ref.Bytes(),
 		Role:     role,
+		Status:   status,
 	}
 }

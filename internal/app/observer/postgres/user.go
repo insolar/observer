@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
-	"github.com/insolar/observer/v2/configuration"
-	"github.com/insolar/observer/v2/internal/app/observer"
-	"github.com/insolar/observer/v2/observability"
+	"github.com/insolar/observer/configuration"
+	observer2 "github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -19,11 +19,10 @@ type UserSchema struct {
 }
 
 func NewUserStorage(obs *observability.Observability, db orm.DB) *UserStorage {
-	errorCounter := prometheus.NewCounter(prometheus.CounterOpts{
+	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_user_storage_error_counter",
 		Help: "",
 	})
-	obs.Metrics().MustRegister(errorCounter)
 	return &UserStorage{
 		log:          obs.Log(),
 		errorCounter: errorCounter,
@@ -38,7 +37,7 @@ type UserStorage struct {
 	db           orm.DB
 }
 
-func (s *UserStorage) Insert(model *observer.User) error {
+func (s *UserStorage) Insert(model *observer2.User) error {
 	if model == nil {
 		s.log.Warnf("trying to insert nil user model")
 		return nil
@@ -60,7 +59,7 @@ func (s *UserStorage) Insert(model *observer.User) error {
 	return nil
 }
 
-func userSchema(model *observer.User) *UserSchema {
+func userSchema(model *observer2.User) *UserSchema {
 	return &UserSchema{
 		Ref:    model.UserRef.Bytes(),
 		KYC:    model.KYCStatus,

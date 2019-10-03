@@ -18,7 +18,6 @@ package collecting
 
 import (
 	"github.com/insolar/insolar/insolar"
-
 	"github.com/insolar/observer/internal/app/observer"
 )
 

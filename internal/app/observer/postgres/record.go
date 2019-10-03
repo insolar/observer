@@ -33,7 +33,6 @@ import (
 type RecordSchema struct {
 	tableName struct{} `sql:"records"`
 
-	ID    uint   `sql:",pk_id"`
 	Pulse uint32 `sql:",notnull"`
 	Key   []byte `sql:",notnull,unique"`
 	Value []byte
