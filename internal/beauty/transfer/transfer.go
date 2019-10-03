@@ -118,9 +118,9 @@ func (c *Composer) Process(rec *record.Material) {
 			if request.IsIncoming() {
 				if isTransferCall(request) {
 					transferCall, _ := req.Marshal()
-					log.Infof("transfer call: %s", hex.EncodeToString(transferCall))
+					log.Debugf("transfer call: %s", hex.EncodeToString(transferCall))
 					transferResult, _ := rec.Marshal()
-					log.Infof("transfer result: %s", hex.EncodeToString(transferResult))
+					log.Debugf("transfer result: %s", hex.EncodeToString(transferResult))
 					if transfer, err := build(req, rec); err == nil {
 						c.cache = append(c.cache, transfer)
 					}
@@ -136,9 +136,9 @@ func (c *Composer) Process(rec *record.Material) {
 			request := (*dto.Request)(rec)
 			if isTransferCall(request) {
 				transferCall, _ := rec.Marshal()
-				log.Infof("transfer call: %s", hex.EncodeToString(transferCall))
+				log.Debug("transfer call: %s", hex.EncodeToString(transferCall))
 				transferResult, _ := res.Marshal()
-				log.Infof("transfer result: %s", hex.EncodeToString(transferResult))
+				log.Debug("transfer result: %s", hex.EncodeToString(transferResult))
 				if transfer, err := build(rec, res); err == nil {
 					c.cache = append(c.cache, transfer)
 				}
