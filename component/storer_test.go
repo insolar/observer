@@ -35,7 +35,7 @@ func Test_makeStorer(t *testing.T) {
 	storer := makeStorer(cfg, obs, conn)
 
 	b := &beauty{
-		transfers: []*observer.DepositTransfer{{}},
+		transfers: []*observer.ExtendedTransfer{{}},
 	}
 	s := &state{}
 

@@ -14,33 +14,34 @@
 // limitations under the License.
 //
 
-package observer
+package component
 
 import (
-	"reflect"
+	"github.com/pkg/errors"
 
-	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/log"
+	"github.com/insolar/observer/connectivity"
+	"github.com/insolar/observer/observability"
 )
 
-type Deactivate record.Material
+func makeStopper(obs *observability.Observability, conn *connectivity.Connectivity, router *Router) func() {
+	log := obs.Log()
+	return func() {
+		go func() {
+			err := conn.PG().Close()
+			if err != nil {
+				log.Error(errors.Wrapf(err, "failed to close db"))
+			}
+		}()
 
-func CastToDeactivate(r interface{}) *Deactivate {
-	if deact, ok := r.(*Deactivate); ok {
-		return deact
-	}
-	rec, ok := r.(*Record)
-	if !ok {
-		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
-	}
-	return (*Deactivate)(rec)
-}
+		go func() {
+			err := conn.GRPC().Close()
+			if err != nil {
+				log.Error(errors.Wrapf(err, "failed to close db"))
+			}
+		}()
 
-func (a *Deactivate) IsDeactivate() bool {
-	if a == nil {
-		return false
+		go func() {
+			router.Stop()
+		}()
 	}
-
-	_, ok := a.Virtual.Union.(*record.Virtual_Deactivate)
-	return ok
 }

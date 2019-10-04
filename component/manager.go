@@ -29,7 +29,7 @@ import (
 )
 
 type Manager struct {
-	stop chan bool
+	stopSignal chan bool
 
 	cfg      *configuration.Configuration
 	init     func() *state
@@ -37,6 +37,7 @@ type Manager struct {
 	beautify func(*raw) *beauty
 	filter   func(*beauty) *beauty
 	store    func(*beauty, *state) *observer.Statistic
+	stop     func()
 
 	router *Router
 }
@@ -45,15 +46,17 @@ func Prepare() *Manager {
 	cfg := configuration.Load()
 	obs := observability.Make()
 	conn := connectivity.Make(cfg, obs)
+	router := NewRouter(cfg, obs)
 	return &Manager{
-		stop:     make(chan bool, 1),
-		init:     makeInitter(cfg, obs, conn),
-		fetch:    makeFetcher(cfg, obs, conn),
-		beautify: makeBeautifier(obs),
-		filter:   makeFilter(obs),
-		store:    makeStorer(cfg, obs, conn),
-		router:   NewRouter(cfg, obs),
-		cfg:      cfg,
+		stopSignal: make(chan bool, 1),
+		init:       makeInitter(cfg, obs, conn),
+		fetch:      makeFetcher(cfg, obs, conn),
+		beautify:   makeBeautifier(obs),
+		filter:     makeFilter(obs),
+		store:      makeStorer(cfg, obs, conn),
+		stop:       makeStopper(obs, conn, router),
+		router:     router,
+		cfg:        cfg,
 	}
 }
 
@@ -62,7 +65,7 @@ func (m *Manager) Start() {
 		defer panic.Catch("component.Manager")
 
 		m.router.Start()
-		defer m.router.Stop()
+		defer m.stop()
 
 		state := m.init()
 		for {
@@ -75,12 +78,12 @@ func (m *Manager) Start() {
 }
 
 func (m *Manager) Stop() {
-	m.stop <- true
+	m.stopSignal <- true
 }
 
 func (m *Manager) needStop() bool {
 	select {
-	case <-m.stop:
+	case <-m.stopSignal:
 		return true
 	default:
 		// continue
@@ -120,7 +123,7 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers []*observer.DepositTransfer
+	transfers []*observer.ExtendedTransfer
 	members   map[insolar.ID]*observer.Member
 	balances  map[insolar.ID]*observer.Balance
 	deposits  map[insolar.ID]*observer.Deposit
