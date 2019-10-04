@@ -28,6 +28,7 @@ type User struct {
 	MemberRef   insolar.Reference
 	KYCStatus   bool
 	MemberShips []insolar.Reference
+	Key         string
 }
 
 type CreateResponse struct {
@@ -79,6 +80,7 @@ func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*ob
 		KYCStatus: user.KYCStatus,
 		Status:    "SUCCESS",
 		State:     act.ID.Bytes(),
+		Public:    user.Key,
 	}, nil
 }
 

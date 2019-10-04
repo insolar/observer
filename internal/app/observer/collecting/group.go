@@ -1,6 +1,7 @@
 package collecting
 
 import (
+	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
@@ -141,6 +142,7 @@ func (c *GroupCollector) build(act *observer2.Activate, res *observer2.Result, r
 
 	req.ParseMemberContractCallParams(members)
 
+	fmt.Println("Insert new group ref:", ref.String())
 	return &observer2.Group{
 		Ref:        *ref,
 		Title:      state.Title,

@@ -50,6 +50,7 @@ func (c *KYCCollector) Collect(rec *observer.Record) *observer.UserKYC {
 	}
 	amd := rec.Virtual.GetAmend()
 	kyc := userKYC(rec)
+
 	return &observer.UserKYC{
 		PrevState: amd.PrevState,
 		UserState: rec.ID,

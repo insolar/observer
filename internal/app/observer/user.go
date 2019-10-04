@@ -5,6 +5,7 @@ import "github.com/insolar/insolar/insolar"
 type User struct {
 	UserRef   insolar.Reference
 	KYCStatus bool
+	Public    string
 	Status    string
 	State     []byte
 }

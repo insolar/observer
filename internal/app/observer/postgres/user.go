@@ -15,6 +15,7 @@ type UserSchema struct {
 
 	Ref    []byte `sql:",pk"`
 	KYC    bool   `sql:",notnull"`
+	Public string `sql:",notnull"`
 	Status string `sql:",notnull"`
 	State  []byte `sql:",notnull"`
 }
@@ -88,5 +89,6 @@ func userSchema(model *observer.User) *UserSchema {
 		KYC:    model.KYCStatus,
 		Status: model.Status,
 		State:  model.State,
+		Public: model.Public,
 	}
 }
