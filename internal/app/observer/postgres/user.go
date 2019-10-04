@@ -3,7 +3,7 @@ package postgres
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/configuration"
-	observer2 "github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,6 +16,7 @@ type UserSchema struct {
 	Ref    []byte `sql:",pk"`
 	KYC    bool   `sql:",notnull"`
 	Status string `sql:",notnull"`
+	State  []byte `sql:",notnull"`
 }
 
 func NewUserStorage(obs *observability.Observability, db orm.DB) *UserStorage {
@@ -37,7 +38,7 @@ type UserStorage struct {
 	db           orm.DB
 }
 
-func (s *UserStorage) Insert(model *observer2.User) error {
+func (s *UserStorage) Insert(model *observer.User) error {
 	if model == nil {
 		s.log.Warnf("trying to insert nil user model")
 		return nil
@@ -59,10 +60,33 @@ func (s *UserStorage) Insert(model *observer2.User) error {
 	return nil
 }
 
-func userSchema(model *observer2.User) *UserSchema {
+func (s *UserStorage) Update(model *observer.UserKYC) error {
+	if model == nil {
+		s.log.Warnf("trying to apply nil update user model")
+		return nil
+	}
+
+	res, err := s.db.Model(&UserSchema{}).
+		Where("state=?", model.PrevState.Bytes()).
+		Set("kyc=?,state=?", model.KYC, model.UserState.Bytes()).
+		Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update user kyc upd=%v", model)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("upd", model).Errorf("failed to update user")
+	}
+	return nil
+}
+
+func userSchema(model *observer.User) *UserSchema {
 	return &UserSchema{
 		Ref:    model.UserRef.Bytes(),
 		KYC:    model.KYCStatus,
 		Status: model.Status,
+		State:  model.State,
 	}
 }

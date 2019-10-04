@@ -35,6 +35,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	addresses := collecting.NewMigrationAddressesCollector()
 
 	balances := collecting.NewBalanceCollector(log)
+	kycs := collecting.NewKYCCollector(log)
 	updates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
@@ -55,6 +56,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			deposits:  make(map[insolar.ID]*observer.Deposit),
 			addresses: make(map[string]*observer.MigrationAddress),
 			balances:  make(map[insolar.ID]*observer.Balance),
+			kycs:      make(map[insolar.ID]*observer.UserKYC),
 			updates:   make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:  make(map[string]*observer.Wasting),
 			users:     make(map[insolar.Reference]*observer.User),
@@ -93,6 +95,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			}
 
 			// updates
+
+			kyc := kycs.Collect(rec)
+			if kyc != nil {
+				b.kycs[kyc.UserState] = kyc
+			}
 
 			balance := balances.Collect(rec)
 			if balance != nil {

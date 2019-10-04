@@ -3,6 +3,7 @@ package collecting
 import (
 	"fmt"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/observer/internal/app/observer"
@@ -77,6 +78,7 @@ func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*ob
 		UserRef:   *ref,
 		KYCStatus: user.KYCStatus,
 		Status:    "SUCCESS",
+		State:     act.ID.Bytes(),
 	}, nil
 }
 
@@ -123,4 +125,29 @@ func isUserNew(chain interface{}) bool {
 	// TODO: import from platform
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
 	return in.Prototype.Equal(*prototypeRef)
+}
+
+func userKYC(act *observer.Record) bool {
+	var memory []byte
+	switch v := act.Virtual.Union.(type) {
+	case *record.Virtual_Activate:
+		memory = v.Activate.Memory
+	case *record.Virtual_Amend:
+		memory = v.Amend.Memory
+	default:
+		log.Error(errors.New("invalid record to get user memory"))
+	}
+
+	if memory == nil {
+		log.Warn(errors.New("user memory is nil"))
+		return false
+	}
+
+	var user User
+
+	err := insolar.Deserialize(memory, &user)
+	if err != nil {
+		log.Error(errors.New("failed to deserialize user memory"))
+	}
+	return user.KYCStatus
 }

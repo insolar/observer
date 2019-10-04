@@ -119,6 +119,7 @@ type beauty struct {
 	transfers []*observer.DepositTransfer
 	members   map[insolar.ID]*observer.Member
 	balances  map[insolar.ID]*observer.Balance
+	kycs      map[insolar.ID]*observer.UserKYC
 	deposits  map[insolar.ID]*observer.Deposit
 	updates   map[insolar.ID]*observer.DepositUpdate
 	addresses map[string]*observer.MigrationAddress
