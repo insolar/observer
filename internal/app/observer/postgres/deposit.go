@@ -85,8 +85,8 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 	}
 
 	res, err := s.db.Model(&DepositSchema{}).
-		Where("deposit_state=?", model.PrevState).
-		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", model.Amount, model.ID, model.Balance, model.HoldReleaseDate).
+		Where("deposit_state=?", model.PrevState.Bytes()).
+		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate).
 		Update()
 
 	if err != nil {
