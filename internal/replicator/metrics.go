@@ -58,14 +58,14 @@ func init() {
 			Name:        processingTime.Name(),
 			Description: processingTime.Description(),
 			Measure:     processingTime,
-			Aggregation: view.Distribution(1, 1000, 2000, 5000, 10000, 20000, 50000),
+			Aggregation: view.Distribution(1, 1000, 2000, 5000, 10000),
 			TagKeys:     []tag.Key{replicator},
 		},
 		&view.View{
 			Name:        pullRecordsTime.Name(),
 			Description: pullRecordsTime.Description(),
 			Measure:     pullRecordsTime,
-			Aggregation: view.Distribution(1, 1000, 2000, 5000, 10000, 20000, 50000),
+			Aggregation: view.Distribution(1, 1000, 2000, 5000, 10000),
 			TagKeys:     []tag.Key{replicator},
 		},
 	)
