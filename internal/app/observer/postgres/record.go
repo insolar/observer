@@ -33,9 +33,9 @@ import (
 type RecordSchema struct {
 	tableName struct{} `sql:"records"`
 
-	Pulse uint32 `sql:",notnull"`
-	Key   []byte `sql:",notnull,unique"`
+	Key   []byte `sql:",pk"`
 	Value []byte
+	Pulse uint32 `sql:",notnull"`
 }
 
 type RecordStorage struct {
