@@ -39,7 +39,7 @@ func NewTransferCollector(log *logrus.Logger) *TransferCollector {
 	return c
 }
 
-func (c *TransferCollector) Collect(rec *observer.Record) *observer.DepositTransfer {
+func (c *TransferCollector) Collect(rec *observer.Record) *observer.ExtendedTransfer {
 	defer panic.Catch("transfer_collector")
 
 	couple := c.collector.Collect(rec)
@@ -67,7 +67,7 @@ func (c *TransferCollector) isTransferCall(chain interface{}) bool {
 
 	args := request.ParseMemberCallArguments()
 	switch args.Params.CallSite {
-	case "member.transfer", "deposit.transfer":
+	case "deposit.transfer":
 		return true
 	}
 	return false
@@ -78,7 +78,7 @@ func (c *TransferCollector) successResult(chain interface{}) bool {
 	return result.IsSuccess()
 }
 
-func (c *TransferCollector) build(request *observer.Request, result *observer.Result) (*observer.DepositTransfer, error) {
+func (c *TransferCollector) build(request *observer.Request, result *observer.Result) (*observer.ExtendedTransfer, error) {
 	callArguments := request.ParseMemberCallArguments()
 	pn := request.ID.Pulse()
 	callParams := &transferCallParams{}
@@ -101,17 +101,19 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
 	}
-	return &observer.DepositTransfer{
-		Transfer: observer.Transfer{
-			TxID:      request.ID,
-			Amount:    callParams.Amount,
-			From:      *memberFrom,
-			To:        *memberTo,
-			Pulse:     pn,
-			Timestamp: transferDate.Unix(),
-			Fee:       resultValue.Fee,
+	return &observer.ExtendedTransfer{
+		DepositTransfer: observer.DepositTransfer{
+			Transfer: observer.Transfer{
+				TxID:      request.ID,
+				Amount:    callParams.Amount,
+				From:      *memberFrom,
+				To:        *memberTo,
+				Pulse:     pn,
+				Timestamp: transferDate.Unix(),
+				Fee:       resultValue.Fee,
+			},
+			EthHash: callParams.EthTxHash,
 		},
-		EthHash: callParams.EthTxHash,
 	}, nil
 }
 

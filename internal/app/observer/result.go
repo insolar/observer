@@ -31,6 +31,9 @@ import (
 type Result record.Material
 
 func CastToResult(r interface{}) *Result {
+	if res, ok := r.(*Result); ok {
+		return res
+	}
 	rec, ok := r.(*Record)
 	if !ok {
 		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))

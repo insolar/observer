@@ -35,6 +35,20 @@ type DepositTransfer struct {
 	EthHash string
 }
 
+type ExtendedTransfer struct {
+	DepositTransfer
+	TransferRequestMember  insolar.ID
+	TransferRequestWallet  insolar.ID
+	TransferRequestAccount insolar.ID
+	AcceptRequestMember    insolar.ID
+	AcceptRequestWallet    insolar.ID
+	AcceptRequestAccount   insolar.ID
+	CalcFeeRequest         insolar.ID
+	FeeMemberRequest       insolar.ID
+	CostCenterRef          insolar.ID
+	FeeMemberRef           insolar.ID
+}
+
 type TransferStorage interface {
 	Insert(*Transfer) error
 }
