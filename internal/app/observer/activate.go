@@ -27,6 +27,9 @@ import (
 type Activate record.Material
 
 func CastToActivate(r interface{}) *Activate {
+	if act, ok := r.(*Activate); ok {
+		return act
+	}
 	rec, ok := r.(*Record)
 	if !ok {
 		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))

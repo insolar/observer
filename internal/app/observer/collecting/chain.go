@@ -50,6 +50,14 @@ func NewChainCollector(
 }
 
 func (c *ChainCollector) Collect(chain interface{}) *observer.Chain {
+	if chain == nil {
+		return nil
+	}
+
+	if !c.parent.Is(chain) && !c.child.Is(chain) {
+		return nil
+	}
+
 	origin := c.origin(chain)
 
 	if c.others.Has(origin) {

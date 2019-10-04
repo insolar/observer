@@ -35,28 +35,18 @@ type DepositTransfer struct {
 	EthHash string
 }
 
-// <column name="transter_request_member" type="bytea"/>
-// <column name="transter_request_wallet" type="bytea"/>
-// <column name="transter_request_account" type="bytea"/>
-// <column name="accept_request_member" type="bytea"/>
-// <column name="accept_request_wallet" type="bytea"/>
-// <column name="accept_request_account" type="bytea"/>
-// <column name="calc_fee_request" type="bytea"/>
-// <column name="fee_member_accept" type="bytea"/>
-// <column name="costcenter_ref" type="bytea"/>
-// <column name="fee_member_ref" type="bytea"/>
 type ExtendedTransfer struct {
 	DepositTransfer
-	TransferRequestMember  insolar.ID // member.Call
-	TransferRequestWallet  insolar.ID // wallet.Transfer or empty for transfer from deposit
-	TransferRequestAccount insolar.ID // account.Transfer or account.TransferToDeposit
-	AcceptRequestMember    insolar.ID // always empty
-	AcceptRequestWallet    insolar.ID // always empty
-	AcceptRequestAccount   insolar.ID // account.Accept or deposit.Accept
-	CalcFeeRequest         insolar.ID // costcenter.CalcFee or empty
-	FeeMemberRequest       insolar.ID // costcenter.GetFeeMember or empty
-	CostCenterRef          insolar.ID // from arg costcenter.GetObject or empty
-	FeeMemberRef           insolar.ID // result from cc.GetFeeMember or empty
+	TransferRequestMember  insolar.ID
+	TransferRequestWallet  insolar.ID
+	TransferRequestAccount insolar.ID
+	AcceptRequestMember    insolar.ID
+	AcceptRequestWallet    insolar.ID
+	AcceptRequestAccount   insolar.ID
+	CalcFeeRequest         insolar.ID
+	FeeMemberRequest       insolar.ID
+	CostCenterRef          insolar.ID
+	FeeMemberRef           insolar.ID
 }
 
 type TransferStorage interface {

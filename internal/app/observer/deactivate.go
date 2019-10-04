@@ -26,6 +26,9 @@ import (
 type Deactivate record.Material
 
 func CastToDeactivate(r interface{}) *Deactivate {
+	if deact, ok := r.(*Deactivate); ok {
+		return deact
+	}
 	rec, ok := r.(*Record)
 	if !ok {
 		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
