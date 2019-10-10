@@ -27,7 +27,6 @@ import (
 	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
 
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type ExtendedTransferCollector struct {
@@ -311,7 +310,7 @@ func NewExtendedTransferCollector(log *logrus.Logger) *ExtendedTransferCollector
 }
 
 func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.ExtendedTransfer {
-	defer panic.Catch("extended_transfer_collector")
+	// defer panic.Catch("extended_transfer_collector")
 
 	if rec == nil {
 		return nil

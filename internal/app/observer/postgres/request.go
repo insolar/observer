@@ -71,10 +71,12 @@ func (s *RequestStorage) Insert(model *observer.Request) error {
 		Insert()
 
 	if err != nil {
+		panic("=== PANIC === REQUESTS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert request %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === REQUESTS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("request_row", row).
 			Errorf("failed to insert request")

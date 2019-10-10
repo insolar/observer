@@ -73,10 +73,12 @@ func (s *StatisticStorage) Insert(model *observer.Statistic) error {
 		Insert()
 
 	if err != nil {
+		panic("=== PANIC === BLOCKCHAIN_STATS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert statistic %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === BLOCKCHAIN_STATS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("statistic_row", row).
 			Errorf("failed to insert statistic")

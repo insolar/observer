@@ -24,13 +24,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	defer panic.Catch("main")
+	// defer panic.Catch("main")
 	manager := component.Prepare()
 	manager.Start()
 	graceful(manager.Stop)
