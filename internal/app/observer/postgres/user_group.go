@@ -20,17 +20,6 @@ type UserGroupSchema struct {
 	Status   string
 }
 
-//  Role
-// chairman
-// member
-// treasurer
-
-// Status
-// invited
-// active
-// rejected
-// expelled
-
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
 	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_user_group_storage_error_counter",

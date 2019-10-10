@@ -81,7 +81,7 @@ func (s *UserStorage) Update(model *observer.UserKYC) error {
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("upd", model).Errorf("failed to update user23")
+		s.log.WithField("upd", model).Errorf("failed to update user")
 	}
 	return nil
 }
