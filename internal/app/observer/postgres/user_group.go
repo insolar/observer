@@ -16,8 +16,8 @@ type UserGroupSchema struct {
 
 	UserRef  []byte
 	GroupRef []byte
-	Role     int
-	Status   int
+	Role     string
+	Status   string
 }
 
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
@@ -51,14 +51,14 @@ func (s *UserGroupStorage) Insert(model *observer2.Group) error {
 	// 4	expelled
 	for _, u := range model.Members {
 		// regular roles with invited status
-		row := userGroupMemberSchema(model, u, 2, 1)
+		row := userGroupMemberSchema(model, u, "member", "invited")
 		err := s.insertRow(row)
 		if err != nil {
 			return err
 		}
 	}
 	// chairmen or creator with active status
-	row := userGroupMemberSchema(model, model.ChairMan, 1, 2)
+	row := userGroupMemberSchema(model, model.ChairMan, "chairman", "active")
 	return s.insertRow(row)
 }
 
@@ -79,7 +79,7 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	return nil
 }
 
-func userGroupMemberSchema(group *observer2.Group, userRef insolar.Reference, role int, status int) *UserGroupSchema {
+func userGroupMemberSchema(group *observer2.Group, userRef insolar.Reference, role string, status string) *UserGroupSchema {
 	return &UserGroupSchema{
 		UserRef:  userRef.Bytes(),
 		GroupRef: group.Ref.Bytes(),

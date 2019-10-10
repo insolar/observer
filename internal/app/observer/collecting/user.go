@@ -9,6 +9,7 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 type UserCollector struct {
@@ -25,6 +26,8 @@ func NewUserCollector(log *logrus.Logger) *UserCollector {
 
 type User struct {
 	foundation.BaseContract
+	Pulse       insolar.PulseNumber
+	Source      string
 	MemberRef   insolar.Reference
 	KYCStatus   bool
 	MemberShips []insolar.Reference
@@ -129,7 +132,7 @@ func isUserNew(chain interface{}) bool {
 	return in.Prototype.Equal(*prototypeRef)
 }
 
-func userKYC(act *observer.Record) bool {
+func userKYC(act *observer.Record) (bool, int64, string, error) {
 	var memory []byte
 	switch v := act.Virtual.Union.(type) {
 	case *record.Virtual_Activate:
@@ -142,7 +145,7 @@ func userKYC(act *observer.Record) bool {
 
 	if memory == nil {
 		log.Warn(errors.New("user memory is nil"))
-		return false
+		return false, 0, "", errors.New("invalid record to get user memory")
 	}
 
 	var user User
@@ -151,5 +154,9 @@ func userKYC(act *observer.Record) bool {
 	if err != nil {
 		log.Error(errors.New("failed to deserialize user memory"))
 	}
-	return user.KYCStatus
+
+	pn := user.Pulse.String()
+	kycDate, err := strconv.ParseInt(pn, 10, 64)
+
+	return user.KYCStatus, kycDate, user.Source, nil
 }
