@@ -14,6 +14,7 @@ type Group struct {
 	Membership foundation.StableMap
 	Members    []insolar.Reference
 	Status     string
+	State      []byte
 }
 
 type GroupStorage interface {

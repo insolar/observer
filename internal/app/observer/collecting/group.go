@@ -153,6 +153,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 		Membership: state.Membership,
 		Members:    members.Members,
 		Status:     "SUCCESS",
+		State:      act.ID.Bytes(),
 	}, nil
 }
 

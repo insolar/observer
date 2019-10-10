@@ -13,11 +13,13 @@ import (
 type UserSchema struct {
 	tableName struct{} `sql:"users"`
 
-	Ref    []byte `sql:",pk"`
-	KYC    bool   `sql:",notnull"`
-	Public string `sql:",notnull"`
-	Status string `sql:",notnull"`
-	State  []byte `sql:",notnull"`
+	Ref       []byte `sql:",pk"`
+	KYC       bool   `sql:",notnull"`
+	Public    string `sql:",notnull"`
+	Status    string `sql:",notnull"`
+	State     []byte `sql:",notnull"`
+	Timestamp int64
+	Source    string
 }
 
 func NewUserStorage(obs *observability.Observability, db orm.DB) *UserStorage {
@@ -70,6 +72,7 @@ func (s *UserStorage) Update(model *observer.UserKYC) error {
 	res, err := s.db.Model(&UserSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
 		Set("kyc=?,state=?", model.KYC, model.UserState.Bytes()).
+		Set("timestamp=?,source=?", model.Timestamp, model.Source).
 		Update()
 
 	if err != nil {
@@ -78,7 +81,7 @@ func (s *UserStorage) Update(model *observer.UserKYC) error {
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("upd", model).Errorf("failed to update user")
+		s.log.WithField("upd", model).Errorf("failed to update user23")
 	}
 	return nil
 }

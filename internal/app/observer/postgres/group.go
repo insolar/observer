@@ -20,6 +20,7 @@ type GroupSchema struct {
 	GroupOwner     []byte
 	TreasureHolder []byte
 	Status         string
+	State          []byte
 }
 
 func NewGroupStorage(obs *observability.Observability, db orm.DB) *GroupStorage {
@@ -71,5 +72,6 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		GroupOwner: model.ChairMan.Bytes(),
 		Purpose:    model.Purpose,
 		Status:     model.Status,
+		State:      model.State,
 	}
 }
