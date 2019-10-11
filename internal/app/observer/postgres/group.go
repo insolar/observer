@@ -64,6 +64,29 @@ func (s *GroupStorage) Insert(model *observer.Group) error {
 	return nil
 }
 
+func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
+	if model == nil {
+		s.log.Warnf("trying to apply nil update group model")
+		return nil
+	}
+
+	res, err := s.db.Model(&GroupSchema{}).
+		Where("state=?", model.PrevState.Bytes()).
+		Set("purpose=?,goal=?", model.Purpose, model.Goal).
+		Set("type=?", model.ProductType).
+		Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update group =%v", model)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("upd", model).Errorf("failed to update group")
+	}
+	return nil
+}
+
 func groupSchema(model *observer.Group) *GroupSchema {
 	return &GroupSchema{
 		Ref:        model.Ref.Bytes(),

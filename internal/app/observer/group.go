@@ -10,6 +10,7 @@ type Group struct {
 	Title      string
 	Goal       string
 	Purpose    string
+	Type       string
 	ChairMan   insolar.Reference
 	Membership foundation.StableMap
 	Members    []insolar.Reference
@@ -17,8 +18,17 @@ type Group struct {
 	State      []byte
 }
 
+type GroupUpdate struct {
+	PrevState   insolar.ID
+	GroupState  insolar.ID
+	Purpose     string
+	Goal        string
+	ProductType string // TODO: create group type table
+}
+
 type GroupStorage interface {
 	Insert(Group) error
+	Update(GroupUpdate) error
 }
 
 type GroupCollector interface {

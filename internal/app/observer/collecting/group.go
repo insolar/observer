@@ -111,13 +111,14 @@ type Members struct {
 
 type Group struct {
 	foundation.BaseContract
-	ChairMan   insolar.Reference
-	Treasurer  insolar.Reference
-	Title      string
-	Membership foundation.StableMap
-	Goal       string
-	Purpose    string
-	Product    insolar.Reference
+	ChairMan    insolar.Reference
+	Treasurer   insolar.Reference
+	Title       string
+	Membership  foundation.StableMap
+	Goal        string
+	Purpose     string
+	ProductType string
+	Product     insolar.Reference
 }
 
 func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
@@ -254,4 +255,30 @@ func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Acti
 	reqRecord := coupledRes.Request
 
 	return actRecord, resRecord, reqRecord
+}
+
+func groupUpdate(act *observer.Record) (*Group, error) {
+	var memory []byte
+	switch v := act.Virtual.Union.(type) {
+	case *record.Virtual_Activate:
+		memory = v.Activate.Memory
+	case *record.Virtual_Amend:
+		memory = v.Amend.Memory
+	default:
+		log.Error(errors.New("invalid record to get group memory"))
+	}
+
+	if memory == nil {
+		log.Warn(errors.New("group memory is nil"))
+		return nil, errors.New("invalid record to get group memory")
+	}
+
+	var group Group
+
+	err := insolar.Deserialize(memory, &group)
+	if err != nil {
+		log.Error(errors.New("failed to deserialize group memory"))
+	}
+
+	return &group, nil
 }

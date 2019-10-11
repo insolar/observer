@@ -36,6 +36,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 	balances := collecting.NewBalanceCollector(log)
 	kycs := collecting.NewKYCCollector(log)
+	groupUpdate := collecting.NewGroupUpdateCollector(log)
 	updates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
@@ -50,17 +51,18 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 		}
 
 		b := &beauty{
-			pulse:     r.pulse,
-			records:   r.batch,
-			members:   make(map[insolar.ID]*observer.Member),
-			deposits:  make(map[insolar.ID]*observer.Deposit),
-			addresses: make(map[string]*observer.MigrationAddress),
-			balances:  make(map[insolar.ID]*observer.Balance),
-			kycs:      make(map[insolar.ID]*observer.UserKYC),
-			updates:   make(map[insolar.ID]*observer.DepositUpdate),
-			wastings:  make(map[string]*observer.Wasting),
-			users:     make(map[insolar.Reference]*observer.User),
-			groups:    make(map[insolar.Reference]*observer.Group),
+			pulse:        r.pulse,
+			records:      r.batch,
+			members:      make(map[insolar.ID]*observer.Member),
+			deposits:     make(map[insolar.ID]*observer.Deposit),
+			addresses:    make(map[string]*observer.MigrationAddress),
+			balances:     make(map[insolar.ID]*observer.Balance),
+			kycs:         make(map[insolar.ID]*observer.UserKYC),
+			groupUpdates: make(map[insolar.ID]*observer.GroupUpdate),
+			updates:      make(map[insolar.ID]*observer.DepositUpdate),
+			wastings:     make(map[string]*observer.Wasting),
+			users:        make(map[insolar.Reference]*observer.User),
+			groups:       make(map[insolar.Reference]*observer.Group),
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -95,6 +97,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			}
 
 			// updates
+
+			groupUpdate := groupUpdate.Collect(rec)
+			if groupUpdate != nil {
+				b.groupUpdates[groupUpdate.GroupState] = groupUpdate
+			}
 
 			kyc := kycs.Collect(rec)
 			if kyc != nil {

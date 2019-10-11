@@ -9,15 +9,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 type UserGroupSchema struct {
 	tableName struct{} `sql:"user_group"`
 
-	UserRef  []byte
-	GroupRef []byte
-	Role     string
-	Status   string
+	UserRef         []byte
+	GroupRef        []byte
+	Role            string
+	Status          string
+	StatusTimestamp int64
 }
 
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
@@ -81,9 +83,10 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 
 func userGroupMemberSchema(group *observer2.Group, userRef insolar.Reference, role string, status string) *UserGroupSchema {
 	return &UserGroupSchema{
-		UserRef:  userRef.Bytes(),
-		GroupRef: group.Ref.Bytes(),
-		Role:     role,
-		Status:   status,
+		UserRef:         userRef.Bytes(),
+		GroupRef:        group.Ref.Bytes(),
+		Role:            role,
+		Status:          status,
+		StatusTimestamp: time.Now().Unix(),
 	}
 }

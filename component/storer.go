@@ -151,6 +151,13 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 
 			// updates
 
+			for _, group := range b.groupUpdates {
+				err := groups.Update(group)
+				if err != nil {
+					return err
+				}
+			}
+
 			for _, kyc := range b.kycs {
 				err := users.Update(kyc)
 				if err != nil {
