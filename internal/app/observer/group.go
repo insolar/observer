@@ -16,6 +16,7 @@ type Group struct {
 	Members    []insolar.Reference
 	Status     string
 	State      []byte
+	Timestamp  int64
 }
 
 type GroupUpdate struct {

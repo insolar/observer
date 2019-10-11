@@ -48,7 +48,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 	if !isGroupAmend(v.Amend) {
 		return nil
 	}
-	logrus.Info("WTFASDASDASD")
+
 	amd := rec.Virtual.GetAmend()
 	group, err := groupUpdate(rec)
 

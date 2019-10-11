@@ -144,6 +144,11 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 
 	req.ParseMemberContractCallParams(members)
 
+	date, err := act.ID.Pulse().AsApproximateTime()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert group create pulse (%d) to time", act.ID.Pulse())
+	}
+
 	fmt.Println("Insert new group ref:", ref.String())
 	return &observer.Group{
 		Ref:        *ref,
@@ -155,6 +160,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 		Members:    members.Members,
 		Status:     "SUCCESS",
 		State:      act.ID.Bytes(),
+		Timestamp:  date.Unix(),
 	}, nil
 }
 
