@@ -116,16 +116,17 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers []*observer.DepositTransfer
-	members   map[insolar.ID]*observer.Member
-	balances  map[insolar.ID]*observer.Balance
-	kycs      map[insolar.ID]*observer.UserKYC
-	deposits  map[insolar.ID]*observer.Deposit
-	updates   map[insolar.ID]*observer.DepositUpdate
-	addresses map[string]*observer.MigrationAddress
-	wastings  map[string]*observer.Wasting
-	users     map[insolar.Reference]*observer.User
-	groups    map[insolar.Reference]*observer.Group
+	transfers    []*observer.DepositTransfer
+	members      map[insolar.ID]*observer.Member
+	balances     map[insolar.ID]*observer.Balance
+	kycs         map[insolar.ID]*observer.UserKYC
+	groupUpdates map[insolar.ID]*observer.GroupUpdate
+	deposits     map[insolar.ID]*observer.Deposit
+	updates      map[insolar.ID]*observer.DepositUpdate
+	addresses    map[string]*observer.MigrationAddress
+	wastings     map[string]*observer.Wasting
+	users        map[insolar.Reference]*observer.User
+	groups       map[insolar.Reference]*observer.Group
 }
 
 type state struct {

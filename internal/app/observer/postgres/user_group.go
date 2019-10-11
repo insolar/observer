@@ -4,7 +4,7 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
-	observer2 "github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,10 +14,11 @@ import (
 type UserGroupSchema struct {
 	tableName struct{} `sql:"user_group"`
 
-	UserRef  []byte
-	GroupRef []byte
-	Role     string
-	Status   string
+	UserRef         []byte
+	GroupRef        []byte
+	Role            string
+	Status          string
+	StatusTimestamp int64
 }
 
 func NewUserGroupStorage(obs *observability.Observability, db orm.DB) *UserGroupStorage {
@@ -39,7 +40,7 @@ type UserGroupStorage struct {
 	db           orm.DB
 }
 
-func (s *UserGroupStorage) Insert(model *observer2.Group) error {
+func (s *UserGroupStorage) Insert(model *observer.Group) error {
 	if model == nil {
 		s.log.Warnf("trying to insert nil user-group model")
 		return nil
@@ -51,14 +52,14 @@ func (s *UserGroupStorage) Insert(model *observer2.Group) error {
 	// 4	expelled
 	for _, u := range model.Members {
 		// regular roles with invited status
-		row := userGroupMemberSchema(model, u, "member", "invited")
+		row := userGroupMemberSchema(model, u, "member", "invited", model.Timestamp)
 		err := s.insertRow(row)
 		if err != nil {
 			return err
 		}
 	}
 	// chairmen or creator with active status
-	row := userGroupMemberSchema(model, model.ChairMan, "chairman", "active")
+	row := userGroupMemberSchema(model, model.ChairMan, "chairman", "active", model.Timestamp)
 	return s.insertRow(row)
 }
 
@@ -79,11 +80,12 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	return nil
 }
 
-func userGroupMemberSchema(group *observer2.Group, userRef insolar.Reference, role string, status string) *UserGroupSchema {
+func userGroupMemberSchema(group *observer.Group, userRef insolar.Reference, role string, status string, timestamp int64) *UserGroupSchema {
 	return &UserGroupSchema{
-		UserRef:  userRef.Bytes(),
-		GroupRef: group.Ref.Bytes(),
-		Role:     role,
-		Status:   status,
+		UserRef:         userRef.Bytes(),
+		GroupRef:        group.Ref.Bytes(),
+		Role:            role,
+		Status:          status,
+		StatusTimestamp: timestamp,
 	}
 }
