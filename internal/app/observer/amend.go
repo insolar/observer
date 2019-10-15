@@ -17,6 +17,7 @@
 package observer
 
 import (
+	"github.com/insolar/insolar/insolar"
 	"reflect"
 
 	"github.com/insolar/insolar/insolar/record"
@@ -40,4 +41,25 @@ func (a *Amend) IsAmend() bool {
 
 	_, ok := a.Virtual.Union.(*record.Virtual_Amend)
 	return ok
+}
+
+func (a *Amend) Request() insolar.ID {
+	if !a.IsAmend() {
+		return insolar.ID{}
+	}
+	result := a.Virtual.GetAmend()
+	id := result.Request.GetLocal()
+	if id == nil {
+		return insolar.ID{}
+	}
+	return *id
+}
+
+type CoupledAmend struct {
+	Request *Request
+	Amend   *Amend
+}
+
+type AmendCollector interface {
+	Collect(*Record) *CoupledAmend
 }

@@ -74,6 +74,8 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		Where("state=?", model.PrevState.Bytes()).
 		Set("purpose=?,goal=?", model.Purpose, model.Goal).
 		Set("type=?", model.ProductType).
+		Set("treasure_holder=?", model.Treasurer.Bytes()).
+		Set("state=?", model.GroupState.Bytes()).
 		Update()
 
 	if err != nil {
@@ -83,6 +85,21 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update group")
+	}
+	if !model.Treasurer.IsEmpty() {
+		res, err = s.db.Model(&UserGroupSchema{}).
+			Where("user_ref=?", model.Treasurer.Bytes()).
+			Set("role=?", "treasurer").
+			Update()
+
+		if err != nil {
+			return errors.Wrapf(err, "failed to update user_group =%v", model)
+		}
+
+		if res.RowsAffected() == 0 {
+			s.errorCounter.Inc()
+			s.log.WithField("upd", model).Errorf("failed to update user_group")
+		}
 	}
 	return nil
 }
@@ -95,6 +112,6 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		GroupOwner: model.ChairMan.Bytes(),
 		Purpose:    model.Purpose,
 		Status:     model.Status,
-		State:      model.State,
+		State:      model.State.Bytes(),
 	}
 }

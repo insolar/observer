@@ -87,7 +87,7 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 			f.request.PulseNumber = model.ID.Pulse()
 			f.request.RecordNumber = resp.RecordNumber
 		}
-		if f.request.Count != uint32(len(batch)) {
+		if uint32(len(batch))%f.request.Count != 0 {
 			return batch, shouldIterateFrom, nil
 		}
 	}

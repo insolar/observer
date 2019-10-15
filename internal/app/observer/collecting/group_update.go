@@ -63,6 +63,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		Goal:        group.Goal,
 		Purpose:     group.Purpose,
 		ProductType: group.ProductType,
+		Treasurer:   group.Treasurer,
 	}
 }
 
