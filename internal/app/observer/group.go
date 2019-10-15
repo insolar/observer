@@ -12,10 +12,11 @@ type Group struct {
 	Purpose    string
 	Type       string
 	ChairMan   insolar.Reference
+	Treasurer  insolar.Reference
 	Membership foundation.StableMap
 	Members    []insolar.Reference
 	Status     string
-	State      []byte
+	State      insolar.ID
 	Timestamp  int64
 }
 
@@ -25,6 +26,7 @@ type GroupUpdate struct {
 	Purpose     string
 	Goal        string
 	ProductType string // TODO: create group type table
+	Treasurer   insolar.Reference
 }
 
 type GroupStorage interface {

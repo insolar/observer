@@ -62,7 +62,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			updates:      make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:     make(map[string]*observer.Wasting),
 			users:        make(map[insolar.Reference]*observer.User),
-			groups:       make(map[insolar.Reference]*observer.Group),
+			groups:       make(map[insolar.ID]*observer.Group),
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -93,7 +93,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 			group := groups.Collect(rec)
 			if group != nil {
-				b.groups[group.Ref] = group
+				b.groups[group.State] = group
 			}
 
 			// updates
