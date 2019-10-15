@@ -106,19 +106,28 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 }
 
 type Members struct {
-	Members []insolar.Reference
+	Members []insolar.ID
 }
 
 type Group struct {
 	foundation.BaseContract
-	ChairMan    insolar.Reference
-	Treasurer   insolar.Reference
+	ChairMan    insolar.ID
+	Treasurer   insolar.ID
 	Title       string
 	Membership  foundation.StableMap
 	Goal        string
 	Purpose     string
 	ProductType string
 	Product     insolar.Reference
+}
+
+type Membership struct {
+	MemberRef    insolar.ID          `json:"MemberRef"`
+	MemberRole   Role                `json:"MemberRole"`
+	MemberStatus Status              `json:"MemberStatus"`
+	AmountDue    uint64              `json:"callParams,omitempty"`
+	JoinPulse    insolar.PulseNumber `json:"callParams,omitempty"`
+	IsAnonymous  bool                `json:"callParams,omitempty"`
 }
 
 func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
@@ -132,7 +141,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 	response := &CreateResponse{}
 	res.ParseFirstPayloadValue(response)
 
-	ref, err := insolar.NewReferenceFromBase58(response.Reference)
+	ref, err := insolar.NewIDFromBase58(response.Reference)
 	if err != nil || ref == nil {
 		return nil, errors.New("invalid group reference")
 	}

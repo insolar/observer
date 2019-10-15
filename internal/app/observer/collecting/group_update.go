@@ -52,18 +52,22 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 	amd := rec.Virtual.GetAmend()
 	group, err := groupUpdate(rec)
 
+	logrus.Info(rec.ObjectID.String())
+
 	if err != nil {
 		logrus.Info(err.Error())
 		return nil
 	}
 
 	return &observer.GroupUpdate{
-		PrevState:   amd.PrevState,
-		GroupState:  rec.ID,
-		Goal:        group.Goal,
-		Purpose:     group.Purpose,
-		ProductType: group.ProductType,
-		Treasurer:   group.Treasurer,
+		GroupReference: rec.ObjectID,
+		PrevState:      amd.PrevState,
+		GroupState:     rec.ID,
+		Goal:           group.Goal,
+		Purpose:        group.Purpose,
+		ProductType:    group.ProductType,
+		Treasurer:      group.Treasurer,
+		Membership:     group.Membership,
 	}
 }
 

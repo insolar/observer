@@ -6,27 +6,29 @@ import (
 )
 
 type Group struct {
-	Ref        insolar.Reference
+	Ref        insolar.ID
 	Title      string
 	Goal       string
 	Purpose    string
 	Type       string
-	ChairMan   insolar.Reference
-	Treasurer  insolar.Reference
+	ChairMan   insolar.ID
+	Treasurer  insolar.ID
 	Membership foundation.StableMap
-	Members    []insolar.Reference
+	Members    []insolar.ID
 	Status     string
 	State      insolar.ID
 	Timestamp  int64
 }
 
 type GroupUpdate struct {
-	PrevState   insolar.ID
-	GroupState  insolar.ID
-	Purpose     string
-	Goal        string
-	ProductType string // TODO: create group type table
-	Treasurer   insolar.Reference
+	PrevState      insolar.ID
+	GroupState     insolar.ID
+	GroupReference insolar.ID
+	Purpose        string
+	Goal           string
+	ProductType    string // TODO: create group type table
+	Treasurer      insolar.ID
+	Membership     foundation.StableMap
 }
 
 type GroupStorage interface {

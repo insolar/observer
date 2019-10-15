@@ -1,9 +1,11 @@
 package postgres
 
 import (
+	"encoding/json"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -100,6 +102,51 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 			s.errorCounter.Inc()
 			s.log.WithField("upd", model).Errorf("failed to update user_group")
 		}
+	}
+	if model.Membership != nil {
+		for _, membershipStr := range model.Membership {
+			byt := []byte(membershipStr)
+			var membership collecting.Membership
+			if err := json.Unmarshal(byt, &membership); err != nil {
+				return nil
+			}
+			var dbState string
+			var dbRole string
+			switch membership.MemberStatus {
+			case collecting.StatusInvite:
+				dbState = "invited"
+			case collecting.StatusActive:
+				dbState = "active"
+			case collecting.StatusReject:
+				dbState = "rejected"
+			}
+
+			switch membership.MemberRole {
+			case collecting.RoleChairMan:
+				dbRole = "chairman"
+			case collecting.RoleTreasure:
+				dbRole = "treasurer"
+			case collecting.RoleMember:
+				dbRole = "member"
+			}
+
+			res, err = s.db.Model(&UserGroupSchema{}).
+				Where("group_ref=?", model.GroupReference.Bytes()).
+				Where("user_ref=?", membership.MemberRef.Bytes()).
+				Set("status=?", dbState).
+				Set("role=?", dbRole).
+				Update()
+
+			if err != nil {
+				return errors.Wrapf(err, "failed to update user_group =%v", model)
+			}
+
+			if res.RowsAffected() == 0 {
+				s.errorCounter.Inc()
+				s.log.WithField("upd", model).Errorf("failed to update user_group")
+			}
+		}
+
 	}
 	return nil
 }
