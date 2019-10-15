@@ -92,19 +92,24 @@ func (m *Manager) needStop() bool {
 }
 
 func (m *Manager) run(s *state) {
+	timeStart := time.Now()
 	raw := m.fetch(s)
 	beauty := m.beautify(raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
 
-	sleepTime := m.cfg.Replicator.AttemptInterval
+	timeExecuted := time.Since(timeStart)
 
+	sleepTime := m.cfg.Replicator.AttemptInterval
 	if raw != nil {
 		s.last = raw.pulse.Number
 		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
+		// adjusting sleep time by execution time
+		sleepTime = sleepTime - timeExecuted
+		m.log.Debug(timeExecuted)
+
 		// fast forward, empty pulses
 		if raw.shouldIterateFrom > raw.pulse.Number {
-			// todo add to config
 			sleepTime = m.cfg.Replicator.FastForwardInterval
 		}
 	}
