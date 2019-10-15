@@ -33,7 +33,7 @@ test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=converage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: all
-all: ensure build artifacts ## ensure + build + artifacts
+all: ensure env build ## ensure + build + artifacts
 
 .PHONY: help
 help: ## Display this help screen
