@@ -65,10 +65,12 @@ func (s *ResultStorage) Insert(model *observer.Result) error {
 		Insert()
 
 	if err != nil {
+		panic("=== PANIC === RESULTS: error")
 		return errors.Wrapf(err, "failed to insert result %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === RESULTS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("result_row", row).
 			Errorf("failed to insert result")

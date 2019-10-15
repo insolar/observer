@@ -71,10 +71,12 @@ func (s *RecordStorage) Insert(model *observer.Record) error {
 		Insert()
 
 	if err != nil {
+		panic("=== PANIC === RECORDS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert record %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === RECORDS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("record_row", row).
 			Errorf("failed to insert record")

@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type DepositUpdateCollector struct {
@@ -39,7 +38,7 @@ func NewDepositUpdateCollector(log *logrus.Logger) *DepositUpdateCollector {
 }
 
 func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.DepositUpdate {
-	defer panic.Catch("deposit_update_collector")
+	// defer panic.Catch("deposit_update_collector")
 
 	if rec == nil {
 		return nil

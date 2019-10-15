@@ -68,10 +68,12 @@ func (s *DepositStorage) Insert(model *observer.Deposit) error {
 		Insert()
 
 	if err != nil {
+		panic("=== PANIC === DEPOSITS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert deposit %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === DEPOSITS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("deposit_row", row).Errorf("failed to insert deposit")
 	}
@@ -90,10 +92,12 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 		Update()
 
 	if err != nil {
+		panic("=== PANIC === DEPOSITS: UPDATE: error")
 		return errors.Wrapf(err, "failed to update deposit upd=%v", model)
 	}
 
 	if res.RowsAffected() == 0 {
+		panic("=== PANIC === DEPOSITS: UPDATE: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update deposit")
 	}
