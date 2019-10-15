@@ -26,9 +26,10 @@ type Deposit struct {
 	Member          insolar.ID
 	Timestamp       int64
 	HoldReleaseDate int64
-	Amount          string
-	Balance         string
-	DepositState    insolar.ID
+	// whf balance and amount on deposit?
+	Amount       string
+	Balance      string
+	DepositState insolar.ID
 }
 
 type DepositCollector interface {
@@ -40,7 +41,8 @@ type DepositUpdate struct {
 	HoldReleaseDate int64
 	Amount          string
 	Balance         string
-	PrevState       insolar.ID
+	// Prev state record ID
+	PrevState insolar.ID
 }
 
 type DepositUpdateCollector interface {

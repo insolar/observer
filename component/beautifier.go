@@ -36,7 +36,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	addresses := collecting.NewMigrationAddressesCollector()
 
 	balances := collecting.NewBalanceCollector(log)
-	updates := collecting.NewDepositUpdateCollector(log)
+	depositUpdates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
 	return func(r *raw) *beauty {
@@ -88,7 +88,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 				b.balances[balance.AccountState] = balance
 			}
 
-			update := updates.Collect(rec)
+			update := depositUpdates.Collect(rec)
 			if update != nil {
 				b.updates[update.ID] = update
 			}

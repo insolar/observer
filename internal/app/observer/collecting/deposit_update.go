@@ -52,8 +52,8 @@ func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.Deposit
 	amd := rec.Virtual.GetAmend()
 	d := c.depositState(amd)
 	releaseTimestamp := int64(0)
-	if holdReleadDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
-		releaseTimestamp = holdReleadDate.Unix()
+	if holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
+		releaseTimestamp = holdReleasedDate.Unix()
 	}
 
 	return &observer.DepositUpdate{

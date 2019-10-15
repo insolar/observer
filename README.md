@@ -31,6 +31,12 @@ db:
 #### Run and build
 To run observer node you should provide config file: `observer.yaml` (like described above) at working directory.
 
+You can generate it from 
+`configuration/configuration.go`
+like this 
+
+`make env`
+
 To build and run:
 
 `make all && ./bin/observer`
