@@ -104,9 +104,9 @@ func (m *Manager) run(s *state) {
 	if raw != nil {
 		s.last = raw.pulse.Number
 		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
+
 		// adjusting sleep time by execution time
 		sleepTime = sleepTime - timeExecuted
-		m.log.Debug(timeExecuted)
 
 		// fast forward, empty pulses
 		if raw.shouldIterateFrom > raw.pulse.Number {
