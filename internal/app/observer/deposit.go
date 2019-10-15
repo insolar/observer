@@ -40,7 +40,8 @@ type DepositUpdate struct {
 	HoldReleaseDate int64
 	Amount          string
 	Balance         string
-	PrevState       insolar.ID
+	// Prev state record ID
+	PrevState insolar.ID
 }
 
 type DepositUpdateCollector interface {

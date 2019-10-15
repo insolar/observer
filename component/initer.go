@@ -29,17 +29,20 @@ import (
 )
 
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *state {
+	logger := obs.Log()
 	createTables(cfg, obs, conn)
 	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
 	stat := MustKnowPreviousStatistic(cfg, obs, conn.PG())
+	st := state{
+		last: last,
+		rp:   recordPosition,
+		stat: stat,
+	}
+	logger.Debugf("State restored: %+v", st)
 	return func() *state {
-		return &state{
-			last: last,
-			rp:   recordPosition,
-			stat: stat,
-		}
+		return &st
 	}
 }
 

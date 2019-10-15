@@ -88,6 +88,7 @@ func (s *ExtendedTransferStorage) Insert(model *observer.ExtendedTransfer) error
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("transfer_row", row).Errorf("failed to insert transfer")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }

@@ -84,6 +84,7 @@ func (s *ObjectStorage) Insert(model interface{}) error {
 		s.errorCounter.Inc()
 		s.log.WithField("object_row", row).
 			Errorf("failed to insert object")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }

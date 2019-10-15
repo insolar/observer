@@ -72,6 +72,7 @@ func (s *MemberStorage) Insert(model *observer.Member) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("member_row", row).Errorf("failed to insert member")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }
@@ -94,6 +95,7 @@ func (s *MemberStorage) Update(model *observer.Balance) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update member")
+		return errors.New("failed to update, affected is 0")
 	}
 	return nil
 }

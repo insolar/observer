@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type DepositUpdateCollector struct {
@@ -39,8 +38,6 @@ func NewDepositUpdateCollector(log *logrus.Logger) *DepositUpdateCollector {
 }
 
 func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.DepositUpdate {
-	defer panic.Catch("deposit_update_collector")
-
 	if rec == nil {
 		return nil
 	}
@@ -52,8 +49,8 @@ func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.Deposit
 	amd := rec.Virtual.GetAmend()
 	d := c.depositState(amd)
 	releaseTimestamp := int64(0)
-	if holdReleadDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
-		releaseTimestamp = holdReleadDate.Unix()
+	if holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
+		releaseTimestamp = holdReleasedDate.Unix()
 	}
 
 	return &observer.DepositUpdate{

@@ -23,8 +23,9 @@ import (
 )
 
 type DB struct {
-	URL             string
-	Attempts        cycle.Limit
+	URL      string
+	Attempts cycle.Limit
+	// Interval between store in db failed attempts
 	AttemptInterval time.Duration
 	CreateTables    bool
 }

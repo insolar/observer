@@ -19,10 +19,13 @@ package configuration
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
 type Configuration struct {
+	LogLevel   string
 	API        API
 	Replicator Replicator
 	DB         DB
@@ -30,20 +33,21 @@ type Configuration struct {
 
 func Default() *Configuration {
 	return &Configuration{
+		LogLevel: logrus.DebugLevel.String(),
 		API: API{
 			Addr: ":0",
 		},
 		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			Attempts:              cycle.INFINITY,
-			AttemptInterval:       10 * time.Second,
-			BatchSize:             1000,
-			TransactionRetryDelay: 3 * time.Second,
+			Addr:                "127.0.0.1:5678",
+			MaxTransportMsg:     1073741824,
+			Attempts:            cycle.INFINITY,
+			AttemptInterval:     10 * time.Second,
+			FastForwardInterval: time.Second / 4,
+			BatchSize:           2000,
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
-			Attempts:        cycle.INFINITY,
+			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 			CreateTables:    false,
 		},

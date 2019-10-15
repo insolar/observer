@@ -76,6 +76,7 @@ func (s *RecordStorage) Insert(model *observer.Record) error {
 		s.errorCounter.Inc()
 		s.log.WithField("record_row", row).
 			Errorf("failed to insert record")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }

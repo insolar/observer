@@ -33,33 +33,38 @@ func makeFetcher(
 	conn *connectivity.Connectivity,
 ) func(*state) *raw {
 	log := obs.Log()
-	lastPulse, recordCounter := fetchingMetrics(obs)
+	lastPulseMetric, recordCounterMetric := fetchingMetrics(obs)
 	pulseClient := exporter.NewPulseExporterClient(conn.GRPC())
 	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
 	pulses := grpc.NewPulseFetcher(cfg, obs, pulseClient)
 	records := grpc.NewRecordFetcher(cfg, obs, recordClient)
 	return func(s *state) *raw {
+		log.Debug("Connection ref: ", &recordClient)
+		// Get next pulse
+		// todo: skip empty pulses, if shouldIterateFrom set
 		pulse, err := pulses.Fetch(s.last)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
 			return nil
 		}
-		lastPulse.Set(float64(pulse.Number))
+		lastPulseMetric.Set(float64(pulse.Number))
 		log.WithField("number", pulse.Number).
-			Infof("fetched pulse record")
+			Debug("fetched pulse record")
 
+		// Early return of empty pulses
 		if pulse.Number < s.rp.ShouldIterateFrom {
 			log.WithField("should_iterate_from", s.rp.ShouldIterateFrom).
-				Infof("skipped record fetching")
+				Debug("skipped record fetching")
 			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom}
 		}
 
+		// Get records
 		batch, shouldIterateFrom, err := records.Fetch(pulse.Number)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch records by pulse"))
 			return nil
 		}
-		recordCounter.Add(float64(len(batch)))
+		recordCounterMetric.Add(float64(len(batch)))
 		log.WithField("batch_size", len(batch)).
 			Infof("fetched records")
 		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}

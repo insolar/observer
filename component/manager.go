@@ -20,11 +20,11 @@ import (
 	"time"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 	"github.com/insolar/observer/observability"
 )
 
@@ -32,6 +32,7 @@ type Manager struct {
 	stopSignal chan bool
 
 	cfg      *configuration.Configuration
+	log      logrus.Logger
 	init     func() *state
 	fetch    func(*state) *raw
 	beautify func(*raw) *beauty
@@ -44,12 +45,13 @@ type Manager struct {
 
 func Prepare() *Manager {
 	cfg := configuration.Load()
-	obs := observability.Make()
+	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
 	return &Manager{
 		stopSignal: make(chan bool, 1),
 		init:       makeInitter(cfg, obs, conn),
+		log:        *obs.Log(),
 		fetch:      makeFetcher(cfg, obs, conn),
 		beautify:   makeBeautifier(obs),
 		filter:     makeFilter(obs),
@@ -62,8 +64,6 @@ func Prepare() *Manager {
 
 func (m *Manager) Start() {
 	go func() {
-		defer panic.Catch("component.Manager")
-
 		m.router.Start()
 		defer m.stop()
 
@@ -92,20 +92,35 @@ func (m *Manager) needStop() bool {
 }
 
 func (m *Manager) run(s *state) {
+	timeStart := time.Now()
 	raw := m.fetch(s)
 	beauty := m.beautify(raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
 
+	timeExecuted := time.Since(timeStart)
+
+	sleepTime := m.cfg.Replicator.AttemptInterval
 	if raw != nil {
 		s.last = raw.pulse.Number
+		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
+
+		// adjusting sleep time by execution time
+		sleepTime = sleepTime - timeExecuted
+
+		// fast forward, empty pulses
+		if raw.shouldIterateFrom > raw.pulse.Number {
+			sleepTime = m.cfg.Replicator.FastForwardInterval
+		}
 	}
 
 	if statistic != nil {
 		s.stat = *statistic
 	}
 
-	time.Sleep(m.cfg.Replicator.AttemptInterval)
+	// todo replace by adjustable timer
+	m.log.Debug("Sleep: ", sleepTime)
+	time.Sleep(sleepTime)
 }
 
 type raw struct {

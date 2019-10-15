@@ -26,7 +26,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/internal/pkg/panic"
 	"github.com/insolar/observer/observability"
 )
 
@@ -70,8 +69,6 @@ type Router struct {
 func (r *Router) Start() {
 	log := r.obs.Log()
 	go func() {
-		defer panic.Catch("component.Router")
-
 		err := r.hs.ListenAndServe()
 		if err != http.ErrServerClosed {
 			log.Error(errors.Wrapf(err, "http server ListenAndServe"))

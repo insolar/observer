@@ -23,11 +23,18 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/configuration"
 )
 
-func Make() *Observability {
+func Make(cfg *configuration.Configuration) *Observability {
+	log := logrus.New()
+	err := log.Level.UnmarshalText([]byte(cfg.LogLevel))
+	if err != nil {
+		panic("wrong log level in config")
+	}
 	return &Observability{
-		log:      logrus.New(),
+		log:      log,
 		metrics:  prometheus.NewRegistry(),
 		counters: make(map[string]prometheus.Counter),
 		gauges:   make(map[string]prometheus.Gauge),

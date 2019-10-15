@@ -37,8 +37,9 @@ func UntilError(f func() error, interval time.Duration, attempts Limit) {
 		err := f()
 		if err != nil {
 			if counter >= attempts {
-				return
+				panic(err)
 			}
+			counter++
 			time.Sleep(interval)
 			continue
 		}

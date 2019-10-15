@@ -28,7 +28,6 @@ import (
 	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
 
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type MemberCollector struct {
@@ -43,8 +42,6 @@ func NewMemberCollector() *MemberCollector {
 }
 
 func (c *MemberCollector) Collect(rec *observer.Record) *observer.Member {
-	defer panic.Catch("member_collector")
-
 	if rec == nil {
 		return nil
 	}

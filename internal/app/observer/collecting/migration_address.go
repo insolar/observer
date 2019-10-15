@@ -23,7 +23,6 @@ import (
 	proxyShard "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard"
 
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type MigrationAddressCollector struct {
@@ -38,8 +37,6 @@ func NewMigrationAddressesCollector() *MigrationAddressCollector {
 }
 
 func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.MigrationAddress {
-	defer panic.Catch("migration_address_collector")
-
 	if rec == nil {
 		return nil
 	}
