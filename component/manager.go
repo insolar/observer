@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
@@ -32,6 +33,7 @@ type Manager struct {
 	stopSignal chan bool
 
 	cfg      *configuration.Configuration
+	log      logrus.Logger
 	init     func() *state
 	fetch    func(*state) *raw
 	beautify func(*raw) *beauty
@@ -44,12 +46,13 @@ type Manager struct {
 
 func Prepare() *Manager {
 	cfg := configuration.Load()
-	obs := observability.Make()
+	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
 	return &Manager{
 		stopSignal: make(chan bool, 1),
 		init:       makeInitter(cfg, obs, conn),
+		log:        *obs.Log(),
 		fetch:      makeFetcher(cfg, obs, conn),
 		beautify:   makeBeautifier(obs),
 		filter:     makeFilter(obs),
@@ -97,15 +100,25 @@ func (m *Manager) run(s *state) {
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
 
+	sleepTime := m.cfg.Replicator.AttemptInterval
+
 	if raw != nil {
 		s.last = raw.pulse.Number
+		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
+		// fast forward, empty pulses
+		if raw.shouldIterateFrom > raw.pulse.Number {
+			// todo add to config
+			sleepTime = time.Second / 4
+		}
 	}
 
 	if statistic != nil {
 		s.stat = *statistic
 	}
 
-	time.Sleep(m.cfg.Replicator.AttemptInterval)
+	// todo replace by adjustable timer
+	m.log.Debug("Sleep: ", sleepTime)
+	time.Sleep(sleepTime)
 }
 
 type raw struct {

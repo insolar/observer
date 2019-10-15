@@ -17,6 +17,8 @@
 package postgres
 
 import (
+	"reflect"
+
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"

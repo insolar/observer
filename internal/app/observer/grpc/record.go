@@ -57,37 +57,68 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 	f.request.PulseNumber = pulse
 	f.request.RecordNumber = 0
 
-	batch := []*observer.Record{}
+	var batch []*observer.Record
+	var counter uint32
 	shouldIterateFrom := insolar.PulseNumber(0)
+	// Get pulse batches
 	for {
+		counter = 0
+		f.log.Debug("Data request: ", f.request)
 		stream, err := client.Export(ctx, f.request)
+
 		if err != nil {
 			return batch, shouldIterateFrom, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
 		}
 
+		// Get batch
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
+				f.log.Debug("EOF received, quit")
 				break
 			}
 			if err != nil {
-				return batch, 0, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
+				f.log.Debugf("received error value from records gRPC stream %v", f.request)
+				return batch, shouldIterateFrom, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
 			}
 
+			// There is no records at all
 			if resp.ShouldIterateFrom != nil {
+				f.log.Debug("Received Should iterate from ", resp.ShouldIterateFrom.String())
+				err := stream.CloseSend()
+				if err != nil {
+					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
+				}
 				shouldIterateFrom = *resp.ShouldIterateFrom
+				return batch, shouldIterateFrom, nil
 			}
 
+			// If we see next pulse, then stop iteration
 			if resp.Record.ID.Pulse() != pulse {
+				f.log.Debug("wrong pulse received ", resp.Record.ID.Pulse())
+				err := stream.CloseSend()
+				if err != nil {
+					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
+				}
+
+				// If we have no records in this pulse, then go to next not empty pulse
+				if len(batch) == 0 {
+					shouldIterateFrom = resp.Record.ID.Pulse()
+					f.log.Debug("shouldIterateFrom set to ", shouldIterateFrom)
+				}
 				return batch, shouldIterateFrom, nil
 			}
 			model := (*observer.Record)(&resp.Record)
 			batch = append(batch, model)
 
-			f.request.PulseNumber = model.ID.Pulse()
+			counter++
 			f.request.RecordNumber = resp.RecordNumber
 		}
-		if f.request.Count != uint32(len(batch)) {
+
+		f.log.Debug("go to next round, fetched: ", len(batch))
+		// If we get less than batch size, then stop
+		if counter < f.request.Count {
+			f.log.Debugf("Exiting: counter %+v", uint32(len(batch)))
 			return batch, shouldIterateFrom, nil
 		}
 	}

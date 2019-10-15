@@ -54,6 +54,7 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 	ctx := context.Background()
 	client := f.client
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
+	f.log.Debugf("Fetching %d pulses from %s", request.Count, last)
 	var (
 		err  error
 		resp *exporter.Pulse
@@ -85,5 +86,6 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 		Timestamp: resp.PulseTimestamp,
 		Nodes:     resp.Nodes,
 	}
+	f.log.Debug("Received pulse ", model)
 	return model, nil
 }
