@@ -126,7 +126,7 @@ type beauty struct {
 	updates      map[insolar.ID]*observer.DepositUpdate
 	addresses    map[string]*observer.MigrationAddress
 	wastings     map[string]*observer.Wasting
-	users        map[insolar.Reference]*observer.User
+	users        map[insolar.ID]*observer.User
 }
 
 type state struct {
