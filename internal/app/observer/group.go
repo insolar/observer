@@ -29,6 +29,7 @@ type GroupUpdate struct {
 	ProductType    string // TODO: create group type table
 	Treasurer      insolar.ID
 	Membership     foundation.StableMap
+	Timestamp      int64
 }
 
 type GroupStorage interface {

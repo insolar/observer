@@ -52,8 +52,12 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 	amd := rec.Virtual.GetAmend()
 	group, err := groupUpdate(rec)
 
-	logrus.Info(rec.ObjectID.String())
+	if err != nil {
+		logrus.Info(err.Error())
+		return nil
+	}
 
+	date, err := rec.ID.GetPulseNumber().AsApproximateTime()
 	if err != nil {
 		logrus.Info(err.Error())
 		return nil
@@ -68,6 +72,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		ProductType:    group.ProductType,
 		Treasurer:      group.Treasurer,
 		Membership:     group.Membership,
+		Timestamp:      date.Unix(),
 	}
 }
 

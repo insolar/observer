@@ -130,6 +130,33 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 				dbRole = "member"
 			}
 
+			count, err := s.db.Model(&UserGroupSchema{}).Where("group_ref=?", model.GroupReference.Bytes()).
+				Where("user_ref=?", membership.MemberRef.Bytes()).Count()
+			if count == 0 {
+
+				row := &UserGroupSchema{
+					UserRef:         membership.MemberRef.Bytes(),
+					GroupRef:        model.GroupReference.Bytes(),
+					Role:            "member",
+					Status:          "invited",
+					StatusTimestamp: model.Timestamp,
+				}
+
+				res, err := s.db.Model(row).
+					OnConflict("DO NOTHING").
+					Insert(row)
+
+				if err != nil {
+					return errors.Wrapf(err, "failed to insert user-group %v, %v", row, err.Error())
+				}
+
+				if res.RowsAffected() == 0 {
+					s.errorCounter.Inc()
+					s.log.WithField("user-group_row", row).
+						Errorf("failed to insert user-group")
+				}
+			}
+
 			res, err = s.db.Model(&UserGroupSchema{}).
 				Where("group_ref=?", model.GroupReference.Bytes()).
 				Where("user_ref=?", membership.MemberRef.Bytes()).
