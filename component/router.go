@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -31,14 +31,34 @@ import (
 )
 
 func NewRouter(cfg *configuration.Configuration, obs *observability.Observability) *Router {
-	router := httprouter.New()
-	hs := &http.Server{Addr: cfg.API.Addr, Handler: router}
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/healthcheck", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "OK")
+	})
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
+		ops := promhttp.HandlerOpts{
+			ErrorLog: obs.Log(),
+		}
+		handler := promhttp.HandlerFor(obs.Metrics(), ops)
+		handler.ServeHTTP(w, req)
+	})
+
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	hs := &http.Server{Addr: cfg.API.Addr, Handler: mux}
+
 	r := &Router{
 		hs:  hs,
 		obs: obs,
 	}
-	router.GET("/healthcheck", r.healthCheck)
-	router.GET("/metrics", r.metrics)
+
 	return r
 }
 
@@ -65,18 +85,4 @@ func (r *Router) Stop() {
 	if err := r.hs.Shutdown(context.Background()); err != nil {
 		log.Error(errors.Wrapf(err, "http server shutdown"))
 	}
-}
-
-func (r *Router) healthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprint(w, "OK")
-}
-
-func (r *Router) metrics(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
-	ops := promhttp.HandlerOpts{
-		ErrorLog: r.obs.Log(),
-	}
-	handler := promhttp.HandlerFor(r.obs.Metrics(), ops)
-	handler.ServeHTTP(w, req)
 }
