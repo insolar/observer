@@ -69,12 +69,10 @@ func (s *PulseStorage) Insert(model *observer.Pulse) error {
 		Insert()
 
 	if err != nil {
-		panic("=== PANIC === PULSES: INSERT: error")
 		return errors.Wrapf(err, "failed to insert pulse %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === PULSES: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("pulse_row", row).
 			Errorf("failed to insert pulse")

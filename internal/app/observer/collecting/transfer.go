@@ -23,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type TransferCollector struct {
@@ -39,7 +40,7 @@ func NewTransferCollector(log *logrus.Logger) *TransferCollector {
 }
 
 func (c *TransferCollector) Collect(rec *observer.Record) *observer.ExtendedTransfer {
-	// defer panic.Catch("transfer_collector")
+	defer panic.Catch("transfer_collector")
 
 	couple := c.collector.Collect(rec)
 	if couple == nil {

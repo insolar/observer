@@ -63,12 +63,10 @@ func (s *MigrationAddressStorage) Insert(model *observer.MigrationAddress) error
 		Insert()
 
 	if err != nil {
-		panic("=== PANIC === MIGRATION_ADDRESSES: INSERT: error")
 		return errors.Wrapf(err, "failed to insert migration_address %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === MIGRATION_ADDRESSES: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("migration_address_row", row).Errorf("failed to insert migration_address")
 	}
@@ -87,12 +85,10 @@ func (s *MigrationAddressStorage) Update(model *observer.Wasting) error {
 		Update()
 
 	if err != nil {
-		panic("=== PANIC === MIGRATION_ADDRESSES: UPDATE: error")
 		return errors.Wrapf(err, "failed to update migration_address upd=%v", model)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === MIGRATION_ADDRESSES: UPDATE: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update migration_address")
 	}

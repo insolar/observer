@@ -82,12 +82,10 @@ func (s *ExtendedTransferStorage) Insert(model *observer.ExtendedTransfer) error
 		Insert()
 
 	if err != nil {
-		panic("=== PANIC === TRANSACTIONS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert transfer %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === TRANSACTIONS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("transfer_row", row).Errorf("failed to insert transfer")
 	}

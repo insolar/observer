@@ -77,12 +77,10 @@ func (s *ObjectStorage) Insert(model interface{}) error {
 		Insert()
 
 	if err != nil {
-		panic("=== PANIC === OBJECTS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert object %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === OBJECTS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("object_row", row).
 			Errorf("failed to insert object")

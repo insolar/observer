@@ -66,12 +66,10 @@ func (s *MemberStorage) Insert(model *observer.Member) error {
 		Insert()
 
 	if err != nil {
-		panic("=== PANIC === MEMBERS: INSERT: error")
 		return errors.Wrapf(err, "failed to insert member %v", row)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === MEMBERS: INSERT: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("member_row", row).Errorf("failed to insert member")
 	}
@@ -90,12 +88,10 @@ func (s *MemberStorage) Update(model *observer.Balance) error {
 		Update()
 
 	if err != nil {
-		panic("=== PANIC === MEMBERS: UPDATE: error")
 		return errors.Wrapf(err, "failed to update member balance upd=%v", model)
 	}
 
 	if res.RowsAffected() == 0 {
-		panic("=== PANIC === MEMBERS: UPDATE: rows affected 0")
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update member")
 	}

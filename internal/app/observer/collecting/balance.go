@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type BalanceCollector struct {
@@ -35,7 +36,7 @@ func NewBalanceCollector(log *logrus.Logger) *BalanceCollector {
 }
 
 func (c *BalanceCollector) Collect(rec *observer.Record) *observer.Balance {
-	// defer panic.Catch("balance_update_collector")
+	defer panic.Catch("balance_update_collector")
 
 	if rec == nil {
 		return nil
