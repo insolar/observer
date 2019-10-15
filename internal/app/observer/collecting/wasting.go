@@ -18,7 +18,6 @@ package collecting
 
 import (
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 )
 
 type WastingCollector struct {
@@ -33,8 +32,6 @@ func NewWastingCollector() *WastingCollector {
 }
 
 func (c *WastingCollector) Collect(rec *observer.Record) *observer.Wasting {
-	defer panic.Catch("wasting_collector")
-
 	if rec == nil {
 		return nil
 	}

@@ -69,6 +69,7 @@ func (s *MigrationAddressStorage) Insert(model *observer.MigrationAddress) error
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("migration_address_row", row).Errorf("failed to insert migration_address")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }
@@ -91,6 +92,7 @@ func (s *MigrationAddressStorage) Update(model *observer.Wasting) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update migration_address")
+		return errors.New("failed to update, affected is 0")
 	}
 	return nil
 }

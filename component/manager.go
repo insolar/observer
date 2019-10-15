@@ -25,7 +25,6 @@ import (
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/pkg/panic"
 	"github.com/insolar/observer/observability"
 )
 
@@ -65,8 +64,6 @@ func Prepare() *Manager {
 
 func (m *Manager) Start() {
 	go func() {
-		defer panic.Catch("component.Manager")
-
 		m.router.Start()
 		defer m.stop()
 

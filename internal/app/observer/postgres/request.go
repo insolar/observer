@@ -78,6 +78,7 @@ func (s *RequestStorage) Insert(model *observer.Request) error {
 		s.errorCounter.Inc()
 		s.log.WithField("request_row", row).
 			Errorf("failed to insert request")
+		return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }
