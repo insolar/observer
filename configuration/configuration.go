@@ -38,12 +38,12 @@ func Default() *Configuration {
 			Addr: ":0",
 		},
 		Replicator: Replicator{
-			Addr:                  "127.0.0.1:5678",
-			MaxTransportMsg:       1073741824,
-			Attempts:              cycle.INFINITY,
-			AttemptInterval:       9 * time.Second,
-			BatchSize:             2000,
-			TransactionRetryDelay: 3 * time.Second,
+			Addr:                "127.0.0.1:5678",
+			MaxTransportMsg:     1073741824,
+			Attempts:            cycle.INFINITY,
+			AttemptInterval:     9 * time.Second,
+			FastForwardInterval: time.Second / 4,
+			BatchSize:           2000,
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",

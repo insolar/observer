@@ -105,7 +105,7 @@ func (m *Manager) run(s *state) {
 		// fast forward, empty pulses
 		if raw.shouldIterateFrom > raw.pulse.Number {
 			// todo add to config
-			sleepTime = time.Second / 4
+			sleepTime = m.cfg.Replicator.FastForwardInterval
 		}
 	}
 

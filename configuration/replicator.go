@@ -23,10 +23,12 @@ import (
 )
 
 type Replicator struct {
-	Addr                  string
-	MaxTransportMsg       int
-	Attempts              cycle.Limit
-	AttemptInterval       time.Duration
-	BatchSize             uint32
-	TransactionRetryDelay time.Duration
+	Addr            string
+	MaxTransportMsg int
+	Attempts        cycle.Limit
+	// Interval between fetching heavy
+	AttemptInterval time.Duration
+	// Using when catching up heavy on empty pulses
+	FastForwardInterval time.Duration
+	BatchSize           uint32
 }
