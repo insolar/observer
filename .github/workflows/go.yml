@@ -15,21 +15,25 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        path: go/src/github.com/insolar/observer
       
-    - name: Debug
-      run: |
-        pwd
-        echo ${GOPATH}
-        echo ${GOROOT}
 
     - name: Get dependencies
       run: |
         go env -w GOPATH=$HOME/go
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
+      env:
+        GOPATH: /home/runner/work/observer/go
         
     - name: Env
       run: make env
+      env:
+        GOPATH: /home/runner/work/observer/go
 
     - name: Build
       run: make build
+      env:
+        GOPATH: /home/runner/work/observer/go
