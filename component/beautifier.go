@@ -57,7 +57,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			deposits:     make(map[insolar.ID]*observer.Deposit),
 			addresses:    make(map[string]*observer.MigrationAddress),
 			balances:     make(map[insolar.ID]*observer.Balance),
-			kycs:         make(map[insolar.Reference]*observer.UserKYC),
+			kycs:         make(map[insolar.ID]*observer.UserKYC),
 			groupUpdates: make(map[insolar.Reference]*observer.GroupUpdate),
 			updates:      make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:     make(map[string]*observer.Wasting),
