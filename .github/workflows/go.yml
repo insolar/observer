@@ -22,7 +22,7 @@ jobs:
 
     - name: Get dependencies
       run: |
-        go env -w GOPATH=$HOME/go
+        mkdir $GOPATH/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
       env:
