@@ -14,29 +14,35 @@
 // limitations under the License.
 //
 
-package main
+package cycle
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"math"
+	"time"
 )
 
-var stop = make(chan os.Signal, 1)
+type Limit int
 
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
+const (
+	INFINITY Limit = math.MaxInt32
+)
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func UntilError(f func() error, interval time.Duration, attempts Limit) {
+	// TODO: catch external interruptions
+	counter := Limit(1)
+	if attempts < 1 {
+		attempts = 1
+	}
+	for {
+		err := f()
+		if err != nil {
+			if counter >= attempts {
+				panic(err)
+			}
+			counter++
+			time.Sleep(interval)
+			continue
+		}
+		return
+	}
 }

@@ -14,29 +14,39 @@
 // limitations under the License.
 //
 
-package main
+package postgres
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
+	"github.com/go-pg/pg"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/configuration"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+type ConnectionHolder struct {
+	db *pg.DB
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func NewConnectionHolder(cfg *configuration.Configuration) *ConnectionHolder {
+	opt, err := pg.ParseURL(cfg.DB.URL)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
+		return nil
+	}
+	db := pg.Connect(opt)
+	return &ConnectionHolder{
+		db: db,
+	}
+}
+
+func (h *ConnectionHolder) DB() *pg.DB {
+	return h.db
+}
+
+func (h *ConnectionHolder) Close() error {
+	if err := h.db.Close(); err != nil {
+		log.Error(errors.Wrapf(err, "failed to close db"))
+	}
+	return nil
 }

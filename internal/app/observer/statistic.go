@@ -14,29 +14,18 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/insolar/insolar"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type Statistic struct {
+	Pulse              insolar.PulseNumber
+	Transfers          int
+	TotalTransfers     int
+	TotalMembers       int
+	MaxTransfers       int
+	LastMonthTransfers int
+	Nodes              int
 }

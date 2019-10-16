@@ -14,29 +14,36 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/insolar/insolar"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+type Deposit struct {
+	EthHash         string
+	Ref             insolar.ID
+	Member          insolar.ID
+	Timestamp       int64
+	HoldReleaseDate int64
+	Amount          string
+	Balance         string
+	DepositState    insolar.ID
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type DepositCollector interface {
+	Collect(*Record) *Deposit
+}
+
+type DepositUpdate struct {
+	ID              insolar.ID
+	HoldReleaseDate int64
+	Amount          string
+	Balance         string
+	// Prev state record ID
+	PrevState insolar.ID
+}
+
+type DepositUpdateCollector interface {
+	Collect(*Record) *DepositUpdate
 }

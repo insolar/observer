@@ -14,29 +14,29 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 )
 
-var stop = make(chan os.Signal, 1)
+type Record record.Material
 
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+type RecordStorage interface {
+	Last() *Record
+	Count(insolar.PulseNumber) uint32
+	Insert(*Record) error
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type RecordFetcher interface {
+	Fetch(insolar.PulseNumber) ([]*Record, error)
+}
+
+func (r *Record) Marshal() ([]byte, error) {
+	return (*record.Material)(r).Marshal()
+}
+
+func (r *Record) Unmarshal(data []byte) error {
+	return (*record.Material)(r).Unmarshal(data)
 }

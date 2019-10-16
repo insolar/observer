@@ -14,29 +14,18 @@
 // limitations under the License.
 //
 
-package main
+package configuration
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+type DB struct {
+	URL      string
+	Attempts cycle.Limit
+	// Interval between store in db failed attempts
+	AttemptInterval time.Duration
+	CreateTables    bool
 }

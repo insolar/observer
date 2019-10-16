@@ -14,29 +14,33 @@
 // limitations under the License.
 //
 
-package main
+package observer
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"reflect"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/log"
 )
 
-var stop = make(chan os.Signal, 1)
+type Amend record.Material
 
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
+func CastToAmend(r interface{}) *Amend {
+	if amd, ok := r.(*Amend); ok {
+		return amd
+	}
+	rec, ok := r.(*Record)
+	if !ok {
+		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
+	}
+	return (*Amend)(rec)
 }
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func (a *Amend) IsAmend() bool {
+	if a == nil {
+		return false
+	}
+
+	_, ok := a.Virtual.Union.(*record.Virtual_Amend)
+	return ok
 }

@@ -14,29 +14,11 @@
 // limitations under the License.
 //
 
-package main
+package math
 
-import (
-	"os"
-	"os/signal"
-	"syscall"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
-)
-
-var stop = make(chan os.Signal, 1)
-
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
-
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+func Max(x int, y int) int {
+	if x >= y {
+		return x
+	}
+	return y
 }

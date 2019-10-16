@@ -14,29 +14,34 @@
 // limitations under the License.
 //
 
-package main
+package component
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"github.com/pkg/errors"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/connectivity"
+	"github.com/insolar/observer/observability"
 )
 
-var stop = make(chan os.Signal, 1)
+func makeStopper(obs *observability.Observability, conn *connectivity.Connectivity, router *Router) func() {
+	log := obs.Log()
+	return func() {
+		go func() {
+			err := conn.PG().Close()
+			if err != nil {
+				log.Error(errors.Wrapf(err, "failed to close db"))
+			}
+		}()
 
-func main() {
-	manager := component.Prepare()
-	manager.Start()
-	graceful(manager.Stop)
-}
+		go func() {
+			err := conn.GRPC().Close()
+			if err != nil {
+				log.Error(errors.Wrapf(err, "failed to close db"))
+			}
+		}()
 
-func graceful(that func()) {
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-	log.Infof("gracefully stopping...")
-	that()
+		go func() {
+			router.Stop()
+		}()
+	}
 }
