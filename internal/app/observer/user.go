@@ -11,8 +11,8 @@ type User struct {
 }
 
 type UserKYC struct {
-	PrevState insolar.Reference
-	UserState insolar.Reference
+	PrevState insolar.ID
+	UserState insolar.ID
 	KYC       bool
 	Source    string
 	Timestamp int64

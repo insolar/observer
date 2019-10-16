@@ -119,7 +119,7 @@ type beauty struct {
 	transfers    []*observer.DepositTransfer
 	members      map[insolar.ID]*observer.Member
 	balances     map[insolar.ID]*observer.Balance
-	kycs         map[insolar.Reference]*observer.UserKYC
+	kycs         map[insolar.ID]*observer.UserKYC
 	groupUpdates map[insolar.Reference]*observer.GroupUpdate
 	groups       map[insolar.Reference]*observer.Group
 	deposits     map[insolar.ID]*observer.Deposit
