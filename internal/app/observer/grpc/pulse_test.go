@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// +build integration
 
 package grpc
 
@@ -34,7 +35,7 @@ import (
 func TestPulseFetcher_Fetch(t *testing.T) {
 	t.Run("empty_stream", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make()
+		obs := observability.Make(cfg)
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
 			return nil, io.EOF
@@ -53,7 +54,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 
 	t.Run("one_pulse", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make()
+		obs := observability.Make(cfg)
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
@@ -73,7 +74,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 
 	t.Run("ordinary", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make()
+		obs := observability.Make(cfg)
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
@@ -93,7 +94,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 
 	t.Run("failed_export", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make()
+		obs := observability.Make(cfg)
 		client := &pulseClient{}
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return nil, errors.New("failed export")
@@ -108,7 +109,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 
 	t.Run("failed_recv", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make()
+		obs := observability.Make(cfg)
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
 			return nil, errors.New("failed recv")
