@@ -306,14 +306,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:84a35669b4b31cc20ffc89c3b2ab32f2189fb2366a973efa1c25e009ef6ae1c6"
-  name = "github.com/julienschmidt/httprouter"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4eec211fa4e8df74ed978dc5681612131854144f"
-  version = "v1.3.0"
-
-[[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
@@ -752,7 +744,6 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet",
     "github.com/insolar/insolar/pulse",
-    "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
