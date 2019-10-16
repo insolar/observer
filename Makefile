@@ -28,9 +28,15 @@ $(CONFIG):
 ensure: ## dep ensure
 	dep ensure -v
 
-.PHONY: test
-test: ## run tests with coverage
+ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=converage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
+
+.PHONY: test
+test:
+	go test ./...
+
+integration:
+	go test ./... -tags=integration
 
 .PHONY: all
 all: ensure env build ## ensure + build + artifacts

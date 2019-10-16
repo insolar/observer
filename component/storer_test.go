@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// +build integration
 
 package component
 
@@ -30,7 +31,7 @@ import (
 
 func Test_makeStorer(t *testing.T) {
 	cfg := configuration.Default()
-	obs := observability.Make()
+	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	storer := makeStorer(cfg, obs, conn)
 
@@ -41,6 +42,7 @@ func Test_makeStorer(t *testing.T) {
 
 	cfg.DB.Attempts = 1
 	cfg.DB.AttemptInterval = time.Nanosecond
+
 	require.NotPanics(t, func() {
 		storer(b, s)
 	})
