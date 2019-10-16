@@ -66,7 +66,7 @@ func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*ob
 	response := &CreateResponse{}
 	res.ParseFirstPayloadValue(response)
 
-	ref, err := insolar.NewIDFromBase58(response.Reference)
+	ref, err := insolar.NewReferenceFromBase58(response.Reference)
 	if err != nil || ref == nil {
 		return nil, errors.New("invalid user reference")
 	}

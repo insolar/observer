@@ -56,8 +56,8 @@ func (c *KYCCollector) Collect(rec *observer.Record) *observer.UserKYC {
 	}
 
 	return &observer.UserKYC{
-		PrevState: amd.PrevState,
-		UserState: rec.ID,
+		PrevState: *insolar.NewReference(amd.PrevState),
+		UserState: *insolar.NewReference(rec.ID),
 		KYC:       kyc,
 		Timestamp: time,
 		Source:    source,

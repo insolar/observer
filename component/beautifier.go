@@ -57,12 +57,12 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			deposits:     make(map[insolar.ID]*observer.Deposit),
 			addresses:    make(map[string]*observer.MigrationAddress),
 			balances:     make(map[insolar.ID]*observer.Balance),
-			kycs:         make(map[insolar.ID]*observer.UserKYC),
-			groupUpdates: make(map[insolar.ID]*observer.GroupUpdate),
+			kycs:         make(map[insolar.Reference]*observer.UserKYC),
+			groupUpdates: make(map[insolar.Reference]*observer.GroupUpdate),
 			updates:      make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:     make(map[string]*observer.Wasting),
-			users:        make(map[insolar.ID]*observer.User),
-			groups:       make(map[insolar.ID]*observer.Group),
+			users:        make(map[insolar.Reference]*observer.User),
+			groups:       make(map[insolar.Reference]*observer.Group),
 		}
 		for _, rec := range r.batch {
 			// entities
