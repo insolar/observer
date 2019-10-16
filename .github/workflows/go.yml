@@ -24,7 +24,7 @@ jobs:
       run: |
         mkdir $GOPATH/bin
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        dep ensure
+        $GOPATH/bin/dep ensure
       env:
         GOPATH: /home/runner/work/observer/go
         
