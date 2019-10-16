@@ -203,7 +203,7 @@ func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	memberRef, err := insolar.NewIDFromBase58(callResult.Reference)
+	memberRef, err := insolar.NewIDFromString(callResult.Reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
