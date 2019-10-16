@@ -3,7 +3,7 @@ package observer
 import "github.com/insolar/insolar/insolar"
 
 type User struct {
-	UserRef   insolar.ID
+	UserRef   insolar.Reference
 	KYCStatus bool
 	Public    string
 	Status    string
@@ -11,8 +11,8 @@ type User struct {
 }
 
 type UserKYC struct {
-	PrevState insolar.ID
-	UserState insolar.ID
+	PrevState insolar.Reference
+	UserState insolar.Reference
 	KYC       bool
 	Source    string
 	Timestamp int64

@@ -80,7 +80,7 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	return nil
 }
 
-func userGroupMemberSchema(group *observer.Group, userRef insolar.ID, role string, status string, timestamp int64) *UserGroupSchema {
+func userGroupMemberSchema(group *observer.Group, userRef insolar.Reference, role string, status string, timestamp int64) *UserGroupSchema {
 	return &UserGroupSchema{
 		UserRef:         userRef.Bytes(),
 		GroupRef:        group.Ref.Bytes(),
