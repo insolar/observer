@@ -101,27 +101,24 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 	}
 	log := c.log
 
-	currPulse := rec.ID.Pulse()
 	// genesis admin deposit record
-	if currPulse == insolar.GenesisPulse.PulseNumber {
-		if isDepositActivate(rec) {
-			timeActivate, err := rec.ID.Pulse().AsApproximateTime()
-			if err != nil {
-				log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
-				return nil
-			}
-			activate := rec.Virtual.GetActivate()
-			state := c.initialDepositState(activate)
-			return &observer.Deposit{
-				EthHash:         strings.ToLower(state.TxHash),
-				Ref:             *genesisrefs.ContractMigrationDeposit.GetLocal(),
-				Member:          *genesisrefs.ContractMigrationAdminMember.GetLocal(),
-				Timestamp:       timeActivate.Unix(),
-				HoldReleaseDate: 0,
-				Amount:          state.Amount,
-				Balance:         state.Balance,
-				DepositState:    rec.ID,
-			}
+	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isDepositActivate(rec) {
+		timeActivate, err := rec.ID.Pulse().AsApproximateTime()
+		if err != nil {
+			log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
+			return nil
+		}
+		activate := rec.Virtual.GetActivate()
+		state := c.initialDepositState(activate)
+		return &observer.Deposit{
+			EthHash:         strings.ToLower(state.TxHash),
+			Ref:             *genesisrefs.ContractMigrationDeposit.GetLocal(),
+			Member:          *genesisrefs.ContractMigrationAdminMember.GetLocal(),
+			Timestamp:       timeActivate.Unix(),
+			HoldReleaseDate: 0,
+			Amount:          state.Amount,
+			Balance:         state.Balance,
+			DepositState:    rec.ID,
 		}
 	}
 
