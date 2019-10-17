@@ -123,7 +123,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 
 			switch membership.MemberRole {
 			case collecting.RoleChairMan:
-				dbRole = "chairman"
+				dbRole = "admin"
 			case collecting.RoleTreasure:
 				dbRole = "treasurer"
 			case collecting.RoleMember:

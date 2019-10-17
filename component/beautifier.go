@@ -37,6 +37,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	balances := collecting.NewBalanceCollector(log)
 	kycs := collecting.NewKYCCollector(log)
 	groupUpdate := collecting.NewGroupUpdateCollector(log)
+	mgrsUpdate := collecting.NewMGRUpdateCollector(log)
 	updates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
@@ -44,6 +45,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 	users := collecting.NewUserCollector(log)
 	groups := collecting.NewGroupCollector(log)
+	mgrs := collecting.NewMGRCollector(log)
 
 	return func(r *raw) *beauty {
 		if r == nil {
@@ -63,6 +65,8 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			wastings:     make(map[string]*observer.Wasting),
 			users:        make(map[insolar.Reference]*observer.User),
 			groups:       make(map[insolar.Reference]*observer.Group),
+			mgrs:         make(map[insolar.Reference]*observer.MGR),
+			mgrUpdates:   make(map[insolar.Reference]*observer.MGRUpdate),
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -96,11 +100,21 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 				b.groups[group.State] = group
 			}
 
+			mgr := mgrs.Collect(rec)
+			if mgr != nil {
+				b.mgrs[mgr.Ref] = mgr
+			}
+
 			// updates
 
 			groupUpdate := groupUpdate.Collect(rec)
 			if groupUpdate != nil {
 				b.groupUpdates[groupUpdate.GroupState] = groupUpdate
+			}
+
+			mgrUpdate := mgrsUpdate.Collect(rec)
+			if mgrUpdate != nil {
+				b.mgrUpdates[mgrUpdate.MGRState] = mgrUpdate
 			}
 
 			kyc := kycs.Collect(rec)

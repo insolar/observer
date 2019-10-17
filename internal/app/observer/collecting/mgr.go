@@ -1,7 +1,6 @@
 package collecting
 
 import (
-	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
@@ -12,7 +11,7 @@ import (
 	"reflect"
 )
 
-type GroupCollector struct {
+type MGRCollector struct {
 	log       *logrus.Logger
 	results   observer.ResultCollector
 	activates observer.ActivateCollector
@@ -20,9 +19,16 @@ type GroupCollector struct {
 	chains    observer.ChainCollector
 }
 
-func NewGroupCollector(log *logrus.Logger) *GroupCollector {
-	results := NewResultCollector(isGroupCreationCall, successResult)
-	activates := NewActivateCollector(isGroupNew, isGroupActivate)
+//func NewMGRCollector(log *logrus.Logger) *MGRCollector {
+//	collector := NewBoundCollector(isMGRCreationCall, successResult, isMGRNew, isMGRActivate)
+//	return &MGRCollector{
+//		collector: collector,
+//	}
+//}
+
+func NewMGRCollector(log *logrus.Logger) *MGRCollector {
+	results := NewResultCollector(isMGRCreationCall, successResult)
+	activates := NewActivateCollector(isMGRNew, isMGRActivate)
 	resultRelation := &RelationDesc{
 		Is:     isCoupledResult,
 		Origin: coupledResultOrigin,
@@ -34,12 +40,12 @@ func NewGroupCollector(log *logrus.Logger) *GroupCollector {
 		Proper: isCoupledActivate,
 	}
 	userCreateGroupCall := &RelationDesc{
-		Is: isUserGroupCreateCall,
+		Is: isGroupMGRCreateCall,
 		Origin: func(chain interface{}) insolar.ID {
 			request := observer.CastToRequest(chain)
 			return request.ID
 		},
-		Proper: isUserGroupCreateCall,
+		Proper: isGroupMGRCreateCall,
 	}
 	userRelation := &RelationDesc{
 		Is: func(chain interface{}) bool {
@@ -47,7 +53,7 @@ func NewGroupCollector(log *logrus.Logger) *GroupCollector {
 			if !ok {
 				return false
 			}
-			return isUserGroupCreateCall(c.Parent)
+			return isGroupMGRCreateCall(c.Parent)
 		},
 		Origin: func(chain interface{}) insolar.ID {
 			c, ok := chain.(*observer.Chain)
@@ -62,10 +68,10 @@ func NewGroupCollector(log *logrus.Logger) *GroupCollector {
 			if !ok {
 				return false
 			}
-			return isUserGroupCreateCall(c.Parent)
+			return isGroupMGRCreateCall(c.Parent)
 		},
 	}
-	return &GroupCollector{
+	return &MGRCollector{
 		results:   results,
 		activates: activates,
 		halfChain: NewChainCollector(userCreateGroupCall, activateRelation),
@@ -73,7 +79,33 @@ func NewGroupCollector(log *logrus.Logger) *GroupCollector {
 	}
 }
 
-func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
+type MerryGoRound struct {
+	foundation.BaseContract
+	GroupReference   insolar.Reference
+	StartRoundDate   uint32              // unix timestamp
+	FinishRoundDate  uint32              // unix timestamp
+	AmountDue        string              // amount of money
+	PaymentFrequency string              // daily, weekly, monthly
+	NextPaymentTime  uint32              // unix timestamp, need to be calculated
+	Sequence         []insolar.Reference // array of users refs, [0] element is first in queue
+	SwapProcess      Swap                // Swap started and finished processes
+}
+
+type Swap struct {
+	Admin     insolar.Reference
+	Treasurer insolar.Reference
+	From      insolar.Reference // User who initialized swap process
+	To        insolar.Reference // User who will accept request
+	Status    int
+	// 0 - empty ,
+	// 1 - proposed,
+	// 2 - agreed,
+	// 3 - approved by admin,
+	// 4 - approved by treasurer,
+	// 5 - swapped
+}
+
+func (c *MGRCollector) Collect(rec *observer.Record) *observer.MGR {
 	res := c.results.Collect(rec)
 	act := c.activates.Collect(rec)
 	half := c.halfChain.Collect(rec)
@@ -95,7 +127,7 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 		return nil
 	}
 
-	coupleAct, coupleRes, request := c.unwrapGroupChain(chain)
+	coupleAct, coupleRes, request := c.unwrapMGRChain(chain)
 
 	g, err := c.build(coupleAct, coupleRes, request)
 	if err != nil {
@@ -105,104 +137,34 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 	return g
 }
 
-type Members struct {
-	Members []insolar.Reference
-}
-
-type Group struct {
-	foundation.BaseContract
-	ChairMan    insolar.Reference
-	Treasurer   insolar.Reference
-	Title       string
-	Membership  foundation.StableMap
-	Goal        string
-	Purpose     string
-	ProductType string
-	Product     insolar.Reference
-}
-
-type Membership struct {
-	MemberRef    insolar.Reference   `json:"MemberRef"`
-	MemberRole   Role                `json:"MemberRole"`
-	MemberStatus Status              `json:"MemberStatus"`
-	AmountDue    uint64              `json:"callParams,omitempty"`
-	JoinPulse    insolar.PulseNumber `json:"callParams,omitempty"`
-	IsAnonymous  bool                `json:"callParams,omitempty"`
-}
-
-func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
+func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.MGR, error) {
 	if res == nil || act == nil {
-		return nil, errors.New("trying to create group from non complete builder")
+		return nil, errors.New("trying to create mgr from non complete builder")
 	}
 
-	if res.Virtual.GetResult().Payload == nil {
-		return nil, errors.New("group creation result payload is nil")
-	}
-	response := &CreateResponse{}
-	res.ParseFirstPayloadValue(response)
+	var mgr MerryGoRound
 
-	ref, err := insolar.NewReferenceFromBase58(response.Reference)
-	if err != nil || ref == nil {
-		return nil, errors.New("invalid group reference")
-	}
-
-	activate := act.Virtual.GetActivate()
-	state := c.initialGroupState(activate)
-
-	members := &Members{}
-
-	req.ParseMemberContractCallParams(members)
-
-	date, err := act.ID.Pulse().AsApproximateTime()
+	err := insolar.Deserialize(act.Virtual.GetActivate().Memory, &mgr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert group create pulse (%d) to time", act.ID.Pulse())
+		return nil, err
 	}
 
-	fmt.Println("Insert new group ref:", ref.String())
-	return &observer.Group{
-		Ref:        *ref,
-		Title:      state.Title,
-		ChairMan:   state.ChairMan,
-		Goal:       state.Goal,
-		Purpose:    state.Purpose,
-		Membership: state.Membership,
-		Members:    members.Members,
-		Status:     "SUCCESS",
-		State:      *insolar.NewReference(act.ID),
-		Timestamp:  date.Unix(),
+	logrus.Info("Insert new product ref:", insolar.NewReference(act.ObjectID).String())
+	return &observer.MGR{
+		Ref:              *insolar.NewReference(act.ObjectID),
+		GroupReference:   mgr.GroupReference,
+		StartRoundDate:   int64(mgr.StartRoundDate),
+		FinishRoundDate:  int64(mgr.FinishRoundDate),
+		AmountDue:        mgr.AmountDue,
+		PaymentFrequency: mgr.PaymentFrequency,
+		NextPaymentTime:  int64(mgr.NextPaymentTime),
+		Sequence:         mgr.Sequence,
+		Status:           "SUCCESS",
+		State:            act.ID.Bytes(),
 	}, nil
 }
 
-func isUserGroupCreateCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "CreateGroup" {
-		return false
-	}
-
-	if in.Prototype == nil {
-		return false
-	}
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
-	return in.Prototype.Equal(*prototypeRef)
-}
-
-func isGroupActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
-	if !activate.IsActivate() {
-		return false
-	}
-	act := activate.Virtual.GetActivate()
-
-	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
-	return act.Image.Equal(*prototypeRef)
-}
-func isGroupCreationCall(chain interface{}) bool {
+func isMGRCreationCall(chain interface{}) bool {
 	request := observer.CastToRequest(chain)
 	if !request.IsIncoming() {
 		return false
@@ -211,11 +173,25 @@ func isGroupCreationCall(chain interface{}) bool {
 	if !request.IsMemberCall() {
 		return false
 	}
-
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "group.create"
+	logrus.Info("isMGRCreationCall = ", args.Params.CallSite == "group.setMGR")
+	return args.Params.CallSite == "group.setMGR"
 }
-func isGroupNew(chain interface{}) bool {
+
+func isMGRActivate(chain interface{}) bool {
+	activate := observer.CastToActivate(chain)
+	if !activate.IsActivate() {
+		return false
+	}
+	act := activate.Virtual.GetActivate()
+
+	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	logrus.Info("isMGRActivate = ", act.Image.Equal(*prototypeRef))
+	return act.Image.Equal(*prototypeRef)
+}
+
+func isMGRNew(chain interface{}) bool {
 	request := observer.CastToRequest(chain)
 	if !request.IsIncoming() {
 		return false
@@ -231,20 +207,30 @@ func isGroupNew(chain interface{}) bool {
 	}
 
 	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	logrus.Info("isMGRNew = ", in.Prototype.Equal(*prototypeRef))
+	return in.Prototype.Equal(*prototypeRef)
+}
+
+func isGroupMGRCreateCall(chain interface{}) bool {
+	request := observer.CastToRequest(chain)
+	if !request.IsIncoming() {
+		return false
+	}
+
+	in := request.Virtual.GetIncomingRequest()
+	if in.Method != "CreateMGRProduct" {
+		return false
+	}
+
+	if in.Prototype == nil {
+		return false
+	}
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
 	return in.Prototype.Equal(*prototypeRef)
 }
 
-func (c *GroupCollector) initialGroupState(act *record.Activate) *Group {
-	g := Group{}
-	err := insolar.Deserialize(act.Memory, &g)
-	if err != nil {
-		log.Error(errors.New("failed to deserialize group contract state"))
-	}
-	return &g
-}
-
-func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Activate, *observer.Result, *observer.Request) {
+func (c *MGRCollector) unwrapMGRChain(chain *observer.Chain) (*observer.Activate, *observer.Result, *observer.Request) {
 
 	half := chain.Child.(*observer.Chain)
 	coupledAct, ok := half.Child.(*observer.CoupledActivate)
@@ -273,7 +259,7 @@ func (c *GroupCollector) unwrapGroupChain(chain *observer.Chain) (*observer.Acti
 	return actRecord, resRecord, reqRecord
 }
 
-func groupUpdate(act *observer.Record) (*Group, error) {
+func mgrUpdate(act *observer.Record) (*MerryGoRound, error) {
 	var memory []byte
 	switch v := act.Virtual.Union.(type) {
 	case *record.Virtual_Activate:
@@ -281,20 +267,20 @@ func groupUpdate(act *observer.Record) (*Group, error) {
 	case *record.Virtual_Amend:
 		memory = v.Amend.Memory
 	default:
-		log.Error(errors.New("invalid record to get group memory"))
+		log.Error(errors.New("invalid record to get mgr memory"))
 	}
 
 	if memory == nil {
 		log.Warn(errors.New("group memory is nil"))
-		return nil, errors.New("invalid record to get group memory")
+		return nil, errors.New("invalid record to get mgr memory")
 	}
 
-	var group Group
+	var mgr MerryGoRound
 
-	err := insolar.Deserialize(memory, &group)
+	err := insolar.Deserialize(memory, &mgr)
 	if err != nil {
-		log.Error(errors.New("failed to deserialize group memory"))
+		log.Error(errors.New("failed to deserialize mgr memory"))
 	}
 
-	return &group, nil
+	return &mgr, nil
 }
