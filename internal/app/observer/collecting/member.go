@@ -35,7 +35,10 @@ type MemberCollector struct {
 }
 
 func NewMemberCollector() *MemberCollector {
-	collector := NewBoundCollector(isMemberCreateRequest, successResult, isNewAccount, isAccountActivate)
+	collector := NewBoundCollector(
+		NewResultCollector(isMemberCreateRequest, successResult),
+		NewActivateCollector(isNewAccount, isAccountActivate),
+		)
 	return &MemberCollector{
 		collector: collector,
 	}

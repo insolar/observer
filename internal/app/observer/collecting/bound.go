@@ -37,9 +37,7 @@ type BoundCouple struct {
 	Activate *observer.Activate
 }
 
-func NewBoundCollector(originRequest, properResult, directRequest, properActivate observer.Predicate) *BoundCollector {
-	results := NewResultCollector(originRequest, properResult)
-	activates := NewActivateCollector(directRequest, properActivate)
+func NewBoundCollector(resultsCollector observer.ResultCollector, activatesCollector observer.ActivateCollector) *BoundCollector {
 	parent := &RelationDesc{
 		Is:     isCoupledResult,
 		Origin: coupledResultOrigin,
@@ -51,8 +49,8 @@ func NewBoundCollector(originRequest, properResult, directRequest, properActivat
 		Proper: isCoupledActivate,
 	}
 	return &BoundCollector{
-		results:   results,
-		activates: activates,
+		results:   resultsCollector,
+		activates: activatesCollector,
 		chains:    NewChainCollector(parent, child),
 	}
 }
@@ -61,17 +59,14 @@ func (c *BoundCollector) Collect(rec *observer.Record) *BoundCouple {
 	if rec == nil {
 		return nil
 	}
-	res := c.results.Collect(rec)
-	act := c.activates.Collect(rec)
 
 	var (
 		fullChain *observer.Chain
 	)
-	switch {
-	case act != nil:
-		fullChain = c.chains.Collect(act)
-	case res != nil:
+	if res := c.results.Collect(rec); res != nil {
 		fullChain = c.chains.Collect(res)
+	} else if act := c.activates.Collect(rec); act != nil {
+		fullChain = c.chains.Collect(act)
 	}
 
 	if fullChain == nil {
@@ -102,6 +97,7 @@ func coupledResultOrigin(chain interface{}) insolar.ID {
 	request := coupled.Request
 	if !request.IsIncoming() {
 		log.Warnf("failed to use not incoming request to get origin")
+		return insolar.ID{}
 	}
 	return request.ID
 }
@@ -114,6 +110,7 @@ func coupledActivateOrigin(chain interface{}) insolar.ID {
 	request := coupled.Request
 	if !request.IsIncoming() {
 		log.Warnf("failed to use not incoming request to get origin")
+		return insolar.ID{}
 	}
 	return request.Reason()
 }
