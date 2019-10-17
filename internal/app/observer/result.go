@@ -107,7 +107,7 @@ func (r *Result) ParseFirstPayloadValue(v interface{}) {
 	}
 	err = json.Unmarshal(data, v)
 	if err != nil {
-		log.Warn("failed to unmarshal Payload.Returns[0]")
+		log.WithField("json", string(data)).Warn("failed to unmarshal Payload.Returns[0]")
 		debug.PrintStack()
 	}
 }
