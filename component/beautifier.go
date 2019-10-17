@@ -17,13 +17,47 @@
 package component
 
 import (
+	"sort"
+
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
 )
+
+type ByType []*observer.Record
+
+func (a ByType) Type(i int) int {
+	switch a[i].Virtual.Union.(type) {
+	case *record.Virtual_Code:
+		return -2
+	case *record.Virtual_PendingFilament:
+		return -1
+	case *record.Virtual_IncomingRequest:
+		return 0
+	case *record.Virtual_OutgoingRequest:
+		return 1
+	case *record.Virtual_Activate:
+		return 2
+	case *record.Virtual_Amend:
+		return 3
+	case *record.Virtual_Deactivate:
+		return 4
+	case *record.Virtual_Result:
+		return 5
+	default:
+		panic("unexpect type")
+	}
+}
+
+func (a ByType) Len() int      { return len(a) }
+func (a ByType) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByType) Less(i, j int) bool {
+	return a.Type(i) < a.Type(j)
+}
 
 func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
@@ -54,6 +88,9 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			updates:   make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:  make(map[string]*observer.Wasting),
 		}
+
+		sort.Sort(ByType(r.batch))
+
 		for _, rec := range r.batch {
 			// entities
 
