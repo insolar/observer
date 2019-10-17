@@ -53,7 +53,7 @@ func TestChainCollector_Collect(t *testing.T) {
 	}{
 		{
 			name:   "not ours",
-			stream: []E{E{kind: "some"}},
+			stream: []E{{kind: "some"}},
 			expected: []*observer.Chain{},
 			checks: func(t *testing.T, collector *ChainCollector) {
 				require.Empty(t, collector.parents)
