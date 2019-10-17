@@ -39,7 +39,6 @@ func makeFetcher(
 	pulses := grpc.NewPulseFetcher(cfg, obs, pulseClient)
 	records := grpc.NewRecordFetcher(cfg, obs, recordClient)
 	return func(s *state) *raw {
-		log.Debug("Connection ref: ", &recordClient)
 		// Get next pulse
 		// todo: skip empty pulses, if shouldIterateFrom set
 		pulse, err := pulses.Fetch(s.last)
