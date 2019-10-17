@@ -28,10 +28,8 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
-type ByType []*observer.Record
-
-func (a ByType) Type(i int) int {
-	switch a[i].Virtual.Union.(type) {
+func TypeOrder(rec *observer.Record) int {
+	switch rec.Virtual.Union.(type) {
 	case *record.Virtual_Code:
 		return -2
 	case *record.Virtual_PendingFilament:
@@ -51,12 +49,6 @@ func (a ByType) Type(i int) int {
 	default:
 		panic("unexpect type")
 	}
-}
-
-func (a ByType) Len() int      { return len(a) }
-func (a ByType) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByType) Less(i, j int) bool {
-	return a.Type(i) < a.Type(j)
 }
 
 func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
@@ -89,7 +81,9 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			wastings:  make(map[string]*observer.Wasting),
 		}
 
-		sort.Sort(ByType(r.batch))
+		sort.Slice(r.batch, func(i,j int)bool {
+			return TypeOrder(r.batch[i]) < TypeOrder(r.batch[j])
+		})
 
 		for _, rec := range r.batch {
 			// entities
