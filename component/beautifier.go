@@ -17,13 +17,42 @@
 package component
 
 import (
+	"reflect"
+	"sort"
+
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
 )
+
+func TypeOrder(rec *observer.Record) int {
+	switch t := rec.Virtual.Union.(type) {
+	case *record.Virtual_Genesis:
+		return -3
+	case *record.Virtual_Code:
+		return -2
+	case *record.Virtual_PendingFilament:
+		return -1
+	case *record.Virtual_IncomingRequest:
+		return 0
+	case *record.Virtual_OutgoingRequest:
+		return 1
+	case *record.Virtual_Activate:
+		return 2
+	case *record.Virtual_Amend:
+		return 3
+	case *record.Virtual_Deactivate:
+		return 4
+	case *record.Virtual_Result:
+		return 5
+	default:
+		panic("unexpected type: " + reflect.TypeOf(t).String())
+	}
+}
 
 func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
@@ -54,6 +83,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			updates:   make(map[insolar.ID]*observer.DepositUpdate),
 			wastings:  make(map[string]*observer.Wasting),
 		}
+
+		sort.Slice(r.batch, func(i, j int) bool {
+			return TypeOrder(r.batch[i]) < TypeOrder(r.batch[j])
+		})
+
 		for _, rec := range r.batch {
 			// entities
 

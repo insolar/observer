@@ -197,7 +197,8 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:5a30562e588025d60d8db37500eb620004a6c4d091b796dc36b996b836683403"
+  branch = "master"
+  digest = "1:da61a24ae34815cc309455354bfb548832d4e49af5f64dd8e63aece46679b356"
   name = "github.com/insolar/insolar"
   packages = [
     "api/requester",
@@ -230,6 +231,7 @@
     "log/inssyslog",
     "log/logadapter",
     "log/logmetrics",
+    "log/logoutput",
     "log/zlogadapter",
     "logicrunner/artifacts",
     "logicrunner/builtin/contract/account",
@@ -262,8 +264,7 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "3cca8f1514233a5b5632d16ae36c8a330db6f7b6"
-  version = "v0.9.15"
+  revision = "585982503d794e5f62c0b1130da0463b29a5fa72"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -304,14 +305,6 @@
   pruneopts = "UT"
   revision = "f5c5f50e6090ae76a29240b61ae2a90dd810112e"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:84a35669b4b31cc20ffc89c3b2ab32f2189fb2366a973efa1c25e009ef6ae1c6"
-  name = "github.com/julienschmidt/httprouter"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4eec211fa4e8df74ed978dc5681612131854144f"
-  version = "v1.3.0"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -452,12 +445,10 @@
   version = "v3.0.3"
 
 [[projects]]
-  digest = "1:fc03341aafbf39a31b220e73ced14b3af0b928af973b232533c843af8b1d49d2"
+  digest = "1:09e64bb459ade28b89f7d783b652cb25aacceab299faa018b3f4c7c970dc6975"
   name = "github.com/rs/zerolog"
   packages = [
     ".",
-    "diode",
-    "diode/internal/diodes",
     "internal/cbor",
     "internal/json",
   ]
@@ -752,7 +743,6 @@
     "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard",
     "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet",
     "github.com/insolar/insolar/pulse",
-    "github.com/julienschmidt/httprouter",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",

@@ -132,7 +132,7 @@ func (c *MemberCollector) build(act *observer.Activate, res *observer.Result) (*
 	res.ParseFirstPayloadValue(response)
 
 	balance := accountBalance((*observer.Record)(act))
-	ref, err := insolar.NewIDFromBase58(response.Reference)
+	ref, err := insolar.NewIDFromString(response.Reference)
 	if err != nil || ref == nil {
 		return nil, errors.New("invalid member reference")
 	}

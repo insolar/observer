@@ -23,6 +23,7 @@ import (
 	"github.com/insolar/insolar/api/requester"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/insolar/genesisrefs"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
@@ -151,7 +152,7 @@ func makeDepositActivate(pn insolar.PulseNumber, balance, amount, txHash string,
 }
 
 func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
-	pn := insolar.GenesisPulse.PulseNumber
+	pn := insolar.GenesisPulse.PulseNumber + 100
 	amount := "42"
 	balance := "0"
 	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
@@ -198,6 +199,44 @@ func TestDepositCollector_Collect(t *testing.T) {
 	collector := NewDepositCollector(log)
 
 	expected, records := makeDeposit()
+	var actual []*observer.Deposit
+	for _, r := range records {
+		deposit := collector.Collect(r)
+		if deposit != nil {
+			actual = append(actual, deposit)
+		}
+	}
+
+	require.Len(t, actual, 1)
+	require.Equal(t, expected, actual)
+}
+
+func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
+	log := logrus.New()
+	collector := NewDepositCollector(log)
+
+	pn := insolar.GenesisPulse.PulseNumber
+	amount := "42"
+	balance := "0"
+	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+	depositActivate := makeDepositActivate(pn, balance, amount, txHash, gen.ReferenceWithPulse(pn))
+	records := []*observer.Record{
+		depositActivate,
+	}
+	timestamp, err := pn.AsApproximateTime()
+	if err != nil {
+		panic("invalid pulse")
+	}
+	expected := []*observer.Deposit{{
+		EthHash:      txHash,
+		Ref:          *genesisrefs.ContractMigrationDeposit.GetLocal(),
+		Member:       *genesisrefs.ContractMigrationAdminMember.GetLocal(),
+		Timestamp:    timestamp.Unix(),
+		Balance:      balance,
+		Amount:       amount,
+		DepositState: depositActivate.ID,
+	}}
+
 	var actual []*observer.Deposit
 	for _, r := range records {
 		deposit := collector.Collect(r)

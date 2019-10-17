@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/genesisrefs"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
@@ -99,6 +100,27 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 		return nil
 	}
 	log := c.log
+
+	// genesis admin deposit record
+	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isDepositActivate(rec) {
+		timeActivate, err := rec.ID.Pulse().AsApproximateTime()
+		if err != nil {
+			log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
+			return nil
+		}
+		activate := rec.Virtual.GetActivate()
+		state := c.initialDepositState(activate)
+		return &observer.Deposit{
+			EthHash:         strings.ToLower(state.TxHash),
+			Ref:             *genesisrefs.ContractMigrationDeposit.GetLocal(),
+			Member:          *genesisrefs.ContractMigrationAdminMember.GetLocal(),
+			Timestamp:       timeActivate.Unix(),
+			HoldReleaseDate: 0,
+			Amount:          state.Amount,
+			Balance:         state.Balance,
+			DepositState:    rec.ID,
+		}
+	}
 
 	res := c.results.Collect(rec)
 	act := c.activates.Collect(rec)
@@ -203,7 +225,7 @@ func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	memberRef, err := insolar.NewIDFromBase58(callResult.Reference)
+	memberRef, err := insolar.NewIDFromString(callResult.Reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}

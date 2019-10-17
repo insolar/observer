@@ -20,10 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/configuration"
 )
 
 func Test_makeBeautyMetrics(t *testing.T) {
-	obs := Make()
+	obs := Make(configuration.Default())
 	metrics := MakeBeautyMetrics(obs, "processed")
 	require.NotNil(t, metrics)
 }

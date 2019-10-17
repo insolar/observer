@@ -82,13 +82,13 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 	request.ParseMemberContractCallParams(callParams)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
-	memberFrom, err := insolar.NewIDFromBase58(callArguments.Params.Reference)
+	memberFrom, err := insolar.NewIDFromString(callArguments.Params.Reference)
 	if err != nil {
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
 	if callArguments.Params.CallSite == "member.transfer" {
-		memberTo, err = insolar.NewIDFromBase58(callParams.ToMemberReference)
+		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
 		}
