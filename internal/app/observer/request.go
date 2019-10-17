@@ -165,3 +165,20 @@ func (r *Request) ParseMemberContractCallParams(v interface{}) {
 		debug.PrintStack()
 	}
 }
+
+func (r *Request) ParseIncomingArguments(args ...interface{}) {
+	if !r.IsIncoming() {
+		log.Warnf("trying to parse arguments of not incoming request")
+		return
+	}
+	in := r.Virtual.GetIncomingRequest().Arguments
+	if in == nil {
+		log.Warnf("member call arguments is nil")
+		return
+	}
+	err := insolar.Deserialize(in, &args)
+	if err != nil {
+		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return
+	}
+}
