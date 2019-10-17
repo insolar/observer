@@ -23,6 +23,7 @@ import (
 type Cache interface {
 	Set(insolar.ID, interface{})
 	Get(insolar.ID) interface{}
+	Pop(insolar.ID) interface{}
 	Has(insolar.ID) bool
 	Delete(insolar.ID)
 }

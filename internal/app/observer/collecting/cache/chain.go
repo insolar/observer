@@ -50,3 +50,12 @@ func (c *Cache) Has(key insolar.ID) bool {
 func (c *Cache) Delete(key insolar.ID) {
 	delete(c.Cache, key)
 }
+
+func (c *Cache) Pop(key insolar.ID) interface{} {
+	v, ok := c.Cache[key]
+	if !ok {
+		return nil
+	}
+	delete(c.Cache, key)
+	return v
+}
