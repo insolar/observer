@@ -19,13 +19,6 @@ type MGRCollector struct {
 	chains    observer.ChainCollector
 }
 
-//func NewMGRCollector(log *logrus.Logger) *MGRCollector {
-//	collector := NewBoundCollector(isMGRCreationCall, successResult, isMGRNew, isMGRActivate)
-//	return &MGRCollector{
-//		collector: collector,
-//	}
-//}
-
 func NewMGRCollector(log *logrus.Logger) *MGRCollector {
 	results := NewResultCollector(isMGRCreationCall, successResult)
 	activates := NewActivateCollector(isMGRNew, isMGRActivate)
