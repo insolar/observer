@@ -18,17 +18,16 @@ package collecting
 
 import (
 	"github.com/insolar/insolar/insolar"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting/cache"
 )
 
 type ChainCollector struct {
-	parents  observer.Cache
-	children observer.Cache
-	others   observer.Cache
-	parent   *RelationDesc
-	child    *RelationDesc
+	parents observer.Cache
+	parent  *RelationDesc
+	child   *RelationDesc
 }
 
 type RelationDesc struct {
@@ -41,11 +40,9 @@ func NewChainCollector(
 	parent *RelationDesc, child *RelationDesc,
 ) *ChainCollector {
 	return &ChainCollector{
-		parents:  cache.New(),
-		children: cache.New(),
-		others:   cache.New(),
-		parent:   parent,
-		child:    child,
+		parents: cache.New(),
+		parent:  parent,
+		child:   child,
 	}
 }
 
@@ -54,45 +51,27 @@ func (c *ChainCollector) Collect(chain interface{}) *observer.Chain {
 		return nil
 	}
 
-	if !c.parent.Is(chain) && !c.child.Is(chain) {
-		return nil
-	}
-
-	origin := c.origin(chain)
-
-	if c.others.Has(origin) {
-		c.others.Delete(origin)
-		return nil
-	}
-
 	switch {
-	case c.parent.Proper(chain):
-		if !c.children.Has(origin) {
-			c.parents.Set(origin, chain)
+	case c.parent.Is(chain):
+		if !c.parent.Proper(chain) {
 			return nil
 		}
 
-		child := c.children.Get(origin)
-		c.children.Delete(origin)
+		origin := c.origin(chain)
+		if c.parents.Has(origin) {
+			logrus.Warn("already has parent record, overriding")
+		}
+		c.parents.Set(origin, chain)
+		return nil
+	case c.child.Is(chain):
+		origin := c.origin(chain)
 
-		if !c.child.Proper(child) {
+		parent := c.parents.Pop(origin)
+		if parent == nil {
 			return nil
 		}
 
-		return &observer.Chain{
-			Parent: chain,
-			Child:  child,
-		}
-	case c.child.Proper(chain):
-		if !c.parents.Has(origin) {
-			c.children.Set(origin, chain)
-			return nil
-		}
-
-		parent := c.parents.Get(origin)
-		c.parents.Delete(origin)
-
-		if !c.parent.Proper(parent) {
+		if !c.child.Proper(chain) {
 			return nil
 		}
 
@@ -100,17 +79,9 @@ func (c *ChainCollector) Collect(chain interface{}) *observer.Chain {
 			Parent: parent,
 			Child:  chain,
 		}
-	}
-
-	switch {
-	case c.parents.Has(origin):
-		c.parents.Delete(origin)
-	case c.children.Has(origin):
-		c.children.Delete(origin)
 	default:
-		c.others.Set(origin, chain)
+		return nil
 	}
-	return nil
 }
 
 func (c *ChainCollector) origin(chain interface{}) insolar.ID {
