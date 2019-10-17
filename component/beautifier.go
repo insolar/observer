@@ -17,6 +17,7 @@
 package component
 
 import (
+	"reflect"
 	"sort"
 
 	"github.com/insolar/insolar/insolar"
@@ -29,7 +30,9 @@ import (
 )
 
 func TypeOrder(rec *observer.Record) int {
-	switch rec.Virtual.Union.(type) {
+	switch t := rec.Virtual.Union.(type) {
+	case *record.Virtual_Genesis:
+		return -3
 	case *record.Virtual_Code:
 		return -2
 	case *record.Virtual_PendingFilament:
@@ -47,7 +50,7 @@ func TypeOrder(rec *observer.Record) int {
 	case *record.Virtual_Result:
 		return 5
 	default:
-		panic("unexpect type")
+		panic("unexpected type: " + reflect.TypeOf(t).String())
 	}
 }
 
@@ -81,7 +84,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			wastings:  make(map[string]*observer.Wasting),
 		}
 
-		sort.Slice(r.batch, func(i,j int)bool {
+		sort.Slice(r.batch, func(i, j int) bool {
 			return TypeOrder(r.batch[i]) < TypeOrder(r.batch[j])
 		})
 

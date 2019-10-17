@@ -118,7 +118,6 @@ func (m *Manager) run(s *state) {
 		s.stat = *statistic
 	}
 
-	// todo replace by adjustable timer
 	m.log.Debug("Sleep: ", sleepTime)
 	time.Sleep(sleepTime)
 }
