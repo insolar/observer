@@ -30,7 +30,7 @@ import (
 )
 
 type ObjectSchema struct {
-	tableName struct{} `sql:"objects"`
+	tableName struct{} `sql:"objects"` //nolint: unused,structcheck
 
 	ObjectID  string `sql:"object_id,pk"`
 	Domain    string

@@ -29,7 +29,7 @@ import (
 )
 
 type ResultSchema struct {
-	tableName struct{} `sql:"results"`
+	tableName struct{} `sql:"results"` //nolint: unused,structcheck
 
 	ResultID string `sql:"result_id,pk"`
 	Request  string

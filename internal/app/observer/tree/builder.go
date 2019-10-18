@@ -38,7 +38,7 @@ type Builder interface {
 }
 
 type builder struct {
-	fetcher store.RecordFetcher
+	fetcher store.RecordFetcher //nolint: unused,structcheck
 }
 
 func NewBuilder(fetcher store.RecordFetcher) Builder {

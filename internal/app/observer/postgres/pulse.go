@@ -31,7 +31,7 @@ import (
 )
 
 type PulseSchema struct {
-	tableName struct{} `sql:"pulses"`
+	tableName struct{} `sql:"pulses"` //nolint: unused,structcheck
 
 	Pulse     uint32 `sql:",pk"`
 	PulseDate int64  `sql:",notnull"`

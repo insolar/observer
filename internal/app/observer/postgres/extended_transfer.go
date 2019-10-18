@@ -28,7 +28,7 @@ import (
 )
 
 type ExtendedTransferSchema struct {
-	tableName struct{} `sql:"transactions"`
+	tableName struct{} `sql:"transactions"` //nolint: unused,structcheck
 
 	ID            uint                `sql:",pk_id"`
 	TxID          []byte              `sql:",unique"`

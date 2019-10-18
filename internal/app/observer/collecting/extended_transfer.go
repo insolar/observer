@@ -365,34 +365,35 @@ func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.Exte
 }
 
 func (c *ExtendedTransferCollector) unwrapChain(chain *observer.Chain) (
-	root *observer.Request,
-	result *observer.Result,
-	wallet *observer.Request,
-	account *observer.Request,
-	calc *observer.Request,
-	getFeeMember *observer.Request,
-	feeMember *observer.Result,
-	accept *observer.Request,
+	*observer.Request,
+	*observer.Result,
+	*observer.Request,
+	*observer.Request,
+	*observer.Request,
+	*observer.Request,
+	*observer.Result,
+	*observer.Request,
 ) {
 	rootResult, ok := chain.Parent.(*observer.CoupledResult)
 	if !ok {
 		c.log.Errorf("[0] trying to use %T as *observer.CoupledResult", chain.Parent)
-		return
+		return nil, nil, nil, nil, nil, nil, nil, nil
 	}
-	root = rootResult.Request
-	result = rootResult.Result
+
+	root := rootResult.Request
+	result := rootResult.Result
 
 	walletTransfer, ok := chain.Child.(*observer.Chain)
 	if !ok {
 		c.log.Errorf("[1] trying to use %T as &observer.Chain", chain.Child)
 	}
-	wallet = observer.CastToRequest(walletTransfer.Parent)
+	wallet := observer.CastToRequest(walletTransfer.Parent)
 
 	accoutTransfer, ok := walletTransfer.Child.(*observer.Chain)
 	if !ok {
 		c.log.Errorf("[2] trying to use %T as &observer.Chain", walletTransfer.Child)
 	}
-	accept = observer.CastToRequest(accoutTransfer.Child)
+	accept := observer.CastToRequest(accoutTransfer.Child)
 
 	feeChain, ok := accoutTransfer.Parent.(*observer.Chain)
 	if !ok {
@@ -402,19 +403,19 @@ func (c *ExtendedTransferCollector) unwrapChain(chain *observer.Chain) (
 	calcFeeRequestPair, ok := feeChain.Parent.(*observer.Chain)
 	if !ok {
 		c.log.Errorf("[4] trying to use %T as *observer.Chain", chain.Parent)
-		return
+		return nil, nil, nil, nil, nil, nil, nil, nil
 	}
 
-	account = observer.CastToRequest(calcFeeRequestPair.Parent)
-	calc = observer.CastToRequest(calcFeeRequestPair.Child)
+	account := observer.CastToRequest(calcFeeRequestPair.Parent)
+	calc := observer.CastToRequest(calcFeeRequestPair.Child)
 	getFeeMemberPair, ok := feeChain.Child.(*observer.CoupledResult)
 	if !ok {
 		c.log.Errorf("[5] trying to use %T as *observer.CoupledResult", chain.Parent)
-		return
+		return nil, nil, nil, nil, nil, nil, nil, nil
 	}
-	getFeeMember = getFeeMemberPair.Request
-	feeMember = getFeeMemberPair.Result
-	return
+	getFeeMember := getFeeMemberPair.Request
+	feeMember := getFeeMemberPair.Result
+	return root, result, wallet, account, calc, getFeeMember, feeMember, accept
 }
 
 func (c *ExtendedTransferCollector) build(
@@ -474,11 +475,7 @@ func (c *ExtendedTransferCollector) isTransferCall(chain interface{}) bool {
 	}
 
 	args := request.ParseMemberCallArguments()
-	switch args.Params.CallSite {
-	case "member.transfer":
-		return true
-	}
-	return false
+	return args.Params.CallSite == "member.transfer"
 }
 
 func (c *ExtendedTransferCollector) isGetFeeMember(chain interface{}) bool {

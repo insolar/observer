@@ -88,8 +88,8 @@ func (o *Observability) Gauge(opts prometheus.GaugeOpts) prometheus.Gauge {
 	return g
 }
 
-func MakeBeautyMetrics(obs *Observability, action string) *beautyMetrics {
-	counters := &beautyMetrics{}
+func MakeBeautyMetrics(obs *Observability, action string) *BeautyMetrics {
+	counters := &BeautyMetrics{}
 	v := reflect.ValueOf(counters).Elem()
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
@@ -106,7 +106,7 @@ func MakeBeautyMetrics(obs *Observability, action string) *beautyMetrics {
 	return counters
 }
 
-type beautyMetrics struct {
+type BeautyMetrics struct {
 	Pulses      prometheus.Counter
 	Records     prometheus.Counter
 	Requests    prometheus.Counter

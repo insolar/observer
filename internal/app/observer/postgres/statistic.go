@@ -31,7 +31,7 @@ import (
 )
 
 type StatisticSchema struct {
-	tableName struct{} `sql:"blockchain_stats"`
+	tableName struct{} `sql:"blockchain_stats"` //nolint: unused,structcheck
 
 	Pulse              insolar.PulseNumber `sql:"pulse_num, pk"`
 	Transfers          int                 `sql:"count_transactions, notnull"`

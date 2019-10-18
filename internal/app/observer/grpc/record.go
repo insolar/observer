@@ -33,7 +33,7 @@ import (
 type RecordFetcher struct {
 	log     *logrus.Logger
 	client  exporter.RecordExporterClient
-	records observer.RecordStorage
+	records observer.RecordStorage //nolint: unused,structcheck
 	request *exporter.GetRecords
 }
 

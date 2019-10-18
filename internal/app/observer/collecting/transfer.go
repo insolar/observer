@@ -63,11 +63,7 @@ func (c *TransferCollector) isTransferCall(chain interface{}) bool {
 	}
 
 	args := request.ParseMemberCallArguments()
-	switch args.Params.CallSite {
-	case "deposit.transfer":
-		return true
-	}
-	return false
+	return args.Params.CallSite == "deposit.transfer"
 }
 
 func (c *TransferCollector) successResult(chain interface{}) bool {
