@@ -58,8 +58,8 @@ func (s *UserGroupStorage) Insert(model *observer.Group) error {
 			return err
 		}
 	}
-	// chairmen or creator with active status
-	row := userGroupMemberSchema(model, model.ChairMan, "chairman", "active", model.Timestamp)
+	// creator with active status
+	row := userGroupMemberSchema(model, model.ChairMan, "admin", "active", model.Timestamp)
 	return s.insertRow(row)
 }
 

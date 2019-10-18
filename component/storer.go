@@ -149,7 +149,22 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			mgrs := postgres.NewMGRStorage(obs, tx)
+			for _, mgr := range b.mgrs {
+				err := mgrs.Insert(mgr)
+				if err != nil {
+					return err
+				}
+			}
+
 			// updates
+
+			for _, mgr := range b.mgrUpdates {
+				err := mgrs.Update(mgr)
+				if err != nil {
+					return err
+				}
+			}
 
 			for _, group := range b.groupUpdates {
 				err := groups.Update(group)
