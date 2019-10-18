@@ -131,8 +131,8 @@ func (c *CacheRecordStore) SideEffect(ctx context.Context, reqID insolar.ID) (re
 
 func (c *CacheRecordStore) CalledRequests(ctx context.Context, reqID insolar.ID) ([]record.Material, error) {
 	c.requestLock.RLock()
-	fromCache, _ := c.getMany(scopeCalledRequests, reqID)
-	if len(fromCache) != 0 {
+	fromCache, ok := c.getMany(scopeCalledRequests, reqID)
+	if ok {
 		c.requestLock.RUnlock()
 		return derefMany(fromCache), nil
 	}
@@ -140,8 +140,8 @@ func (c *CacheRecordStore) CalledRequests(ctx context.Context, reqID insolar.ID)
 
 	c.requestLock.Lock()
 	defer c.requestLock.Unlock()
-	fromCache, _ = c.getMany(scopeCalledRequests, reqID)
-	if len(fromCache) != 0 {
+	fromCache, ok = c.getMany(scopeCalledRequests, reqID)
+	if ok {
 		return derefMany(fromCache), nil
 	}
 
@@ -201,6 +201,7 @@ func derefMany(in []*record.Material) []record.Material {
 func refMany(in []record.Material) []*record.Material {
 	out := make([]*record.Material, len(in))
 	for i, rec := range in {
+		rec := rec
 		out[i] = &rec
 	}
 	return out
