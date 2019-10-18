@@ -38,12 +38,15 @@ required = [
 
 [[constraint]]
   name = "github.com/go-pg/pg"
-  version = "=v6.14.5"
+  version = "=v8.0.6"
+
+[[constraint]]
+    name = "github.com/go-pg/migrations"
+    version = "=v6.7.3"
 
 [[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.1"
-
 
 [[constraint]]
   branch = "master"
@@ -56,3 +59,7 @@ required = [
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/ory/dockertest"
+  version = "3.3.5"
