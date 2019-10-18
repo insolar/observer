@@ -723,6 +723,7 @@
   input-imports = [
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
+    "github.com/gojuno/minimock",
     "github.com/insolar/insolar/api/requester",
     "github.com/insolar/insolar/insolar",
     "github.com/insolar/insolar/insolar/gen",

@@ -24,6 +24,9 @@
 #   go-tests = true
 #   unused-packages = true
 
+required = [
+    "github.com/gojuno/minimock"
+]
 
 [[constraint]]
   name = "github.com/insolar/insolar"
@@ -45,6 +48,10 @@
 [[constraint]]
   branch = "master"
   name = "github.com/stretchr/testify"
+
+[[constraint]]
+  name = "github.com/gojuno/minimock"
+  version="2.1.9"
 
 [prune]
   go-tests = true

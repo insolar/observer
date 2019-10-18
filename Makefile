@@ -29,7 +29,7 @@ ensure: ## dep ensure
 	dep ensure -v
 
 ci_test: ## run tests with coverage
-	go test -json -v -count 10 -timeout 20m --coverprofile=converage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
+	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: test
 test:
