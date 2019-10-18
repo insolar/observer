@@ -3,6 +3,7 @@ package tree
 import (
 	"context"
 
+	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
@@ -43,7 +44,7 @@ type Builder interface {
 }
 
 type builder struct {
-	fetcher store.RecordFetcher //nolint: unused,structcheck
+	fetcher store.RecordFetcher
 }
 
 func NewBuilder(fetcher store.RecordFetcher) Builder {
@@ -94,9 +95,12 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 
 			result, err := b.fetcher.Result(ctx, e.ID)
 			if err != nil {
-				return Structure{}, errors.Wrap(err, "couldn't get result")
+				if errors.Cause(err) != pg.ErrNoRows {
+					return Structure{}, errors.Wrap(err, "couldn't get result of outgoing")
+				}
+			} else {
+				outgoings[index].Result = result.Virtual.Union.(*record.Virtual_Result).Result
 			}
-			outgoings[index].Result = result.Virtual.Union.(*record.Virtual_Result).Result
 		case *record.Virtual_IncomingRequest:
 			index := int(req.IncomingRequest.Nonce)
 			if add := index - len(outgoings); add > 0 {
@@ -118,7 +122,9 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 
 	sideEffect, err := b.fetcher.SideEffect(ctx, reqID)
 	if err != nil {
-		return Structure{}, errors.Wrap(err, "couldn't build sub-tree")
+		if errors.Cause(err) != pg.ErrNoRows {
+			return Structure{}, errors.Wrap(err, "couldn't get sub-tree")
+		}
 	} else {
 		switch rec := sideEffect.Virtual.Union.(type) {
 		case *record.Virtual_Activate:
