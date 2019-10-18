@@ -56,9 +56,17 @@ func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Materia
 
 	c.requestLock.Lock()
 	defer c.requestLock.Unlock()
-	recs, _ := c.getMany(scopeCalledRequests, reasonID)
-	recs = append(recs, &record)
-	c.setMany(scopeCalledRequests, reasonID, recs)
+	fromCache, ok := c.getMany(scopeCalledRequests, reasonID)
+	if !ok {
+		fromBackend, err := c.backend.CalledRequests(ctx, reasonID)
+		if err != nil {
+			return err
+		}
+		fromCache = refMany(fromBackend)
+	}
+
+	fromCache = append(fromCache, &record)
+	c.setMany(scopeCalledRequests, reasonID, fromCache)
 	return c.setOne(scopeRequest, &record)
 }
 
