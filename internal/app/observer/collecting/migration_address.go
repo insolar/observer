@@ -19,8 +19,9 @@ package collecting
 import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/migrationshard"
-	proxyShard "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationshard"
+
+	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
+	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
 
 	"github.com/insolar/observer/internal/app/observer"
 )

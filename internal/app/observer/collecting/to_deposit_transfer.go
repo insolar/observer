@@ -19,11 +19,14 @@ package collecting
 import (
 	"encoding/base64"
 
+	"github.com/insolar/insolar/application"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/genesisrefs"
-	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
-	proxyMigrationAdmin "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationadmin"
-	proxyDaemon "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
+
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyMigrationAdmin "github.com/insolar/insolar/application/builtin/proxy/migrationadmin"
+	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	"github.com/insolar/insolar/application/genesisrefs"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -247,7 +250,7 @@ func (c *ToDepositTransferCollector) build(
 		amount    string
 	)
 
-	memberFrom := genesisrefs.GenesisRef(insolar.GenesisNameMigrationAdminMember)
+	memberFrom := genesisrefs.GenesisRef(application.GenesisNameMigrationAdminMember)
 	var refTo string
 	addressRes.ParseFirstPayloadValue(&refTo)
 	buf, err := base64.StdEncoding.DecodeString(refTo)

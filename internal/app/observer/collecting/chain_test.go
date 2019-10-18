@@ -52,15 +52,15 @@ func TestChainCollector_Collect(t *testing.T) {
 		checks   func(t *testing.T, collector *ChainCollector)
 	}{
 		{
-			name:   "not ours",
-			stream: []E{{kind: "some"}},
+			name:     "not ours",
+			stream:   []E{{kind: "some"}},
 			expected: []*observer.Chain{},
 			checks: func(t *testing.T, collector *ChainCollector) {
 				require.Empty(t, collector.parents)
 			},
 		},
 		{
-			name:   "not match",
+			name: "not match",
 			stream: []E{
 				{kind: "parent", origin: gen.ID()},
 				{kind: "some", origin: gen.ID()},
@@ -71,7 +71,7 @@ func TestChainCollector_Collect(t *testing.T) {
 			},
 		},
 		{
-			name:   "child-paren pairs",
+			name: "child-paren pairs",
 			stream: []E{
 				{kind: "parent", origin: ids[0], proper: true},
 				{kind: "parent", origin: ids[1], proper: true},
@@ -86,7 +86,7 @@ func TestChainCollector_Collect(t *testing.T) {
 			expected: []*observer.Chain{
 				{
 					Parent: E{kind: "parent", origin: ids[0], proper: true},
-					Child: E{kind: "child", origin: ids[0], proper: true},
+					Child:  E{kind: "child", origin: ids[0], proper: true},
 				},
 			},
 			checks: func(t *testing.T, collector *ChainCollector) {

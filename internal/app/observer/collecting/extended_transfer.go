@@ -21,10 +21,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
-	proxyCostCenter "github.com/insolar/insolar/logicrunner/builtin/proxy/costcenter"
-	proxyMember "github.com/insolar/insolar/logicrunner/builtin/proxy/member"
-	proxyWallet "github.com/insolar/insolar/logicrunner/builtin/proxy/wallet"
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
+	proxyCostCenter "github.com/insolar/insolar/application/builtin/proxy/costcenter"
+	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
+	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 
 	"github.com/insolar/observer/internal/app/observer"
 )

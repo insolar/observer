@@ -19,11 +19,11 @@ package collecting
 import (
 	"testing"
 
+	"github.com/insolar/insolar/application/builtin/contract/account"
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/account"
-	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
 	"github.com/insolar/insolar/pulse"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"

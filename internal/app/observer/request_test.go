@@ -19,11 +19,11 @@ package observer
 import (
 	"testing"
 
+	"github.com/insolar/insolar/application/builtin/contract/member"
+	depositProxy "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	memberProxy "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	depositProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
-	memberProxy "github.com/insolar/insolar/logicrunner/builtin/proxy/member"
 	"github.com/stretchr/testify/require"
 )
 

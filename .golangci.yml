@@ -1,6 +1,8 @@
 run:
+  skip-files:
+    - ".*_mock.go"
+    - ".*.pb.go"
   tests: false
-  skip-dirs:
 
 linters:
   enable:
