@@ -17,30 +17,34 @@
 package component
 
 import (
-	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/observer/internal/app/observer"
-	"github.com/stretchr/testify/require"
 	"math/rand"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/insolar/insolar/insolar/record"
+	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/internal/app/observer"
 )
 
 func Test_SortByType(t *testing.T) {
 	var batch []*observer.Record
 	batch = append(batch,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{},},},
+		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Activate{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Amend{}}},
+		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Genesis{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
 	)
 
 	var expected []*observer.Record
 	expected = append(expected,
+		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Genesis{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
