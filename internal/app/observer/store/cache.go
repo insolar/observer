@@ -30,7 +30,8 @@ func NewCacheRecordStore(backend RecordStore, size int) (*CacheRecordStore, erro
 type scope uint8
 
 const (
-	scopeRequest = iota
+	scopeUnknown scope  = iota
+	scopeRequest
 	scopeResult
 	scopeSideEffect
 )
