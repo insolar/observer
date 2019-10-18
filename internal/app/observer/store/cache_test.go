@@ -74,6 +74,11 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		backend.SetRequestMock.Inspect(func(ctx context.Context, record record.Material) {
 			require.Equal(t, expectedRecord, record)
 		}).Return(nil)
+		backend.CalledRequestsMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
+			reasonID, err := ReasonID(&expectedRecord)
+			require.NoError(t, err)
+			require.Equal(t, reasonID, reqID)
+		}).Return(nil, nil)
 
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
