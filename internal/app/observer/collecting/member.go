@@ -17,15 +17,15 @@
 package collecting
 
 import (
+	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/account"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
+	"github.com/insolar/insolar/application/builtin/contract/member"
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 
 	"github.com/insolar/observer/internal/app/observer"
 )

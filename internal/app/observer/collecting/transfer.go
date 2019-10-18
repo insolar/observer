@@ -17,8 +17,8 @@
 package collecting
 
 import (
+	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 

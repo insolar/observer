@@ -20,13 +20,13 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/genesisrefs"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
-	"github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
-	proxyDaemon "github.com/insolar/insolar/logicrunner/builtin/proxy/migrationdaemon"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 

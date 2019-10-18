@@ -25,8 +25,8 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member/signer"
+	"github.com/insolar/insolar/application/builtin/contract/member"
+	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	"github.com/pkg/errors"
 )
 
