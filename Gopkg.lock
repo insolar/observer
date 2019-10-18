@@ -159,6 +159,17 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:c77361e611524ec8f2ad37c408c3c916111a70b6acf806a1200855696bf8fa4d"
+  name = "github.com/hashicorp/golang-lru"
+  packages = [
+    ".",
+    "simplelru",
+  ]
+  pruneopts = "UT"
+  revision = "7f827b33c0f158ec5dfbba01bb0b14a4541fd81d"
+  version = "v0.5.3"
+
+[[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
   name = "github.com/hashicorp/hcl"
   packages = [
@@ -737,6 +748,7 @@
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
     "github.com/gojuno/minimock",
+    "github.com/hashicorp/golang-lru",
     "github.com/insolar/insolar/application",
     "github.com/insolar/insolar/application/api/requester",
     "github.com/insolar/insolar/application/builtin/contract/account",
@@ -765,6 +777,7 @@
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "google.golang.org/grpc",
     "gopkg.in/yaml.v2",
