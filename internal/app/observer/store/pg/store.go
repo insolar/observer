@@ -36,13 +36,13 @@ func NewPgStore(db *pg.DB) *Store {
 }
 
 type RawRequest struct {
-	ID       string `sql:"request_id""`
+	ID       string `sql:"request_id"`
 	ReasonID string `sql:"reason_id"`
 	Body     []byte `sql:"request_body"`
 }
 
 type RawResult struct {
-	RequestID string `sql:"request_id""`
+	RequestID string `sql:"request_id"`
 	Body      []byte `sql:"result_body"`
 }
 
