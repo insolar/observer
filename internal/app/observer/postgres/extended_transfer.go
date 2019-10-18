@@ -100,7 +100,7 @@ func extendedTransferSchema(model *observer.ExtendedTransfer) *ExtendedTransferS
 		Fee:           model.Fee,
 		TransferDate:  model.Timestamp,
 		PulseNum:      model.Pulse,
-		Status:        "SUCCESS",
+		Status:        model.Status,
 		MemberFromRef: model.From.Bytes(),
 		MemberToRef:   model.To.Bytes(),
 

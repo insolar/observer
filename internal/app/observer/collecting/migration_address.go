@@ -17,23 +17,27 @@
 package collecting
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 
 	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 type MigrationAddressCollector struct {
-	results observer.ResultCollector
+	log     *logrus.Logger
+	fetcher store.RecordFetcher
 }
 
-func NewMigrationAddressesCollector() *MigrationAddressCollector {
-	results := NewResultCollector(isAddMigrationAddresses, successResult)
+func NewMigrationAddressesCollector(fetcher store.RecordFetcher) *MigrationAddressCollector {
 	return &MigrationAddressCollector{
-		results: results,
+		fetcher: fetcher,
 	}
 }
 
@@ -43,24 +47,35 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 	}
 
 	// This code block collects addresses from incoming request.
-	couple := c.results.Collect(rec)
-	if couple != nil {
-		result := couple.Result
-		if !result.IsSuccess() {
+	res := observer.CastToResult(rec)
+	if res.IsResult() {
+		req, err := c.fetcher.Request(context.Background(), res.Request())
+		if err != nil {
+			panic("result without request")
+		}
+		call, ok := c.isAddMigrationAddresses(&req)
+		if !ok {
 			return nil
 		}
-		request := couple.Request
-		params := &addAddresses{}
-		request.ParseMemberContractCallParams(params)
-		addresses := []*observer.MigrationAddress{}
-		for _, addr := range params.MigrationAddresses {
-			addresses = append(addresses, &observer.MigrationAddress{
-				Addr:   addr,
-				Pulse:  request.ID.Pulse(),
-				Wasted: false,
-			})
+
+		if !res.IsSuccess() {
+			// TODO: maybe we need to do something else
+			c.log.Warnf("unsuccessful attempt to add migration addresses")
 		}
-		return addresses
+
+		if call != nil {
+			params := &addAddresses{}
+			call.ParseMemberContractCallParams(params)
+			addresses := []*observer.MigrationAddress{}
+			for _, addr := range params.MigrationAddresses {
+				addresses = append(addresses, &observer.MigrationAddress{
+					Addr:   addr,
+					Pulse:  call.ID.Pulse(),
+					Wasted: false,
+				})
+			}
+			return addresses
+		}
 	}
 
 	// This code block collects addresses from genesis record.
@@ -105,16 +120,16 @@ func migrationShardActivate(act *record.Activate) []string {
 	return shard.FreeMigrationAddresses
 }
 
-func isAddMigrationAddresses(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
+func (c *MigrationAddressCollector) isAddMigrationAddresses(rec *record.Material) (*observer.Request, bool) {
+	request := observer.CastToRequest((*observer.Record)(rec))
 	if !request.IsIncoming() {
-		return false
+		return nil, false
 	}
 
 	if !request.IsMemberCall() {
-		return false
+		return nil, false
 	}
 
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "migration.addAddresses"
+	return request, args.Params.CallSite == "migration.addAddresses"
 }

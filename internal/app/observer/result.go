@@ -152,3 +152,37 @@ type CoupledResult struct {
 type ResultCollector interface {
 	Collect(*Record) *CoupledResult
 }
+
+func ParseResultPayload(res *record.Result) (foundation.Result, error) {
+	var firstValue interface{}
+	var contractErr *foundation.Error
+	requestErr, err := foundation.UnmarshalMethodResult(res.Payload, &firstValue, &contractErr)
+
+	if err != nil {
+		return foundation.Result{}, errors.Wrap(err, "failed to unmarshal result payload")
+	}
+
+	result := foundation.Result{
+		Error:   requestErr,
+		Returns: []interface{}{firstValue, contractErr},
+	}
+	return result, nil
+}
+
+func ParseFirstValueResult(res *record.Result, v interface{}) {
+	result, err := ParseResultPayload(res)
+	if err != nil {
+		return
+	}
+	returns := result.Returns
+	data, err := json.Marshal(returns[0])
+	if err != nil {
+		log.Warn("failed to marshal Payload.Returns[0]")
+		debug.PrintStack()
+	}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		log.WithField("json", string(data)).Warn("failed to unmarshal Payload.Returns[0]")
+		debug.PrintStack()
+	}
+}
