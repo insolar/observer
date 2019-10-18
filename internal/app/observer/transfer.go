@@ -27,6 +27,7 @@ type Transfer struct {
 	Fee       string
 	Timestamp int64
 	Pulse     insolar.PulseNumber
+	Status    string
 }
 
 // DepositTransfer describes token moving from deposit account to the insolar member account.
