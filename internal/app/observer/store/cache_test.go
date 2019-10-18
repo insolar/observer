@@ -115,8 +115,8 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
 
-		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		// Fill half the cache.
+		for i := 0; i < cacheSize / 2  ; i ++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -125,9 +125,11 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		_, err = cache.Request(ctx, expectedRequestID)
 		assert.NoError(t, err)
 
-		// Fill one more record so the last one is evicted.
-		err = cache.SetRequest(ctx, genRecord())
-		assert.NoError(t, err)
+		// Fill another half.
+		for i := 0; i < cacheSize / 2  ; i ++ {
+			err := cache.SetRequest(ctx, genRecord())
+			assert.NoError(t, err)
+		}
 
 		// Expected record is not evicted.
 		_, err = cache.Request(ctx, expectedRequestID)
