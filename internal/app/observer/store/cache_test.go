@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/go-pg/pg"
 	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
@@ -19,7 +20,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -29,7 +30,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{ID: gen.ID(), Virtual: record.Wrap(&record.IncomingRequest{})}
 	}
 
@@ -43,10 +44,10 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 		backend.RequestMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, ErrNotFound)
+		}).Return(record.Material{}, pg.ErrNoRows)
 
 		_, err := cache.Request(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -88,21 +89,21 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetRequestMock.Return(nil)
-		backend.RequestMock.Return(record.Material{}, ErrNotFound)
+		backend.RequestMock.Return(record.Material{}, pg.ErrNoRows)
 
 		// Set expected (will be the last).
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
 
 		// Expected record evicted.
 		_, err = cache.Request(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {
@@ -116,7 +117,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -142,7 +143,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -152,7 +153,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Result{Request: gen.Reference()})}
 	}
 
@@ -166,10 +167,10 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 		backend.ResultMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, ErrNotFound)
+		}).Return(record.Material{}, pg.ErrNoRows)
 
 		_, err := cache.Result(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -211,21 +212,21 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetResultMock.Return(nil)
-		backend.ResultMock.Return(record.Material{}, ErrNotFound)
+		backend.ResultMock.Return(record.Material{}, pg.ErrNoRows)
 
 		// Set expected (will be the last).
 		err := cache.SetResult(ctx, expectedRecord)
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
 
 		// Expected record evicted.
 		_, err = cache.Result(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {
@@ -239,7 +240,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -265,7 +266,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -275,7 +276,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Amend{Request: gen.Reference()})}
 	}
 
@@ -289,10 +290,10 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 		backend.SideEffectMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, ErrNotFound)
+		}).Return(record.Material{}, pg.ErrNoRows)
 
 		_, err := cache.SideEffect(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -334,21 +335,21 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetSideEffectMock.Return(nil)
-		backend.SideEffectMock.Return(record.Material{}, ErrNotFound)
+		backend.SideEffectMock.Return(record.Material{}, pg.ErrNoRows)
 
 		// Set expected (will be the last).
 		err := cache.SetSideEffect(ctx, expectedRecord)
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
 
 		// Expected record evicted.
 		_, err = cache.SideEffect(ctx, expectedRequestID)
-		assert.Equal(t, ErrNotFound, err)
+		assert.Equal(t, pg.ErrNoRows, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {
@@ -362,7 +363,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
