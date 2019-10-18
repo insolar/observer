@@ -29,7 +29,7 @@ import (
 )
 
 type RequestSchema struct {
-	tableName struct{} `sql:"requests"`
+	tableName struct{} `sql:"requests"` //nolint: unused,structcheck
 
 	RequestID  string `sql:"request_id,pk"`
 	Caller     string

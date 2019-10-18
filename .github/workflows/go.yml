@@ -115,7 +115,7 @@ jobs:
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Run linter
-      continue-on-error: true
+      continue-on-error: false
       run: |
         $GOPATH/bin/golangci-lint --color=always run ./...
       env:

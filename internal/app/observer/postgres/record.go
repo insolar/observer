@@ -31,7 +31,7 @@ import (
 )
 
 type RecordSchema struct {
-	tableName struct{} `sql:"records"`
+	tableName struct{} `sql:"records"` //nolint: unused,structcheck
 
 	Key   []byte `sql:",pk"`
 	Value []byte

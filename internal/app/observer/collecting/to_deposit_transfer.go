@@ -198,45 +198,42 @@ func (c *ToDepositTransferCollector) Collect(rec *observer.Record) *observer.Ext
 	return transfer
 }
 
-func (c *ToDepositTransferCollector) unwrapChain(chain *observer.Chain) (
-	addressRes *observer.Result,
-	confirm *observer.Request,
-	transfer *observer.Request,
-) {
+func (c *ToDepositTransferCollector) unwrapChain(chain *observer.Chain) (*observer.Result, *observer.Request, *observer.Request) {
 	half, ok := chain.Parent.(*observer.Chain)
 	if !ok {
 		c.log.Errorf("trying to use %T as *observer.Chain", chain.Parent)
-		return
+		return nil, nil, nil
 	}
 
 	addressCouple, ok := half.Child.(*observer.CoupledResult)
 	if !ok {
 		c.log.Errorf("trying to use %T as *observer.CoupledResult", half.Child)
-		return
+		return nil, nil, nil
 	}
 
-	addressRes = addressCouple.Result
+	addressRes := addressCouple.Result
 
 	comfirmChain, ok := chain.Child.(*observer.Chain)
 	if !ok {
 		c.log.Errorf("trying to use %T as *observer.Chain", chain.Child)
-		return
+		return nil, nil, nil
 	}
 
 	couple, ok := comfirmChain.Child.(*observer.CoupledResult)
 	if !ok {
 		c.log.Errorf("trying to use %T as *observer.CoupledResult", comfirmChain.Child)
-		return
+		return nil, nil, nil
+
 	}
-	transfer = couple.Request
+	transfer := couple.Request
 
 	req, ok := comfirmChain.Parent.(*observer.Record)
 	if !ok {
 		c.log.Errorf("trying to use %T as *observer.Record", comfirmChain.Parent)
 	}
 
-	confirm = observer.CastToRequest(req)
-	return
+	confirm := observer.CastToRequest(req)
+	return addressRes, confirm, transfer
 }
 
 func (c *ToDepositTransferCollector) build(

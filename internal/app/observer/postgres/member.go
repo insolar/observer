@@ -27,7 +27,7 @@ import (
 )
 
 type MemberSchema struct {
-	tableName struct{} `sql:"members"`
+	tableName struct{} `sql:"members"` //nolint: unused,structcheck
 
 	MemberRef        []byte `sql:",pk"`
 	Balance          string `sql:",notnull"`
