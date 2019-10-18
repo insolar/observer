@@ -56,6 +56,9 @@ func (s *Store) Request(ctx context.Context, reqID insolar.ID) (record.Material,
 	request := RawRequest{}
 	_, err := s.db.QueryOneContext(ctx, &request, "select * from raw_requests where request_id = ?", reqID.String())
 	if err != nil {
+		if err == pg.ErrNoRows {
+			return res, store.ErrNotFound
+		}
 		return res, errors.Wrap(err, "failed to fetch request")
 	}
 
@@ -72,6 +75,9 @@ func (s *Store) Result(ctx context.Context, reqID insolar.ID) (record.Material, 
 	result := RawResult{}
 	_, err := s.db.QueryOneContext(ctx, &result, "select * from raw_results where request_id = ?", reqID.String())
 	if err != nil {
+		if err == pg.ErrNoRows {
+			return res, store.ErrNotFound
+		}
 		return res, errors.Wrap(err, "failed to fetch result")
 	}
 
@@ -88,6 +94,9 @@ func (s *Store) SideEffect(ctx context.Context, reqID insolar.ID) (record.Materi
 	result := RawSideEffect{}
 	_, err := s.db.QueryOneContext(ctx, &result, "select * from raw_side_effects where request_id = ?", reqID.String())
 	if err != nil {
+		if err == pg.ErrNoRows {
+			return res, store.ErrNotFound
+		}
 		return res, errors.Wrap(err, "failed to fetch side effect")
 	}
 

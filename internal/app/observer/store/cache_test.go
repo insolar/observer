@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/go-pg/pg"
 	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
@@ -44,10 +43,10 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 		backend.RequestMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, pg.ErrNoRows)
+		}).Return(record.Material{}, ErrNotFound)
 
 		_, err := cache.Request(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -89,7 +88,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetRequestMock.Return(nil)
-		backend.RequestMock.Return(record.Material{}, pg.ErrNoRows)
+		backend.RequestMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
 		err := cache.SetRequest(ctx, expectedRecord)
@@ -103,7 +102,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 		// Expected record evicted.
 		_, err = cache.Request(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {
@@ -167,10 +166,10 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 		backend.ResultMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, pg.ErrNoRows)
+		}).Return(record.Material{}, ErrNotFound)
 
 		_, err := cache.Result(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -212,7 +211,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetResultMock.Return(nil)
-		backend.ResultMock.Return(record.Material{}, pg.ErrNoRows)
+		backend.ResultMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
 		err := cache.SetResult(ctx, expectedRecord)
@@ -226,7 +225,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 		// Expected record evicted.
 		_, err = cache.Result(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {
@@ -290,10 +289,10 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 		backend.SideEffectMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			require.Equal(t, expectedRequestID, reqID)
-		}).Return(record.Material{}, pg.ErrNoRows)
+		}).Return(record.Material{}, ErrNotFound)
 
 		_, err := cache.SideEffect(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("found in backend", func(t *testing.T) {
@@ -335,7 +334,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetSideEffectMock.Return(nil)
-		backend.SideEffectMock.Return(record.Material{}, pg.ErrNoRows)
+		backend.SideEffectMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
 		err := cache.SetSideEffect(ctx, expectedRecord)
@@ -349,7 +348,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 		// Expected record evicted.
 		_, err = cache.SideEffect(ctx, expectedRequestID)
-		assert.Equal(t, pg.ErrNoRows, err)
+		assert.Equal(t, ErrNotFound, err)
 	})
 
 	t.Run("updated usage for accessed record", func(t *testing.T) {

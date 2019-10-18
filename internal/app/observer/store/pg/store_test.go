@@ -132,9 +132,9 @@ func TestStore_RequestBadRecord(t *testing.T) {
 }
 
 func TestStore_RequestNotFound(t *testing.T) {
-	store := NewPgStore(db)
-	queryReq, err := store.Request(context.Background(), gen.ID())
-	require.Equal(t, pg.ErrNoRows, errors.Cause(err))
+	pgStore := NewPgStore(db)
+	queryReq, err := pgStore.Request(context.Background(), gen.ID())
+	require.Equal(t, store.ErrNotFound, errors.Cause(err))
 	require.Equal(t, record.Material{}, queryReq)
 }
 
