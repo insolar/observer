@@ -17,8 +17,8 @@
 package collecting
 
 import (
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	"github.com/insolar/insolar/insolar/record"
-	proxyAccount "github.com/insolar/insolar/logicrunner/builtin/proxy/account"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"

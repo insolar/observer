@@ -17,10 +17,10 @@
 package collecting
 
 import (
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/logicrunner/builtin/proxy/deposit"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
