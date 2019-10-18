@@ -93,6 +93,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetRequestMock.Return(nil)
+		backend.CalledRequestsMock.Return(nil, nil)
 		backend.RequestMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
@@ -114,6 +115,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
+		backend.CalledRequestsMock.Return(nil, nil)
 		backend.SetRequestMock.Return(nil)
 
 		// Set expected (will be the last).
