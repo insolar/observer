@@ -33,6 +33,7 @@ type Structure struct {
 	Result record.Result
 }
 
+//go:generate minimock -i github.com/insolar/observer/internal/app/observer/tree.Builder -o ./ -s _mock.go -g
 type Builder interface {
 	Build(ctx context.Context, reqID insolar.ID) (Structure, error)
 }
