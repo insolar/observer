@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/insolar/insolar"
@@ -15,14 +15,14 @@ type CacheRecordStore struct {
 	backend RecordStore
 
 	requestLock sync.RWMutex
-	cache *lru.Cache
+	cache       *lru.Cache
 }
 
 func NewCacheRecordStore(backend RecordStore, size int) (*CacheRecordStore, error) {
 	store := &CacheRecordStore{backend: backend}
 	cache, err := lru.New(size)
 	if err != nil {
-		return nil,  errors.Wrap(err, "failed to init cache")
+		return nil, errors.Wrap(err, "failed to init cache")
 	}
 	store.cache = cache
 	return store, nil
@@ -31,7 +31,7 @@ func NewCacheRecordStore(backend RecordStore, size int) (*CacheRecordStore, erro
 type scope uint8
 
 const (
-	scopeUnknown scope  = iota // nolint
+	scopeUnknown scope = iota // nolint
 	scopeRequest
 	scopeResult
 	scopeSideEffect
@@ -40,7 +40,7 @@ const (
 
 type cacheKey struct {
 	scope scope
-	id insolar.ID
+	id    insolar.ID
 }
 
 func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Material) error {
@@ -62,6 +62,14 @@ func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Materia
 		if err != nil {
 			return err
 		}
+		n := 0
+		for _, rec := range fromBackend {
+			if !rec.Equal(record) {
+				fromBackend[n] = rec
+				n++
+			}
+		}
+		fromBackend = fromBackend[:n]
 		fromCache = refMany(fromBackend)
 	}
 
@@ -182,7 +190,7 @@ func (c *CacheRecordStore) getOne(sc scope, id insolar.ID) (*record.Material, bo
 	return rec, true
 }
 
-func (c *CacheRecordStore) setMany(sc scope, id insolar.ID, records []*record.Material)  {
+func (c *CacheRecordStore) setMany(sc scope, id insolar.ID, records []*record.Material) {
 	_ = c.cache.Add(cacheKey{scope: sc, id: id}, records)
 }
 
