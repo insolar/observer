@@ -59,21 +59,21 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 	if err != nil {
 		return Structure{}, errors.Wrap(err, "couldn't get request")
 	}
-	virtualRequest, ok := materialRequest.Virtual.Union.(*record.Virtual_IncomingRequest)
+	virtualRequest, ok := record.Unwrap(&materialRequest.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return Structure{}, errors.New("not an incoming request")
 	}
-	tree.Request = *virtualRequest.IncomingRequest
+	tree.Request = *virtualRequest
 
 	materialResult, err := b.fetcher.Result(ctx, reqID)
 	if err != nil {
 		return Structure{}, errors.Wrap(err, "couldn't get result")
 	}
-	virtualResult, ok := materialResult.Virtual.Union.(*record.Virtual_Result)
+	virtualResult, ok := record.Unwrap(&materialResult.Virtual).(*record.Result)
 	if !ok {
 		return Structure{}, errors.New("not a result")
 	}
-	tree.Result = *virtualResult.Result
+	tree.Result = *virtualResult
 
 	called, err := b.fetcher.CalledRequests(ctx, reqID)
 	if err != nil {
@@ -82,16 +82,16 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 
 	outgoings := make([]Outgoing, 0)
 	for _, e := range called {
-		switch req := e.Virtual.Union.(type) {
-		case *record.Virtual_OutgoingRequest:
-			index := int(req.OutgoingRequest.Nonce)
+		switch req := record.Unwrap(&e.Virtual).(type) {
+		case *record.OutgoingRequest:
+			index := int(req.Nonce)
 			if add := index - len(outgoings); add > 0 {
 				outgoings = append(outgoings, make([]Outgoing, add)...)
 			}
 			index--
 
 			outgoings[index].OutgoingRequestID = e.ID
-			outgoings[index].OutgoingRequest = *req.OutgoingRequest
+			outgoings[index].OutgoingRequest = *req
 
 			result, err := b.fetcher.Result(ctx, e.ID)
 			if err != nil {
@@ -99,10 +99,10 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 					return Structure{}, errors.Wrap(err, "couldn't get result of outgoing")
 				}
 			} else {
-				outgoings[index].Result = result.Virtual.Union.(*record.Virtual_Result).Result
+				outgoings[index].Result = record.Unwrap(&result.Virtual).(*record.Result)
 			}
-		case *record.Virtual_IncomingRequest:
-			index := int(req.IncomingRequest.Nonce)
+		case *record.IncomingRequest:
+			index := int(req.Nonce)
 			if add := index - len(outgoings); add > 0 {
 				outgoings = append(outgoings, make([]Outgoing, add)...)
 			}
@@ -126,13 +126,13 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 			return Structure{}, errors.Wrap(err, "couldn't get sub-tree")
 		}
 	} else {
-		switch rec := sideEffect.Virtual.Union.(type) {
-		case *record.Virtual_Activate:
-			tree.SideEffect = &SideEffect{Activation: rec.Activate}
-		case *record.Virtual_Amend:
-			tree.SideEffect = &SideEffect{Amend: rec.Amend}
-		case *record.Virtual_Deactivate:
-			tree.SideEffect = &SideEffect{Deactivation: rec.Deactivate}
+		switch rec := record.Unwrap(&sideEffect.Virtual).(type) {
+		case *record.Activate:
+			tree.SideEffect = &SideEffect{Activation: rec}
+		case *record.Amend:
+			tree.SideEffect = &SideEffect{Amend: rec}
+		case *record.Deactivate:
+			tree.SideEffect = &SideEffect{Deactivation: rec}
 		default:
 			return Structure{}, errors.New("unexpected side effect")
 		}
