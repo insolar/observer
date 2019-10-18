@@ -20,7 +20,7 @@ type MGRSchema struct {
 	NextPaymentDate int64 `sql:"next_payment,notnull"`
 
 	PaymentFrequency string   `sql:"period,notnull"`
-	Sequence         [][]byte `sql:",array"`
+	Sequence         []string `sql:",array"`
 
 	AmountDue string `sql:"amount,notnull"`
 	Status    string `sql:",notnull"`
@@ -78,9 +78,9 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 }
 
 func mgrSchema(model *observer.MGR) *MGRSchema {
-	var arrRef [][]byte
+	var arrRef []string
 	for _, v := range model.Sequence {
-		arrRef = append(arrRef, v.Bytes())
+		arrRef = append(arrRef, v.String())
 	}
 	return &MGRSchema{
 		Ref:              model.Ref.Bytes(),
