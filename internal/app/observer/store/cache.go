@@ -57,23 +57,18 @@ func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Materia
 	c.requestLock.Lock()
 	defer c.requestLock.Unlock()
 	fromCache, ok := c.getMany(scopeCalledRequests, reasonID)
-	if !ok {
+	if ok {
+		// Found in cache, append required.
+		fromCache = append(fromCache, &record)
+	} else {
+		// No append required because we already wrote the request to backend.
 		fromBackend, err := c.backend.CalledRequests(ctx, reasonID)
 		if err != nil {
 			return err
 		}
-		n := 0
-		for _, rec := range fromBackend {
-			if !rec.Equal(record) {
-				fromBackend[n] = rec
-				n++
-			}
-		}
-		fromBackend = fromBackend[:n]
 		fromCache = refMany(fromBackend)
 	}
 
-	fromCache = append(fromCache, &record)
 	c.setMany(scopeCalledRequests, reasonID, fromCache)
 	return c.setOne(scopeRequest, &record)
 }
