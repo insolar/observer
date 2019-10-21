@@ -95,7 +95,8 @@ func (s *MemberStorage) Update(model *observer.Balance) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update member")
-		return errors.New("failed to update, affected is 0")
+		// TODO: uncomment it
+		// return errors.New("failed to update, affected is 0")
 	}
 	return nil
 }

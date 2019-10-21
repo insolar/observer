@@ -262,8 +262,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fdd078d1337f599728a9de8a2eb6bd92f8b6e06435f319798df8a9a0835ff3f0"
+  digest = "1:c9c1456ba62a4fc1488b2e18c809e8f2904d44b7858c0228c7768879d714a5a8"
   name = "github.com/insolar/insolar"
   packages = [
     "application",
@@ -273,7 +272,6 @@
     "application/builtin/contract/member",
     "application/builtin/contract/member/signer",
     "application/builtin/contract/migrationshard",
-    "application/builtin/contract/wallet",
     "application/builtin/proxy/account",
     "application/builtin/proxy/costcenter",
     "application/builtin/proxy/deposit",
@@ -331,7 +329,7 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "a48781bcadd3e36a46421d90a55c70fe88941959"
+  revision = "8849613af096e43777498f2ae17b3b7638c5981e"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -769,7 +767,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ccd81361f3f0069550ad22853deeb693678db0cb7e0ca9e2ed3b10b3d06c1056"
+  digest = "1:2d4ef744498218d6d0e966e7094911d9a76616ed49c78b54d0697e482fb69b1c"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -777,7 +775,7 @@
     "windows",
   ]
   pruneopts = "UT"
-  revision = "727590c5006e77ca5247972f47e877f4929fc985"
+  revision = "3e7259c5e7c2076bb2728047a3df75adb1bad8e5"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -821,7 +819,7 @@
     "internal/span",
   ]
   pruneopts = "UT"
-  revision = "341939e0864782443c3a4e68fddcf85ecc482588"
+  revision = "ed542cd5b28ad1b474f8ff7ca112cad2c3ac2dc8"
 
 [[projects]]
   branch = "master"
@@ -903,7 +901,6 @@
     "github.com/insolar/insolar/application/builtin/contract/member",
     "github.com/insolar/insolar/application/builtin/contract/member/signer",
     "github.com/insolar/insolar/application/builtin/contract/migrationshard",
-    "github.com/insolar/insolar/application/builtin/contract/wallet",
     "github.com/insolar/insolar/application/builtin/proxy/account",
     "github.com/insolar/insolar/application/builtin/proxy/costcenter",
     "github.com/insolar/insolar/application/builtin/proxy/deposit",

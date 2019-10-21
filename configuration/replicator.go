@@ -31,4 +31,5 @@ type Replicator struct {
 	// Using when catching up heavy on empty pulses
 	FastForwardInterval time.Duration
 	BatchSize           uint32
+	CacheSize           int
 }

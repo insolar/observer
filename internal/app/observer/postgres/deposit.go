@@ -74,7 +74,8 @@ func (s *DepositStorage) Insert(model *observer.Deposit) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("deposit_row", row).Errorf("failed to insert deposit")
-		return errors.New("failed to insert, affected is 0")
+		// TODO: uncomment it. It's just a temporary change. Genesis deposits are conflicted because of the same eth hash
+		// return errors.New("failed to insert, affected is 0")
 	}
 	return nil
 }
@@ -97,7 +98,8 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
 		s.log.WithField("upd", model).Errorf("failed to update deposit")
-		return errors.New("failed to update, affected is 0")
+		// TODO: uncomment it. It's just a temporary change. Genesis deposits are conflicted because of the same eth hash
+		// return errors.New("failed to update, affected is 0")
 	}
 	return nil
 }

@@ -68,7 +68,7 @@ func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.R
 func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: "member.transfer",
+			CallSite: transferMethod,
 			CallParams: transferCallParams{
 				Amount:            amount,
 				ToMemberReference: to,

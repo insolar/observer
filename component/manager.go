@@ -36,7 +36,7 @@ type Manager struct {
 	log      logrus.Logger
 	init     func() *state
 	fetch    func(*state) *raw
-	beautify func(*raw) *beauty
+	beautify func(context.Context, *raw) *beauty
 	filter   func(*beauty) *beauty
 	store    func(*beauty, *state) *observer.Statistic
 	stop     func()
@@ -56,7 +56,7 @@ func Prepare() *Manager {
 		init:       makeInitter(cfg, obs, conn),
 		log:        *obs.Log(),
 		fetch:      makeFetcher(cfg, obs, conn),
-		beautify:   makeBeautifier(ctx, obs),
+		beautify:   makeBeautifier(cfg, obs, conn),
 		filter:     makeFilter(obs),
 		store:      makeStorer(cfg, obs, conn),
 		stop:       makeStopper(obs, conn, router),
@@ -96,8 +96,9 @@ func (m *Manager) needStop() bool {
 
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
+	ctx := context.Background()
 	raw := m.fetch(s)
-	beauty := m.beautify(raw)
+	beauty := m.beautify(ctx, raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
 

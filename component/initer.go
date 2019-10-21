@@ -22,13 +22,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/app/observer/store/pg"
 	"github.com/insolar/observer/observability"
 )
 
-func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *state {
+func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) func() *state {
 	logger := obs.Log()
 	createTables(cfg, obs, conn)
 	initCache()
@@ -78,7 +78,7 @@ func MustKnowPreviousStatistic(cfg *configuration.Configuration, obs *observabil
 	return *s
 }
 
-func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
+func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) {
 	log := obs.Log()
 	if cfg == nil {
 		return
@@ -134,6 +134,21 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 		err = db.CreateTable(&postgres.StatisticSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create statistics table"))
+		}
+
+		err = db.CreateTable(&pg.RawRequest{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw requests table"))
+		}
+
+		err = db.CreateTable(&pg.RawResult{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw results table"))
+		}
+
+		err = db.CreateTable(&pg.RawSideEffect{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw side effects table"))
 		}
 	}
 }

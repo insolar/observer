@@ -44,6 +44,7 @@ func Default() *Configuration {
 			AttemptInterval:     10 * time.Second,
 			FastForwardInterval: time.Second / 4,
 			BatchSize:           2000,
+			CacheSize:           10000,
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
