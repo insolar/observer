@@ -106,8 +106,6 @@ func makeBeautifier(
 		})
 
 		for _, rec := range r.batch {
-			// entities
-
 			switch rec.Virtual.Union.(type) {
 			case *record.Virtual_IncomingRequest, *record.Virtual_OutgoingRequest:
 				err = cachedStore.SetRequest(ctx, record.Material(*rec))
@@ -119,6 +117,10 @@ func makeBeautifier(
 			if err != nil {
 				panic(err)
 			}
+		}
+
+		for _, rec := range r.batch {
+			// entities
 
 			member := members.Collect(rec)
 			if member != nil {
