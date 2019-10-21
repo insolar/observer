@@ -43,7 +43,7 @@ func NewMigrationAddressesCollector(log *logrus.Logger, fetcher store.RecordFetc
 	}
 }
 
-func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.MigrationAddress {
+func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.Record) []*observer.MigrationAddress {
 	if rec == nil {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 	// This code block collects addresses from incoming request.
 	res := observer.CastToResult(rec)
 	if res.IsResult() {
-		req, err := c.fetcher.Request(context.Background(), res.Request())
+		req, err := c.fetcher.Request(ctx, res.Request())
 		if err != nil {
 			c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
 			return nil
@@ -69,7 +69,7 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 		if call != nil {
 			params := &addAddresses{}
 			call.ParseMemberContractCallParams(params)
-			addresses := []*observer.MigrationAddress{}
+			addresses := make([]*observer.MigrationAddress, 0, len(params.MigrationAddresses))
 			for _, addr := range params.MigrationAddresses {
 				addresses = append(addresses, &observer.MigrationAddress{
 					Addr:   addr,
@@ -92,7 +92,7 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 		return nil
 	}
 	shard := migrationShardActivate(act)
-	addresses := []*observer.MigrationAddress{}
+	addresses := make([]*observer.MigrationAddress, 0, len(shard))
 	for _, addr := range shard {
 		addresses = append(addresses, &observer.MigrationAddress{
 			Addr:   addr,

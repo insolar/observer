@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -142,7 +143,7 @@ func makeAddAddresses() ([]*observer.MigrationAddress, []*observer.Record) {
 		"test_address",
 	}
 	pn := insolar.GenesisPulse.PulseNumber
-	addresses := []*observer.MigrationAddress{}
+	var addresses []*observer.MigrationAddress
 	for _, a := range addrs {
 		addresses = append(addresses, &observer.MigrationAddress{a, pn, false})
 	}
@@ -160,19 +161,37 @@ func makeAddAddresses() ([]*observer.MigrationAddress, []*observer.Record) {
 }
 
 func TestMigrationAddressCollector_Collect(t *testing.T) {
-	mc := minimock.NewController(t)
-	fetcher := store.NewRecordFetcherMock(mc)
-	collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
 
 	t.Run("nil", func(t *testing.T) {
-		require.Empty(t, collector.Collect(nil))
+		mc := minimock.NewController(t)
+		fetcher := store.NewRecordFetcherMock(mc)
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		require.Empty(t, collector.Collect(context.Background(), nil))
 	})
 
 	t.Run("add_addresses_request", func(t *testing.T) {
+		mc := minimock.NewController(t)
 		expected, records := makeAddAddresses()
-		actual := []*observer.MigrationAddress{}
+
+		fetcher := store.NewRecordFetcherMock(mc).RequestMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+			for _, rec := range records {
+				casted := record.Material(*rec)
+				id, err := store.RequestID(&casted)
+				require.NoError(t, err)
+				if id == reqID {
+					return casted, nil
+				}
+			}
+			panic("should not reach")
+		})
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		ctx := context.Background()
+
+		var actual []*observer.MigrationAddress
 		for _, rec := range records {
-			addr := collector.Collect(rec)
+			addr := collector.Collect(ctx, rec)
 			if addr != nil {
 				actual = append(actual, addr...)
 			}
@@ -182,23 +201,43 @@ func TestMigrationAddressCollector_Collect(t *testing.T) {
 	})
 
 	t.Run("not_addresses_activate", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		fetcher := store.NewRecordFetcherMock(mc)
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		ctx := context.Background()
 		rec := makeAccountActivate(gen.PulseNumber(), "", gen.Reference())
-		require.Empty(t, collector.Collect(rec))
+		require.Empty(t, collector.Collect(ctx, rec))
 	})
 
 	t.Run("empty_migration_shard", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		fetcher := store.NewRecordFetcherMock(mc)
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		ctx := context.Background()
 		rec := makeEmptyMigrationShard()
-		require.Empty(t, collector.Collect(rec))
+		require.Empty(t, collector.Collect(ctx, rec))
 	})
 
 	t.Run("invalid_migration_shard", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		fetcher := store.NewRecordFetcherMock(mc)
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		ctx := context.Background()
 		rec := makeInvalidMigrationShard()
-		require.Empty(t, collector.Collect(rec))
+		require.Empty(t, collector.Collect(ctx, rec))
 	})
 
 	t.Run("genesis_address_pack", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		fetcher := store.NewRecordFetcherMock(mc)
+		collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+		ctx := context.Background()
 		expected, rec := makeGenesisMigrationAddresses()
 
-		require.Equal(t, expected, collector.Collect(rec))
+		require.Equal(t, expected, collector.Collect(ctx, rec))
 	})
 }

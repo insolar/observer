@@ -35,6 +35,10 @@ import (
 	"github.com/insolar/observer/internal/app/observer/tree"
 )
 
+const (
+	transferMethod = "member.transfer"
+)
+
 type ExtendedTransferCollector struct {
 	log *logrus.Logger
 
@@ -183,7 +187,7 @@ func (c *ExtendedTransferCollector) build(
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
-	if callArguments.Params.CallSite == "member.transfer" {
+	if callArguments.Params.CallSite == transferMethod {
 		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
@@ -201,11 +205,10 @@ func (c *ExtendedTransferCollector) build(
 		costCenter = *costCenterRef.GetLocal()
 	}
 
-	feeMember := insolar.ID{}
 	var serializedRef []byte
 	observer.ParseFirstValueResult(&getFeeMember.Result, &serializedRef)
 	feeMemberRef := insolar.NewReferenceFromBytes(serializedRef)
-	feeMember = *feeMemberRef.GetLocal()
+	feeMember := *feeMemberRef.GetLocal()
 	return &observer.ExtendedTransfer{
 		DepositTransfer: observer.DepositTransfer{
 			Transfer: observer.Transfer{
@@ -242,7 +245,7 @@ func (c *ExtendedTransferCollector) isTransferCall(rec *record.Material) (*obser
 	}
 
 	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == "member.transfer"
+	return request, args.Params.CallSite == transferMethod
 }
 
 func (c *ExtendedTransferCollector) isGetFeeMember(req *record.IncomingRequest) bool {
@@ -266,6 +269,7 @@ func (c *ExtendedTransferCollector) isAccountTransfer(req *record.IncomingReques
 	return req.Prototype.Equal(*proxyAccount.PrototypeReference)
 }
 
+// nolint: unused
 func (c *ExtendedTransferCollector) isMemberAccept(req *record.IncomingRequest) bool {
 	if req.Method != "Accept" {
 		return false

@@ -145,7 +145,7 @@ func makeBeautifier(
 				b.deposits[deposit.DepositState] = deposit
 			}
 
-			for _, address := range addresses.Collect(rec) {
+			for _, address := range addresses.Collect(ctx, rec) {
 				b.addresses[address.Addr] = address
 			}
 
