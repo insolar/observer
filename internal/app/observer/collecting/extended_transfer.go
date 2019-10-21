@@ -21,10 +21,11 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/logicrunner/builtin/contract/member"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+
+	"github.com/insolar/insolar/application/builtin/contract/member"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	proxyCostCenter "github.com/insolar/insolar/application/builtin/proxy/costcenter"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
