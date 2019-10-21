@@ -23,6 +23,7 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
+	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
@@ -42,19 +43,15 @@ import (
 type MemberCollector struct {
 	fetcher store.RecordFetcher
 	builder tree.Builder
-
-	// collector *BoundCollector
 }
 
 func NewMemberCollector(
 	fetcher store.RecordFetcher,
 	builder tree.Builder,
 ) *MemberCollector {
-	// collector := NewBoundCollector(isMemberCreateRequest, successResult, isNewAccount, isAccountActivate)
 	return &MemberCollector{
 		fetcher: fetcher,
 		builder: builder,
-		// collector: collector,
 	}
 }
 
@@ -80,12 +77,12 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	// 	}
 	// }
 
-	result := observer.CastToResult(rec)
+	result := observer.CastToResult(rec) // TODO: still observer.Result
 	if !result.IsResult() {
 		return nil
 	}
 
-	if !result.IsSuccess() {
+	if !result.IsSuccess() { // TODO: still observer.Result
 		// TODO
 		return badMember()
 	}
@@ -95,9 +92,14 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	// Fetch root request.
 	originRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		// TODO
+		// TODO: What type of error here? Should we log it or return nil only?
 		panic("SOMETHING WENT WRONG: can't fetch request for result")
-		return badMember()
+		return nil
+	}
+
+	if !isMemberCreateRequest(originRequest) {
+		// TODO
+		return nil
 	}
 
 	// Build contract tree.
@@ -116,12 +118,6 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	if request == nil {
 		// TODO
 		panic("SOMETHING WENT WRONG: can't cast request")
-		return badMember()
-	}
-
-	if !isMemberCreateRequest(request) {
-		// TODO
-		panic("SOMETHING WENT WRONG: origin request isn't member.create request")
 		return badMember()
 	}
 
@@ -184,53 +180,20 @@ func badMember() *observer.Member {
 	}
 }
 
-// // TODO: bad naming
-// func buildMember()
-
-// func (c *MemberCollector) CollectOld(rec *observer.Record) *observer.Member {
-// 	if rec == nil {
-// 		return nil
-// 	}
-//
-// 	act := observer.CastToActivate(rec)
-// 	if act.IsActivate() {
-// 		if act.Virtual.GetActivate().Image.Equal(*proxyAccount.PrototypeReference) {
-// 			if act.ID.Pulse() == insolar.GenesisPulse.PulseNumber {
-// 				balance := accountBalance(rec)
-// 				return &observer.Member{
-// 					MemberRef:    gen.ID(),
-// 					Balance:      balance,
-// 					AccountState: rec.ID,
-// 					Status:       "INTERNAL",
-// 				}
-// 			}
-// 		}
-// 	}
-//
-// 	couple := c.collector.Collect(rec)
-// 	if couple == nil {
-// 		return nil
-// 	}
-//
-// 	m, err := c.build(couple.Activate, couple.Result)
-// 	if err != nil {
-// 		log.Error(errors.Wrapf(err, "failed to build member"))
-// 		return nil
-// 	}
-// 	return m
-// }
-
-func isMemberCreateRequest(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-	if !request.IsMemberCall() {
+func isMemberCreateRequest(materialRequest record.Material) bool {
+	incoming, ok := record.Unwrap(&materialRequest.Virtual).(*record.IncomingRequest)
+	if !ok {
 		return false
 	}
 
-	args := request.ParseMemberCallArguments()
-	switch args.Params.CallSite {
+	if incoming.Method != "Call" {
+		return false
+	}
+
+	args := incoming.Arguments
+
+	reqParams := ParseMemberCallArguments(args)
+	switch reqParams.Params.CallSite {
 	case "member.create", "member.migrationCreate":
 		return true
 	}
@@ -271,58 +234,6 @@ func isNewMember(request record.IncomingRequest) bool {
 	}
 	return request.Prototype.Equal(*proxyMember.PrototypeReference)
 }
-
-func isAccountActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
-	if !activate.IsActivate() {
-		return false
-	}
-	act := activate.Virtual.GetActivate()
-	return act.Image.Equal(*proxyAccount.PrototypeReference)
-}
-
-func isWalletActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
-	if !activate.IsActivate() {
-		return false
-	}
-	act := activate.Virtual.GetActivate()
-	return act.Image.Equal(*proxyWallet.PrototypeReference)
-}
-
-func isMemberActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
-	if !activate.IsActivate() {
-		return false
-	}
-	act := activate.Virtual.GetActivate()
-	return act.Image.Equal(*proxyMember.PrototypeReference)
-}
-
-// func (c *MemberCollector) build(act *observer.Activate, res *observer.Result) (*observer.Member, error) {
-// 	if res == nil || act == nil {
-// 		return nil, errors.New("trying to create member from noncomplete builder")
-// 	}
-//
-// 	if res.Virtual.GetResult().Payload == nil {
-// 		return nil, errors.New("member creation result payload is nil")
-// 	}
-// 	response := &member.MigrationCreateResponse{} // FIXME maybe it's a hack?
-// 	res.ParseFirstPayloadValue(response)
-//
-// 	balance := accountBalance((*observer.Record)(act))
-// 	ref, err := insolar.NewIDFromString(response.Reference)
-// 	if err != nil || ref == nil {
-// 		return nil, errors.New("invalid member reference")
-// 	}
-// 	return &observer.Member{
-// 		MemberRef:        *ref,
-// 		Balance:          balance,
-// 		MigrationAddress: response.MigrationAddress,
-// 		AccountState:     act.ID,
-// 		Status:           "SUCCESS",
-// 	}, nil
-// }
 
 func createResponse(result record.Result) member.MigrationCreateResponse {
 	response := member.MigrationCreateResponse{}
@@ -421,4 +332,36 @@ func ParseFirstValueResult(res *record.Result, v interface{}) {
 		log.WithField("json", string(data)).Warn("failed to unmarshal Payload.Returns[0]")
 		debug.PrintStack()
 	}
+}
+
+func ParseMemberCallArguments(rawArguments []byte) member.Request {
+	var args []interface{}
+
+	err := insolar.Deserialize(rawArguments, &args)
+	if err != nil {
+		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return member.Request{}
+	}
+
+	request := member.Request{}
+	if len(args) > 0 {
+		if rawRequest, ok := args[0].([]byte); ok {
+			var (
+				pulseTimeStamp int64
+				signature      string
+				raw            []byte
+			)
+			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			if err != nil {
+				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				return member.Request{}
+			}
+			err = json.Unmarshal(raw, &request)
+			if err != nil {
+				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				return member.Request{}
+			}
+		}
+	}
+	return request
 }

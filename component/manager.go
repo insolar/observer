@@ -45,8 +45,6 @@ type Manager struct {
 }
 
 func Prepare() *Manager {
-	ctx := context.Background()
-
 	cfg := configuration.Load()
 	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
