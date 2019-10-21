@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/internal/app/observer/store/pg"
@@ -56,11 +57,14 @@ func TypeOrder(rec *observer.Record) int {
 	}
 }
 
-func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
+func makeBeautifier(
+	obs *observability.Observability,
+	conn *connectivity.Connectivity,
+) func(*raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
-	fetcher := pg.NewPgStore(nil)
+	fetcher := pg.NewPgStore(conn.PG())
 
 	members := collecting.NewMemberCollector()
 	transfers := collecting.NewTransferCollector(log)

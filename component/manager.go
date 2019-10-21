@@ -53,7 +53,7 @@ func Prepare() *Manager {
 		init:       makeInitter(cfg, obs, conn),
 		log:        *obs.Log(),
 		fetch:      makeFetcher(cfg, obs, conn),
-		beautify:   makeBeautifier(obs),
+		beautify:   makeBeautifier(obs, conn),
 		filter:     makeFilter(obs),
 		store:      makeStorer(cfg, obs, conn),
 		stop:       makeStopper(obs, conn, router),
