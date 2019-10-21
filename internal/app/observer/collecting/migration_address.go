@@ -51,25 +51,25 @@ func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.R
 	// This code block collects addresses from incoming request.
 	res := observer.CastToResult(rec)
 	if res.IsResult() {
-		return c.collectFromResult(res)
+		return c.collectFromResult(ctx, res)
 	}
 
 	// This code block collects addresses from genesis record.
 	activate := observer.CastToActivate(rec)
 	if activate.IsActivate() {
-		return c.collectFromGenesis(rec, activate)
+		return c.collectFromGenesis(ctx, rec, activate)
 	}
 
 	return nil
 }
 
-func (c *MigrationAddressCollector) collectFromResult(res *observer.Result) []*observer.MigrationAddress {
+func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *observer.Result) []*observer.MigrationAddress {
 	if !res.IsSuccess() {
 		// TODO: maybe we need to do something else
 		c.log.Warnf("unsuccessful attempt to add migration addresses")
 	}
 
-	req, err := c.fetcher.Request(context.Background(), res.Request())
+	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
 		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
 		return nil
@@ -96,7 +96,7 @@ func (c *MigrationAddressCollector) collectFromResult(res *observer.Result) []*o
 	return addresses
 }
 
-func (c *MigrationAddressCollector) collectFromGenesis(rec *observer.Record, activate *observer.Activate) []*observer.MigrationAddress {
+func (c *MigrationAddressCollector) collectFromGenesis(_ context.Context, rec *observer.Record, activate *observer.Activate) []*observer.MigrationAddress {
 	act := activate.Virtual.GetActivate()
 	if !isMigrationShardActivate(act) {
 		return nil
