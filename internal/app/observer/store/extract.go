@@ -32,3 +32,11 @@ func RequestID(rec *record.Material) (insolar.ID, error) {
 		return insolar.ID{}, errors.New("unknown record")
 	}
 }
+
+func ReasonID(rec *record.Material) (insolar.ID, error) {
+	virtual := record.Unwrap(&rec.Virtual)
+	if request, ok := virtual.(record.Request); ok {
+		return *request.ReasonRef().GetLocal(), nil
+	}
+	return insolar.ID{}, errors.New("no a request")
+}
