@@ -17,6 +17,8 @@
 package observer
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/insolar"
 )
 
@@ -27,6 +29,8 @@ type Member struct {
 	MigrationAddress string
 	AccountState     insolar.ID
 	Status           string
+	WalletRef        insolar.ID
+	AccountRef       insolar.ID
 }
 
 type Balance struct {
@@ -36,7 +40,7 @@ type Balance struct {
 }
 
 type MemberCollector interface {
-	Collect(*Record) *Member
+	Collect(context.Context, *Record) *Member
 }
 
 type BalanceCollector interface {

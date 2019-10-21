@@ -17,6 +17,7 @@
 package component
 
 import (
+	"context"
 	"reflect"
 	"sort"
 
@@ -54,11 +55,11 @@ func TypeOrder(rec *observer.Record) int {
 	}
 }
 
-func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
+func makeBeautifier(ctx context.Context, obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
-	members := collecting.NewMemberCollector()
+	members := collecting.NewMemberCollector(nil, nil) // FIXME: change nil to normal values
 	transfers := collecting.NewTransferCollector(log)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
@@ -92,7 +93,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 		for _, rec := range r.batch {
 			// entities
 
-			member := members.Collect(rec)
+			member := members.Collect(ctx, rec)
 			if member != nil {
 				b.members[member.AccountState] = member
 			}

@@ -150,7 +150,7 @@ func makeMember() ([]*observer.Member, []*observer.Record) {
 }
 
 func TestMemberCollector_Collect(t *testing.T) {
-	collector := NewMemberCollector()
+	collector := NewMemberCollector(nil, nil) // FIXME: change nil to normal values
 
 	expected, records := makeMember()
 	var actual []*observer.Member

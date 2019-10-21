@@ -190,7 +190,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bee40ed35439a914c77d0238739d25436fb506f82be1e03a3dea7fca3e5a82c8"
+  digest = "1:fdd078d1337f599728a9de8a2eb6bd92f8b6e06435f319798df8a9a0835ff3f0"
   name = "github.com/insolar/insolar"
   packages = [
     "application",
@@ -200,6 +200,7 @@
     "application/builtin/contract/member",
     "application/builtin/contract/member/signer",
     "application/builtin/contract/migrationshard",
+    "application/builtin/contract/wallet",
     "application/builtin/proxy/account",
     "application/builtin/proxy/costcenter",
     "application/builtin/proxy/deposit",
@@ -257,7 +258,7 @@
     "reference",
   ]
   pruneopts = "UT"
-  revision = "e5db6138b90d2cd8b21360d04d25dea99fc087f4"
+  revision = "a48781bcadd3e36a46421d90a55c70fe88941959"
 
 [[projects]]
   digest = "1:9f86b5f5862a8ae44a5e2461619ac8f0fd1c75d670b735e40c4319f61bcb4bd3"
@@ -756,6 +757,7 @@
     "github.com/insolar/insolar/application/builtin/contract/member",
     "github.com/insolar/insolar/application/builtin/contract/member/signer",
     "github.com/insolar/insolar/application/builtin/contract/migrationshard",
+    "github.com/insolar/insolar/application/builtin/contract/wallet",
     "github.com/insolar/insolar/application/builtin/proxy/account",
     "github.com/insolar/insolar/application/builtin/proxy/costcenter",
     "github.com/insolar/insolar/application/builtin/proxy/deposit",

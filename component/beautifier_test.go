@@ -17,19 +17,21 @@
 package component
 
 import (
-	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/observer/internal/app/observer"
-	"github.com/stretchr/testify/require"
 	"math/rand"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/insolar/insolar/insolar/record"
+	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/internal/app/observer"
 )
 
 func Test_SortByType(t *testing.T) {
 	var batch []*observer.Record
 	batch = append(batch,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{},},},
+		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
 		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},

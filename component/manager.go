@@ -17,6 +17,7 @@
 package component
 
 import (
+	"context"
 	"time"
 
 	"github.com/insolar/insolar/insolar"
@@ -44,6 +45,8 @@ type Manager struct {
 }
 
 func Prepare() *Manager {
+	ctx := context.Background()
+
 	cfg := configuration.Load()
 	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
@@ -53,7 +56,7 @@ func Prepare() *Manager {
 		init:       makeInitter(cfg, obs, conn),
 		log:        *obs.Log(),
 		fetch:      makeFetcher(cfg, obs, conn),
-		beautify:   makeBeautifier(obs),
+		beautify:   makeBeautifier(ctx, obs),
 		filter:     makeFilter(obs),
 		store:      makeStorer(cfg, obs, conn),
 		stop:       makeStopper(obs, conn, router),
