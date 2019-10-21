@@ -26,6 +26,8 @@ import (
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
+	"github.com/insolar/observer/internal/app/observer/store/pg"
+	"github.com/insolar/observer/internal/app/observer/tree"
 	"github.com/insolar/observer/observability"
 )
 
@@ -58,12 +60,14 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
+	fetcher := pg.NewPgStore(nil)
+
 	members := collecting.NewMemberCollector()
 	transfers := collecting.NewTransferCollector(log)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log)
+	extendedTransfers := collecting.NewExtendedTransferCollector(log, fetcher, tree.NewBuilder(fetcher))
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
-	addresses := collecting.NewMigrationAddressesCollector()
+	addresses := collecting.NewMigrationAddressesCollector(log, fetcher)
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)

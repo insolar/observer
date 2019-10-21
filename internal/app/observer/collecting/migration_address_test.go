@@ -20,17 +20,20 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 func makeEmptyMigrationShard() *observer.Record {
@@ -157,7 +160,9 @@ func makeAddAddresses() ([]*observer.MigrationAddress, []*observer.Record) {
 }
 
 func TestMigrationAddressCollector_Collect(t *testing.T) {
-	collector := NewMigrationAddressesCollector()
+	mc := minimock.NewController(t)
+	fetcher := store.NewRecordFetcherMock(mc)
+	collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
 
 	t.Run("nil", func(t *testing.T) {
 		require.Empty(t, collector.Collect(nil))

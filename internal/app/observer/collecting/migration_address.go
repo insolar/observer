@@ -35,8 +35,9 @@ type MigrationAddressCollector struct {
 	fetcher store.RecordFetcher
 }
 
-func NewMigrationAddressesCollector(fetcher store.RecordFetcher) *MigrationAddressCollector {
+func NewMigrationAddressesCollector(log *logrus.Logger, fetcher store.RecordFetcher) *MigrationAddressCollector {
 	return &MigrationAddressCollector{
+		log: log,
 		fetcher: fetcher,
 	}
 }
