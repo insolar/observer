@@ -17,61 +17,24 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
-	"sort"
 	"testing"
-	"time"
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/observer/internal/app/observer"
 	"github.com/ory/dockertest"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 )
-
-func Test_SortByType(t *testing.T) {
-	var batch []*observer.Record
-	batch = append(batch,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Activate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Amend{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
-	)
-
-	var expected []*observer.Record
-	expected = append(expected,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Activate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Amend{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
-	)
-
-	// not random but shuffled
-	sort.Slice(batch, func(i, j int) bool {
-		return TypeOrder(batch[i]) < TypeOrder(batch[j])
-	})
-	require.Equal(t, expected, batch)
-
-	// real random
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(batch), func(i, j int) { batch[i], batch[j] = batch[j], batch[i] })
-	sort.Slice(batch, func(i, j int) bool {
-		return TypeOrder(batch[i]) < TypeOrder(batch[j])
-	})
-	require.Equal(t, expected, batch)
-}
 
 var (
 	db       *pg.DB
@@ -135,4 +98,56 @@ func TestMain(t *testing.M) {
 	}
 
 	os.Exit(t.Run())
+}
+
+type fakeConn struct {
+}
+
+func (f fakeConn) PG() *pg.DB {
+	return db
+}
+
+func TestBeautifier_Run(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+
+		beautifier(ctx, nil)
+	})
+
+	t.Run("happy path", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+
+		raw := &raw{
+			batch: []*observer.Record{
+				makeRequestWith("hello", gen.RecordReference(), nil),
+			},
+		}
+		res := beautifier(ctx, raw)
+		assert.NotNil(t, res)
+	})
+
+}
+
+func makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
+	return &observer.Record{
+		ID: gen.ID(),
+		Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{IncomingRequest: &record.IncomingRequest{
+			Method:    method,
+			Reason:    reason,
+			Arguments: args,
+		}}}}
 }
