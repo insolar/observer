@@ -17,16 +17,20 @@
 package component
 
 import (
+	"context"
 	"reflect"
 	"sort"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
+	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/store/pg"
 	"github.com/insolar/observer/internal/app/observer/tree"
 	"github.com/insolar/observer/observability"
@@ -57,18 +61,20 @@ func TypeOrder(rec *observer.Record) int {
 	}
 }
 
-func makeBeautifier(
-	obs *observability.Observability,
-	conn *connectivity.Connectivity,
-) func(*raw) *beauty {
+func makeBeautifier(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func(*raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
 	fetcher := pg.NewPgStore(conn.PG())
+	cachedStore, err := store.NewCacheRecordStore(fetcher, cfg.Replicator.CacheSize)
+	if err != nil {
+		panic("failed to init cached record store")
+	}
+	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector()
 	transfers := collecting.NewTransferCollector(log)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log, fetcher, tree.NewBuilder(fetcher))
+	extendedTransfers := collecting.NewExtendedTransferCollector(log, fetcher, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
 	addresses := collecting.NewMigrationAddressesCollector(log, fetcher)
@@ -99,6 +105,24 @@ func makeBeautifier(
 
 		for _, rec := range r.batch {
 			// entities
+
+			switch rec.Virtual.Union.(type) {
+			case *record.Virtual_IncomingRequest:
+				err := cachedStore.SetRequest(context.Background(), *(*record.Material)(rec))
+				if err != nil {
+					log.Error(errors.Wrapf(err, "failed to save request"))
+				}
+			case *record.Virtual_Result:
+				err := cachedStore.SetResult(context.Background(), *(*record.Material)(rec))
+				if err != nil {
+					log.Error(errors.Wrapf(err, "failed to save result"))
+				}
+			case *record.Virtual_Activate, *record.Virtual_Amend, *record.Virtual_Deactivate:
+				err := cachedStore.SetSideEffect(context.Background(), *(*record.Material)(rec))
+				if err != nil {
+					log.Error(errors.Wrapf(err, "failed to save side effect"))
+				}
+			}
 
 			member := members.Collect(rec)
 			if member != nil {
