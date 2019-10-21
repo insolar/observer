@@ -51,42 +51,52 @@ func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.R
 	// This code block collects addresses from incoming request.
 	res := observer.CastToResult(rec)
 	if res.IsResult() {
-		req, err := c.fetcher.Request(ctx, res.Request())
-		if err != nil {
-			c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
-			return nil
-		}
-		call, ok := c.isAddMigrationAddresses(&req)
-		if !ok {
-			return nil
-		}
-
-		if !res.IsSuccess() {
-			// TODO: maybe we need to do something else
-			c.log.Warnf("unsuccessful attempt to add migration addresses")
-		}
-
-		if call != nil {
-			params := &addAddresses{}
-			call.ParseMemberContractCallParams(params)
-			addresses := make([]*observer.MigrationAddress, 0, len(params.MigrationAddresses))
-			for _, addr := range params.MigrationAddresses {
-				addresses = append(addresses, &observer.MigrationAddress{
-					Addr:   addr,
-					Pulse:  call.ID.Pulse(),
-					Wasted: false,
-				})
-			}
-			return addresses
-		}
+		return c.collectFromResult(res)
 	}
 
 	// This code block collects addresses from genesis record.
 	activate := observer.CastToActivate(rec)
-	if !activate.IsActivate() {
+	if activate.IsActivate() {
+		return c.collectFromGenesis(rec, activate)
+	}
+
+	return nil
+}
+
+func (c *MigrationAddressCollector) collectFromResult(res *observer.Result) []*observer.MigrationAddress {
+	if !res.IsSuccess() {
+		// TODO: maybe we need to do something else
+		c.log.Warnf("unsuccessful attempt to add migration addresses")
+	}
+
+	req, err := c.fetcher.Request(context.Background(), res.Request())
+	if err != nil {
+		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
 		return nil
 	}
 
+	call, ok := c.isAddMigrationAddresses(&req)
+	if !ok {
+		return nil
+	}
+	if call == nil {
+		return nil
+	}
+
+	params := &addAddresses{}
+	call.ParseMemberContractCallParams(params)
+	addresses := make([]*observer.MigrationAddress, 0, len(params.MigrationAddresses))
+	for _, addr := range params.MigrationAddresses {
+		addresses = append(addresses, &observer.MigrationAddress{
+			Addr:   addr,
+			Pulse:  call.ID.Pulse(),
+			Wasted: false,
+		})
+	}
+	return addresses
+}
+
+func (c *MigrationAddressCollector) collectFromGenesis(rec *observer.Record, activate *observer.Activate) []*observer.MigrationAddress {
 	act := activate.Virtual.GetActivate()
 	if !isMigrationShardActivate(act) {
 		return nil
