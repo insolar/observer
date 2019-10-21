@@ -19,7 +19,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -29,7 +29,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{ID: gen.ID(), Virtual: record.Wrap(&record.IncomingRequest{})}
 	}
 
@@ -74,6 +74,11 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		backend.SetRequestMock.Inspect(func(ctx context.Context, record record.Material) {
 			require.Equal(t, expectedRecord, record)
 		}).Return(nil)
+		backend.CalledRequestsMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
+			reasonID, err := ReasonID(&expectedRecord)
+			require.NoError(t, err)
+			require.Equal(t, reasonID, reqID)
+		}).Return(nil, nil)
 
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
@@ -88,6 +93,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		defer mc.Finish()
 
 		backend.SetRequestMock.Return(nil)
+		backend.CalledRequestsMock.Return(nil, nil)
 		backend.RequestMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
@@ -95,7 +101,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -109,14 +115,15 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
+		backend.CalledRequestsMock.Return(nil, nil)
 		backend.SetRequestMock.Return(nil)
 
 		// Set expected (will be the last).
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
 
-		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		// Fill half the cache.
+		for i := 0; i < cacheSize/2; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -125,9 +132,11 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		_, err = cache.Request(ctx, expectedRequestID)
 		assert.NoError(t, err)
 
-		// Fill one more record so the last one is evicted.
-		err = cache.SetRequest(ctx, genRecord())
-		assert.NoError(t, err)
+		// Fill another half.
+		for i := 0; i < cacheSize/2; i++ {
+			err := cache.SetRequest(ctx, genRecord())
+			assert.NoError(t, err)
+		}
 
 		// Expected record is not evicted.
 		_, err = cache.Request(ctx, expectedRequestID)
@@ -142,7 +151,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -152,7 +161,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Result{Request: gen.Reference()})}
 	}
 
@@ -218,7 +227,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -239,7 +248,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -265,7 +274,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -275,7 +284,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Amend{Request: gen.Reference()})}
 	}
 
@@ -341,7 +350,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -362,7 +371,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -378,5 +387,50 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		// Expected record is not evicted.
 		_, err = cache.SideEffect(ctx, expectedRequestID)
 		assert.NoError(t, err)
+	})
+}
+
+func TestCacheRecordStore_CalledRequests(t *testing.T) {
+	ctx := context.Background()
+	mc := minimock.NewController(t)
+	cacheSize := 10
+
+	var (
+		backend *RecordStoreMock
+		cache   *CacheRecordStore
+	)
+	setup := func() {
+		backend = NewRecordStoreMock(mc)
+		c, err := NewCacheRecordStore(backend, cacheSize)
+		if err != nil {
+			panic(err)
+		}
+		cache = c
+	}
+	genRecord := func() record.Material {
+		return record.Material{ID: gen.ID(), Virtual: record.Wrap(&record.IncomingRequest{})}
+	}
+
+	requestRecord := genRecord()
+	expectedReasonID, err := ReasonID(&requestRecord)
+	require.NoError(t, err)
+
+	t.Run("sets in cache", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		backend.SetRequestMock.Inspect(func(ctx context.Context, calledRecord record.Material) {
+			require.Equal(t, requestRecord, calledRecord)
+		}).Return(nil).CalledRequestsMock.Set(func(ctx context.Context, reqID insolar.ID) (ma1 []record.Material, err error) {
+			require.Equal(t, expectedReasonID, reqID)
+			return []record.Material{requestRecord}, nil
+		})
+
+		err := cache.SetRequest(ctx, requestRecord)
+		assert.NoError(t, err)
+
+		rec, err := cache.CalledRequests(ctx, expectedReasonID)
+		assert.NoError(t, err)
+		assert.Equal(t, []record.Material{requestRecord}, rec)
 	})
 }
