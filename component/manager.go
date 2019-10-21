@@ -17,6 +17,7 @@
 package component
 
 import (
+	"context"
 	"time"
 
 	"github.com/insolar/insolar/insolar"
@@ -35,7 +36,7 @@ type Manager struct {
 	log      logrus.Logger
 	init     func() *state
 	fetch    func(*state) *raw
-	beautify func(*raw) *beauty
+	beautify func(context.Context, *raw) *beauty
 	filter   func(*beauty) *beauty
 	store    func(*beauty, *state) *observer.Statistic
 	stop     func()
@@ -93,8 +94,9 @@ func (m *Manager) needStop() bool {
 
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
+	ctx := context.Background()
 	raw := m.fetch(s)
-	beauty := m.beautify(raw)
+	beauty := m.beautify(ctx, raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
 

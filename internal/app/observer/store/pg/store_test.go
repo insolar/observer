@@ -90,7 +90,7 @@ func TestMain(t *testing.M) {
 		log.Panicf("Could not init migrations: %s", err)
 	}
 
-	err = migrationCollection.DiscoverSQLMigrations("testdata")
+	err = migrationCollection.DiscoverSQLMigrations("../../../../../scripts/migrations")
 	if err != nil {
 		log.Panicf("Failed to read migrations: %s", err)
 	}

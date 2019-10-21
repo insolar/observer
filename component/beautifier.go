@@ -23,7 +23,6 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
@@ -61,12 +60,15 @@ func TypeOrder(rec *observer.Record) int {
 	}
 }
 
-func makeBeautifier(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func(*raw) *beauty {
+func makeBeautifier(
+	cfg *configuration.Configuration,
+	obs *observability.Observability,
+	conn *connectivity.Connectivity,
+) func(context.Context, *raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
-	fetcher := pg.NewPgStore(conn.PG())
-	cachedStore, err := store.NewCacheRecordStore(fetcher, cfg.Replicator.CacheSize)
+	cachedStore, err := store.NewCacheRecordStore(pg.NewPgStore(conn.PG()), cfg.Replicator.CacheSize)
 	if err != nil {
 		panic("failed to init cached record store")
 	}
@@ -74,16 +76,16 @@ func makeBeautifier(cfg *configuration.Configuration, obs *observability.Observa
 
 	members := collecting.NewMemberCollector()
 	transfers := collecting.NewTransferCollector(log)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log, fetcher, treeBuilder)
+	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
-	addresses := collecting.NewMigrationAddressesCollector(log, fetcher)
+	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
-	return func(r *raw) *beauty {
+	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
 			return nil
 		}
@@ -107,21 +109,15 @@ func makeBeautifier(cfg *configuration.Configuration, obs *observability.Observa
 			// entities
 
 			switch rec.Virtual.Union.(type) {
-			case *record.Virtual_IncomingRequest:
-				err := cachedStore.SetRequest(context.Background(), *(*record.Material)(rec))
-				if err != nil {
-					log.Error(errors.Wrapf(err, "failed to save request"))
-				}
-			case *record.Virtual_Result:
-				err := cachedStore.SetResult(context.Background(), *(*record.Material)(rec))
-				if err != nil {
-					log.Error(errors.Wrapf(err, "failed to save result"))
-				}
+			case *record.Virtual_IncomingRequest, *record.Virtual_OutgoingRequest:
+				err = cachedStore.SetRequest(ctx, record.Material(*rec))
 			case *record.Virtual_Activate, *record.Virtual_Amend, *record.Virtual_Deactivate:
-				err := cachedStore.SetSideEffect(context.Background(), *(*record.Material)(rec))
-				if err != nil {
-					log.Error(errors.Wrapf(err, "failed to save side effect"))
-				}
+				err = cachedStore.SetSideEffect(ctx, record.Material(*rec))
+			case *record.Virtual_Result:
+				err = cachedStore.SetResult(ctx, record.Material(*rec))
+			}
+			if err != nil {
+				panic(err)
 			}
 
 			member := members.Collect(rec)
