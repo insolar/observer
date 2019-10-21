@@ -3,7 +3,6 @@ package tree
 import (
 	"context"
 
-	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
@@ -95,7 +94,7 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 
 			result, err := b.fetcher.Result(ctx, e.ID)
 			if err != nil {
-				if errors.Cause(err) != pg.ErrNoRows {
+				if errors.Cause(err) != store.ErrNotFound {
 					return Structure{}, errors.Wrap(err, "couldn't get result of outgoing")
 				}
 			} else {
@@ -122,7 +121,7 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 
 	sideEffect, err := b.fetcher.SideEffect(ctx, reqID)
 	if err != nil {
-		if errors.Cause(err) != pg.ErrNoRows {
+		if errors.Cause(err) != store.ErrNotFound {
 			return Structure{}, errors.Wrap(err, "couldn't get sub-tree")
 		}
 	} else {
