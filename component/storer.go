@@ -24,7 +24,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/pkg/cycle"
@@ -35,7 +34,7 @@ import (
 func makeStorer(
 	cfg *configuration.Configuration,
 	obs *observability.Observability,
-	conn *connectivity.Connectivity,
+	conn PGer,
 ) func(*beauty, *state) *observer.Statistic {
 	log := obs.Log()
 	db := conn.PG()

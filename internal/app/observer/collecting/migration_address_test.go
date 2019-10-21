@@ -17,20 +17,24 @@
 package collecting
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 func makeEmptyMigrationShard() *observer.Record {
@@ -97,7 +101,7 @@ func makeGenesisMigrationAddresses() ([]*observer.MigrationAddress, *observer.Re
 	return addresses, (*observer.Record)(rec)
 }
 
-func makeAddRequest(pn insolar.PulseNumber, addrs []string) *observer.Record {
+func makeAddRequest(pn insolar.PulseNumber, addrs []string) *record.Material {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
 			CallSite: "migration.addAddresses",
@@ -120,7 +124,7 @@ func makeAddRequest(pn insolar.PulseNumber, addrs []string) *observer.Record {
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	return &record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
@@ -131,69 +135,96 @@ func makeAddRequest(pn insolar.PulseNumber, addrs []string) *observer.Record {
 			},
 		},
 	}
-	return (*observer.Record)(rec)
-}
-
-func makeAddAddresses() ([]*observer.MigrationAddress, []*observer.Record) {
-	addrs := []string{
-		"test_address",
-	}
-	pn := insolar.GenesisPulse.PulseNumber
-	addresses := []*observer.MigrationAddress{}
-	for _, a := range addrs {
-		addresses = append(addresses, &observer.MigrationAddress{a, pn, false})
-	}
-
-	out := makeOutgouingRequest()
-	add := makeAddRequest(pn, addrs)
-
-	records := []*observer.Record{
-		out,
-		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		add,
-		makeResultWith(add.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-	}
-	return addresses, records
 }
 
 func TestMigrationAddressCollector_Collect(t *testing.T) {
-	collector := NewMigrationAddressesCollector()
 
-	t.Run("nil", func(t *testing.T) {
-		require.Empty(t, collector.Collect(nil))
-	})
+	table := []struct {
+		name  string
+		mocks func(t minimock.Tester) (
+			stream []*observer.Record, fetcher store.RecordFetcher, expectedResult []*observer.MigrationAddress,
+		)
+	}{
+		{
+			name: "nil",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+				return []*observer.Record{nil}, fetcher, []*observer.MigrationAddress{}
+			},
+		},
+		{
+			name: "add_addresses_request",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+				pn := insolar.GenesisPulse.PulseNumber
 
-	t.Run("add_addresses_request", func(t *testing.T) {
-		expected, records := makeAddAddresses()
-		actual := []*observer.MigrationAddress{}
-		for _, rec := range records {
-			addr := collector.Collect(rec)
-			if addr != nil {
-				actual = append(actual, addr...)
+				addresses := []*observer.MigrationAddress{
+					&observer.MigrationAddress{"test_address", pn, false},
+				}
+
+				add := makeAddRequest(pn, []string{"test_address"})
+				fetcher.RequestMock.Return(*add, nil)
+				records := []*observer.Record{
+					(*observer.Record)(add),
+					makeResultWith(add.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				}
+				return records, fetcher, addresses
+			},
+		},
+		{
+			name: "not_addresses_activate",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+				rec := makeAccountActivate(gen.PulseNumber(), "", gen.Reference())
+				return []*observer.Record{rec}, fetcher, []*observer.MigrationAddress{}
+			},
+		},
+		{
+			name: "empty migration shard",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+				rec := makeEmptyMigrationShard()
+				return []*observer.Record{rec}, fetcher, []*observer.MigrationAddress{}
+			},
+		},
+		{
+			name: "invalid migration shard",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+				rec := makeInvalidMigrationShard()
+				return []*observer.Record{rec}, fetcher, []*observer.MigrationAddress{}
+			},
+		},
+		{
+			name: "genesis_address_pack",
+			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
+				fetcher := store.NewRecordFetcherMock(t)
+
+				expected, rec := makeGenesisMigrationAddresses()
+				return []*observer.Record{rec}, fetcher, expected
+			},
+		},
+
+	}
+
+	for _, test := range table {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			mc := minimock.NewController(t)
+			records, fetcher, expected := test.mocks(mc)
+
+			collector := NewMigrationAddressesCollector(logrus.New(), fetcher)
+
+			actual := make([]*observer.MigrationAddress, 0)
+			for _, rec := range records {
+				addr := collector.Collect(ctx, rec)
+				if addr != nil {
+					actual = append(actual, addr...)
+				}
 			}
-		}
 
-		require.Equal(t, expected, actual)
-	})
-
-	t.Run("not_addresses_activate", func(t *testing.T) {
-		rec := makeAccountActivate(gen.PulseNumber(), "", gen.Reference())
-		require.Empty(t, collector.Collect(rec))
-	})
-
-	t.Run("empty_migration_shard", func(t *testing.T) {
-		rec := makeEmptyMigrationShard()
-		require.Empty(t, collector.Collect(rec))
-	})
-
-	t.Run("invalid_migration_shard", func(t *testing.T) {
-		rec := makeInvalidMigrationShard()
-		require.Empty(t, collector.Collect(rec))
-	})
-
-	t.Run("genesis_address_pack", func(t *testing.T) {
-		expected, rec := makeGenesisMigrationAddresses()
-
-		require.Equal(t, expected, collector.Collect(rec))
-	})
+			require.Equal(t, expected, actual)
+			mc.Finish()
+		})
+	}
 }

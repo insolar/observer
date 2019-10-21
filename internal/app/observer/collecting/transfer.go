@@ -83,7 +83,7 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
-	if callArguments.Params.CallSite == "member.transfer" {
+	if callArguments.Params.CallSite == transferMethod {
 		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")

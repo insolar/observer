@@ -17,20 +17,31 @@ func ExtractRequestData(rec *record.Material) (insolar.ID, insolar.ID, error) {
 
 func RequestID(rec *record.Material) (insolar.ID, error) {
 	virtual := record.Unwrap(&rec.Virtual)
+	var (
+		id  insolar.ID
+		err error
+	)
 	switch r := virtual.(type) {
 	case record.Request:
-		return rec.ID, nil
+		id = rec.ID
 	case *record.Result:
-		return *r.Request.GetLocal(), nil
+		id = *r.Request.GetLocal()
 	case *record.Activate:
-		return *r.Request.GetLocal(), nil
+		id = *r.Request.GetLocal()
 	case *record.Amend:
-		return *r.Request.GetLocal(), nil
+		id = *r.Request.GetLocal()
 	case *record.Deactivate:
-		return *r.Request.GetLocal(), nil
+		id = *r.Request.GetLocal()
 	default:
-		return insolar.ID{}, errors.New("unknown record")
+		err = errors.New("unknown record")
 	}
+	if err != nil {
+		return id, err
+	}
+	if id.IsEmpty() {
+		return id, errors.New("empty record ID")
+	}
+	return id, nil
 }
 
 func ReasonID(rec *record.Material) (insolar.ID, error) {

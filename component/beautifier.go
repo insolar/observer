@@ -17,59 +17,52 @@
 package component
 
 import (
-	"reflect"
-	"sort"
+	"context"
 
+	gopg "github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
+	"github.com/insolar/observer/internal/app/observer/store"
+	"github.com/insolar/observer/internal/app/observer/store/pg"
+	"github.com/insolar/observer/internal/app/observer/tree"
 	"github.com/insolar/observer/observability"
 )
 
-func TypeOrder(rec *observer.Record) int {
-	switch t := rec.Virtual.Union.(type) {
-	case *record.Virtual_Genesis:
-		return -3
-	case *record.Virtual_Code:
-		return -2
-	case *record.Virtual_PendingFilament:
-		return -1
-	case *record.Virtual_IncomingRequest:
-		return 0
-	case *record.Virtual_OutgoingRequest:
-		return 1
-	case *record.Virtual_Activate:
-		return 2
-	case *record.Virtual_Amend:
-		return 3
-	case *record.Virtual_Deactivate:
-		return 4
-	case *record.Virtual_Result:
-		return 5
-	default:
-		panic("unexpected type: " + reflect.TypeOf(t).String())
-	}
+type PGer interface {
+	PG() *gopg.DB
 }
 
-func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
+func makeBeautifier(
+	cfg *configuration.Configuration,
+	obs *observability.Observability,
+	conn PGer,
+) func(context.Context, *raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
+	cachedStore, err := store.NewCacheRecordStore(pg.NewPgStore(conn.PG()), cfg.Replicator.CacheSize)
+	if err != nil {
+		panic("failed to init cached record store")
+	}
+	treeBuilder := tree.NewBuilder(cachedStore)
+
 	members := collecting.NewMemberCollector()
 	transfers := collecting.NewTransferCollector(log)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log)
+	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
-	addresses := collecting.NewMigrationAddressesCollector()
+	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
-	return func(r *raw) *beauty {
+	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
 			return nil
 		}
@@ -85,9 +78,19 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			wastings:  make(map[string]*observer.Wasting),
 		}
 
-		sort.Slice(r.batch, func(i, j int) bool {
-			return TypeOrder(r.batch[i]) < TypeOrder(r.batch[j])
-		})
+		for _, rec := range r.batch {
+			switch rec.Virtual.Union.(type) {
+			case *record.Virtual_IncomingRequest, *record.Virtual_OutgoingRequest:
+				err = cachedStore.SetRequest(ctx, record.Material(*rec))
+			case *record.Virtual_Activate, *record.Virtual_Amend, *record.Virtual_Deactivate:
+				err = cachedStore.SetSideEffect(ctx, record.Material(*rec))
+			case *record.Virtual_Result:
+				err = cachedStore.SetResult(ctx, record.Material(*rec))
+			}
+			if err != nil {
+				panic(err)
+			}
+		}
 
 		for _, rec := range r.batch {
 			// entities
@@ -117,7 +120,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 				b.deposits[deposit.DepositState] = deposit
 			}
 
-			for _, address := range addresses.Collect(rec) {
+			for _, address := range addresses.Collect(ctx, rec) {
 				b.addresses[address.Addr] = address
 			}
 

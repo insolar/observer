@@ -17,51 +17,137 @@
 package component
 
 import (
-	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/observer/internal/app/observer"
-	"github.com/stretchr/testify/require"
-	"math/rand"
-	"sort"
+	"context"
+	"fmt"
+	"log"
+	"os"
 	"testing"
-	"time"
+
+	"github.com/go-pg/migrations"
+	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/insolar/record"
+	"github.com/ory/dockertest"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/observability"
 )
 
-func Test_SortByType(t *testing.T) {
-	var batch []*observer.Record
-	batch = append(batch,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{},},},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Activate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Amend{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
-	)
+var (
+	db       *pg.DB
+	database = "test_beautifier_db"
 
-	var expected []*observer.Record
-	expected = append(expected,
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Code{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_PendingFilament{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_OutgoingRequest{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Activate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Amend{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Deactivate{}}},
-		&observer.Record{Virtual: record.Virtual{Union: &record.Virtual_Result{}}},
-	)
+	pgOptions = &pg.Options{
+		Addr:            "localhost",
+		User:            "postgres",
+		Password:        "secret",
+		Database:        "test_beautifier_db",
+		ApplicationName: "observer",
+	}
+)
 
-	// not random but shuffled
-	sort.Slice(batch, func(i, j int) bool {
-		return TypeOrder(batch[i]) < TypeOrder(batch[j])
+func TestMain(t *testing.M) {
+	var err error
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	resource, err := pool.Run("postgres", "11", []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + database})
+	if err != nil {
+		log.Panicf("Could not start resource: %s", err)
+	}
+
+	defer func() {
+		// When you're done, kill and remove the container
+		err = pool.Purge(resource)
+		if err != nil {
+			log.Panicf("failed to purge docker pool: %s", err)
+		}
+	}()
+
+	if err = pool.Retry(func() error {
+		options := *pgOptions
+		options.Addr = fmt.Sprintf("%s:%s", options.Addr, resource.GetPort("5432/tcp"))
+		db = pg.Connect(&options)
+		_, err := db.Exec("select 1")
+		return err
+	}); err != nil {
+		log.Panicf("Could not connect to docker: %s", err)
+	}
+	defer db.Close()
+
+	migrationCollection := migrations.NewCollection()
+
+	_, _, err = migrationCollection.Run(db, "init")
+	if err != nil {
+		log.Panicf("Could not init migrations: %s", err)
+	}
+
+	err = migrationCollection.DiscoverSQLMigrations("../scripts/migrations")
+	if err != nil {
+		log.Panicf("Failed to read migrations: %s", err)
+	}
+
+	_, _, err = migrationCollection.Run(db, "up")
+	if err != nil {
+		log.Panicf("Could not migrate: %s", err)
+	}
+
+	os.Exit(t.Run())
+}
+
+type fakeConn struct {
+}
+
+func (f fakeConn) PG() *pg.DB {
+	return db
+}
+
+func TestBeautifier_Run(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+
+		beautifier(ctx, nil)
 	})
-	require.Equal(t, expected, batch)
 
-	// real random
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(batch), func(i, j int) { batch[i], batch[j] = batch[j], batch[i] })
-	sort.Slice(batch, func(i, j int) bool {
-		return TypeOrder(batch[i]) < TypeOrder(batch[j])
+	t.Run("happy path", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+
+		raw := &raw{
+			batch: []*observer.Record{
+				makeRequestWith("hello", gen.RecordReference(), nil),
+			},
+		}
+		res := beautifier(ctx, raw)
+		assert.NotNil(t, res)
 	})
-	require.Equal(t, expected, batch)
+
+}
+
+func makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
+	return &observer.Record{
+		ID: gen.ID(),
+		Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{IncomingRequest: &record.IncomingRequest{
+			Method:    method,
+			Reason:    reason,
+			Arguments: args,
+		}}}}
 }
