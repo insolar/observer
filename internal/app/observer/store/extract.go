@@ -7,6 +7,14 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 )
 
+func ExtractRequestData(rec *record.Material) (insolar.ID, insolar.ID, error) {
+	virtual := record.Unwrap(&rec.Virtual)
+	if req, isRequest := virtual.(record.Request); isRequest {
+		return rec.ID, *req.ReasonRef().GetLocal(), nil
+	}
+	return insolar.ID{}, insolar.ID{}, errors.New("not a request")
+}
+
 func RequestID(rec *record.Material) (insolar.ID, error) {
 	virtual := record.Unwrap(&rec.Virtual)
 	switch r := virtual.(type) {

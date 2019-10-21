@@ -19,7 +19,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -29,7 +29,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{ID: gen.ID(), Virtual: record.Wrap(&record.IncomingRequest{})}
 	}
 
@@ -95,7 +95,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -116,7 +116,7 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetRequest(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -142,7 +142,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -152,7 +152,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Result{Request: gen.Reference()})}
 	}
 
@@ -218,7 +218,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -239,7 +239,7 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetResult(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -265,7 +265,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 
 	var (
 		backend *RecordStoreMock
-		cache *CacheRecordStore
+		cache   *CacheRecordStore
 	)
 	setup := func() {
 		backend = NewRecordStoreMock(mc)
@@ -275,7 +275,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		}
 		cache = c
 	}
-	genRecord := func () record.Material {
+	genRecord := func() record.Material {
 		return record.Material{Virtual: record.Wrap(&record.Amend{Request: gen.Reference()})}
 	}
 
@@ -341,7 +341,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until it overflows.
-		for i := 0; i < cacheSize ; i ++ {
+		for i := 0; i < cacheSize; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
@@ -362,7 +362,7 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Fill the cache until full.
-		for i := 0; i < cacheSize -1  ; i ++ {
+		for i := 0; i < cacheSize-1; i++ {
 			err := cache.SetSideEffect(ctx, genRecord())
 			assert.NoError(t, err)
 		}
