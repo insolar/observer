@@ -30,7 +30,8 @@ required = [
 
 [[constraint]]
   name = "github.com/insolar/insolar"
-  branch = "master"
+#  branch = "master"
+  revision = "8849613af096e43777498f2ae17b3b7638c5981e"
 
 [[constraint]]
   name = "google.golang.org/grpc"

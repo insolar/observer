@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	proxyCostCenter "github.com/insolar/insolar/application/builtin/proxy/costcenter"
@@ -64,7 +63,8 @@ func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.Exte
 
 	req, err := c.fetcher.Request(context.Background(), res.Request())
 	if err != nil {
-		panic("result without request")
+		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
+		return nil
 	}
 	call, ok := c.isTransferCall(&req)
 	if !ok {
@@ -106,12 +106,6 @@ func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.Exte
 		return c.makeFailedTransfer(&req)
 	}
 
-	memberAcceptCallTree, err := c.find(accountTransferStructure.Outgoings, c.isMemberAccept)
-	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to find member.Accept call in outgouings of account.Transfer"))
-		return c.makeFailedTransfer(&req)
-	}
-
 	transfer, err := c.build(
 		root,
 		result,
@@ -119,7 +113,6 @@ func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.Exte
 		accountTransferStructure,
 		calcFeeCallTree,
 		getFeeMemberCallTree,
-		memberAcceptCallTree,
 	)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
@@ -177,7 +170,6 @@ func (c *ExtendedTransferCollector) build(
 	account *tree.Structure,
 	calc *tree.Structure,
 	getFeeMember *tree.Structure,
-	accept *tree.Structure,
 ) (*observer.ExtendedTransfer, error) {
 
 	callArguments := apiCall.ParseMemberCallArguments()
@@ -231,7 +223,6 @@ func (c *ExtendedTransferCollector) build(
 		TransferRequestMember:  apiCall.ID,
 		TransferRequestWallet:  wallet.RequestID,
 		TransferRequestAccount: account.RequestID,
-		AcceptRequestMember:    accept.RequestID,
 		CalcFeeRequest:         calc.RequestID,
 		FeeMemberRequest:       getFeeMember.RequestID,
 		CostCenterRef:          costCenter,

@@ -25,6 +25,7 @@ import (
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/app/observer/store/pg"
 	"github.com/insolar/observer/observability"
 )
 
@@ -134,6 +135,21 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 		err = db.CreateTable(&postgres.StatisticSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create statistics table"))
+		}
+
+		err = db.CreateTable(&pg.RawRequest{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw requests table"))
+		}
+
+		err = db.CreateTable(&pg.RawResult{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw results table"))
+		}
+
+		err = db.CreateTable(&pg.RawSideEffect{}, &orm.CreateTableOptions{IfNotExists: true})
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to create raw side effects table"))
 		}
 	}
 }

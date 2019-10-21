@@ -21,6 +21,7 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/pkg/errors"
 
 	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
@@ -37,7 +38,7 @@ type MigrationAddressCollector struct {
 
 func NewMigrationAddressesCollector(log *logrus.Logger, fetcher store.RecordFetcher) *MigrationAddressCollector {
 	return &MigrationAddressCollector{
-		log: log,
+		log:     log,
 		fetcher: fetcher,
 	}
 }
@@ -52,7 +53,8 @@ func (c *MigrationAddressCollector) Collect(rec *observer.Record) []*observer.Mi
 	if res.IsResult() {
 		req, err := c.fetcher.Request(context.Background(), res.Request())
 		if err != nil {
-			panic("result without request")
+			c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
+			return nil
 		}
 		call, ok := c.isAddMigrationAddresses(&req)
 		if !ok {
