@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 func makeDepositMigrationCall(pn insolar.PulseNumber) *observer.Record {
@@ -196,7 +197,8 @@ func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
 
 func TestDepositCollector_Collect(t *testing.T) {
 	log := logrus.New()
-	collector := NewDepositCollector(log)
+	fetcher := store.NewRecordFetcherMock(t)
+	collector := NewDepositCollector(log, fetcher)
 
 	expected, records := makeDeposit()
 	var actual []*observer.Deposit
@@ -213,7 +215,8 @@ func TestDepositCollector_Collect(t *testing.T) {
 
 func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 	log := logrus.New()
-	collector := NewDepositCollector(log)
+	fetcher := store.NewRecordFetcherMock(t)
+	collector := NewDepositCollector(log, fetcher)
 
 	pn := insolar.GenesisPulse.PulseNumber
 	amount := "42"

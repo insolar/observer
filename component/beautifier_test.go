@@ -18,7 +18,11 @@ package component
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/insolar/insolar/application/api/requester"
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"log"
 	"os"
 	"testing"
@@ -133,9 +137,10 @@ func TestBeautifier_Run(t *testing.T) {
 		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 		ctx := context.Background()
 
+		tdg := NewTreeDataGenerator()
 		raw := &raw{
 			batch: []*observer.Record{
-				makeRequestWith("hello", gen.RecordReference(), nil),
+				tdg.makeRequestWith("hello", gen.RecordReference(), nil),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -152,17 +157,19 @@ func TestBeautifier_Run(t *testing.T) {
 		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 		ctx := context.Background()
 
+		tdg := NewTreeDataGenerator()
+
 		pn := insolar.GenesisPulse.PulseNumber
 		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-		out := makeOutgouingRequest()
-		call := makeGetMigrationAddressCall(pn)
+		out := tdg.makeOutgouingRequest(gen.Reference(), gen.Reference())
+		call := tdg.makeGetMigrationAddressCall(pn)
 
 		raw := &raw{
 			batch: []*observer.Record{
 				out,
 				call,
-				makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
+				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -171,31 +178,141 @@ func TestBeautifier_Run(t *testing.T) {
 				Addr: address,
 			}}, res.wastings)
 	})
+
+	t.Run("deposit", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+		pn := insolar.GenesisPulse.PulseNumber
+		tdg := NewTreeDataGenerator()
+
+		call := tdg.makeDepositMigrationCall(pn)
+
+		memberRef := gen.Reference()
+		out := tdg.makeOutgouingRequest(*insolar.NewReference(call.ID), gen.Reference())
+		in := tdg.makeIncomingFromOutgoing(out.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+
+		balance := "123"
+		amount := "456"
+		txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+
+		dep := deposit.Deposit{
+			Balance:            balance,
+			Amount:             amount,
+			TxHash:             txHash,
+			PulseDepositUnHold: pn + 3,
+		}
+		memory, err := insolar.Serialize(dep)
+		if err != nil {
+			panic("fail serialize memory")
+		}
+
+		act := tdg.makeActivation(
+			*insolar.NewReference(in.ID),
+			*in.Virtual.Union.(*record.Virtual_IncomingRequest).IncomingRequest.Prototype,
+			memory,
+		)
+
+		raw := &raw{
+			batch: []*observer.Record{
+				call,
+				out,
+				in,
+				act,
+				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
+					migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
+					nil,
+				}}),
+			},
+		}
+		res := beautifier(ctx, raw)
+		assert.Equal(t, 1, len(res.deposits))
+		assert.Equal(t, struct{}{}, res.deposits)
+	})
 }
 
-func makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
+type treeDataGenerator struct {
+	Nonce uint64
+}
+
+func NewTreeDataGenerator() treeDataGenerator {
+	return treeDataGenerator{Nonce: 0}
+}
+
+// not thread safe
+func (t *treeDataGenerator) GetNonce() uint64 {
+	nonce := t.Nonce
+	t.Nonce++
+	return nonce
+}
+
+func (t *treeDataGenerator) makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
 	return &observer.Record{
 		ID: gen.ID(),
 		Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{IncomingRequest: &record.IncomingRequest{
 			Method:    method,
 			Reason:    reason,
 			Arguments: args,
+			Nonce:     t.GetNonce(),
 		}}}}
 }
 
-func makeOutgouingRequest() *observer.Record {
+// we need reasn for match too tree and some UNIQUE nonce
+func (t *treeDataGenerator) makeOutgouingRequest(reason insolar.Reference, prototypeRef insolar.Reference) *observer.Record {
 	rec := &record.Material{
 		ID: gen.ID(),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
-				OutgoingRequest: &record.OutgoingRequest{},
+				OutgoingRequest: &record.OutgoingRequest{
+					Reason:    reason,
+					Prototype: &prototypeRef,
+					Nonce:     t.GetNonce(),
+				},
 			},
 		},
 	}
 	return (*observer.Record)(rec)
 }
 
-func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
+// we need same nonce in makeOutgouingRequest and makeIncomingRequest
+func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRequest) *observer.Record {
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Reason:    outgoing.Reason,
+					Nonce:     outgoing.Nonce,
+					Prototype: outgoing.Prototype,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func (t *treeDataGenerator) makeActivation(ref insolar.Reference, prototypreRef insolar.Reference, memory []byte) *observer.Record {
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_Activate{
+				Activate: &record.Activate{
+					Request: ref,
+					Image:   prototypreRef,
+					Memory:  memory,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func (t *treeDataGenerator) makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -219,7 +336,43 @@ func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
 	return (*observer.Record)(rec)
 }
 
-func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.Record {
+func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *observer.Record {
+	request := &requester.ContractRequest{
+		Params: requester.Params{
+			CallSite:   collecting.CallSite,
+			CallParams: nil,
+		},
+	}
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		panic("failed to marshal request")
+	}
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{requestBody, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Call",
+					Arguments: args,
+					Nonce:     t.GetNonce(),
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.Record {
 	payload, err := insolar.Serialize(result)
 	if err != nil {
 		panic("failed to serialize result")
