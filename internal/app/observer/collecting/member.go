@@ -61,21 +61,21 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	}
 
 	// TODO: check - Are we really need int?
-	// act := observer.CastToActivate(rec)
-	// if act.IsActivate() {
-	// 	if act.Virtual.GetActivate().Image.Equal(*proxyAccount.PrototypeReference) {
-	// 		if act.ID.Pulse() == insolar.GenesisPulse.PulseNumber {
-	// 			balance := accountBalance(rec)
-	// 			return &observer.Member{
-	// 				MemberRef:    gen.ID(),
-	// 				Balance:      balance,
-	// 				AccountState: rec.ID,
-	// 				Status:       "INTERNAL",
-	// 				// TODO: Some fields
-	// 			}
-	// 		}
-	// 	}
-	// }
+	act := observer.CastToActivate(rec)
+	if act.IsActivate() {
+		if act.Virtual.GetActivate().Image.Equal(*proxyAccount.PrototypeReference) {
+			if act.ID.Pulse() == insolar.GenesisPulse.PulseNumber {
+				balance := accountBalance(record.Unwrap(&act.Virtual).(*record.Activate))
+				return &observer.Member{
+					MemberRef:    gen.ID(),
+					Balance:      balance,
+					AccountState: rec.ID,
+					Status:       "INTERNAL",
+					// TODO: Some fields
+				}
+			}
+		}
+	}
 
 	result := observer.CastToResult(rec) // TODO: still observer.Result
 	if !result.IsResult() {
@@ -109,17 +109,10 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		return badMember()
 	}
 
-	callRequest := memberContractTree.Request
+	// callRequest := memberContractTree.Request
 	children := memberContractTree.Outgoings
 	// sideEffect := memberContractTree.SideEffect // TODO: check is empty (because member.create doesn't has side effect)
 	contractResult := memberContractTree.Result // TODO: check equality with result above (maybe)
-
-	request := observer.CastToRequest(callRequest)
-	if request == nil {
-		// TODO
-		panic("SOMETHING WENT WRONG: can't cast request")
-		return badMember()
-	}
 
 	accountTree, walletTree, memberTree := childTrees(children)
 
@@ -158,10 +151,10 @@ func childTrees(
 			accountTree = child.Structure
 		}
 		if isNewWallet(child.Structure.Request) {
-			accountTree = child.Structure
+			walletTree = child.Structure
 		}
 		if isNewMember(child.Structure.Request) {
-			accountTree = child.Structure
+			memberTree = child.Structure
 		}
 	}
 
@@ -236,11 +229,11 @@ func isNewMember(request record.IncomingRequest) bool {
 }
 
 func createResponse(result record.Result) member.MigrationCreateResponse {
-	response := member.MigrationCreateResponse{}
+	response := &member.MigrationCreateResponse{}
 
 	ParseFirstValueResult(&result, response)
 
-	return response
+	return *response
 }
 
 func accountBalance(act *record.Activate) string {
