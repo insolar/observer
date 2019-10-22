@@ -36,7 +36,6 @@ type WastingCollector struct {
 }
 
 func NewWastingCollector(log *logrus.Logger, fetcher store.RecordFetcher) *WastingCollector {
-	// collector := NewResultCollector(isGetFreeMigrationAddress, successResult)
 	return &WastingCollector{
 		log:     log,
 		fetcher: fetcher,
@@ -52,7 +51,6 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 
 	result := observer.CastToResult(rec)
 	if result == nil {
-		logger.Debug("empty result")
 		return nil
 	}
 

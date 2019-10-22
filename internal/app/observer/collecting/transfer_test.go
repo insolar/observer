@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -26,14 +27,14 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/insolar/insolar/pulse"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
-func makeOutgouingRequest() *observer.Record {
+func makeOutgoingRequest() *observer.Record {
 	rec := &record.Material{
 		ID: gen.ID(),
 		Virtual: record.Virtual{
@@ -68,8 +69,8 @@ func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.R
 func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: transferMethod,
-			CallParams: transferCallParams{
+			CallSite: TransferMethod,
+			CallParams: TransferCallParams{
 				Amount:            amount,
 				ToMemberReference: to,
 			},
@@ -104,50 +105,58 @@ func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *obser
 	return (*observer.Record)(rec)
 }
 
-func makeTransfer() ([]*observer.ExtendedTransfer, []*observer.Record) {
+func TestTransferCollector_Collect(t *testing.T) {
+	log := logrus.New()
+	fetcher := store.NewRecordFetcherMock(t)
+	collector := NewTransferCollector(log, fetcher)
+	ctx := context.Background()
+
 	pn := insolar.GenesisPulse.PulseNumber
 	amount := "42"
 	fee := "7"
 	from := gen.IDWithPulse(pn)
 	to := gen.IDWithPulse(pn)
-	out := makeOutgouingRequest()
+	out := makeOutgoingRequest()
 	call := makeTransferCall(amount, from.String(), to.String(), pn)
 	records := []*observer.Record{
-		out,
 		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		call,
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
 	}
 
-	timestamp, err := pulse.Number(pn).AsApproximateTime()
+	fetcher.RequestMock.Set(func(_ context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		switch reqID {
+		case out.ID:
+			return record.Material(*out), nil
+		case call.ID:
+			return record.Material(*call), nil
+		default:
+			panic("unexpected call")
+		}
+	})
+
+	timestamp, err := pn.AsApproximateTime()
 	if err != nil {
 		panic("failed to calc timestamp by pulse")
 	}
-	transfer := &observer.ExtendedTransfer{
-		DepositTransfer: observer.DepositTransfer{
-			Transfer: observer.Transfer{
-				TxID:      call.ID,
-				From:      from,
-				To:        to,
-				Amount:    amount,
-				Fee:       fee,
-				Pulse:     pn,
-				Timestamp: timestamp.Unix(),
+	expected := []*observer.ExtendedTransfer{
+		{
+			DepositTransfer: observer.DepositTransfer{
+				Transfer: observer.Transfer{
+					TxID:      call.ID,
+					From:      from,
+					To:        to,
+					Amount:    amount,
+					Fee:       fee,
+					Pulse:     pn,
+					Timestamp: timestamp.Unix(),
+				},
 			},
 		},
 	}
-	return []*observer.ExtendedTransfer{transfer}, records
-}
 
-func TestTransferCollector_Collect(t *testing.T) {
-	t.Skip("temporary skipped")
-	log := logrus.New()
-	collector := NewTransferCollector(log)
-
-	expected, records := makeTransfer()
 	var actual []*observer.ExtendedTransfer
 	for _, r := range records {
-		transfer := collector.Collect(r)
+		transfer := collector.Collect(ctx, r)
 		if transfer != nil {
 			actual = append(actual, transfer)
 		}

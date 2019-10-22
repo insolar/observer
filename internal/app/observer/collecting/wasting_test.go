@@ -70,7 +70,7 @@ func TestWastingCollector_Collect(t *testing.T) {
 
 		pn := insolar.GenesisPulse.PulseNumber
 		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-		out := makeOutgouingRequest()
+		out := makeOutgoingRequest()
 		call := makeGetMigrationAddressCall(pn)
 
 		records := []*observer.Record{

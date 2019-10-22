@@ -17,33 +17,71 @@
 package collecting
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
+)
+
+const (
+	MemberCall = "Call"
 )
 
 type TransferCollector struct {
-	log       *logrus.Logger
-	collector observer.ResultCollector
+	log     *logrus.Logger
+	fetcher store.RecordFetcher
 }
 
-func NewTransferCollector(log *logrus.Logger) *TransferCollector {
+func NewTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TransferCollector {
 	c := &TransferCollector{
-		log: log,
+		log:     log,
+		fetcher: fetcher,
 	}
-	c.collector = NewResultCollector(c.isTransferCall, c.successResult)
 	return c
 }
 
-func (c *TransferCollector) Collect(rec *observer.Record) *observer.ExtendedTransfer {
-	couple := c.collector.Collect(rec)
-	if couple == nil {
+func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.ExtendedTransfer {
+	logger := c.log.WithField("collector", "transfer")
+
+	result := observer.CastToResult(rec)
+	if result == nil {
 		return nil
 	}
-	transfer, err := c.build(couple.Request, couple.Result)
+
+	if !result.IsSuccess() {
+		logger.Debug("unsuccessful result")
+		return nil
+	}
+
+	requestID := result.Request()
+	if requestID.IsEmpty() {
+		logger.Debug("failed to extract requestID from result")
+		return nil
+	}
+
+	request, err := c.fetcher.Request(ctx, requestID)
+	if err != nil {
+		logger.Error(errors.Wrap(err, "failed to fetch request"))
+		return nil
+	}
+
+	incoming := request.Virtual.GetIncomingRequest()
+	if incoming == nil {
+		logger.Debug("not a incoming request reason")
+		return nil
+	}
+
+	if incoming.Method != MemberCall {
+		logger.Debug("not a member call")
+		return nil
+	}
+
+	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
 		return nil
@@ -51,30 +89,10 @@ func (c *TransferCollector) Collect(rec *observer.Record) *observer.ExtendedTran
 	return transfer
 }
 
-func (c *TransferCollector) isTransferCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-
-	if !request.IsIncoming() {
-		return false
-	}
-
-	if !request.IsMemberCall() {
-		return false
-	}
-
-	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "deposit.transfer"
-}
-
-func (c *TransferCollector) successResult(chain interface{}) bool {
-	result := observer.CastToResult(chain)
-	return result.IsSuccess()
-}
-
 func (c *TransferCollector) build(request *observer.Request, result *observer.Result) (*observer.ExtendedTransfer, error) {
 	callArguments := request.ParseMemberCallArguments()
 	pn := request.ID.Pulse()
-	callParams := &transferCallParams{}
+	callParams := &TransferCallParams{}
 	request.ParseMemberContractCallParams(callParams)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
@@ -83,7 +101,7 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
-	if callArguments.Params.CallSite == transferMethod {
+	if callArguments.Params.CallSite == TransferMethod {
 		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
@@ -110,7 +128,7 @@ func (c *TransferCollector) build(request *observer.Request, result *observer.Re
 	}, nil
 }
 
-type transferCallParams struct {
+type TransferCallParams struct {
 	Amount            string `json:"amount"`
 	ToMemberReference string `json:"toMemberReference"`
 	EthTxHash         string `json:"ethTxHash"`

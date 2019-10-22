@@ -52,7 +52,7 @@ func makeBeautifier(
 	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector()
-	transfers := collecting.NewTransferCollector(log)
+	transfers := collecting.NewTransferCollector(log, cachedStore)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
@@ -100,7 +100,7 @@ func makeBeautifier(
 				b.members[member.AccountState] = member
 			}
 
-			transfer := transfers.Collect(rec)
+			transfer := transfers.Collect(ctx, rec)
 			if transfer != nil {
 				b.transfers = append(b.transfers, transfer)
 			}
