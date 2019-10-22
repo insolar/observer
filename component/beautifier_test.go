@@ -28,11 +28,13 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/ory/dockertest"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
 )
 
@@ -140,6 +142,35 @@ func TestBeautifier_Run(t *testing.T) {
 		assert.NotNil(t, res)
 	})
 
+	t.Run("wastings", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+
+		pn := insolar.GenesisPulse.PulseNumber
+		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+		out := makeOutgouingRequest()
+		call := makeGetMigrationAddressCall(pn)
+
+		raw := &raw{
+			batch: []*observer.Record{
+				out,
+				call,
+				makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
+			},
+		}
+		res := beautifier(ctx, raw)
+		assert.Equal(t, map[string]*observer.Wasting{
+			address: {
+				Addr: address,
+			}}, res.wastings)
+	})
 }
 
 func makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
@@ -150,4 +181,60 @@ func makeRequestWith(method string, reason insolar.Reference, args []byte) *obse
 			Reason:    reason,
 			Arguments: args,
 		}}}}
+}
+
+func makeOutgouingRequest() *observer.Record {
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_OutgoingRequest{
+				OutgoingRequest: &record.OutgoingRequest{},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+
+	virtRecord := record.Wrap(&record.IncomingRequest{
+		Method:    collecting.GetFreeMigrationAddress,
+		Arguments: args,
+	})
+
+	rec := &record.Material{
+		ID:      gen.IDWithPulse(pn),
+		Virtual: virtRecord,
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.Record {
+	payload, err := insolar.Serialize(result)
+	if err != nil {
+		panic("failed to serialize result")
+	}
+	ref := insolar.NewReference(requestID)
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_Result{
+				Result: &record.Result{
+					Request: *ref,
+					Payload: payload,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
 }

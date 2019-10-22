@@ -17,43 +17,72 @@
 package collecting
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
+)
+
+const (
+	GetFreeMigrationAddress = "GetFreeMigrationAddress"
 )
 
 type WastingCollector struct {
-	collector observer.ResultCollector
+	log     *logrus.Logger
+	fetcher store.RecordFetcher
 }
 
-func NewWastingCollector() *WastingCollector {
-	collector := NewResultCollector(isGetFreeMigrationAddress, successResult)
+func NewWastingCollector(log *logrus.Logger, fetcher store.RecordFetcher) *WastingCollector {
+	// collector := NewResultCollector(isGetFreeMigrationAddress, successResult)
 	return &WastingCollector{
-		collector: collector,
+		log:     log,
+		fetcher: fetcher,
 	}
 }
 
-func (c *WastingCollector) Collect(rec *observer.Record) *observer.Wasting {
+func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Wasting {
+	logger := c.log.WithField("collector", "wasting")
 	if rec == nil {
+		logger.Debug("empty record")
 		return nil
 	}
 
-	couple := c.collector.Collect(rec)
-	if couple == nil {
+	result := observer.CastToResult(rec)
+	if result == nil {
+		logger.Debug("empty result")
+		return nil
+	}
+
+	if !result.IsSuccess() {
+		logger.Debug("unsuccessful result")
+		return nil
+	}
+
+	requestID := result.Request()
+
+	recordRequest, err := c.fetcher.Request(ctx, requestID)
+	if err != nil {
+		logger.Error(errors.Wrap(err, "failed to fetch request"))
+		return nil
+	}
+
+	request := recordRequest.Virtual.GetIncomingRequest()
+	if request == nil {
+		logger.Debug("not incoming request")
+		return nil
+	}
+
+	if request.Method != GetFreeMigrationAddress {
+		logger.Debug("not GetFreeMigrationAddress request")
 		return nil
 	}
 
 	address := ""
-	couple.Result.ParseFirstPayloadValue(&address)
+	result.ParseFirstPayloadValue(&address)
 	return &observer.Wasting{
 		Addr: address,
 	}
-}
-
-func isGetFreeMigrationAddress(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	return in.Method == "GetFreeMigrationAddress"
 }
