@@ -22,6 +22,7 @@ import (
 
 	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/log"
+
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
 
@@ -94,19 +95,22 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		return nil
 	}
 
+	log := c.log.WithField("req", res.Request())
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
+		log.Error(errors.Wrap(err, "result without request"))
 		return nil
 	}
 
 	_, ok := c.isDepositCall(&req)
 	if !ok {
+		log.Debug("not a deposit call, skipping")
 		return nil
 	}
 
 	callTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
+		log.Error(errors.Wrap(err, "couldn't build tree"))
 		return nil
 	}
 
@@ -115,9 +119,23 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		activateID insolar.ID
 	)
 	for _, o := range callTree.Outgoings {
-		if o.Structure.SideEffect.Activation.Image.Equal(*migrationdaemon.PrototypeReference) {
-			activate = o.Structure.SideEffect.Activation
-			activateID = o.Structure.SideEffect.ID
+		subTree := o.Structure
+		if subTree == nil {
+			log.Debug("outgoing has no sub-tree (saga), skipping")
+			continue
+		}
+		effect := o.Structure.SideEffect
+		if effect == nil {
+			log.Debug("called request is has no side effect, skipping")
+			continue
+		}
+		if effect.Activation == nil {
+			log.Debug("called request is not activation, skipping")
+			continue
+		}
+		if effect.Activation.Image.Equal(*migrationdaemon.PrototypeReference) {
+			activate = effect.Activation
+			activateID = effect.ID
 		}
 	}
 
