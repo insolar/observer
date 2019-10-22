@@ -20,12 +20,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
-	"log"
-	"os"
-	"testing"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
@@ -214,7 +217,7 @@ func TestBeautifier_Run(t *testing.T) {
 
 		act := tdg.makeActivation(
 			*insolar.NewReference(in.ID),
-			*in.Virtual.Union.(*record.Virtual_IncomingRequest).IncomingRequest.Prototype,
+			*migrationdaemon.PrototypeReference,
 			memory,
 		)
 
@@ -222,7 +225,9 @@ func TestBeautifier_Run(t *testing.T) {
 			batch: []*observer.Record{
 				call,
 				out,
+				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				in,
+				tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				act,
 				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
 					migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
@@ -230,9 +235,24 @@ func TestBeautifier_Run(t *testing.T) {
 				}}),
 			},
 		}
+		transferDate, err := act.ID.Pulse().AsApproximateTime()
+		require.NoError(t, err)
+
 		res := beautifier(ctx, raw)
+
 		assert.Equal(t, 1, len(res.deposits))
-		assert.Equal(t, struct{}{}, res.deposits)
+		assert.Equal(t, map[insolar.ID]*observer.Deposit{
+			act.ID: {
+				EthHash:         strings.ToLower(txHash),
+				Ref:             in.ID,                 // from activate
+				Member:          *memberRef.GetLocal(), // from result
+				Timestamp:       transferDate.Unix(),
+				HoldReleaseDate: 0,
+				Amount:          amount,  // from activate
+				Balance:         balance, // from activate
+				DepositState:    act.ID,  // from activate
+			},
+		}, res.deposits)
 	})
 }
 

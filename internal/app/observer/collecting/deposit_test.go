@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -199,11 +200,12 @@ func TestDepositCollector_Collect(t *testing.T) {
 	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
 	collector := NewDepositCollector(log, fetcher)
+	ctx := context.Background()
 
 	expected, records := makeDeposit()
 	var actual []*observer.Deposit
 	for _, r := range records {
-		deposit := collector.Collect(r)
+		deposit := collector.Collect(ctx, r)
 		if deposit != nil {
 			actual = append(actual, deposit)
 		}
@@ -240,9 +242,11 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		DepositState: depositActivate.ID,
 	}}
 
+	ctx := context.Background()
+
 	var actual []*observer.Deposit
 	for _, r := range records {
-		deposit := collector.Collect(r)
+		deposit := collector.Collect(ctx, r)
 		if deposit != nil {
 			actual = append(actual, deposit)
 		}

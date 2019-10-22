@@ -60,7 +60,7 @@ func makeBeautifier(
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
-	//wastings := collecting.NewWastingCollector(log, cachedStore)
+	wastings := collecting.NewWastingCollector(log, cachedStore)
 
 	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
@@ -115,7 +115,7 @@ func makeBeautifier(
 				b.transfers = append(b.transfers, toDeposit)
 			}
 
-			deposit := deposits.Collect(rec)
+			deposit := deposits.Collect(ctx, rec)
 			if deposit != nil {
 				b.deposits[deposit.DepositState] = deposit
 			}
@@ -136,10 +136,10 @@ func makeBeautifier(
 				b.depositUpdates[update.ID] = update
 			}
 
-			//wasting := wastings.Collect(ctx, rec)
-			//if wasting != nil {
-			//	b.wastings[wasting.Addr] = wasting
-			//}
+			wasting := wastings.Collect(ctx, rec)
+			if wasting != nil {
+				b.wastings[wasting.Addr] = wasting
+			}
 		}
 
 		log := obs.Log()

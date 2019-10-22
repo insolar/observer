@@ -18,11 +18,12 @@ package collecting
 
 import (
 	"context"
+	"strings"
+
 	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
-	"strings"
 
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
@@ -48,7 +49,7 @@ type DepositCollector struct {
 
 func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *DepositCollector {
 	return &DepositCollector{
-		log: log,
+		log:     log,
 		fetcher: fetcher,
 		builder: tree.NewBuilder(fetcher),
 	}
@@ -62,7 +63,7 @@ func (c *DepositCollector) SetBuilder(builder tree.Builder) {
 	c.builder = builder
 }
 
-func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
+func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Deposit {
 	if rec == nil {
 		return nil
 	}
@@ -93,8 +94,6 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 		return nil
 	}
 
-	ctx := context.Background()
-
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
 		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
@@ -111,15 +110,23 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 		return nil
 	}
 
-	var activate = &observer.Activate{}
-
+	var (
+		activate   *record.Activate
+		activateID insolar.ID
+	)
 	for _, o := range callTree.Outgoings {
 		if o.Structure.SideEffect.Activation.Image.Equal(*migrationdaemon.PrototypeReference) {
-			activate = observer.CastToActivate(o.Structure.SideEffect.Activation)
+			activate = o.Structure.SideEffect.Activation
+			activateID = o.Structure.SideEffect.ID
 		}
 	}
 
-	d, err := c.build(activate, res)
+	if activate == nil {
+		c.log.Error("failed to find activation")
+		return nil
+	}
+
+	d, err := c.build(activateID, activate, res)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -148,18 +155,16 @@ func isDepositActivate(chain interface{}) bool {
 	return act.Image.Equal(*migrationdaemon.PrototypeReference)
 }
 
-
-func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (*observer.Deposit, error) {
+func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
 	callResult := &migrationdaemon.DepositMigrationResult{}
 	res.ParseFirstPayloadValue(callResult)
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-	activate := act.Virtual.GetActivate()
 	state := c.initialDepositState(activate)
-	transferDate, err := act.ID.Pulse().AsApproximateTime()
+	transferDate, err := id.Pulse().AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", act.ID.Pulse())
+		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
 	}
 
 	memberRef, err := insolar.NewIDFromString(callResult.Reference)
@@ -169,13 +174,13 @@ func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (
 
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash), // from activate
-		Ref:             act.Request(),                 // from activate
+		Ref:             *activate.Request.GetLocal(),  // from activate
 		Member:          *memberRef,                    // from result
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: 0,
 		Amount:          state.Amount,  // from activate
 		Balance:         state.Balance, // from activate
-		DepositState:    act.ID,        // from activate
+		DepositState:    id,            // from activate
 	}, nil
 }
 
