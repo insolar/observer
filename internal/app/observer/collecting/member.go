@@ -82,11 +82,6 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		return nil
 	}
 
-	if !result.IsSuccess() { // TODO: still observer.Result
-		// TODO
-		return badMember()
-	}
-
 	requestID := *result.Virtual.GetResult().Request.GetLocal()
 
 	// Fetch root request.
@@ -100,6 +95,11 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	if !isMemberCreateRequest(originRequest) {
 		// TODO
 		return nil
+	}
+
+	if !result.IsSuccess() { // TODO: still observer.Result
+		// TODO
+		return badMember()
 	}
 
 	// Build contract tree.
