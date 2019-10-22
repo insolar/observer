@@ -18,11 +18,11 @@ package collecting
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -33,26 +33,20 @@ const (
 )
 
 type TransferCollector struct {
-	log     *logrus.Logger
 	fetcher store.RecordFetcher
 }
 
-func NewTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TransferCollector {
+func NewTransferCollector(fetcher store.RecordFetcher) *TransferCollector {
 	c := &TransferCollector{
-		log:     log,
 		fetcher: fetcher,
 	}
 	return c
 }
 
 func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.ExtendedTransfer {
-	logger := c.log.WithField("collector", "transfer")
 	if rec == nil {
-		logger.Debug("empty record")
 		return nil
 	}
-
-	logger.Debugf("processing record %s", rec.ID.String())
 
 	result := observer.CastToResult(rec)
 	if result == nil {
@@ -65,12 +59,12 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	requestID := result.Request()
 	if requestID.IsEmpty() {
-		panic("empty requestID from result")
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
 	}
 
 	request, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to fetch request"))
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
 	}
 
 	incoming := request.Virtual.GetIncomingRequest()
@@ -84,7 +78,7 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to build transfer"))
+		panic(errors.Wrapf(err, "recordID %s: failed to build transfer", rec.ID.String()))
 	}
 	return transfer
 }

@@ -18,9 +18,9 @@ package collecting
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -31,25 +31,19 @@ const (
 )
 
 type WastingCollector struct {
-	log     *logrus.Logger
 	fetcher store.RecordFetcher
 }
 
-func NewWastingCollector(log *logrus.Logger, fetcher store.RecordFetcher) *WastingCollector {
+func NewWastingCollector(fetcher store.RecordFetcher) *WastingCollector {
 	return &WastingCollector{
-		log:     log,
 		fetcher: fetcher,
 	}
 }
 
 func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Wasting {
-	logger := c.log.WithField("collector", "wasting")
 	if rec == nil {
-		logger.Debug("empty record")
 		return nil
 	}
-
-	logger.Debugf("processing record %s", rec.ID.String())
 
 	result := observer.CastToResult(rec)
 	if result == nil {
@@ -62,12 +56,12 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 
 	requestID := result.Request()
 	if requestID.IsEmpty() {
-		panic("empty requestID from result")
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
 	}
 
 	recordRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to fetch request"))
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
 	}
 
 	request := recordRequest.Virtual.GetIncomingRequest()
