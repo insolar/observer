@@ -122,7 +122,7 @@ func makeMember() ([]*observer.Member, []*observer.Record) {
 	pn := insolar.GenesisPulse.PulseNumber + 10
 	balance := "42"
 	memberRef := gen.IDWithPulse(pn)
-	out := makeOutgouingRequest()
+	out := makeOutgoingRequest()
 	call := makeMemberCreateCall(pn)
 	callRef := *insolar.NewReference(call.ID)
 	newAccount := makeNewAccountRequest(pn, callRef)
