@@ -47,6 +47,12 @@ func NewTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher) *Tran
 
 func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.ExtendedTransfer {
 	logger := c.log.WithField("collector", "transfer")
+	if rec == nil {
+		logger.Debug("empty record")
+		return nil
+	}
+
+	logger.Debugf("processing record %s", rec.ID.String())
 
 	result := observer.CastToResult(rec)
 	if result == nil {
@@ -59,31 +65,26 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	requestID := result.Request()
 	if requestID.IsEmpty() {
-		logger.Error("failed to extract requestID from result")
-		return nil
+		panic("empty requestID from result")
 	}
 
 	request, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to fetch request"))
-		return nil
+		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
 	incoming := request.Virtual.GetIncomingRequest()
 	if incoming == nil {
-		logger.Error("not a incoming request reason")
 		return nil
 	}
 
 	if incoming.Method != MemberCall {
-		logger.Debug("not a member call")
 		return nil
 	}
 
 	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
-		return nil
+		panic(errors.Wrap(err, "failed to build transfer"))
 	}
 	return transfer
 }

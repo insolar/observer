@@ -49,6 +49,8 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		return nil
 	}
 
+	logger.Debugf("processing record %s", rec.ID.String())
+
 	result := observer.CastToResult(rec)
 	if result == nil {
 		return nil
@@ -59,21 +61,21 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 	}
 
 	requestID := result.Request()
+	if requestID.IsEmpty() {
+		panic("empty requestID from result")
+	}
 
 	recordRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to fetch request"))
-		return nil
+		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
 	request := recordRequest.Virtual.GetIncomingRequest()
 	if request == nil {
-		logger.Debug("not a incoming request reason")
 		return nil
 	}
 
 	if request.Method != GetFreeMigrationAddress {
-		logger.Debug("not GetFreeMigrationAddress request")
 		return nil
 	}
 
