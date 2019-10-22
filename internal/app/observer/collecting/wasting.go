@@ -17,43 +17,65 @@
 package collecting
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
+)
+
+const (
+	GetFreeMigrationAddress = "GetFreeMigrationAddress"
 )
 
 type WastingCollector struct {
-	collector observer.ResultCollector
+	fetcher store.RecordFetcher
 }
 
-func NewWastingCollector() *WastingCollector {
-	collector := NewResultCollector(isGetFreeMigrationAddress, successResult)
+func NewWastingCollector(fetcher store.RecordFetcher) *WastingCollector {
 	return &WastingCollector{
-		collector: collector,
+		fetcher: fetcher,
 	}
 }
 
-func (c *WastingCollector) Collect(rec *observer.Record) *observer.Wasting {
+func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Wasting {
 	if rec == nil {
 		return nil
 	}
 
-	couple := c.collector.Collect(rec)
-	if couple == nil {
+	result := observer.CastToResult(rec)
+	if result == nil {
+		return nil
+	}
+
+	if !result.IsSuccess() {
+		return nil
+	}
+
+	requestID := result.Request()
+	if requestID.IsEmpty() {
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
+	}
+
+	recordRequest, err := c.fetcher.Request(ctx, requestID)
+	if err != nil {
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
+	}
+
+	request := recordRequest.Virtual.GetIncomingRequest()
+	if request == nil {
+		return nil
+	}
+
+	if request.Method != GetFreeMigrationAddress {
 		return nil
 	}
 
 	address := ""
-	couple.Result.ParseFirstPayloadValue(&address)
+	result.ParseFirstPayloadValue(&address)
 	return &observer.Wasting{
 		Addr: address,
 	}
-}
-
-func isGetFreeMigrationAddress(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	return in.Method == "GetFreeMigrationAddress"
 }

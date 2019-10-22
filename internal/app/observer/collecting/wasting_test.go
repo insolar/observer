@@ -17,6 +17,7 @@
 package collecting
 
 import (
+	"context"
 	"testing"
 
 	"github.com/insolar/insolar/insolar"
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
@@ -39,50 +41,63 @@ func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
+
+	virtRecord := record.Wrap(&record.IncomingRequest{
+		Method:    GetFreeMigrationAddress,
+		Arguments: args,
+	})
+
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &record.IncomingRequest{
-					Method:    "GetFreeMigrationAddress",
-					Arguments: args,
-				},
-			},
-		},
+		ID:      gen.IDWithPulse(pn),
+		Virtual: virtRecord,
 	}
 	return (*observer.Record)(rec)
 }
 
-func makeWasting() ([]*observer.Wasting, []*observer.Record) {
-	pn := insolar.GenesisPulse.PulseNumber
-	address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-	out := makeOutgouingRequest()
-	call := makeGetMigrationAddressCall(pn)
-	records := []*observer.Record{
-		out,
-		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		call,
-		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
-	}
-
-	wasting := &observer.Wasting{
-		Addr: address,
-	}
-	return []*observer.Wasting{wasting}, records
-}
-
 func TestWastingCollector_Collect(t *testing.T) {
-	collector := NewWastingCollector()
 
 	t.Run("nil", func(t *testing.T) {
-		require.Nil(t, collector.Collect(nil))
+		fetcher := store.NewRecordFetcherMock(t)
+		collector := NewWastingCollector(fetcher)
+		ctx := context.Background()
+		require.Nil(t, collector.Collect(ctx, nil))
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
-		expected, records := makeWasting()
+		fetcher := store.NewRecordFetcherMock(t)
+		collector := NewWastingCollector(fetcher)
+
+		pn := insolar.GenesisPulse.PulseNumber
+		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+		out := makeOutgoingRequest()
+		call := makeGetMigrationAddressCall(pn)
+
+		records := []*observer.Record{
+			makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
+		}
+
+		fetcher.RequestMock.Set(func(_ context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+			switch reqID {
+			case out.ID:
+				return record.Material(*out), nil
+			case call.ID:
+				return record.Material(*call), nil
+			default:
+				panic("unexpected call")
+			}
+		})
+
+		expected := []*observer.Wasting{
+			{
+				Addr: address,
+			},
+		}
+
+		ctx := context.Background()
 		var actual []*observer.Wasting
 		for _, r := range records {
-			wasting := collector.Collect(r)
+			wasting := collector.Collect(ctx, r)
 			if wasting != nil {
 				actual = append(actual, wasting)
 			}

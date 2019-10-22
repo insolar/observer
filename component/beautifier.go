@@ -52,7 +52,7 @@ func makeBeautifier(
 	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector(cachedStore, treeBuilder)
-	transfers := collecting.NewTransferCollector(log)
+	transfers := collecting.NewTransferCollector(cachedStore)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
 	deposits := collecting.NewDepositCollector(log)
@@ -60,7 +60,7 @@ func makeBeautifier(
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
-	wastings := collecting.NewWastingCollector()
+	wastings := collecting.NewWastingCollector(cachedStore)
 
 	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
@@ -100,7 +100,7 @@ func makeBeautifier(
 				b.members[member.AccountState] = member
 			}
 
-			transfer := transfers.Collect(rec)
+			transfer := transfers.Collect(ctx, rec)
 			if transfer != nil {
 				b.transfers = append(b.transfers, transfer)
 			}
@@ -136,7 +136,7 @@ func makeBeautifier(
 				b.updates[update.ID] = update
 			}
 
-			wasting := wastings.Collect(rec)
+			wasting := wastings.Collect(ctx, rec)
 			if wasting != nil {
 				b.wastings[wasting.Addr] = wasting
 			}
