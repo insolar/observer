@@ -87,9 +87,10 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	// Fetch root request.
 	originRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		// TODO: What type of error here? Should we log it or return nil only?
-		panic("SOMETHING WENT WRONG: can't fetch request for result")
-		return nil
+		if errors.Cause(err) != store.ErrNotFound { // TODO: What type of error here? Should we log it or return nil only?
+			panic("SOMETHING WENT WRONG: can't fetch request for result")
+			return nil
+		}
 	}
 
 	if !isMemberCreateRequest(originRequest) {

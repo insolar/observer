@@ -175,7 +175,7 @@ func TestMigrationAddressCollector_Collect(t *testing.T) {
 			name: "not_addresses_activate",
 			mocks: func(t minimock.Tester) ([]*observer.Record, store.RecordFetcher, []*observer.MigrationAddress) {
 				fetcher := store.NewRecordFetcherMock(t)
-				rec := makeAccountActivate(gen.PulseNumber(), "", gen.Reference())
+				rec, _ := makeAccountActivate(gen.PulseNumber(), "", gen.Reference())
 				return []*observer.Record{rec}, fetcher, []*observer.MigrationAddress{}
 			},
 		},
@@ -204,7 +204,6 @@ func TestMigrationAddressCollector_Collect(t *testing.T) {
 				return []*observer.Record{rec}, fetcher, expected
 			},
 		},
-
 	}
 
 	for _, test := range table {
