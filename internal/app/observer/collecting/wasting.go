@@ -55,7 +55,6 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 	}
 
 	if !result.IsSuccess() {
-		logger.Debug("unsuccessful result")
 		return nil
 	}
 
@@ -69,7 +68,7 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 
 	request := recordRequest.Virtual.GetIncomingRequest()
 	if request == nil {
-		logger.Debug("not incoming request")
+		logger.Debug("not a incoming request reason")
 		return nil
 	}
 

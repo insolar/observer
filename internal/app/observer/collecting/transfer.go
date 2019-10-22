@@ -54,13 +54,12 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 	}
 
 	if !result.IsSuccess() {
-		logger.Debug("unsuccessful result")
 		return nil
 	}
 
 	requestID := result.Request()
 	if requestID.IsEmpty() {
-		logger.Debug("failed to extract requestID from result")
+		logger.Error("failed to extract requestID from result")
 		return nil
 	}
 
@@ -72,7 +71,7 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	incoming := request.Virtual.GetIncomingRequest()
 	if incoming == nil {
-		logger.Debug("not a incoming request reason")
+		logger.Error("not a incoming request reason")
 		return nil
 	}
 
