@@ -18,11 +18,11 @@ package collecting
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -33,20 +33,20 @@ const (
 )
 
 type TransferCollector struct {
-	log     *logrus.Logger
 	fetcher store.RecordFetcher
 }
 
-func NewTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TransferCollector {
+func NewTransferCollector(fetcher store.RecordFetcher) *TransferCollector {
 	c := &TransferCollector{
-		log:     log,
 		fetcher: fetcher,
 	}
 	return c
 }
 
 func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.ExtendedTransfer {
-	logger := c.log.WithField("collector", "transfer")
+	if rec == nil {
+		return nil
+	}
 
 	result := observer.CastToResult(rec)
 	if result == nil {
@@ -54,37 +54,31 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 	}
 
 	if !result.IsSuccess() {
-		logger.Debug("unsuccessful result")
 		return nil
 	}
 
 	requestID := result.Request()
 	if requestID.IsEmpty() {
-		logger.Debug("failed to extract requestID from result")
-		return nil
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
 	}
 
 	request, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to fetch request"))
-		return nil
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
 	}
 
 	incoming := request.Virtual.GetIncomingRequest()
 	if incoming == nil {
-		logger.Debug("not a incoming request reason")
 		return nil
 	}
 
 	if incoming.Method != MemberCall {
-		logger.Debug("not a member call")
 		return nil
 	}
 
 	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
-		return nil
+		panic(errors.Wrapf(err, "recordID %s: failed to build transfer", rec.ID.String()))
 	}
 	return transfer
 }

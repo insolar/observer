@@ -27,7 +27,6 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -106,9 +105,8 @@ func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *obser
 }
 
 func TestTransferCollector_Collect(t *testing.T) {
-	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
-	collector := NewTransferCollector(log, fetcher)
+	collector := NewTransferCollector(fetcher)
 	ctx := context.Background()
 
 	pn := insolar.GenesisPulse.PulseNumber

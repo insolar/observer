@@ -18,9 +18,9 @@ package collecting
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -31,21 +31,17 @@ const (
 )
 
 type WastingCollector struct {
-	log     *logrus.Logger
 	fetcher store.RecordFetcher
 }
 
-func NewWastingCollector(log *logrus.Logger, fetcher store.RecordFetcher) *WastingCollector {
+func NewWastingCollector(fetcher store.RecordFetcher) *WastingCollector {
 	return &WastingCollector{
-		log:     log,
 		fetcher: fetcher,
 	}
 }
 
 func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Wasting {
-	logger := c.log.WithField("collector", "wasting")
 	if rec == nil {
-		logger.Debug("empty record")
 		return nil
 	}
 
@@ -55,26 +51,25 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 	}
 
 	if !result.IsSuccess() {
-		logger.Debug("unsuccessful result")
 		return nil
 	}
 
 	requestID := result.Request()
+	if requestID.IsEmpty() {
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
+	}
 
 	recordRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to fetch request"))
-		return nil
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
 	}
 
 	request := recordRequest.Virtual.GetIncomingRequest()
 	if request == nil {
-		logger.Debug("not incoming request")
 		return nil
 	}
 
 	if request.Method != GetFreeMigrationAddress {
-		logger.Debug("not GetFreeMigrationAddress request")
 		return nil
 	}
 

@@ -24,7 +24,6 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -59,14 +58,14 @@ func TestWastingCollector_Collect(t *testing.T) {
 
 	t.Run("nil", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(logrus.New(), fetcher)
+		collector := NewWastingCollector(fetcher)
 		ctx := context.Background()
 		require.Nil(t, collector.Collect(ctx, nil))
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(logrus.New(), fetcher)
+		collector := NewWastingCollector(fetcher)
 
 		pn := insolar.GenesisPulse.PulseNumber
 		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
