@@ -24,13 +24,8 @@
 #   go-tests = true
 #   unused-packages = true
 
-required = [
-    "github.com/gojuno/minimock"
-]
-
 [[constraint]]
   name = "github.com/insolar/insolar"
-#  branch = "master"
   revision = "8849613af096e43777498f2ae17b3b7638c5981e"
 
 [[constraint]]

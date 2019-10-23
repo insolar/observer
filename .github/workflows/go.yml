@@ -17,11 +17,7 @@ jobs:
         path: go/src/github.com/insolar/observer
     - name: Get dependencies
       run: |
-        mkdir $GOPATH/bin
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
-        curl -sfL https://github.com/gojuno/minimock/releases/download/v2.1.9/minimock_2.1.9_Linux_x86_64.tar.gz | tar xzf - -C $GOPATH/bin/ minimock
-        $GOPATH/bin/dep ensure -v
+        make ensure_deps
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Env
@@ -48,11 +44,7 @@ jobs:
         path: go/src/github.com/insolar/observer
     - name: Get dependencies
       run: |
-        mkdir $GOPATH/bin
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
-        curl -sfL https://github.com/gojuno/minimock/releases/download/v2.1.9/minimock_2.1.9_Linux_x86_64.tar.gz | tar xzf - -C $GOPATH/bin/ minimock
-        $GOPATH/bin/dep ensure -v
+        make ensure_deps
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Test
@@ -75,17 +67,13 @@ jobs:
         path: go/src/github.com/insolar/observer
     - name: Get dependencies
       run: |
-        mkdir $GOPATH/bin
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
-        curl -sfL https://github.com/gojuno/minimock/releases/download/v2.1.9/minimock_2.1.9_Linux_x86_64.tar.gz | tar xzf - -C $GOPATH/bin/ minimock
-        $GOPATH/bin/dep ensure -v
+        make ensure_deps
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Check all necessary mocks were build
       continue-on-error: false
       run: |
-        PATH="$GOPATH/bin:$PATH" go generate ./...
+        make generate
         git status
         git diff
         [[ $(git status -z | wc -c) -eq 0 ]]
@@ -107,16 +95,12 @@ jobs:
         path: go/src/github.com/insolar/observer
     - name: Get dependencies
       run: |
-        mkdir $GOPATH/bin
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.21.0
-        curl -sfL https://github.com/gojuno/minimock/releases/download/v2.1.9/minimock_2.1.9_Linux_x86_64.tar.gz | tar xzf - -C $GOPATH/bin/ minimock
-        $GOPATH/bin/dep ensure -v
+        make dep
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Run linter
       continue-on-error: false
       run: |
-        $GOPATH/bin/golangci-lint --color=always run ./...
+       make lint
       env:
         GOPATH: /home/runner/work/observer/go
