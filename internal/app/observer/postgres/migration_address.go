@@ -17,12 +17,15 @@
 package postgres
 
 import (
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
 )
 
@@ -35,17 +38,19 @@ type MigrationAddressSchema struct {
 }
 
 type MigrationAddressStorage struct {
+	cfg          *configuration.Configuration
 	log          *logrus.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }
 
-func NewMigrationAddressStorage(obs *observability.Observability, db orm.DB) *MigrationAddressStorage {
+func NewMigrationAddressStorage(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) *MigrationAddressStorage {
 	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_migration_address_storage_error_counter",
 		Help: "",
 	})
 	return &MigrationAddressStorage{
+		cfg:          cfg,
 		log:          obs.Log(),
 		errorCounter: errorCounter,
 		db:           db,
@@ -95,6 +100,65 @@ func (s *MigrationAddressStorage) Update(model *observer.Wasting) error {
 		return errors.New("failed to update, affected is 0")
 	}
 	return nil
+}
+
+func (s *MigrationAddressStorage) Wasted() int {
+	var err error
+	cnt := 0
+
+	cycle.UntilError(func() error {
+		s.log.Info("trying to get wasted addresses from db")
+		cnt, err = s.db.Model(&MigrationAddressSchema{}).
+			Where("wasted is true").
+			Count()
+		if err != nil && err != pg.ErrNoRows {
+			s.log.Error(errors.Wrapf(err, "failed request to db"))
+		}
+		if err == pg.ErrNoRows {
+			return nil
+		}
+		return err
+	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+
+	if err != nil && err != pg.ErrNoRows {
+		s.log.Debug("failed to find wasted addresses from db")
+		return 0
+	}
+
+	if err == pg.ErrNoRows {
+		return 0
+	}
+
+	return cnt
+}
+
+func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
+	var err error
+	cnt := 0
+
+	cycle.UntilError(func() error {
+		s.log.Info("trying to get active addresses from db")
+		cnt, err = s.db.Model(&MigrationAddressSchema{}).
+			Count()
+		if err != nil && err != pg.ErrNoRows {
+			s.log.Error(errors.Wrapf(err, "failed request to db"))
+		}
+		if err == pg.ErrNoRows {
+			return nil
+		}
+		return err
+	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+
+	if err != nil && err != pg.ErrNoRows {
+		s.log.Debug("failed to find active addresses from db")
+		return 0
+	}
+
+	if err == pg.ErrNoRows {
+		return 0
+	}
+
+	return cnt
 }
 
 func migrationAddressSchema(model *observer.MigrationAddress) *MigrationAddressSchema {

@@ -35,12 +35,15 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 	last := MustKnowPulse(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
 	stat := MustKnowPreviousStatistic(cfg, obs, conn.PG())
+	metricState := getMetricState(cfg, obs, conn.PG())
 	st := state{
 		last: last,
 		rp:   recordPosition,
 		stat: stat,
+		ms:   metricState,
 	}
 	logger.Debugf("State restored: %+v", st)
+	logger.Debugf("Metric state restored : %+v", metricState)
 	return func() *state {
 		return &st
 	}
@@ -150,6 +153,24 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create raw side effects table"))
 		}
+	}
+}
+
+type metricState struct {
+	totalWasting            int
+	totalMigrationAddresses int
+}
+
+func (ms *metricState) Reset() {
+	ms.totalWasting = 0
+	ms.totalMigrationAddresses = 0
+}
+
+func getMetricState(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) metricState {
+	ma := postgres.NewMigrationAddressStorage(cfg, obs, db)
+	return metricState{
+		totalWasting:            ma.Wasted(),
+		totalMigrationAddresses: ma.TotalMigrationAddresses(),
 	}
 }
 
