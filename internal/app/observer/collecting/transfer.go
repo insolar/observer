@@ -78,7 +78,7 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
-		panic(errors.Wrapf(err, "recordID %s: failed to build transfer", rec.ID.String()))
+		return nil
 	}
 	return transfer
 }
