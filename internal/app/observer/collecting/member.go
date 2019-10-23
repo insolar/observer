@@ -135,7 +135,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		AccountRef:       *accountRef.GetLocal(),
 		Balance:          balance,
 		MigrationAddress: response.MigrationAddress,
-		AccountState:     *accountTree.SideEffect.Activation.Request.GetLocal(),
+		AccountState:     accountTree.RequestID,
 		Status:           "SUCCESS",
 	}
 }

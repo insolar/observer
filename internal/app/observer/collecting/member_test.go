@@ -381,7 +381,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 							OutgoingRequestID: insolar.ID{},
 							OutgoingRequest:   record.OutgoingRequest{},
 							Structure: &tree.Structure{
-								RequestID: insolar.ID{},
+								RequestID: accountActivate.ID,
 								Request:   *callNewAccount,
 								Outgoings: nil,
 								SideEffect: &tree.SideEffect{
