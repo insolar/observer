@@ -48,7 +48,7 @@ func makeFetcher(
 		if pulse.Number < s.rp.ShouldIterateFrom {
 			log.WithField("should_iterate_from", s.rp.ShouldIterateFrom).
 				Debug("skipped record fetching")
-			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom}
+			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom, currentHeavyPN: s.rp.ShouldIterateFrom}
 		}
 
 		// Get records
@@ -60,7 +60,10 @@ func makeFetcher(
 		recordCounterMetric.Add(float64(len(batch)))
 		log.WithField("batch_size", len(batch)).
 			Infof("fetched records")
-		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
+
+		// Get current heavy pulse
+		currentFinalisedPulse, err := pulses.FetchCurrent()
+		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom, currentHeavyPN: currentFinalisedPulse}
 	}
 }
 

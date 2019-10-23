@@ -20,6 +20,12 @@ type PulseFetcherMock struct {
 	afterFetchCounter  uint64
 	beforeFetchCounter uint64
 	FetchMock          mPulseFetcherMockFetch
+
+	funcFetchCurrent          func() (p1 insolar.PulseNumber, err error)
+	inspectFuncFetchCurrent   func()
+	afterFetchCurrentCounter  uint64
+	beforeFetchCurrentCounter uint64
+	FetchCurrentMock          mPulseFetcherMockFetchCurrent
 }
 
 // NewPulseFetcherMock returns a mock for PulseFetcher
@@ -31,6 +37,8 @@ func NewPulseFetcherMock(t minimock.Tester) *PulseFetcherMock {
 
 	m.FetchMock = mPulseFetcherMockFetch{mock: m}
 	m.FetchMock.callArgs = []*PulseFetcherMockFetchParams{}
+
+	m.FetchCurrentMock = mPulseFetcherMockFetchCurrent{mock: m}
 
 	return m
 }
@@ -251,10 +259,156 @@ func (m *PulseFetcherMock) MinimockFetchInspect() {
 	}
 }
 
+type mPulseFetcherMockFetchCurrent struct {
+	mock               *PulseFetcherMock
+	defaultExpectation *PulseFetcherMockFetchCurrentExpectation
+	expectations       []*PulseFetcherMockFetchCurrentExpectation
+}
+
+// PulseFetcherMockFetchCurrentExpectation specifies expectation struct of the PulseFetcher.FetchCurrent
+type PulseFetcherMockFetchCurrentExpectation struct {
+	mock *PulseFetcherMock
+
+	results *PulseFetcherMockFetchCurrentResults
+	Counter uint64
+}
+
+// PulseFetcherMockFetchCurrentResults contains results of the PulseFetcher.FetchCurrent
+type PulseFetcherMockFetchCurrentResults struct {
+	p1  insolar.PulseNumber
+	err error
+}
+
+// Expect sets up expected params for PulseFetcher.FetchCurrent
+func (mmFetchCurrent *mPulseFetcherMockFetchCurrent) Expect() *mPulseFetcherMockFetchCurrent {
+	if mmFetchCurrent.mock.funcFetchCurrent != nil {
+		mmFetchCurrent.mock.t.Fatalf("PulseFetcherMock.FetchCurrent mock is already set by Set")
+	}
+
+	if mmFetchCurrent.defaultExpectation == nil {
+		mmFetchCurrent.defaultExpectation = &PulseFetcherMockFetchCurrentExpectation{}
+	}
+
+	return mmFetchCurrent
+}
+
+// Inspect accepts an inspector function that has same arguments as the PulseFetcher.FetchCurrent
+func (mmFetchCurrent *mPulseFetcherMockFetchCurrent) Inspect(f func()) *mPulseFetcherMockFetchCurrent {
+	if mmFetchCurrent.mock.inspectFuncFetchCurrent != nil {
+		mmFetchCurrent.mock.t.Fatalf("Inspect function is already set for PulseFetcherMock.FetchCurrent")
+	}
+
+	mmFetchCurrent.mock.inspectFuncFetchCurrent = f
+
+	return mmFetchCurrent
+}
+
+// Return sets up results that will be returned by PulseFetcher.FetchCurrent
+func (mmFetchCurrent *mPulseFetcherMockFetchCurrent) Return(p1 insolar.PulseNumber, err error) *PulseFetcherMock {
+	if mmFetchCurrent.mock.funcFetchCurrent != nil {
+		mmFetchCurrent.mock.t.Fatalf("PulseFetcherMock.FetchCurrent mock is already set by Set")
+	}
+
+	if mmFetchCurrent.defaultExpectation == nil {
+		mmFetchCurrent.defaultExpectation = &PulseFetcherMockFetchCurrentExpectation{mock: mmFetchCurrent.mock}
+	}
+	mmFetchCurrent.defaultExpectation.results = &PulseFetcherMockFetchCurrentResults{p1, err}
+	return mmFetchCurrent.mock
+}
+
+//Set uses given function f to mock the PulseFetcher.FetchCurrent method
+func (mmFetchCurrent *mPulseFetcherMockFetchCurrent) Set(f func() (p1 insolar.PulseNumber, err error)) *PulseFetcherMock {
+	if mmFetchCurrent.defaultExpectation != nil {
+		mmFetchCurrent.mock.t.Fatalf("Default expectation is already set for the PulseFetcher.FetchCurrent method")
+	}
+
+	if len(mmFetchCurrent.expectations) > 0 {
+		mmFetchCurrent.mock.t.Fatalf("Some expectations are already set for the PulseFetcher.FetchCurrent method")
+	}
+
+	mmFetchCurrent.mock.funcFetchCurrent = f
+	return mmFetchCurrent.mock
+}
+
+// FetchCurrent implements PulseFetcher
+func (mmFetchCurrent *PulseFetcherMock) FetchCurrent() (p1 insolar.PulseNumber, err error) {
+	mm_atomic.AddUint64(&mmFetchCurrent.beforeFetchCurrentCounter, 1)
+	defer mm_atomic.AddUint64(&mmFetchCurrent.afterFetchCurrentCounter, 1)
+
+	if mmFetchCurrent.inspectFuncFetchCurrent != nil {
+		mmFetchCurrent.inspectFuncFetchCurrent()
+	}
+
+	if mmFetchCurrent.FetchCurrentMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFetchCurrent.FetchCurrentMock.defaultExpectation.Counter, 1)
+
+		results := mmFetchCurrent.FetchCurrentMock.defaultExpectation.results
+		if results == nil {
+			mmFetchCurrent.t.Fatal("No results are set for the PulseFetcherMock.FetchCurrent")
+		}
+		return (*results).p1, (*results).err
+	}
+	if mmFetchCurrent.funcFetchCurrent != nil {
+		return mmFetchCurrent.funcFetchCurrent()
+	}
+	mmFetchCurrent.t.Fatalf("Unexpected call to PulseFetcherMock.FetchCurrent.")
+	return
+}
+
+// FetchCurrentAfterCounter returns a count of finished PulseFetcherMock.FetchCurrent invocations
+func (mmFetchCurrent *PulseFetcherMock) FetchCurrentAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFetchCurrent.afterFetchCurrentCounter)
+}
+
+// FetchCurrentBeforeCounter returns a count of PulseFetcherMock.FetchCurrent invocations
+func (mmFetchCurrent *PulseFetcherMock) FetchCurrentBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFetchCurrent.beforeFetchCurrentCounter)
+}
+
+// MinimockFetchCurrentDone returns true if the count of the FetchCurrent invocations corresponds
+// the number of defined expectations
+func (m *PulseFetcherMock) MinimockFetchCurrentDone() bool {
+	for _, e := range m.FetchCurrentMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.FetchCurrentMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFetchCurrentCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcFetchCurrent != nil && mm_atomic.LoadUint64(&m.afterFetchCurrentCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockFetchCurrentInspect logs each unmet expectation
+func (m *PulseFetcherMock) MinimockFetchCurrentInspect() {
+	for _, e := range m.FetchCurrentMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Error("Expected call to PulseFetcherMock.FetchCurrent")
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.FetchCurrentMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFetchCurrentCounter) < 1 {
+		m.t.Error("Expected call to PulseFetcherMock.FetchCurrent")
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcFetchCurrent != nil && mm_atomic.LoadUint64(&m.afterFetchCurrentCounter) < 1 {
+		m.t.Error("Expected call to PulseFetcherMock.FetchCurrent")
+	}
+}
+
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *PulseFetcherMock) MinimockFinish() {
 	if !m.minimockDone() {
 		m.MinimockFetchInspect()
+
+		m.MinimockFetchCurrentInspect()
 		m.t.FailNow()
 	}
 }
@@ -278,5 +432,6 @@ func (m *PulseFetcherMock) MinimockWait(timeout mm_time.Duration) {
 func (m *PulseFetcherMock) minimockDone() bool {
 	done := true
 	return done &&
-		m.MinimockFetchDone()
+		m.MinimockFetchDone() &&
+		m.MinimockFetchCurrentDone()
 }

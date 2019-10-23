@@ -52,6 +52,7 @@ func NewRecordFetcher(
 
 func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, insolar.PulseNumber, error) {
 	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 	client := f.client
 
 	f.request.PulseNumber = pulse
@@ -67,6 +68,7 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 		stream, err := client.Export(ctx, f.request)
 
 		if err != nil {
+			f.log.Debug("Data request failed: ", err)
 			return batch, shouldIterateFrom, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
 		}
 
@@ -85,7 +87,7 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 			// There is no records at all
 			if resp.ShouldIterateFrom != nil {
 				f.log.Debug("Received Should iterate from ", resp.ShouldIterateFrom.String())
-				err := stream.CloseSend()
+				cancel()
 				if err != nil {
 					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
 				}
@@ -107,20 +109,6 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 					f.log.Debug("shouldIterateFrom set to ", shouldIterateFrom)
 				}
 				// todo we can read records by several pulses
-				// read others
-				{
-					cnt := 0
-					for {
-						_, err := stream.Recv()
-						if err == io.EOF {
-							f.log.Debug("OTHERS EOF received, quit")
-							break
-						}
-						cnt++
-					}
-					f.log.Debug("OTHERS cnt ", cnt)
-				}
-
 				return batch, shouldIterateFrom, nil
 			}
 			model := (*observer.Record)(&resp.Record)

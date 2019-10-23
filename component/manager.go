@@ -115,7 +115,7 @@ func (m *Manager) run(s *state) {
 		sleepTime -= timeExecuted
 
 		// fast forward, empty pulses
-		if raw.shouldIterateFrom > raw.pulse.Number {
+		if raw.currentHeavyPN > raw.pulse.Number {
 			sleepTime = m.cfg.Replicator.FastForwardInterval
 		}
 	}
@@ -132,6 +132,7 @@ type raw struct {
 	pulse             *observer.Pulse
 	batch             []*observer.Record
 	shouldIterateFrom insolar.PulseNumber
+	currentHeavyPN    insolar.PulseNumber
 }
 
 type beauty struct {

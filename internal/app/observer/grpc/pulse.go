@@ -73,6 +73,10 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
 		}
+		if err != nil {
+			f.log.Error("stream err ", err.Error())
+		}
+
 		return err
 	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
 
@@ -88,4 +92,30 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 	}
 	f.log.Debug("Received pulse ", model)
 	return model, nil
+}
+
+func (f *PulseFetcher) FetchCurrent() (insolar.PulseNumber, error) {
+	ctx := context.Background()
+	client := f.client
+	request := &exporter.GetTopSyncPulse{}
+	tsp := &exporter.TopSyncPulseResponse{}
+	var err error
+	f.log.Debug("Fetching top sync pulse")
+
+	cycle.UntilError(func() error {
+		tsp, err = client.TopSyncPulse(ctx, request)
+		if err != nil {
+			f.log.WithField("request", request).
+				Error(errors.Wrapf(err, "failed to get tsp"))
+			return err
+		}
+		return nil
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+
+	if err != nil {
+		return insolar.GenesisPulse.PulseNumber, errors.Wrapf(err, "exceeded attempts of getting top sync pulse from HME")
+	}
+
+	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
+	return insolar.PulseNumber(tsp.PulseNumber), nil
 }

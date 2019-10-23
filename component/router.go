@@ -69,6 +69,7 @@ type Router struct {
 func (r *Router) Start() {
 	log := r.obs.Log()
 	go func() {
+		log.Debugf("starting http: %+v", r.hs)
 		err := r.hs.ListenAndServe()
 		if err != http.ErrServerClosed {
 			log.Error(errors.Wrapf(err, "http server ListenAndServe"))

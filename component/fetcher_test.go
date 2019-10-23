@@ -70,6 +70,7 @@ func Test_makeFetcher(t *testing.T) {
 			assert.Equal(t, pn, pulse)
 		}).Return(rec, gen.PulseNumber(), nil)
 
+		pulseFetcher.FetchCurrentMock.Return(pn, nil)
 		s := state{
 			last: pn - 10,
 		}
