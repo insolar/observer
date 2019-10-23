@@ -151,9 +151,9 @@ type beauty struct {
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
 
-	txRegister   []observer.TxRegister
-	txResult     []observer.TxResult
-	txSagaResult []observer.TxSagaResult
+	txRegister   []observer.TxRegister   // nolint
+	txResult     []observer.TxResult     // nolint
+	txSagaResult []observer.TxSagaResult // nolint
 }
 
 type state struct {
