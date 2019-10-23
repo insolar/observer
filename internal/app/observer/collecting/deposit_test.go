@@ -145,7 +145,7 @@ func makeDepositActivate(pn insolar.PulseNumber, balance, amount, txHash string,
 				Activate: &record.Activate{
 					Request: requestRef,
 					Memory:  memory,
-					Image:   *proxyDeposit.PrototypeReference,
+					Image:   *proxyDaemon.PrototypeReference,
 				},
 			},
 		},
@@ -205,9 +205,9 @@ func TestDepositCollector_Collect(t *testing.T) {
 	expected, records := makeDeposit()
 	var actual []*observer.Deposit
 	for _, r := range records {
-		deposit := collector.Collect(ctx, r)
-		if deposit != nil {
-			actual = append(actual, deposit)
+		collectedDeposit := collector.Collect(ctx, r)
+		if collectedDeposit != nil {
+			actual = append(actual, collectedDeposit)
 		}
 	}
 
