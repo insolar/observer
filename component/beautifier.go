@@ -51,10 +51,10 @@ func makeBeautifier(
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
-	members := collecting.NewMemberCollector()
-	transfers := collecting.NewTransferCollector(cachedStore)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
-	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
+	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
+	migrationTransfers := collecting.NewMigrationTransferCollector(log, cachedStore, treeBuilder)
+	withdrawTransfers := collecting.NewWithdrawTransferCollector(log, cachedStore, treeBuilder)
+	standardTransfers := collecting.NewStandardTransferCollector(log, cachedStore, treeBuilder)
 	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
@@ -95,24 +95,24 @@ func makeBeautifier(
 		for _, rec := range r.batch {
 			// entities
 
-			member := members.Collect(rec)
+			member := members.Collect(ctx, rec)
 			if member != nil {
 				b.members[member.AccountState] = member
 			}
 
-			transfer := transfers.Collect(ctx, rec)
-			if transfer != nil {
-				b.transfers = append(b.transfers, transfer)
+			migrationTransfer := migrationTransfers.Collect(ctx, rec)
+			if migrationTransfer != nil {
+				b.transfers = append(b.transfers, migrationTransfer)
 			}
 
-			ext := extendedTransfers.Collect(rec)
-			if ext != nil {
-				b.transfers = append(b.transfers, ext)
+			withdrawTransfer := withdrawTransfers.Collect(ctx, rec)
+			if withdrawTransfer != nil {
+				b.transfers = append(b.transfers, withdrawTransfer)
 			}
 
-			toDeposit := toDepositTransfers.Collect(rec)
-			if toDeposit != nil {
-				b.transfers = append(b.transfers, toDeposit)
+			standardTransfer := standardTransfers.Collect(ctx, rec)
+			if standardTransfer != nil {
+				b.transfers = append(b.transfers, standardTransfer)
 			}
 
 			deposit := deposits.Collect(ctx, rec)

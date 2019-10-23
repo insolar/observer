@@ -123,3 +123,18 @@ type BeautyMetrics struct {
 	Addresses prometheus.Counter
 	Wastings  prometheus.Counter
 }
+
+type CommonObserverMetrics struct {
+	PulseProcessingTime prometheus.Gauge
+}
+
+func MakeCommonMetrics(obs *Observability) *CommonObserverMetrics {
+	m := CommonObserverMetrics{
+		PulseProcessingTime: obs.Gauge(prometheus.GaugeOpts{
+			Name: "observer_pulse_processing_time",
+			Help: "Seconds spent on processing data from pulse",
+		}),
+	}
+
+	return &m
+}

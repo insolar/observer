@@ -37,6 +37,7 @@ type Manager struct {
 	cfg      *configuration.Configuration
 	log      logrus.Logger
 	init     func() *state
+	commonMetrics *observability.CommonObserverMetrics
 	fetch    func(context.Context, *state) *raw
 	beautify func(context.Context, *raw) *beauty
 	filter   func(*beauty) *beauty
@@ -57,6 +58,7 @@ func Prepare() *Manager {
 		stopSignal: make(chan bool, 1),
 		init:       makeInitter(cfg, obs, conn),
 		log:        *obs.Log(),
+		commonMetrics: observability.MakeCommonMetrics(obs),
 		fetch:      makeFetcher(obs, pulses, records),
 		beautify:   makeBeautifier(cfg, obs, conn),
 		filter:     makeFilter(obs),
@@ -105,6 +107,8 @@ func (m *Manager) run(s *state) {
 	statistic := m.store(collapsed, s)
 
 	timeExecuted := time.Since(timeStart)
+	m.commonMetrics.PulseProcessingTime.Set(timeExecuted.Seconds())
+	m.log.Debug("timeExecuted: ", timeExecuted)
 
 	sleepTime := m.cfg.Replicator.AttemptInterval
 	if raw != nil {
@@ -144,19 +148,24 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers      []*observer.ExtendedTransfer
+	transfers      []*observer.Transfer
 	members        map[insolar.ID]*observer.Member
 	balances       map[insolar.ID]*observer.Balance
 	deposits       map[insolar.ID]*observer.Deposit
 	depositUpdates map[insolar.ID]*observer.DepositUpdate
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
+
+	txRegister   []observer.TxRegister   // nolint
+	txResult     []observer.TxResult     // nolint
+	txSagaResult []observer.TxSagaResult // nolint
 }
 
 type state struct {
 	last insolar.PulseNumber
 	rp   RecordPosition
 	stat observer.Statistic
+	ms   metricState
 }
 
 type RecordPosition struct {

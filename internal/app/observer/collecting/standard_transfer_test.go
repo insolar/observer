@@ -27,10 +27,15 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
+	"github.com/insolar/observer/internal/app/observer/tree"
+
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
+	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 )
 
 func makeOutgoingRequest() *observer.Record {
@@ -65,10 +70,10 @@ func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.R
 	return (*observer.Record)(rec)
 }
 
-func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
+func makeStandardTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: TransferMethod,
+			CallSite: StandardTransferMethod,
 			CallParams: TransferCallParams{
 				Amount:            amount,
 				ToMemberReference: to,
@@ -104,9 +109,41 @@ func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *obser
 	return (*observer.Record)(rec)
 }
 
-func TestTransferCollector_Collect(t *testing.T) {
+func makeWalletTransfer(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Transfer",
+					Prototype: proxyWallet.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeAccountTransfer(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Transfer",
+					Prototype: proxyAccount.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func TestStandardTransferCollector_Collect(t *testing.T) {
+	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
-	collector := NewTransferCollector(fetcher)
+	builder := tree.NewBuilderMock(t)
+	collector := NewStandardTransferCollector(log, fetcher, builder)
 	ctx := context.Background()
 
 	pn := insolar.GenesisPulse.PulseNumber
@@ -115,7 +152,9 @@ func TestTransferCollector_Collect(t *testing.T) {
 	from := gen.IDWithPulse(pn)
 	to := gen.IDWithPulse(pn)
 	out := makeOutgoingRequest()
-	call := makeTransferCall(amount, from.String(), to.String(), pn)
+	call := makeStandardTransferCall(amount, from.String(), to.String(), pn)
+	walletTransfer := makeWalletTransfer(pn)
+	accountTransfer := makeAccountTransfer(pn)
 	records := []*observer.Record{
 		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
@@ -132,27 +171,46 @@ func TestTransferCollector_Collect(t *testing.T) {
 		}
 	})
 
-	timestamp, err := pn.AsApproximateTime()
-	if err != nil {
-		panic("failed to calc timestamp by pulse")
-	}
-	expected := []*observer.ExtendedTransfer{
-		{
-			DepositTransfer: observer.DepositTransfer{
-				Transfer: observer.Transfer{
-					TxID:      call.ID,
-					From:      from,
-					To:        to,
-					Amount:    amount,
-					Fee:       fee,
-					Pulse:     pn,
-					Timestamp: timestamp.Unix(),
+	builder.BuildMock.Set(func(_ context.Context, reqID insolar.ID) (s1 tree.Structure, err error) {
+		switch reqID {
+		case out.ID:
+			return tree.Structure{}, nil
+		case call.ID:
+			return tree.Structure{Outgoings: []tree.Outgoing{
+				{
+					Structure: &tree.Structure{
+						RequestID: walletTransfer.ID,
+						Request:   *walletTransfer.Virtual.GetIncomingRequest(),
+						Outgoings: []tree.Outgoing{
+							{
+								Structure: &tree.Structure{
+									RequestID: accountTransfer.ID,
+									Request:   *accountTransfer.Virtual.GetIncomingRequest(),
+								},
+							},
+						},
+					},
 				},
-			},
+			}}, nil
+		default:
+			panic("unexpected call")
+		}
+	})
+	expected := []*observer.Transfer{
+		{
+			TxID:          call.ID,
+			From:          &from,
+			To:            &to,
+			Amount:        amount,
+			Fee:           fee,
+			Status:        observer.Success,
+			Kind:          observer.Standard,
+			Direction:     observer.APICall,
+			DetachRequest: &accountTransfer.ID,
 		},
 	}
 
-	var actual []*observer.ExtendedTransfer
+	var actual []*observer.Transfer
 	for _, r := range records {
 		transfer := collector.Collect(ctx, r)
 		if transfer != nil {
