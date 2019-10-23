@@ -20,29 +20,48 @@ import (
 	"net/http"
 )
 
-type ObserverApi struct {
+type ObserverServer struct{}
+
+func (s *ObserverServer) Balance(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
 
-func (s *ObserverApi) Balance(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Fee(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
 
-func (s *ObserverApi) Fee(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Member(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) Member(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) Notification(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) Notification(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) Transaction(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) Transaction(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) TransactionList(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) TransactionList(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) TransactionsSearch(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) TransactionsSearch(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) Coins(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) Coins(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) CoinsCirculating(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) CoinsCirculating(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) CoinsMax(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }
-func (s *ObserverApi) CoinsMax(w http.ResponseWriter, r *http.Request) {
-}
-func (s *ObserverApi) CoinsTotal(w http.ResponseWriter, r *http.Request) {
+
+func (s *ObserverServer) CoinsTotal(w http.ResponseWriter, r *http.Request) {
+	panic("implement me")
 }

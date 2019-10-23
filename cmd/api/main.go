@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	var myApi api.ObserverApi
-	r := api.Handler(&myApi)
+	var observerAPI api.ObserverServer
+	r := api.Handler(&observerAPI)
 	http.ListenAndServe(":3000", r)
 }
