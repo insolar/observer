@@ -1,6 +1,6 @@
-package api
+package models
 
-type member struct { // nolint
+type Member struct {
 	tableName struct{} `sql:"members"` //nolint: unused,structcheck
 
 	Reference        []byte `sql:"member_ref"`
@@ -12,7 +12,7 @@ type member struct { // nolint
 	Status           string `sql:"status"`
 }
 
-type deposit struct { // nolint
+type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
 	Reference       []byte `sql:"deposit_ref"`
@@ -24,7 +24,7 @@ type deposit struct { // nolint
 	Balance         string `sql:"balance"`
 }
 
-type transaction struct { // nolint
+type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
 	// Indexes.
