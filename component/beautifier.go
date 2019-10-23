@@ -51,7 +51,7 @@ func makeBeautifier(
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
-	members := collecting.NewMemberCollector()
+	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
 	transfers := collecting.NewTransferCollector(cachedStore)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
@@ -95,7 +95,7 @@ func makeBeautifier(
 		for _, rec := range r.batch {
 			// entities
 
-			member := members.Collect(rec)
+			member := members.Collect(ctx, rec)
 			if member != nil {
 				b.members[member.AccountState] = member
 			}

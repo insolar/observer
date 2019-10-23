@@ -17,8 +17,13 @@
 package collecting
 
 import (
+	"errors"
+
+	"github.com/insolar/insolar/application/builtin/contract/account"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/log"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -47,7 +52,7 @@ func (c *BalanceCollector) Collect(rec *observer.Record) *observer.Balance {
 		return nil
 	}
 	amd := rec.Virtual.GetAmend()
-	balance := accountBalance(rec)
+	balance := balance(rec)
 	return &observer.Balance{
 		PrevState:    amd.PrevState,
 		AccountState: rec.ID,
@@ -57,4 +62,30 @@ func (c *BalanceCollector) Collect(rec *observer.Record) *observer.Balance {
 
 func isAccountAmend(amd *record.Amend) bool {
 	return amd.Image.Equal(*proxyAccount.PrototypeReference)
+}
+
+func balance(act *observer.Record) string {
+	var memory []byte
+	balance := ""
+	switch v := act.Virtual.Union.(type) {
+	case *record.Virtual_Activate:
+		memory = v.Activate.Memory
+	case *record.Virtual_Amend:
+		memory = v.Amend.Memory
+	default:
+		log.Error(errors.New("invalid record to get account memory"))
+	}
+
+	if memory == nil {
+		log.Warn(errors.New("account memory is nil"))
+		return "0"
+	}
+
+	acc := account.Account{}
+	if err := insolar.Deserialize(memory, &acc); err != nil {
+		log.Error(errors.New("failed to deserialize account memory"))
+	} else {
+		balance = acc.Balance
+	}
+	return balance
 }

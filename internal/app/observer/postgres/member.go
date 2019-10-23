@@ -35,6 +35,7 @@ type MemberSchema struct {
 	WalletRef        []byte
 	AccountState     []byte `sql:",notnull"`
 	Status           string
+	AccountRef       []byte
 }
 
 type MemberStorage struct {
@@ -108,5 +109,7 @@ func memberSchema(model *observer.Member) *MemberSchema {
 		MigrationAddress: model.MigrationAddress,
 		AccountState:     model.AccountState.Bytes(),
 		Status:           model.Status,
+		WalletRef:        model.WalletRef.Bytes(),
+		AccountRef:       model.AccountRef.Bytes(),
 	}
 }
