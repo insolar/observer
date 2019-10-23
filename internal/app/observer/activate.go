@@ -33,6 +33,7 @@ func CastToActivate(r interface{}) *Activate {
 	rec, ok := r.(*Record)
 	if !ok {
 		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
+		return nil
 	}
 	return (*Activate)(rec)
 }

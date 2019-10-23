@@ -32,14 +32,15 @@ import (
 type Manager struct {
 	stopSignal chan bool
 
-	cfg      *configuration.Configuration
-	log      logrus.Logger
-	init     func() *state
-	fetch    func(*state) *raw
-	beautify func(context.Context, *raw) *beauty
-	filter   func(*beauty) *beauty
-	store    func(*beauty, *state) *observer.Statistic
-	stop     func()
+	cfg           *configuration.Configuration
+	log           logrus.Logger
+	init          func() *state
+	commonMetrics *observability.CommonObserverMetrics
+	fetch         func(*state) *raw
+	beautify      func(context.Context, *raw) *beauty
+	filter        func(*beauty) *beauty
+	store         func(*beauty, *state) *observer.Statistic
+	stop          func()
 
 	router *Router
 }
@@ -50,16 +51,17 @@ func Prepare() *Manager {
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
 	return &Manager{
-		stopSignal: make(chan bool, 1),
-		init:       makeInitter(cfg, obs, conn),
-		log:        *obs.Log(),
-		fetch:      makeFetcher(cfg, obs, conn),
-		beautify:   makeBeautifier(cfg, obs, conn),
-		filter:     makeFilter(obs),
-		store:      makeStorer(cfg, obs, conn),
-		stop:       makeStopper(obs, conn, router),
-		router:     router,
-		cfg:        cfg,
+		stopSignal:    make(chan bool, 1),
+		init:          makeInitter(cfg, obs, conn),
+		log:           *obs.Log(),
+		commonMetrics: observability.MakeCommonMetrics(obs),
+		fetch:         makeFetcher(cfg, obs, conn),
+		beautify:      makeBeautifier(cfg, obs, conn),
+		filter:        makeFilter(obs),
+		store:         makeStorer(cfg, obs, conn),
+		stop:          makeStopper(obs, conn, router),
+		router:        router,
+		cfg:           cfg,
 	}
 }
 
@@ -101,6 +103,8 @@ func (m *Manager) run(s *state) {
 	statistic := m.store(collapsed, s)
 
 	timeExecuted := time.Since(timeStart)
+	m.commonMetrics.PulseProcessingTime.Set(timeExecuted.Seconds())
+	m.log.Debug("timeExecuted: ", timeExecuted)
 
 	sleepTime := m.cfg.Replicator.AttemptInterval
 	if raw != nil {
@@ -139,13 +143,13 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers []*observer.ExtendedTransfer
-	members   map[insolar.ID]*observer.Member
-	balances  map[insolar.ID]*observer.Balance
-	deposits  map[insolar.ID]*observer.Deposit
-	updates   map[insolar.ID]*observer.DepositUpdate
-	addresses map[string]*observer.MigrationAddress
-	wastings  map[string]*observer.Wasting
+	transfers      []*observer.Transfer
+	members        map[insolar.ID]*observer.Member
+	balances       map[insolar.ID]*observer.Balance
+	deposits       map[insolar.ID]*observer.Deposit
+	depositUpdates map[insolar.ID]*observer.DepositUpdate
+	addresses      map[string]*observer.MigrationAddress
+	wastings       map[string]*observer.Wasting
 
 	txRegister   []observer.TxRegister
 	txResult     []observer.TxResult
@@ -156,6 +160,7 @@ type state struct {
 	last insolar.PulseNumber
 	rp   RecordPosition
 	stat observer.Statistic
+	ms   metricState
 }
 
 type RecordPosition struct {

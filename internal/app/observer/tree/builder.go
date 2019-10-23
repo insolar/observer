@@ -14,12 +14,13 @@ type Outgoing struct {
 	OutgoingRequestID insolar.ID
 	OutgoingRequest   record.OutgoingRequest
 	// can be nil in case of detached requests (Saga)
-	Structure         *Structure
+	Structure *Structure
 	// Result of outgoing (nil if detached)
 	Result *record.Result
 }
 
 type SideEffect struct {
+	ID insolar.ID
 	// one is not nil
 	Activation   *record.Activate
 	Amend        *record.Amend
@@ -127,11 +128,11 @@ func (b *builder) Build(ctx context.Context, reqID insolar.ID) (Structure, error
 	} else {
 		switch rec := record.Unwrap(&sideEffect.Virtual).(type) {
 		case *record.Activate:
-			tree.SideEffect = &SideEffect{Activation: rec}
+			tree.SideEffect = &SideEffect{ID: sideEffect.ID, Activation: rec}
 		case *record.Amend:
-			tree.SideEffect = &SideEffect{Amend: rec}
+			tree.SideEffect = &SideEffect{ID: sideEffect.ID, Amend: rec}
 		case *record.Deactivate:
-			tree.SideEffect = &SideEffect{Deactivation: rec}
+			tree.SideEffect = &SideEffect{ID: sideEffect.ID, Deactivation: rec}
 		default:
 			return Structure{}, errors.New("unexpected side effect")
 		}

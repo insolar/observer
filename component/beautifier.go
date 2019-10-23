@@ -51,11 +51,11 @@ func makeBeautifier(
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
-	members := collecting.NewMemberCollector()
-	transfers := collecting.NewTransferCollector(cachedStore)
-	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
-	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
-	deposits := collecting.NewDepositCollector(log)
+	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
+	migrationTransfers := collecting.NewMigrationTransferCollector(log, cachedStore, treeBuilder)
+	withdrawTransfers := collecting.NewWithdrawTransferCollector(log, cachedStore, treeBuilder)
+	standardTransfers := collecting.NewStandardTransferCollector(log, cachedStore, treeBuilder)
+	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
 	balances := collecting.NewBalanceCollector(log)
@@ -68,14 +68,14 @@ func makeBeautifier(
 		}
 
 		b := &beauty{
-			pulse:     r.pulse,
-			records:   r.batch,
-			members:   make(map[insolar.ID]*observer.Member),
-			deposits:  make(map[insolar.ID]*observer.Deposit),
-			addresses: make(map[string]*observer.MigrationAddress),
-			balances:  make(map[insolar.ID]*observer.Balance),
-			updates:   make(map[insolar.ID]*observer.DepositUpdate),
-			wastings:  make(map[string]*observer.Wasting),
+			pulse:          r.pulse,
+			records:        r.batch,
+			members:        make(map[insolar.ID]*observer.Member),
+			deposits:       make(map[insolar.ID]*observer.Deposit),
+			addresses:      make(map[string]*observer.MigrationAddress),
+			balances:       make(map[insolar.ID]*observer.Balance),
+			depositUpdates: make(map[insolar.ID]*observer.DepositUpdate),
+			wastings:       make(map[string]*observer.Wasting),
 		}
 
 		for _, rec := range r.batch {
@@ -95,27 +95,27 @@ func makeBeautifier(
 		for _, rec := range r.batch {
 			// entities
 
-			member := members.Collect(rec)
+			member := members.Collect(ctx, rec)
 			if member != nil {
 				b.members[member.AccountState] = member
 			}
 
-			transfer := transfers.Collect(ctx, rec)
-			if transfer != nil {
-				b.transfers = append(b.transfers, transfer)
+			migrationTransfer := migrationTransfers.Collect(ctx, rec)
+			if migrationTransfer != nil {
+				b.transfers = append(b.transfers, migrationTransfer)
 			}
 
-			ext := extendedTransfers.Collect(rec)
-			if ext != nil {
-				b.transfers = append(b.transfers, ext)
+			withdrawTransfer := withdrawTransfers.Collect(ctx, rec)
+			if withdrawTransfer != nil {
+				b.transfers = append(b.transfers, withdrawTransfer)
 			}
 
-			toDeposit := toDepositTransfers.Collect(rec)
-			if toDeposit != nil {
-				b.transfers = append(b.transfers, toDeposit)
+			standardTransfer := standardTransfers.Collect(ctx, rec)
+			if standardTransfer != nil {
+				b.transfers = append(b.transfers, standardTransfer)
 			}
 
-			deposit := deposits.Collect(rec)
+			deposit := deposits.Collect(ctx, rec)
 			if deposit != nil {
 				b.deposits[deposit.DepositState] = deposit
 			}
@@ -133,7 +133,7 @@ func makeBeautifier(
 
 			update := depositUpdates.Collect(rec)
 			if update != nil {
-				b.updates[update.ID] = update
+				b.depositUpdates[update.ID] = update
 			}
 
 			wasting := wastings.Collect(ctx, rec)
@@ -152,9 +152,9 @@ func makeBeautifier(
 
 		log.WithFields(logrus.Fields{
 			"balances":                  len(b.balances),
-			"deposit_updates":           len(b.updates),
+			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.wastings),
-		}).Infof("collected updates")
+		}).Infof("collected depositUpdates")
 
 		metric.Transfers.Add(float64(len(b.transfers)))
 		metric.Members.Add(float64(len(b.members)))
@@ -162,7 +162,7 @@ func makeBeautifier(
 		metric.Addresses.Add(float64(len(b.addresses)))
 
 		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
+		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Wastings.Add(float64(len(b.wastings)))
 
 		return b

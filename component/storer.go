@@ -117,7 +117,7 @@ func makeStorer(
 					}
 				}
 
-				transfers := postgres.NewExtendedTransferStorage(obs, tx)
+				transfers := postgres.NewTransferStorage(obs, tx)
 				for _, transfer := range b.transfers {
 					err := transfers.Insert(transfer)
 					if err != nil {
@@ -133,7 +133,7 @@ func makeStorer(
 					}
 				}
 
-				addresses := postgres.NewMigrationAddressStorage(obs, tx)
+				addresses := postgres.NewMigrationAddressStorage(cfg, obs, tx)
 				for _, address := range b.addresses {
 					err := addresses.Insert(address)
 					if err != nil {
@@ -150,7 +150,7 @@ func makeStorer(
 					}
 				}
 
-				for _, update := range b.updates {
+				for _, update := range b.depositUpdates {
 					err := deposits.Update(update)
 					if err != nil {
 						return err
@@ -202,13 +202,20 @@ func makeStorer(
 
 		log.Info("items successfully stored")
 
+		// restore metrics
+		if s.ms.totalMigrationAddresses > 0 || s.ms.totalWasting > 0 {
+			metric.Addresses.Add(float64(s.ms.totalMigrationAddresses))
+			metric.Wastings.Add(float64(s.ms.totalWasting))
+			s.ms.Reset()
+		}
+
 		metric.Transfers.Add(float64(len(b.transfers)))
 		metric.Members.Add(float64(len(b.members)))
 		metric.Deposits.Add(float64(len(b.deposits)))
 		metric.Addresses.Add(float64(len(b.addresses)))
 
 		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
+		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Wastings.Add(float64(len(b.wastings)))
 
 		return stat

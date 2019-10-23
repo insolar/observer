@@ -75,6 +75,15 @@ func (r *Result) ParsePayload() (foundation.Result, error) {
 		return foundation.Result{}, nil
 	}
 
+	return ExtractFoundationResult(payload)
+}
+
+func ExtractFoundationResult (payload []byte) (foundation.Result, error) {
+	if payload == nil {
+		log.Warn("trying to parse nil Result.Payload")
+		return foundation.Result{}, nil
+	}
+
 	var firstValue interface{}
 	var contractErr *foundation.Error
 	requestErr, err := foundation.UnmarshalMethodResult(payload, &firstValue, &contractErr)
@@ -87,6 +96,7 @@ func (r *Result) ParsePayload() (foundation.Result, error) {
 		Error:   requestErr,
 		Returns: []interface{}{firstValue, contractErr},
 	}
+
 	return result, nil
 }
 
