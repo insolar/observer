@@ -17,30 +17,24 @@
 package component
 
 import (
-	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/connectivity"
-	"github.com/insolar/observer/internal/app/observer/grpc"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 )
 
 func makeFetcher(
-	cfg *configuration.Configuration,
 	obs *observability.Observability,
-	conn *connectivity.Connectivity,
+	pulses observer.PulseFetcher,
+	records observer.RecordFetcher,
 ) func(*state) *raw {
 	log := obs.Log()
 	lastPulseMetric, recordCounterMetric := fetchingMetrics(obs)
-	pulseClient := exporter.NewPulseExporterClient(conn.GRPC())
-	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
-	pulses := grpc.NewPulseFetcher(cfg, obs, pulseClient)
-	records := grpc.NewRecordFetcher(cfg, obs, recordClient)
+
 	return func(s *state) *raw {
 		// Get next pulse
-		// todo: skip empty pulses, if shouldIterateFrom set
+		// todo: get batch of empty pulses, if shouldIterateFrom set
 		pulse, err := pulses.Fetch(s.last)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))

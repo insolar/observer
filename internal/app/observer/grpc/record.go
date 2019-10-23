@@ -106,6 +106,21 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 					shouldIterateFrom = resp.Record.ID.Pulse()
 					f.log.Debug("shouldIterateFrom set to ", shouldIterateFrom)
 				}
+				// todo we can read records by several pulses
+				// read others
+				{
+					cnt := 0
+					for {
+						_, err := stream.Recv()
+						if err == io.EOF {
+							f.log.Debug("OTHERS EOF received, quit")
+							break
+						}
+						cnt++
+					}
+					f.log.Debug("OTHERS cnt ", cnt)
+				}
+
 				return batch, shouldIterateFrom, nil
 			}
 			model := (*observer.Record)(&resp.Record)

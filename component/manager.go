@@ -21,11 +21,13 @@ import (
 	"time"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/grpc"
 	"github.com/insolar/observer/observability"
 )
 
@@ -49,11 +51,13 @@ func Prepare() *Manager {
 	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
+	pulses := grpc.NewPulseFetcher(cfg, obs, exporter.NewPulseExporterClient(conn.GRPC()))
+	records := grpc.NewRecordFetcher(cfg, obs, exporter.NewRecordExporterClient(conn.GRPC()))
 	return &Manager{
 		stopSignal: make(chan bool, 1),
 		init:       makeInitter(cfg, obs, conn),
 		log:        *obs.Log(),
-		fetch:      makeFetcher(cfg, obs, conn),
+		fetch:      makeFetcher(obs, pulses, records),
 		beautify:   makeBeautifier(cfg, obs, conn),
 		filter:     makeFilter(obs),
 		store:      makeStorer(cfg, obs, conn),

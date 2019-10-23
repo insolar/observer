@@ -32,6 +32,7 @@ type PulseStorage interface {
 	Last() *Pulse
 }
 
+//go:generate minimock -i github.com/insolar/observer/internal/app/observer.PulseFetcher -o ./ -s _mock.go -g
 type PulseFetcher interface {
 	Fetch(insolar.PulseNumber) (*Pulse, error)
 }

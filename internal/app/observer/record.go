@@ -29,8 +29,9 @@ type RecordStorage interface {
 	Insert(*Record) error
 }
 
+//go:generate minimock -i github.com/insolar/observer/internal/app/observer.RecordFetcher -o ./ -s _mock.go -g
 type RecordFetcher interface {
-	Fetch(insolar.PulseNumber) ([]*Record, error)
+	Fetch(pulse insolar.PulseNumber) ([]*Record, insolar.PulseNumber, error)
 }
 
 func (r *Record) Marshal() ([]byte, error) {
