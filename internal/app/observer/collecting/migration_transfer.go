@@ -156,10 +156,10 @@ func (c *MigrationTransferCollector) makeFailedTransfer(apiCall *observer.Reques
 
 func (c *MigrationTransferCollector) build(
 	apiCall *observer.Request,
-	result *observer.Result,
-	depositMigration *tree.Structure,
+	result *observer.Result, // nolint: unparam
+	depositMigration *tree.Structure, // nolint: unparam
 	getMember *tree.Structure,
-	depositConfirm *tree.Structure,
+	depositConfirm *tree.Structure, // nolint: unparam
 	transferToDeposit *tree.Structure,
 ) *observer.Transfer {
 	var (

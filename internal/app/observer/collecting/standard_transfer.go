@@ -36,6 +36,7 @@ import (
 )
 
 const (
+	TransferMethodName     = "Transfer"
 	StandardTransferMethod = "member.transfer"
 )
 
@@ -150,10 +151,10 @@ func (c *StandardTransferCollector) makeFailedTransfer(apiCall *observer.Request
 func (c *StandardTransferCollector) build(
 	apiCall *observer.Request,
 	result *observer.Result,
-	wallet *tree.Structure,
+	wallet *tree.Structure, // nolint: unparam
 	account *tree.Structure,
-	calc *tree.Structure,
-	getFeeMember *tree.Structure,
+	calc *tree.Structure, // nolint: unparam
+	getFeeMember *tree.Structure, // nolint: unparam
 ) *observer.Transfer {
 
 	from, to, amount := c.parseCall(apiCall)
@@ -236,7 +237,7 @@ func (c *StandardTransferCollector) isGetFeeMember(req *record.IncomingRequest) 
 }
 
 func (c *StandardTransferCollector) isAccountTransfer(req *record.IncomingRequest) bool {
-	if req.Method != "Transfer" {
+	if req.Method != TransferMethodName {
 		return false
 	}
 
@@ -270,7 +271,7 @@ func (c *StandardTransferCollector) isCalcFee(req *record.IncomingRequest) bool 
 }
 
 func (c *StandardTransferCollector) isWalletTransfer(req *record.IncomingRequest) bool {
-	if req.Method != "Transfer" {
+	if req.Method != TransferMethodName {
 		return false
 	}
 
