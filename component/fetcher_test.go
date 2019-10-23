@@ -148,4 +148,40 @@ func Test_makeFetcher(t *testing.T) {
 
 		assert.Nil(t, raw)
 	})
+
+	t.Run("Failed fetch curr heavy pulse", func(t *testing.T) {
+		resetComponents()
+		defer mc.Finish()
+
+		pn := gen.PulseNumber()
+		pulseFetcher.FetchMock.Inspect(func(ctx context.Context, p1 insolar.PulseNumber) {
+			assert.Equal(t, pn-10, p1)
+		}).Return(&observer.Pulse{
+			Number: pn,
+		}, nil)
+
+		rec := map[uint32]*observer.Record{
+			0: {
+				Polymorph: 0,
+				Virtual:   record.Virtual{},
+				ID:        insolar.ID{},
+				ObjectID:  insolar.ID{},
+				JetID:     insolar.JetID{},
+				Signature: nil,
+			},
+		}
+		recordFetcher.FetchMock.Inspect(func(ctx context.Context, pulse insolar.PulseNumber) {
+			assert.Equal(t, pn, pulse)
+		}).Return(rec, gen.PulseNumber(), nil)
+
+		pulseFetcher.FetchCurrentMock.Return(insolar.GenesisPulse.PulseNumber, errors.New("test"))
+
+		s := state{
+			last: pn - 10,
+		}
+		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
+		raw := fetcher(ctx, &s)
+		assert.Equal(t, pn, raw.pulse.Number)
+		assert.Equal(t, rec, raw.batch)
+	})
 }

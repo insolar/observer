@@ -93,22 +93,14 @@ func (f *RecordFetcher) Fetch(
 			// There is no records at all
 			if resp.ShouldIterateFrom != nil {
 				f.log.Debug("Received Should iterate from ", resp.ShouldIterateFrom.String())
-				cancel()
-				if err != nil {
-					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
-				}
 				shouldIterateFrom = *resp.ShouldIterateFrom
 				return batch, shouldIterateFrom, nil
 			}
 
 			// If we see next pulse, then stop iteration
 			if resp.Record.ID.Pulse() != pulse {
-				f.log.Debug("wrong pulse received ", resp.Record.ID.Pulse())
-				err := stream.CloseSend()
-				if err != nil {
-					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
-				}
-
+				f.log.Debug("next pulse received ", resp.Record.ID.Pulse())
+				cancel()
 				// If we have no records in this pulse, then go to next not empty pulse
 				if len(batch) == 0 {
 					shouldIterateFrom = resp.Record.ID.Pulse()

@@ -65,6 +65,9 @@ func makeFetcher(
 
 		// Get current heavy pulse
 		currentFinalisedPulse, err := pulses.FetchCurrent(ctx)
+		if err != nil {
+			return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
+		}
 		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom, currentHeavyPN: currentFinalisedPulse}
 	}
 }
