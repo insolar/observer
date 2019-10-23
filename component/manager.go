@@ -146,6 +146,10 @@ type beauty struct {
 	updates   map[insolar.ID]*observer.DepositUpdate
 	addresses map[string]*observer.MigrationAddress
 	wastings  map[string]*observer.Wasting
+
+	txRegister   []observer.TxRegister
+	txResult     []observer.TxResult
+	txSagaResult []observer.TxSagaResult
 }
 
 type state struct {
