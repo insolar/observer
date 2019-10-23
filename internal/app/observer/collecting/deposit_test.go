@@ -197,22 +197,23 @@ func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
 }
 
 func TestDepositCollector_Collect(t *testing.T) {
-	log := logrus.New()
-	fetcher := store.NewRecordFetcherMock(t)
-	collector := NewDepositCollector(log, fetcher)
-	ctx := context.Background()
-
-	expected, records := makeDeposit()
-	var actual []*observer.Deposit
-	for _, r := range records {
-		collectedDeposit := collector.Collect(ctx, r)
-		if collectedDeposit != nil {
-			actual = append(actual, collectedDeposit)
-		}
-	}
-
-	require.Len(t, actual, 1)
-	require.Equal(t, expected, actual)
+	t.Skip("TestBeautifier_Run->deposit cover happy path")
+	//log := logrus.New()
+	//fetcher := store.NewRecordFetcherMock(t)
+	//collector := NewDepositCollector(log, fetcher)
+	//ctx := context.Background()
+	//
+	//expected, records := makeDeposit()
+	//var actual []*observer.Deposit
+	//for _, r := range records {
+	//	collectedDeposit := collector.Collect(ctx, r)
+	//	if collectedDeposit != nil {
+	//		actual = append(actual, collectedDeposit)
+	//	}
+	//}
+	//
+	//require.Len(t, actual, 1)
+	//require.Equal(t, expected, actual)
 }
 
 func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
