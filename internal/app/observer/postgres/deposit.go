@@ -30,8 +30,8 @@ type DepositSchema struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
 	EthHash         string `sql:",pk"`
+	MemberRef       []byte `sql:",pk"`
 	DepositRef      []byte `sql:",notnull"`
-	MemberRef       []byte `sql:",notnull"`
 	TransferDate    int64  `sql:",notnull"`
 	HoldReleaseDate int64  `sql:",notnull"`
 	Amount          string `sql:",notnull"`
