@@ -306,13 +306,13 @@ func TestBeautifier_Run(t *testing.T) {
 		assert.Equal(t, map[insolar.ID]*observer.Deposit{
 			act.ID: {
 				EthHash:         strings.ToLower(txHash),
-				Ref:             in.ID,                 // from activate
-				Member:          *memberRef.GetLocal(), // from result
+				Ref:             in.ID,
+				Member:          *memberRef.GetLocal(),
 				Timestamp:       transferDate.Unix(),
 				HoldReleaseDate: 0,
-				Amount:          amount,  // from activate
-				Balance:         balance, // from activate
-				DepositState:    act.ID,  // from activate
+				Amount:          amount,
+				Balance:         balance,
+				DepositState:    act.ID,
 			},
 		}, res.deposits)
 	})

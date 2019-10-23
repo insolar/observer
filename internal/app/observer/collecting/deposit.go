@@ -191,14 +191,14 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 	}
 
 	return &observer.Deposit{
-		EthHash:         strings.ToLower(state.TxHash), // from activate
-		Ref:             *activate.Request.GetLocal(),  // from activate
-		Member:          *memberRef,                    // from result
+		EthHash:         strings.ToLower(state.TxHash),
+		Ref:             *activate.Request.GetLocal(),
+		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: 0,
-		Amount:          state.Amount,  // from activate
-		Balance:         state.Balance, // from activate
-		DepositState:    id,            // from activate
+		Amount:          state.Amount,
+		Balance:         state.Balance,
+		DepositState:    id,
 	}, nil
 }
 
