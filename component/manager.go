@@ -34,15 +34,15 @@ import (
 type Manager struct {
 	stopSignal chan bool
 
-	cfg      *configuration.Configuration
-	log      logrus.Logger
-	init     func() *state
+	cfg           *configuration.Configuration
+	log           logrus.Logger
+	init          func() *state
 	commonMetrics *observability.CommonObserverMetrics
-	fetch    func(context.Context, *state) *raw
-	beautify func(context.Context, *raw) *beauty
-	filter   func(*beauty) *beauty
-	store    func(*beauty, *state) *observer.Statistic
-	stop     func()
+	fetch         func(context.Context, *state) *raw
+	beautify      func(context.Context, *raw) *beauty
+	filter        func(*beauty) *beauty
+	store         func(*beauty, *state) *observer.Statistic
+	stop          func()
 
 	router *Router
 }
@@ -55,17 +55,17 @@ func Prepare() *Manager {
 	pulses := grpc.NewPulseFetcher(cfg, obs, exporter.NewPulseExporterClient(conn.GRPC()))
 	records := grpc.NewRecordFetcher(cfg, obs, exporter.NewRecordExporterClient(conn.GRPC()))
 	return &Manager{
-		stopSignal: make(chan bool, 1),
-		init:       makeInitter(cfg, obs, conn),
-		log:        *obs.Log(),
+		stopSignal:    make(chan bool, 1),
+		init:          makeInitter(cfg, obs, conn),
+		log:           *obs.Log(),
 		commonMetrics: observability.MakeCommonMetrics(obs),
-		fetch:      makeFetcher(obs, pulses, records),
-		beautify:   makeBeautifier(cfg, obs, conn),
-		filter:     makeFilter(obs),
-		store:      makeStorer(cfg, obs, conn),
-		stop:       makeStopper(obs, conn, router),
-		router:     router,
-		cfg:        cfg,
+		fetch:         makeFetcher(obs, pulses, records),
+		beautify:      makeBeautifier(cfg, obs, conn),
+		filter:        makeFilter(obs),
+		store:         makeStorer(cfg, obs, conn),
+		stop:          makeStopper(obs, conn, router),
+		router:        router,
+		cfg:           cfg,
 	}
 }
 
