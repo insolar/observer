@@ -32,7 +32,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		}
 
 		filtering.NewBalanceFilter().Filter(b.balances, b.members)
-		filtering.NewDepositUpdateFilter().Filter(b.updates, b.deposits)
+		filtering.NewDepositUpdateFilter().Filter(b.depositUpdates, b.deposits)
 		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
 
 		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering.NewSeparatorFilter().
@@ -53,7 +53,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		metric.Addresses.Add(float64(len(b.addresses)))
 
 		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
+		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Wastings.Add(float64(len(b.wastings)))
 		return b
 	}

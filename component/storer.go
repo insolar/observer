@@ -150,7 +150,7 @@ func makeStorer(
 					}
 				}
 
-				for _, update := range b.updates {
+				for _, update := range b.depositUpdates {
 					err := deposits.Update(update)
 					if err != nil {
 						return err
@@ -208,7 +208,7 @@ func makeStorer(
 		metric.Addresses.Add(float64(len(b.addresses)))
 
 		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
+		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Wastings.Add(float64(len(b.wastings)))
 
 		return stat
