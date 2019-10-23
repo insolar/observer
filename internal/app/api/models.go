@@ -4,19 +4,19 @@ type transactionType string
 
 const (
 	TTypeTransfer  transactionType = "transfer"
-	TTypeMigration                 = "migration"
-	TTypeVesting                   = "vesting"
+	TTypeMigration transactionType = "migration"
+	TTypeVesting   transactionType = "vesting"
 )
 
 type transactionStatus string
 
 const (
 	TStatusRegistered transactionStatus = "registered"
-	TStatusSent                         = "sent"
-	TStatusReceived                     = "received"
+	TStatusSent       transactionStatus = "sent"
+	TStatusReceived   transactionStatus = "received"
 )
 
-type member struct {
+type member struct { // nolint
 	Reference        []byte `sql:"member_ref"`
 	WalletReference  []byte `sql:"wallet_ref"`
 	AccountReference []byte `sql:"account_ref"`
@@ -26,7 +26,7 @@ type member struct {
 	Status           string `sql:"status"`
 }
 
-type deposit struct {
+type deposit struct { // nolint
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
 	EtheriumHash    string `sql:"eth_hash"`
@@ -36,16 +36,16 @@ type deposit struct {
 	Balance         string `sql:"balance"`
 }
 
-type transaction struct {
-	ID                    int64  `sql:"id"`
-	TransactionID         []byte `sql:"tx_id"`
-	PulseNumber           int64  `sql:"pulse_number"`
-	Type                  string `sql:"type"`
-	Status                string `sql:"status"`
-	MemberFromReference   []byte `sql:"member_from_ref"`
-	MemberToReference     []byte `sql:"member_to_ref"`
-	MigrationsToReference []byte `sql:"migration_to_ref"`
-	VestingFromReference  []byte `sql:"vesting_from_ref"`
-	Amount                string `sql:"amount"`
-	Fee                   string `sql:"fee"`
+type transaction struct { // nolint
+	ID                    int64             `sql:"id"`
+	TransactionID         []byte            `sql:"tx_id"`
+	PulseNumber           int64             `sql:"pulse_number"`
+	Type                  transactionType   `sql:"type"`
+	Status                transactionStatus `sql:"status"`
+	MemberFromReference   []byte            `sql:"member_from_ref"`
+	MemberToReference     []byte            `sql:"member_to_ref"`
+	MigrationsToReference []byte            `sql:"migration_to_ref"`
+	VestingFromReference  []byte            `sql:"vesting_from_ref"`
+	Amount                string            `sql:"amount"`
+	Fee                   string            `sql:"fee"`
 }
