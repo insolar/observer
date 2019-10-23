@@ -125,6 +125,13 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 
 	accountTree, walletTree, memberTree := childTrees(children)
 
+	if accountTree == nil || walletTree == nil || memberTree == nil {
+		c.log.Warnf(
+			"recordID %s: no children found for member creation, request: %s, result: %s",
+			originRequest.ID.String(), memberContractTree.Request.String(), contractResult.String())
+		return nil
+	}
+
 	balance := c.accountBalance(accountTree.SideEffect.Activation)
 	walletRef := c.walletRef(memberTree.SideEffect.Activation)
 	accountRef := c.accountRef(walletTree.SideEffect.Activation)

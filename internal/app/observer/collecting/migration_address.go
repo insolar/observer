@@ -18,13 +18,12 @@ package collecting
 
 import (
 	"context"
-
-	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/record"
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -65,14 +64,12 @@ func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.R
 
 func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *observer.Result) []*observer.MigrationAddress {
 	if !res.IsSuccess() {
-		// TODO: maybe we need to do something else
-		c.log.Warnf("unsuccessful attempt to add migration addresses")
+		return nil
 	}
 
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
-		return nil
+		panic(fmt.Sprintf("recordID %s: failed to fetch request for result", res.ID))
 	}
 
 	call, ok := c.isAddMigrationAddresses(&req)
