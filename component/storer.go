@@ -117,7 +117,7 @@ func makeStorer(
 					}
 				}
 
-				transfers := postgres.NewExtendedTransferStorage(obs, tx)
+				transfers := postgres.NewTransferStorage(obs, tx)
 				for _, transfer := range b.transfers {
 					err := transfers.Insert(transfer)
 					if err != nil {

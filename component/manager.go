@@ -143,7 +143,7 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers      []*observer.ExtendedTransfer
+	transfers      []*observer.Transfer
 	members        map[insolar.ID]*observer.Member
 	balances       map[insolar.ID]*observer.Balance
 	deposits       map[insolar.ID]*observer.Deposit

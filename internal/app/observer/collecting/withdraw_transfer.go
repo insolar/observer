@@ -18,113 +18,169 @@ package collecting
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
+	"github.com/insolar/observer/internal/app/observer/tree"
 )
 
 const (
-	MemberCall = "Call"
+	MemberCall             = "Call"
+	WithdrawTransferMethod = "deposit.transfer"
 )
 
-type TransferCollector struct {
+type WithdrawTransferCollector struct {
+	log     *logrus.Logger
 	fetcher store.RecordFetcher
+	builder tree.Builder
 }
 
-func NewTransferCollector(fetcher store.RecordFetcher) *TransferCollector {
-	c := &TransferCollector{
+func NewWithdrawTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher, builder tree.Builder) *WithdrawTransferCollector {
+	c := &WithdrawTransferCollector{
+		log:     log,
 		fetcher: fetcher,
+		builder: builder,
 	}
 	return c
 }
 
-func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.ExtendedTransfer {
+func (c *WithdrawTransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Transfer {
 	if rec == nil {
 		return nil
 	}
 
 	result := observer.CastToResult(rec)
-	if result == nil {
+	if !result.IsResult() {
+		return nil
+	}
+
+	req, err := c.fetcher.Request(ctx, result.Request())
+	if err != nil {
+		c.log.WithField("req", result.Request()).
+			Error(errors.Wrapf(err, "result without request"))
+		return nil
+	}
+
+	call, ok := c.isTransferCall(&req)
+	if !ok {
 		return nil
 	}
 
 	if !result.IsSuccess() {
+		c.makeFailedTransfer(call)
 		return nil
 	}
 
-	requestID := result.Request()
-	if requestID.IsEmpty() {
-		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
-	}
-
-	request, err := c.fetcher.Request(ctx, requestID)
+	callTree, err := c.builder.Build(ctx, result.Request())
 	if err != nil {
-		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to build call tree call "))
+		return c.build(call, result, nil)
 	}
 
-	incoming := request.Virtual.GetIncomingRequest()
-	if incoming == nil {
-		return nil
-	}
-
-	if incoming.Method != MemberCall {
-		return nil
-	}
-
-	transfer, err := c.build((*observer.Request)(&request), result)
+	depositTransferStructure, err := c.find(callTree.Outgoings, c.isDepositTransfer)
 	if err != nil {
-		return nil
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to find deposit.Transfer call in outgouings of member.Call"))
+		return c.build(call, result, nil)
 	}
-	return transfer
+
+	return c.build(call, result, depositTransferStructure)
 }
 
-func (c *TransferCollector) build(request *observer.Request, result *observer.Result) (*observer.ExtendedTransfer, error) {
-	callArguments := request.ParseMemberCallArguments()
-	memberFrom, err := insolar.NewIDFromString(callArguments.Params.Reference)
-	if err != nil {
-		return nil, errors.Wrap(err,"invalid fromMemberReference")
-	}
-
-	callParams := &TransferCallParams{}
-	request.ParseMemberContractCallParams(callParams)
-
-	memberTo := memberFrom
-	if callArguments.Params.CallSite == TransferMethod {
-		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
-		if err != nil {
-			return nil, errors.Wrap(err, "invalid toMemberReference")
+func (c *WithdrawTransferCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
+	for _, req := range outs {
+		if predicate(&req.Structure.Request) {
+			return req.Structure, nil
 		}
 	}
+	return nil, errors.New("failed to find corresponding request in calls tree")
+}
 
-	pn := request.ID.Pulse()
+func (c *WithdrawTransferCollector) makeFailedTransfer(apiCall *observer.Request) *observer.Transfer {
+	from, amount, ethHash := c.parseCall(apiCall)
+	return &observer.Transfer{
+		TxID:      apiCall.ID,
+		Amount:    amount,
+		From:      from,
+		To:        from,
+		EthHash:   ethHash,
+		Status:    observer.Failed,
+		Kind:      observer.Withdraw,
+		Direction: observer.APICall,
+	}
+}
 
+func (c *WithdrawTransferCollector) build(
+	apiCall *observer.Request,
+	result *observer.Result,
+	depositTransfer *tree.Structure,
+) *observer.Transfer {
+	from, amount, ethHash := c.parseCall(apiCall)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
 
-	transferDate, err := pn.AsApproximateTime()
+	var detachRequest *insolar.ID
+	if depositTransfer != nil {
+		detachRequest = &depositTransfer.RequestID
+	}
+	return &observer.Transfer{
+		TxID:          apiCall.ID,
+		Amount:        amount,
+		From:          from,
+		To:            from,
+		Fee:           resultValue.Fee,
+		EthHash:       ethHash,
+		Status:        observer.Success,
+		Kind:          observer.Withdraw,
+		Direction:     observer.APICall,
+		DetachRequest: detachRequest,
+	}
+}
+
+func (c *WithdrawTransferCollector) parseCall(apiCall *observer.Request) (*insolar.ID, string, string) {
+	callArguments := apiCall.ParseMemberCallArguments()
+	callParams := &TransferCallParams{}
+	apiCall.ParseMemberContractCallParams(callParams)
+	memberFrom, err := insolar.NewIDFromString(callArguments.Params.Reference)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert transfer pulse to time")
+		c.log.Warn("invalid callArguments.Params.Reference")
+	}
+	return memberFrom, callParams.Amount, callParams.EthTxHash
+}
+
+func (c *WithdrawTransferCollector) isTransferCall(rec *record.Material) (*observer.Request, bool) {
+	request := observer.CastToRequest((*observer.Record)(rec))
+	if !request.IsIncoming() {
+		return nil, false
 	}
 
-	return &observer.ExtendedTransfer{
-		DepositTransfer: observer.DepositTransfer{
-			Transfer: observer.Transfer{
-				TxID:      request.ID,
-				Amount:    callParams.Amount,
-				From:      *memberFrom,
-				To:        *memberTo,
-				Pulse:     pn,
-				Timestamp: transferDate.Unix(),
-				Fee:       resultValue.Fee,
-			},
-			EthHash: callParams.EthTxHash,
-		},
-	}, nil
+	if !request.IsMemberCall() {
+		return nil, false
+	}
+
+	args := request.ParseMemberCallArguments()
+	return request, args.Params.CallSite == WithdrawTransferMethod
+}
+
+func (c *WithdrawTransferCollector) isDepositTransfer(req *record.IncomingRequest) bool {
+	if req.Method != "Transfer" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
 }
 
 type TransferCallParams struct {

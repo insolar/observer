@@ -21,8 +21,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/insolar/insolar/application"
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/member"
+	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
@@ -30,20 +32,22 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyMigrationAdmin "github.com/insolar/insolar/application/builtin/proxy/migrationadmin"
+	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
-
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 )
 
-func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
+func makeMigrationTransferCall(amount, from, ethHash string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: WithdrawTransferMethod,
+			CallSite: MigrationTransferMethod,
 			CallParams: TransferCallParams{
-				Amount:            amount,
-				ToMemberReference: to,
+				Amount:    amount,
+				EthTxHash: ethHash,
 			},
 			Reference: from,
 		},
@@ -76,13 +80,43 @@ func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *obser
 	return (*observer.Record)(rec)
 }
 
-func makeDepositTransfer(pulse insolar.PulseNumber) *observer.Record {
+func makeDaemonDepositMigrationCall(pulse insolar.PulseNumber) *observer.Record {
 	rec := &record.Material{
 		ID: gen.IDWithPulse(pulse),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
 				IncomingRequest: &record.IncomingRequest{
-					Method:    "Transfer",
+					Method:    "DepositMigrationCall",
+					Prototype: proxyDaemon.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeGetMemberByMigrationAddress(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "GetMemberByMigrationAddress",
+					Prototype: proxyMigrationAdmin.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeDepositConfirm(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Confirm",
 					Prototype: proxyDeposit.PrototypeReference,
 				},
 			},
@@ -91,21 +125,41 @@ func makeDepositTransfer(pulse insolar.PulseNumber) *observer.Record {
 	return (*observer.Record)(rec)
 }
 
-func TestTransferCollector_Collect(t *testing.T) {
+func makeTransferToDeposit(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "TransferToDeposit",
+					Prototype: proxyDeposit.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func TestMigrationTransferCollector_Collect(t *testing.T) {
 	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
 	builder := tree.NewBuilderMock(t)
-	collector := NewWithdrawTransferCollector(log, fetcher, builder)
+	collector := NewMigrationTransferCollector(log, fetcher, builder)
 	ctx := context.Background()
 
 	pn := insolar.GenesisPulse.PulseNumber
 	amount := "42"
-	fee := "7"
+	fee := "0"
 	from := gen.IDWithPulse(pn)
-	to := gen.IDWithPulse(pn)
+	to := gen.ReferenceWithPulse(pn)
+	ethHash := "0x1234567890"
 	out := makeOutgoingRequest()
-	call := makeTransferCall(amount, from.String(), to.String(), pn)
-	depositTransfer := makeDepositTransfer(pn)
+	call := makeMigrationTransferCall(amount, from.String(), ethHash, pn)
+	daemonMigrationCall := makeDaemonDepositMigrationCall(pn)
+	getMemberByAddress := makeGetMemberByMigrationAddress(pn)
+	depositConfirm := makeDepositConfirm(pn)
+	transferToDeposit := makeTransferToDeposit(pn)
+
 	records := []*observer.Record{
 		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
@@ -127,11 +181,39 @@ func TestTransferCollector_Collect(t *testing.T) {
 		case out.ID:
 			return tree.Structure{}, nil
 		case call.ID:
+			objRef, err := insolar.NewObjectReferenceFromString(to.String())
+			require.NoError(t, err)
 			return tree.Structure{Outgoings: []tree.Outgoing{
 				{
 					Structure: &tree.Structure{
-						RequestID: depositTransfer.ID,
-						Request:   *depositTransfer.Virtual.GetIncomingRequest(),
+						RequestID: daemonMigrationCall.ID,
+						Request:   *daemonMigrationCall.Virtual.GetIncomingRequest(),
+						Outgoings: []tree.Outgoing{
+							{
+								Structure: &tree.Structure{
+									RequestID: getMemberByAddress.ID,
+									Request:   *getMemberByAddress.Virtual.GetIncomingRequest(),
+									Result: *makeResultWith(getMemberByAddress.ID, &foundation.Result{
+										Error:   nil,
+										Returns: []interface{}{objRef, nil},
+									}).Virtual.GetResult(),
+								},
+							},
+							{
+								Structure: &tree.Structure{
+									RequestID: depositConfirm.ID,
+									Request:   *depositConfirm.Virtual.GetIncomingRequest(),
+									Outgoings: []tree.Outgoing{
+										{
+											Structure: &tree.Structure{
+												RequestID: transferToDeposit.ID,
+												Request:   *transferToDeposit.Virtual.GetIncomingRequest(),
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			}}, nil
@@ -139,17 +221,20 @@ func TestTransferCollector_Collect(t *testing.T) {
 			panic("unexpected call")
 		}
 	})
+
+	memberFrom := genesisrefs.GenesisRef(application.GenesisNameMigrationAdminMember)
 	expected := []*observer.Transfer{
 		{
 			TxID:          call.ID,
-			From:          &from,
-			To:            &from,
+			From:          memberFrom.GetLocal(),
+			To:            to.GetLocal(),
+			EthHash:       ethHash,
 			Amount:        amount,
 			Fee:           fee,
 			Status:        observer.Success,
-			Kind:          observer.Withdraw,
+			Kind:          observer.Migration,
 			Direction:     observer.APICall,
-			DetachRequest: &depositTransfer.ID,
+			DetachRequest: &transferToDeposit.ID,
 		},
 	}
 

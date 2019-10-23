@@ -34,13 +34,46 @@ import (
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
 
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
+	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 )
 
-func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
+func makeOutgoingRequest() *observer.Record {
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_OutgoingRequest{
+				OutgoingRequest: &record.OutgoingRequest{},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.Record {
+	payload, err := insolar.Serialize(result)
+	if err != nil {
+		panic("failed to serialize result")
+	}
+	ref := insolar.NewReference(requestID)
+	rec := &record.Material{
+		ID: gen.ID(),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_Result{
+				Result: &record.Result{
+					Request: *ref,
+					Payload: payload,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeStandardTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: WithdrawTransferMethod,
+			CallSite: StandardTransferMethod,
 			CallParams: TransferCallParams{
 				Amount:            amount,
 				ToMemberReference: to,
@@ -76,14 +109,14 @@ func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *obser
 	return (*observer.Record)(rec)
 }
 
-func makeDepositTransfer(pulse insolar.PulseNumber) *observer.Record {
+func makeWalletTransfer(pulse insolar.PulseNumber) *observer.Record {
 	rec := &record.Material{
 		ID: gen.IDWithPulse(pulse),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
 				IncomingRequest: &record.IncomingRequest{
 					Method:    "Transfer",
-					Prototype: proxyDeposit.PrototypeReference,
+					Prototype: proxyWallet.PrototypeReference,
 				},
 			},
 		},
@@ -91,11 +124,26 @@ func makeDepositTransfer(pulse insolar.PulseNumber) *observer.Record {
 	return (*observer.Record)(rec)
 }
 
-func TestTransferCollector_Collect(t *testing.T) {
+func makeAccountTransfer(pulse insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Transfer",
+					Prototype: proxyAccount.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func TestStandardTransferCollector_Collect(t *testing.T) {
 	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
 	builder := tree.NewBuilderMock(t)
-	collector := NewWithdrawTransferCollector(log, fetcher, builder)
+	collector := NewStandardTransferCollector(log, fetcher, builder)
 	ctx := context.Background()
 
 	pn := insolar.GenesisPulse.PulseNumber
@@ -104,8 +152,9 @@ func TestTransferCollector_Collect(t *testing.T) {
 	from := gen.IDWithPulse(pn)
 	to := gen.IDWithPulse(pn)
 	out := makeOutgoingRequest()
-	call := makeTransferCall(amount, from.String(), to.String(), pn)
-	depositTransfer := makeDepositTransfer(pn)
+	call := makeStandardTransferCall(amount, from.String(), to.String(), pn)
+	walletTransfer := makeWalletTransfer(pn)
+	accountTransfer := makeAccountTransfer(pn)
 	records := []*observer.Record{
 		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
@@ -130,8 +179,16 @@ func TestTransferCollector_Collect(t *testing.T) {
 			return tree.Structure{Outgoings: []tree.Outgoing{
 				{
 					Structure: &tree.Structure{
-						RequestID: depositTransfer.ID,
-						Request:   *depositTransfer.Virtual.GetIncomingRequest(),
+						RequestID: walletTransfer.ID,
+						Request:   *walletTransfer.Virtual.GetIncomingRequest(),
+						Outgoings: []tree.Outgoing{
+							{
+								Structure: &tree.Structure{
+									RequestID: accountTransfer.ID,
+									Request:   *accountTransfer.Virtual.GetIncomingRequest(),
+								},
+							},
+						},
 					},
 				},
 			}}, nil
@@ -143,13 +200,13 @@ func TestTransferCollector_Collect(t *testing.T) {
 		{
 			TxID:          call.ID,
 			From:          &from,
-			To:            &from,
+			To:            &to,
 			Amount:        amount,
 			Fee:           fee,
 			Status:        observer.Success,
-			Kind:          observer.Withdraw,
+			Kind:          observer.Standard,
 			Direction:     observer.APICall,
-			DetachRequest: &depositTransfer.ID,
+			DetachRequest: &accountTransfer.ID,
 		},
 	}
 

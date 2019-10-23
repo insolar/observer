@@ -36,18 +36,18 @@ import (
 )
 
 const (
-	TransferMethod = "member.transfer"
+	StandardTransferMethod = "member.transfer"
 )
 
-type ExtendedTransferCollector struct {
+type StandardTransferCollector struct {
 	log *logrus.Logger
 
 	fetcher store.RecordFetcher
 	builder tree.Builder
 }
 
-func NewExtendedTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher, builder tree.Builder) *ExtendedTransferCollector {
-	c := &ExtendedTransferCollector{
+func NewStandardTransferCollector(log *logrus.Logger, fetcher store.RecordFetcher, builder tree.Builder) *StandardTransferCollector {
+	c := &StandardTransferCollector{
 		log:     log,
 		fetcher: fetcher,
 		builder: builder,
@@ -55,19 +55,20 @@ func NewExtendedTransferCollector(log *logrus.Logger, fetcher store.RecordFetche
 	return c
 }
 
-func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.ExtendedTransfer {
+func (c *StandardTransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Transfer {
 	if rec == nil {
 		return nil
 	}
 
-	res := observer.CastToResult(rec)
-	if !res.IsResult() {
+	result := observer.CastToResult(rec)
+	if !result.IsResult() {
 		return nil
 	}
 
-	req, err := c.fetcher.Request(context.Background(), res.Request())
+	req, err := c.fetcher.Request(ctx, result.Request())
 	if err != nil {
-		c.log.WithField("req", res.Request()).Error(errors.Wrapf(err, "result without request"))
+		c.log.WithField("req", result.Request()).
+			Error(errors.Wrapf(err, "result without request"))
 		return nil
 	}
 	call, ok := c.isTransferCall(&req)
@@ -75,57 +76,56 @@ func (c *ExtendedTransferCollector) Collect(rec *observer.Record) *observer.Exte
 		return nil
 	}
 
-	if !res.IsSuccess() {
-		return c.makeFailedTransfer(&req)
+	if !result.IsSuccess() {
+		return c.makeFailedTransfer(call)
 	}
 
-	root := call
-	result := res
-	callTree, err := c.builder.Build(context.Background(), req.ID)
+	callTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
-		return c.makeFailedTransfer(&req)
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to build call tree call "))
+		return c.build(call, result, nil, nil, nil, nil)
 	}
 
 	walletTransferStructure, err := c.find(callTree.Outgoings, c.isWalletTransfer)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to find wallet.Transfer call in outgouings of member.Call"))
-		return c.makeFailedTransfer(&req)
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to find wallet.Transfer call in outgouings of member.Call"))
+		return c.build(call, result, nil, nil, nil, nil)
 	}
 
 	accountTransferStructure, err := c.find(walletTransferStructure.Outgoings, c.isAccountTransfer)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to find account.Transfer call in outgouings of wallet.Transfer"))
-		return c.makeFailedTransfer(&req)
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to find account.Transfer call in outgouings of wallet.Transfer"))
+		return c.build(call, result, walletTransferStructure, nil, nil, nil)
 	}
 
 	calcFeeCallTree, err := c.find(accountTransferStructure.Outgoings, c.isCalcFee)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to find costcenter.CalcFee call in outgouings of account.Transfer"))
-		return c.makeFailedTransfer(&req)
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to find costcenter.CalcFee call in outgouings of account.Transfer"))
+		return c.build(call, result, walletTransferStructure, accountTransferStructure, nil, nil)
 	}
 
 	getFeeMemberCallTree, err := c.find(accountTransferStructure.Outgoings, c.isGetFeeMember)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to find costcenter.GetFeeMember call in outgouings of account.Transfer"))
-		return c.makeFailedTransfer(&req)
+		c.log.WithField("api_call", req.ID).
+			Error(errors.Wrapf(err, "failed to find costcenter.GetFeeMember call in outgouings of account.Transfer"))
+		return c.build(call, result, walletTransferStructure, accountTransferStructure, calcFeeCallTree, nil)
 	}
 
-	transfer, err := c.build(
-		root,
+	return c.build(
+		call,
 		result,
 		walletTransferStructure,
 		accountTransferStructure,
 		calcFeeCallTree,
 		getFeeMemberCallTree,
 	)
-	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to build transfer"))
-		return nil
-	}
-	return transfer
 }
 
-func (c *ExtendedTransferCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
+func (c *StandardTransferCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
 	for _, req := range outs {
 		if predicate(&req.Structure.Request) {
 			return req.Structure, nil
@@ -134,106 +134,83 @@ func (c *ExtendedTransferCollector) find(outs []tree.Outgoing, predicate func(*r
 	return nil, errors.New("failed to find corresponding request in calls tree")
 }
 
-func (c *ExtendedTransferCollector) makeFailedTransfer(rec *record.Material) *observer.ExtendedTransfer {
-	requestTime, err := rec.ID.Pulse().AsApproximateTime()
-	transferTime := int64(0)
-	if err == nil {
-		transferTime = requestTime.Unix()
-	}
-	return &observer.ExtendedTransfer{
-		DepositTransfer: observer.DepositTransfer{
-			Transfer: observer.Transfer{
-				TxID:      rec.ID,
-				From:      insolar.ID{},
-				To:        insolar.ID{},
-				Amount:    "",
-				Fee:       "",
-				Timestamp: transferTime,
-				Pulse:     rec.ID.Pulse(),
-				Status:    "FAILED",
-			},
-			EthHash: "",
-		},
-		TransferRequestMember:  insolar.ID{},
-		TransferRequestWallet:  insolar.ID{},
-		TransferRequestAccount: insolar.ID{},
-		AcceptRequestMember:    insolar.ID{},
-		AcceptRequestWallet:    insolar.ID{},
-		AcceptRequestAccount:   insolar.ID{},
-		CalcFeeRequest:         insolar.ID{},
-		FeeMemberRequest:       insolar.ID{},
-		CostCenterRef:          insolar.ID{},
-		FeeMemberRef:           insolar.ID{},
+func (c *StandardTransferCollector) makeFailedTransfer(apiCall *observer.Request) *observer.Transfer {
+	from, to, amount := c.parseCall(apiCall)
+	return &observer.Transfer{
+		TxID:      apiCall.ID,
+		From:      from,
+		To:        to,
+		Amount:    amount,
+		Status:    observer.Failed,
+		Kind:      observer.Standard,
+		Direction: observer.APICall,
 	}
 }
 
-func (c *ExtendedTransferCollector) build(
+func (c *StandardTransferCollector) build(
 	apiCall *observer.Request,
 	result *observer.Result,
 	wallet *tree.Structure,
 	account *tree.Structure,
 	calc *tree.Structure,
 	getFeeMember *tree.Structure,
-) (*observer.ExtendedTransfer, error) {
+) *observer.Transfer {
 
-	callArguments := apiCall.ParseMemberCallArguments()
-	pn := apiCall.ID.Pulse()
-	callParams := &TransferCallParams{}
-	apiCall.ParseMemberContractCallParams(callParams)
+	from, to, amount := c.parseCall(apiCall)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
-	memberFrom, err := insolar.NewIDFromString(callArguments.Params.Reference)
-	if err != nil {
-		return nil, errors.New("invalid fromMemberReference")
-	}
-	memberTo := memberFrom
-	if callArguments.Params.CallSite == TransferMethod {
-		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
-		if err != nil {
-			return nil, errors.New("invalid toMemberReference")
-		}
-	}
 
-	transferDate, err := pn.AsApproximateTime()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
+	// TODO: fill details field from call tree info
+	// costCenterRef := calc.Request.Object
+	// costCenter := insolar.ID{}
+	// if costCenterRef != nil {
+	// 	costCenter = *costCenterRef.GetLocal()
+	// }
+	//
+	// var serializedRef []byte
+	// observer.ParseFirstValueResult(&getFeeMember.Result, &serializedRef)
+	// feeMemberRef := insolar.NewReferenceFromBytes(serializedRef)
+	// feeMember := *feeMemberRef.GetLocal()
+	var detachRequest *insolar.ID
+	if account != nil {
+		detachRequest = &account.RequestID
 	}
-
-	costCenterRef := calc.Request.Object
-	costCenter := insolar.ID{}
-	if costCenterRef != nil {
-		costCenter = *costCenterRef.GetLocal()
+	return &observer.Transfer{
+		TxID:          apiCall.ID,
+		From:          from,
+		To:            to,
+		Amount:        amount,
+		Fee:           resultValue.Fee,
+		Status:        observer.Success,
+		Kind:          observer.Standard,
+		Direction:     observer.APICall,
+		DetachRequest: detachRequest,
+		// TransferRequestMember:  apiCall.ID,
+		// TransferRequestWallet:  wallet.RequestID,
+		// TransferRequestAccount: account.RequestID,
+		// CalcFeeRequest:         calc.RequestID,
+		// FeeMemberRequest:       getFeeMember.RequestID,
+		// CostCenterRef:          costCenter,
+		// FeeMemberRef:           feeMember,
 	}
-
-	var serializedRef []byte
-	observer.ParseFirstValueResult(&getFeeMember.Result, &serializedRef)
-	feeMemberRef := insolar.NewReferenceFromBytes(serializedRef)
-	feeMember := *feeMemberRef.GetLocal()
-	return &observer.ExtendedTransfer{
-		DepositTransfer: observer.DepositTransfer{
-			Transfer: observer.Transfer{
-				TxID:      apiCall.ID,
-				From:      *memberFrom,
-				To:        *memberTo,
-				Amount:    callParams.Amount,
-				Fee:       resultValue.Fee,
-				Timestamp: transferDate.Unix(),
-				Pulse:     pn,
-				Status:    "SUCCESS",
-			},
-			EthHash: "",
-		},
-		TransferRequestMember:  apiCall.ID,
-		TransferRequestWallet:  wallet.RequestID,
-		TransferRequestAccount: account.RequestID,
-		CalcFeeRequest:         calc.RequestID,
-		FeeMemberRequest:       getFeeMember.RequestID,
-		CostCenterRef:          costCenter,
-		FeeMemberRef:           feeMember,
-	}, nil
 }
 
-func (c *ExtendedTransferCollector) isTransferCall(rec *record.Material) (*observer.Request, bool) {
+func (c *StandardTransferCollector) parseCall(apiCall *observer.Request) (*insolar.ID, *insolar.ID, string) {
+	callArguments := apiCall.ParseMemberCallArguments()
+	callParams := &TransferCallParams{}
+	apiCall.ParseMemberContractCallParams(callParams)
+	from, err := insolar.NewIDFromString(callArguments.Params.Reference)
+	if err != nil {
+		c.log.Error("invalid callArguments.Params.Reference")
+	}
+	to, err := insolar.NewIDFromString(callParams.ToMemberReference)
+	if err != nil {
+		c.log.Error("invalid callParams.ToMemberReference")
+	}
+	return from, to, callParams.Amount
+}
+
+func (c *StandardTransferCollector) isTransferCall(rec *record.Material) (*observer.Request, bool) {
 	request := observer.CastToRequest((*observer.Record)(rec))
 
 	if !request.IsIncoming() {
@@ -245,10 +222,10 @@ func (c *ExtendedTransferCollector) isTransferCall(rec *record.Material) (*obser
 	}
 
 	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == TransferMethod
+	return request, args.Params.CallSite == StandardTransferMethod
 }
 
-func (c *ExtendedTransferCollector) isGetFeeMember(req *record.IncomingRequest) bool {
+func (c *StandardTransferCollector) isGetFeeMember(req *record.IncomingRequest) bool {
 	if req.Method != "GetFeeMember" {
 		return false
 	}
@@ -258,7 +235,7 @@ func (c *ExtendedTransferCollector) isGetFeeMember(req *record.IncomingRequest) 
 	return req.Prototype.Equal(*proxyCostCenter.PrototypeReference)
 }
 
-func (c *ExtendedTransferCollector) isAccountTransfer(req *record.IncomingRequest) bool {
+func (c *StandardTransferCollector) isAccountTransfer(req *record.IncomingRequest) bool {
 	if req.Method != "Transfer" {
 		return false
 	}
@@ -270,7 +247,7 @@ func (c *ExtendedTransferCollector) isAccountTransfer(req *record.IncomingReques
 }
 
 // nolint: unused
-func (c *ExtendedTransferCollector) isMemberAccept(req *record.IncomingRequest) bool {
+func (c *StandardTransferCollector) isMemberAccept(req *record.IncomingRequest) bool {
 	if req.Method != "Accept" {
 		return false
 	}
@@ -281,7 +258,7 @@ func (c *ExtendedTransferCollector) isMemberAccept(req *record.IncomingRequest) 
 	return req.Prototype.Equal(*proxyMember.PrototypeReference)
 }
 
-func (c *ExtendedTransferCollector) isCalcFee(req *record.IncomingRequest) bool {
+func (c *StandardTransferCollector) isCalcFee(req *record.IncomingRequest) bool {
 	if req.Method != "CalcFee" {
 		return false
 	}
@@ -292,7 +269,7 @@ func (c *ExtendedTransferCollector) isCalcFee(req *record.IncomingRequest) bool 
 	return req.Prototype.Equal(*proxyCostCenter.PrototypeReference)
 }
 
-func (c *ExtendedTransferCollector) isWalletTransfer(req *record.IncomingRequest) bool {
+func (c *StandardTransferCollector) isWalletTransfer(req *record.IncomingRequest) bool {
 	if req.Method != "Transfer" {
 		return false
 	}
