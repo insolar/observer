@@ -42,8 +42,6 @@ const (
 
 type DepositCollector struct {
 	log       *logrus.Logger
-	results   observer.ResultCollector
-	activates observer.ActivateCollector
 	fetcher   store.RecordFetcher
 	builder   tree.Builder
 }
@@ -95,22 +93,21 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		return nil
 	}
 
-	log := c.log.WithField("req", res.Request())
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		log.Error(errors.Wrap(err, "result without request"))
+		c.log.Error(errors.Wrap(err, "result without request"))
 		return nil
 	}
 
 	_, ok := c.isDepositCall(&req)
 	if !ok {
-		log.Debug("not a deposit call, skipping")
+		c.log.Debug("not a deposit call, skipping")
 		return nil
 	}
 
 	callTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
-		log.Error(errors.Wrap(err, "couldn't build tree"))
+		c.log.Error(errors.Wrap(err, "couldn't build tree"))
 		return nil
 	}
 
