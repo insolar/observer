@@ -40,6 +40,18 @@ type TransferSchema struct {
 	MemberFromRef []byte              `sql:",notnull"`
 	MemberToRef   []byte              `sql:",notnull"`
 	EthHash       string              `sql:",notnull"`
+
+	// TODO: hide them in `Details` field
+	TransferRequestMember  []byte
+	TransferRequestWallet  []byte
+	TransferRequestAccount []byte
+	AcceptRequestMember    []byte
+	AcceptRequestWallet    []byte
+	AcceptRequestAccount   []byte
+	CalcFeeRequest         []byte
+	FeeMemberRequest       []byte
+	CostCenterRef          []byte
+	FeeMemberRef           []byte
 }
 
 type TransferStorage struct {
@@ -60,12 +72,12 @@ func NewTransferStorage(obs *observability.Observability, db orm.DB) *TransferSt
 	}
 }
 
-func (s *TransferStorage) Insert(model *observer.DepositTransfer) error {
+func (s *TransferStorage) Insert(model *observer.Transfer) error {
 	if model == nil {
 		s.log.Warnf("trying to insert nil transfer model")
 		return nil
 	}
-	row := transferSchema(model)
+	row := s.transferSchema(model)
 	res, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
 		Insert()
@@ -81,16 +93,30 @@ func (s *TransferStorage) Insert(model *observer.DepositTransfer) error {
 	return nil
 }
 
-func transferSchema(model *observer.DepositTransfer) *TransferSchema {
+func (s *TransferStorage) transferSchema(model *observer.Transfer) *TransferSchema {
+	timestamp, err := model.TxID.Pulse().AsApproximateTime()
+	if err != nil {
+		s.log.Error(errors.Wrapf(err, "failed to calc approximate time from pulse"))
+	}
+	var (
+		from = []byte{}
+		to   = []byte{}
+	)
+	if model.From != nil {
+		from = model.From.Bytes()
+	}
+	if model.To != nil {
+		to = model.To.Bytes()
+	}
 	return &TransferSchema{
 		TxID:          model.TxID.Bytes(),
 		Amount:        model.Amount,
 		Fee:           model.Fee,
-		TransferDate:  model.Timestamp,
-		PulseNum:      model.Pulse,
-		Status:        "SUCCESS",
-		MemberFromRef: model.From.Bytes(),
-		MemberToRef:   model.To.Bytes(),
+		TransferDate:  timestamp.Unix(),
+		PulseNum:      model.TxID.Pulse(),
+		Status:        model.Status.String(),
+		MemberFromRef: from,
+		MemberToRef:   to,
 
 		EthHash: model.EthHash,
 	}

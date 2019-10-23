@@ -182,3 +182,52 @@ func (r *Request) ParseIncomingArguments(args ...interface{}) {
 		return
 	}
 }
+
+func ParseMemberCallArguments(req *record.IncomingRequest) (member.Request, error) {
+	if req == nil {
+		return member.Request{}, errors.New("nil request")
+	}
+
+	in := req.Arguments
+	if in == nil {
+		return member.Request{}, errors.New("member call arguments is nil")
+	}
+	var args []interface{}
+	err := insolar.Deserialize(in, &args)
+	if err != nil {
+		return member.Request{}, errors.Wrapf(err, "failed to deserialize request arguments")
+	}
+
+	request := member.Request{}
+	if len(args) > 0 {
+		if rawRequest, ok := args[0].([]byte); ok {
+			var (
+				pulseTimeStamp int64
+				signature      string
+				raw            []byte
+			)
+			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			if err != nil {
+				return member.Request{}, errors.Wrapf(err, "failed to unmarshal params")
+			}
+			err = json.Unmarshal(raw, &request)
+			if err != nil {
+				return member.Request{}, errors.Wrapf(err, "failed to unmarshal json member request")
+			}
+		}
+	}
+	return request, nil
+}
+
+func ParseIncomingArguments(req *record.IncomingRequest, args ...interface{}) {
+	in := req.Arguments
+	if in == nil {
+		log.Warnf("member call arguments is nil")
+		return
+	}
+	err := insolar.Deserialize(in, &args)
+	if err != nil {
+		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return
+	}
+}

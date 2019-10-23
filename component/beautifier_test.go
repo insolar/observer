@@ -200,35 +200,17 @@ func TestBeautifier_Run(t *testing.T) {
 		to := gen.IDWithPulse(pn)
 		call := makeTransferCall(amount, from.String(), to.String(), pn)
 		out := tdg.makeOutgouingRequest(gen.Reference(), gen.Reference())
-		timestamp, err := pn.AsApproximateTime()
-		if err != nil {
-			panic("failed to calc timestamp by pulse")
-		}
 
-		expected := []*observer.ExtendedTransfer{
+		expected := []*observer.Transfer{
 			{
-				DepositTransfer: observer.DepositTransfer{
-					Transfer: observer.Transfer{
-						TxID:      call.ID,
-						From:      from,
-						To:        to,
-						Amount:    amount,
-						Fee:       fee,
-						Pulse:     pn,
-						Timestamp: timestamp.Unix(),
-					},
-				},
-			},
-			{
-				DepositTransfer: observer.DepositTransfer{
-					Transfer: observer.Transfer{
-						TxID:      call.ID,
-						Timestamp: timestamp.Unix(),
-						Pulse:     call.ID.Pulse(),
-						Status:    "FAILED",
-					},
-					EthHash: "",
-				},
+				TxID:      call.ID,
+				From:      &from,
+				To:        &to,
+				Amount:    amount,
+				Fee:       fee,
+				Status:    observer.Success,
+				Kind:      observer.Standard,
+				Direction: observer.APICall,
 			},
 		}
 
@@ -478,7 +460,7 @@ func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundat
 func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite: collecting.TransferMethod,
+			CallSite: collecting.StandardTransferMethod,
 			CallParams: collecting.TransferCallParams{
 				Amount:            amount,
 				ToMemberReference: to,
