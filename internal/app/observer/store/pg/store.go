@@ -47,6 +47,7 @@ type RawResult struct {
 }
 
 type RawSideEffect struct {
+	ID        string `sql:"id"`
 	RequestID string `sql:"request_id"`
 	Body      []byte `sql:"side_effect_body"`
 }
@@ -156,7 +157,7 @@ func (s *Store) SetSideEffect(ctx context.Context, sideEffectRecord record.Mater
 		return errors.Errorf("trying to save not a side effect as side effect")
 	}
 
-	id, err := store.RequestID(&sideEffectRecord)
+	requestID, err := store.RequestID(&sideEffectRecord)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse side effect data")
 	}
@@ -166,9 +167,9 @@ func (s *Store) SetSideEffect(ctx context.Context, sideEffectRecord record.Mater
 		return errors.Wrap(err, "failed to marshal side effect")
 	}
 
-	_, err = s.db.ExecContext(ctx, `insert into raw_side_effects (request_id, side_effect_body) values (?, ?)
+	_, err = s.db.ExecContext(ctx, `insert into raw_side_effects (id, request_id, side_effect_body) values (?, ?, ?)
                                            ON CONFLICT DO NOTHING`,
-		id.String(), body)
+		sideEffectRecord.ID.String(), requestID.String(), body)
 
 	return errors.Wrap(err, "failed to insert result")
 }
