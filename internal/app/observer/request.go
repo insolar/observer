@@ -37,6 +37,9 @@ type RequestCollector interface {
 }
 
 func CastToRequest(r interface{}) *Request {
+	if req, ok := r.(*Request); ok {
+		return req
+	}
 	rec, ok := r.(*Record)
 	if !ok {
 		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))

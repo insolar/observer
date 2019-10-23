@@ -16,29 +16,11 @@
 
 package observer
 
-import "github.com/insolar/insolar/insolar"
+// NotificationType type of swap steps
+type NotificationType int
 
-type User struct {
-	UserRef   insolar.Reference
-	KYCStatus bool
-	Public    string
-	Status    string
-	State     []byte
-}
-
-type UserKYC struct {
-	PrevState insolar.ID
-	UserState insolar.ID
-	KYC       bool
-	Source    string
-	Timestamp int64
-}
-
-type UserStorage interface {
-	Insert(User) error
-	Update(UserKYC) error
-}
-
-type UserCollector interface {
-	Collect(*Record) *User
-}
+const (
+	NotificationInvite NotificationType = iota + 1
+	NotificationContribution
+	NotificationDeactivate
+)

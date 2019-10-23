@@ -157,6 +157,14 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			notifications := postgres.NewNotificationStorage(obs, tx)
+			for _, ntf := range b.notifications {
+				err := notifications.Insert(ntf)
+				if err != nil {
+					return err
+				}
+			}
+
 			// updates
 
 			for _, mgr := range b.mgrUpdates {
