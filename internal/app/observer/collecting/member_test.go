@@ -267,37 +267,6 @@ func makeMemberCreateCall(pulse insolar.PulseNumber) (*observer.Record, *record.
 	return (*observer.Record)(rec), &callRecord
 }
 
-func makeMember() ([]*observer.Member, []*observer.Record) {
-	pn := insolar.GenesisPulse.PulseNumber + 10
-	balance := "42"
-	memberRef := gen.IDWithPulse(pn)
-	out := makeOutgoingRequest()
-	call, _ := makeMemberCreateCall(pn)
-	callRef := *insolar.NewReference(call.ID)
-	newAccount, _ := makeNewAccountRequest(pn, callRef)
-	newAccountRef := *insolar.NewReference(newAccount.ID)
-	accountActivate, _ := makeAccountActivate(pn, balance, newAccountRef)
-	records := []*observer.Record{
-		out,
-		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		call,
-		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.CreateResponse{
-			Reference: memberRef.String(),
-		}, nil}}),
-		newAccount,
-		makeResultWith(newAccount.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		accountActivate,
-	}
-	member := &observer.Member{
-		MemberRef:        memberRef,
-		Balance:          balance,
-		MigrationAddress: "",
-		AccountState:     accountActivate.ID,
-		Status:           "SUCCESS",
-	}
-	return []*observer.Member{member}, records
-}
-
 func TestMemberCollector_Collect(t *testing.T) {
 	ctx := context.Background()
 
@@ -324,32 +293,44 @@ func TestMemberCollector_Collect(t *testing.T) {
 				fetcher := store.NewRecordFetcherMock(t)
 				builder := tree.NewBuilderMock(t)
 
-				// members, records := makeMember()
-
 				pn := insolar.GenesisPulse.PulseNumber + 10
 				balance := "42"
 				memberRef := gen.IDWithPulse(pn)
-				out := makeOutgoingRequest()
+				// Useless records that shouldn't used by collector.
+				uselessOut := makeOutgoingRequest()
+				uselessResult := makeResultWith(uselessOut.ID, &foundation.Result{Returns: []interface{}{nil, nil}})
+
+				// === ROOT ===
+				// Root member.create call (and it's satellite).
 				call, callIncoming := makeMemberCreateCall(pn)
 				callRef := *insolar.NewReference(call.ID)
 				callResult := makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.CreateResponse{
 					Reference: memberRef.String(),
 				}, nil}})
-				// Account
-				newAccount, callNewAccount := makeNewAccountRequest(pn, callRef)
+
+				// === ACCOUNT ===
+				// Account.new call (and it's satellite).
+				newAccount, newAccountIncoming := makeNewAccountRequest(pn, callRef)
 				newAccountRef := *insolar.NewReference(newAccount.ID)
-				accountActivate, activateRequest := makeAccountActivate(pn, balance, newAccountRef)
-				// Wallet
+				accountActivate, accountActivateSideEffect := makeAccountActivate(pn, balance, newAccountRef)
+
+				// === WALLET ===
+				// Wallet.new call (and it's satellite).
 				newWallet, callNewWallet := makeNewWalletRequest(pn, callRef)
 				newWalletRef := *insolar.NewReference(newWallet.ID)
-				walletActivate, activateWallet := makeWalletActivate(pn, newAccountRef, newWalletRef)
-				// Member
+				walletActivate, walletActiveteSideEffect := makeWalletActivate(pn, newAccountRef, newWalletRef)
+
+				// === MEMBER ===
+				// Member.new call (and it's satellite).
 				newMember, callNewMember := makeNewMemberRequest(pn, callRef)
 				newMemberRef := *insolar.NewReference(newMember.ID)
-				memberActivate, activateMember := makeMemberActivate(pn, newWalletRef, newMemberRef)
+				memberActivate, memberActivateSideEffect := makeMemberActivate(pn, newWalletRef, newMemberRef)
+
 				records := []*observer.Record{
-					out,
-					makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+					// Useless.
+					uselessOut,
+					uselessResult,
+					// Call root and children.
 					call,
 					callResult,
 					newAccount,
@@ -358,11 +339,13 @@ func TestMemberCollector_Collect(t *testing.T) {
 					makeResultWith(newWallet.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 					newMember,
 					makeResultWith(newMember.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+					// SideEffects.
 					accountActivate,
 					walletActivate,
 					memberActivate,
 				}
-				member := &observer.Member{
+
+				expectedMember := &observer.Member{
 					MemberRef:        memberRef,
 					Balance:          balance,
 					MigrationAddress: "",
@@ -373,63 +356,39 @@ func TestMemberCollector_Collect(t *testing.T) {
 				}
 
 				expectedContractStruct := tree.Structure{
-					RequestID: insolar.ID{},
-					Request:   *callIncoming,
+					Request: *callIncoming,
 					Outgoings: []tree.Outgoing{
 						// Account
 						{
-							OutgoingRequestID: insolar.ID{},
-							OutgoingRequest:   record.OutgoingRequest{},
 							Structure: &tree.Structure{
 								RequestID: accountActivate.ID,
-								Request:   *callNewAccount,
-								Outgoings: nil,
+								Request:   *newAccountIncoming,
 								SideEffect: &tree.SideEffect{
-									Activation:   activateRequest,
-									Amend:        nil,
-									Deactivation: nil,
+									Activation: accountActivateSideEffect,
 								},
-								Result: record.Result{},
 							},
-							Result: nil,
 						},
 						// Wallet
 						{
-							OutgoingRequestID: insolar.ID{},
-							OutgoingRequest:   record.OutgoingRequest{},
 							Structure: &tree.Structure{
-								RequestID: insolar.ID{},
-								Request:   *callNewWallet,
-								Outgoings: nil,
+								Request: *callNewWallet,
 								SideEffect: &tree.SideEffect{
-									Activation:   activateWallet,
-									Amend:        nil,
-									Deactivation: nil,
+									Activation: walletActiveteSideEffect,
 								},
-								Result: record.Result{},
 							},
-							Result: nil,
 						},
 						// Member
 						{
-							OutgoingRequestID: insolar.ID{},
-							OutgoingRequest:   record.OutgoingRequest{},
+							OutgoingRequest: record.OutgoingRequest{},
 							Structure: &tree.Structure{
-								RequestID: insolar.ID{},
-								Request:   *callNewMember,
-								Outgoings: nil,
+								Request: *callNewMember,
 								SideEffect: &tree.SideEffect{
-									Activation:   activateMember,
-									Amend:        nil,
-									Deactivation: nil,
+									Activation: memberActivateSideEffect,
 								},
-								Result: record.Result{},
 							},
-							Result: nil,
 						},
 					},
-					SideEffect: nil,
-					Result:     *callResult.Virtual.GetResult(),
+					Result: *callResult.Virtual.GetResult(),
 				}
 
 				expectedID := *callResult.Virtual.GetResult().Request.GetLocal()
@@ -443,7 +402,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 
 				builder.BuildMock.Expect(ctx, call.ID).Return(expectedContractStruct, nil)
 
-				return records, fetcher, builder, []*observer.Member{member}
+				return records, fetcher, builder, []*observer.Member{expectedMember}
 			},
 		},
 	}
@@ -468,6 +427,5 @@ func TestMemberCollector_Collect(t *testing.T) {
 			require.Equal(t, expected, actual)
 			mc.Finish()
 		})
-
 	}
 }

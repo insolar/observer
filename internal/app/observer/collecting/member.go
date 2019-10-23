@@ -19,6 +19,7 @@ package collecting
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"runtime/debug"
 
 	"github.com/insolar/insolar/application/builtin/contract/account"
@@ -38,6 +39,10 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
+)
+
+const (
+	MethodNew = "New"
 )
 
 type MemberCollector struct {
@@ -78,42 +83,43 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	}
 
 	result := observer.CastToResult(rec) // TODO: still observer.Result
-	if !result.IsResult() {
-		return nil
-	}
-
-	requestID := *result.Virtual.GetResult().Request.GetLocal()
-
-	// Fetch root request.
-	originRequest, err := c.fetcher.Request(ctx, requestID)
-	if err != nil {
-		if errors.Cause(err) != store.ErrNotFound { // TODO: What type of error here? Should we log it or return nil only?
-			panic("SOMETHING WENT WRONG: can't fetch request for result")
-			return nil
-		}
-	}
-
-	if !isMemberCreateRequest(originRequest) {
-		// TODO
+	if result == nil {
 		return nil
 	}
 
 	if !result.IsSuccess() { // TODO: still observer.Result
-		// TODO
-		return badMember()
+		// TODO: what should we do with bad result records?
+		return nil
+	}
+
+	requestID := result.Request()
+	if requestID.IsEmpty() {
+		panic(fmt.Sprintf("recordID %s: empty requestID from result", rec.ID.String()))
+	}
+
+	// Fetch root request.
+	originRequest, err := c.fetcher.Request(ctx, requestID)
+	if err != nil {
+		if errors.Cause(err) != store.ErrNotFound {
+			panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
+		}
+	}
+
+	if !isMemberCreateRequest(originRequest) {
+		return nil
 	}
 
 	// Build contract tree.
 	memberContractTree, err := c.builder.Build(ctx, originRequest.ID)
 	if err != nil {
-		panic("SOMETHING WENT WRONG: can't build tree")
-		return badMember()
+		panic(errors.Wrapf(
+			err,
+			"recordID %s: failed to build contract tree for member", originRequest.ID.String(),
+		))
 	}
 
-	// callRequest := memberContractTree.Request
 	children := memberContractTree.Outgoings
-	// sideEffect := memberContractTree.SideEffect // TODO: check is empty (because member.create doesn't has side effect)
-	contractResult := memberContractTree.Result // TODO: check equality with result above (maybe)
+	contractResult := memberContractTree.Result
 
 	accountTree, walletTree, memberTree := childTrees(children)
 
@@ -126,7 +132,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	memberRef, err := insolar.NewIDFromString(response.Reference)
 	if err != nil || memberRef == nil {
 		log.Error("invalid member reference")
-		return badMember()
+		panic("invalid member reference")
 	}
 
 	return &observer.Member{
@@ -162,18 +168,6 @@ func childTrees(
 	return accountTree, walletTree, memberTree
 }
 
-func badMember() *observer.Member {
-	return &observer.Member{
-		MemberRef:        gen.ID(), // FIXME: what to do with this? (it's a unique key probably)
-		Balance:          "",
-		MigrationAddress: "",
-		AccountState:     insolar.ID{},
-		Status:           "FAILED",
-		WalletRef:        insolar.ID{},
-		AccountRef:       insolar.ID{},
-	}
-}
-
 func isMemberCreateRequest(materialRequest record.Material) bool {
 	incoming, ok := record.Unwrap(&materialRequest.Virtual).(*record.IncomingRequest)
 	if !ok {
@@ -200,7 +194,7 @@ func successResult(chain interface{}) bool {
 }
 
 func isNewAccount(request record.IncomingRequest) bool {
-	if request.Method != "New" {
+	if request.Method != MethodNew {
 		return false
 	}
 	if request.Prototype == nil {
@@ -210,7 +204,7 @@ func isNewAccount(request record.IncomingRequest) bool {
 }
 
 func isNewWallet(request record.IncomingRequest) bool {
-	if request.Method != "New" {
+	if request.Method != MethodNew {
 		return false
 	}
 	if request.Prototype == nil {
@@ -220,7 +214,7 @@ func isNewWallet(request record.IncomingRequest) bool {
 }
 
 func isNewMember(request record.IncomingRequest) bool {
-	if request.Method != "New" {
+	if request.Method != MethodNew {
 		return false
 	}
 	if request.Prototype == nil {
