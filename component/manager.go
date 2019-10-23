@@ -150,6 +150,10 @@ type beauty struct {
 	depositUpdates map[insolar.ID]*observer.DepositUpdate
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
+
+	txRegister   []observer.TxRegister   // nolint
+	txResult     []observer.TxResult     // nolint
+	txSagaResult []observer.TxSagaResult // nolint
 }
 
 type state struct {
