@@ -17,14 +17,17 @@
 package collecting
 
 import (
-	"reflect"
+	"context"
 	"strings"
 
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
-	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
-	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/application/genesisrefs"
+	"github.com/insolar/insolar/log"
+
+	"github.com/insolar/observer/internal/app/observer/store"
+	"github.com/insolar/observer/internal/app/observer/tree"
+
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
@@ -33,73 +36,28 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 )
 
+const (
+	CallSite = "deposit.migration"
+)
+
 type DepositCollector struct {
-	log       *logrus.Logger
-	results   observer.ResultCollector
-	activates observer.ActivateCollector
-	halfChain observer.ChainCollector
-	chains    observer.ChainCollector
+	log     *logrus.Logger
+	fetcher store.RecordFetcher
+	builder tree.Builder
 }
 
-func NewDepositCollector(log *logrus.Logger) *DepositCollector {
-	results := NewResultCollector(isDepositMigrationCall, successResult)
-	activates := NewActivateCollector(isDepositNew, isDepositActivate)
-	resultRelation := &RelationDesc{
-		Is:     isCoupledResult,
-		Origin: coupledResultOrigin,
-		Proper: isCoupledResult,
-	}
-	activateRelation := &RelationDesc{
-		Is:     isCoupledActivate,
-		Origin: coupledActivateOrigin,
-		Proper: isCoupledActivate,
-	}
-	daemonCall := &RelationDesc{
-		Is: isDaemonMigrationCall,
-		Origin: func(chain interface{}) insolar.ID {
-			request := observer.CastToRequest(chain)
-			return request.ID
-		},
-		Proper: isDaemonMigrationCall,
-	}
-	daemonRelation := &RelationDesc{
-		Is: func(chain interface{}) bool {
-			c, ok := chain.(*observer.Chain)
-			if !ok {
-				return false
-			}
-			return isDaemonMigrationCall(c.Parent)
-		},
-		Origin: func(chain interface{}) insolar.ID {
-			c, ok := chain.(*observer.Chain)
-			if !ok {
-				return insolar.ID{}
-			}
-			request := observer.CastToRequest(c.Parent)
-			return request.Reason()
-		},
-		Proper: func(chain interface{}) bool {
-			c, ok := chain.(*observer.Chain)
-			if !ok {
-				return false
-			}
-			return isDaemonMigrationCall(c.Parent)
-		},
-	}
+func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *DepositCollector {
 	return &DepositCollector{
-		log:       log,
-		results:   results,
-		activates: activates,
-		halfChain: NewChainCollector(daemonCall, activateRelation),
-		chains:    NewChainCollector(resultRelation, daemonRelation),
+		log:     log,
+		fetcher: fetcher,
+		builder: tree.NewBuilder(fetcher),
 	}
 }
 
-func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
+func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Deposit {
 	if rec == nil {
 		return nil
 	}
-	log := c.log
 
 	// genesis admin deposit record
 	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isDepositActivate(rec) {
@@ -122,85 +80,82 @@ func (c *DepositCollector) Collect(rec *observer.Record) *observer.Deposit {
 		}
 	}
 
-	res := c.results.Collect(rec)
-	act := c.activates.Collect(rec)
-	half := c.halfChain.Collect(rec)
-
-	if act != nil {
-		half = c.halfChain.Collect(act)
-	}
-
-	var chain *observer.Chain
-	if res != nil {
-		chain = c.chains.Collect(res)
-	}
-
-	if half != nil {
-		chain = c.chains.Collect(half)
-	}
-
-	if chain == nil {
+	res := observer.CastToResult(rec)
+	if !res.IsResult() || !res.IsSuccess() {
 		return nil
 	}
 
-	coupleAct, coupleRes := c.unwrapDepositChain(chain)
-
-	d, err := c.build(coupleAct, coupleRes)
+	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build member"))
+		if errors.Cause(err) == store.ErrNotFound {
+			c.log.Error(errors.Wrap(err, "result without request"))
+			return nil
+		}
+		panic(errors.Wrap(err, "failed to fetch request"))
+	}
+
+	_, ok := c.isDepositCall(&req)
+	if !ok {
+		return nil
+	}
+
+	callTree, err := c.builder.Build(ctx, req.ID)
+	if err != nil {
+		if errors.Cause(err) == store.ErrNotFound {
+			c.log.Error(errors.Wrap(err, "couldn't build tree"))
+			return nil
+		}
+		panic(errors.Wrap(err, "failed to build tree"))
+	}
+
+	var (
+		activate   *record.Activate
+		activateID insolar.ID
+	)
+	for _, o := range callTree.Outgoings {
+		subTree := o.Structure
+		if subTree == nil {
+			log.Debug("outgoing has no sub-tree (saga), skipping")
+			continue
+		}
+		effect := o.Structure.SideEffect
+		if effect == nil {
+			log.Debug("called request is has no side effect, skipping")
+			continue
+		}
+		if effect.Activation == nil {
+			log.Debug("called request is not activation, skipping")
+			continue
+		}
+		if effect.Activation.Image.Equal(*migrationdaemon.PrototypeReference) {
+			activate = effect.Activation
+			activateID = effect.ID
+		}
+	}
+
+	if activate == nil {
+		c.log.Warn("failed to find activation")
+		return nil
+	}
+
+	d, err := c.build(activateID, activate, res)
+	if err != nil {
+		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
 	}
 	return d
 }
 
-func isDepositMigrationCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
+func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
 
-	if !request.IsMemberCall() {
-		return false
+	request := observer.CastToRequest((*observer.Record)(rec))
+
+	if !request.IsIncoming() || !request.IsMemberCall() {
+		return nil, false
 	}
 
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "deposit.migration"
-}
-
-func isDaemonMigrationCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "DepositMigrationCall" {
-		return false
-	}
-
-	if in.Prototype == nil {
-		return false
-	}
-
-	return in.Prototype.Equal(*proxyDaemon.PrototypeReference)
-}
-
-func isDepositNew(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "New" {
-		return false
-	}
-
-	if in.Prototype == nil {
-		return false
-	}
-
-	return in.Prototype.Equal(*proxyDeposit.PrototypeReference)
+	return request, args.Params.CallSite == CallSite
 }
 
 func isDepositActivate(chain interface{}) bool {
@@ -209,20 +164,19 @@ func isDepositActivate(chain interface{}) bool {
 		return false
 	}
 	act := activate.Virtual.GetActivate()
-	return act.Image.Equal(*proxyDeposit.PrototypeReference)
+	return act.Image.Equal(*migrationdaemon.PrototypeReference)
 }
 
-func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (*observer.Deposit, error) {
+func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
 	callResult := &migrationdaemon.DepositMigrationResult{}
 	res.ParseFirstPayloadValue(callResult)
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-	activate := act.Virtual.GetActivate()
 	state := c.initialDepositState(activate)
-	transferDate, err := act.ID.Pulse().AsApproximateTime()
+	transferDate, err := id.Pulse().AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", act.ID.Pulse())
+		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
 	}
 
 	memberRef, err := insolar.NewIDFromString(callResult.Reference)
@@ -230,54 +184,23 @@ func (c *DepositCollector) build(act *observer.Activate, res *observer.Result) (
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
-	depositRef := act.Request()
-
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             depositRef,
+		Ref:             *activate.Request.GetLocal(),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: 0,
 		Amount:          state.Amount,
 		Balance:         state.Balance,
-		DepositState:    act.ID,
+		DepositState:    id,
 	}, nil
 }
 
 func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.Deposit {
-	log := c.log
 	d := deposit.Deposit{}
 	err := insolar.Deserialize(act.Memory, &d)
 	if err != nil {
-		log.Error(errors.New("failed to deserialize deposit contract state"))
+		c.log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
-}
-
-func (c *DepositCollector) unwrapDepositChain(chain *observer.Chain) (*observer.Activate, *observer.Result) {
-	log := c.log
-
-	half := chain.Child.(*observer.Chain)
-	coupledAct, ok := half.Child.(*observer.CoupledActivate)
-	if !ok {
-		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Child)))
-		return nil, nil
-	}
-	if coupledAct.Activate == nil {
-		log.Error(errors.New("invalid coupled activate chain, child is nil"))
-		return nil, nil
-	}
-	actRecord := coupledAct.Activate
-
-	coupledRes, ok := chain.Parent.(*observer.CoupledResult)
-	if !ok {
-		log.Error(errors.Errorf("trying to use %s as *observer.Chain", reflect.TypeOf(chain.Parent)))
-		return nil, nil
-	}
-	if coupledRes.Result == nil {
-		log.Error(errors.New("invalid coupled result chain, child is nil"))
-		return nil, nil
-	}
-	resRecord := coupledRes.Result
-	return actRecord, resRecord
 }

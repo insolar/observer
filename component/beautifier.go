@@ -55,7 +55,7 @@ func makeBeautifier(
 	transfers := collecting.NewTransferCollector(cachedStore)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)
-	deposits := collecting.NewDepositCollector(log)
+	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
 	balances := collecting.NewBalanceCollector(log)
@@ -68,14 +68,14 @@ func makeBeautifier(
 		}
 
 		b := &beauty{
-			pulse:     r.pulse,
-			records:   r.batch,
-			members:   make(map[insolar.ID]*observer.Member),
-			deposits:  make(map[insolar.ID]*observer.Deposit),
-			addresses: make(map[string]*observer.MigrationAddress),
-			balances:  make(map[insolar.ID]*observer.Balance),
-			updates:   make(map[insolar.ID]*observer.DepositUpdate),
-			wastings:  make(map[string]*observer.Wasting),
+			pulse:          r.pulse,
+			records:        r.batch,
+			members:        make(map[insolar.ID]*observer.Member),
+			deposits:       make(map[insolar.ID]*observer.Deposit),
+			addresses:      make(map[string]*observer.MigrationAddress),
+			balances:       make(map[insolar.ID]*observer.Balance),
+			depositUpdates: make(map[insolar.ID]*observer.DepositUpdate),
+			wastings:       make(map[string]*observer.Wasting),
 		}
 
 		for _, rec := range r.batch {
@@ -115,7 +115,7 @@ func makeBeautifier(
 				b.transfers = append(b.transfers, toDeposit)
 			}
 
-			deposit := deposits.Collect(rec)
+			deposit := deposits.Collect(ctx, rec)
 			if deposit != nil {
 				b.deposits[deposit.DepositState] = deposit
 			}
@@ -133,7 +133,7 @@ func makeBeautifier(
 
 			update := depositUpdates.Collect(rec)
 			if update != nil {
-				b.updates[update.ID] = update
+				b.depositUpdates[update.ID] = update
 			}
 
 			wasting := wastings.Collect(ctx, rec)
@@ -152,9 +152,9 @@ func makeBeautifier(
 
 		log.WithFields(logrus.Fields{
 			"balances":                  len(b.balances),
-			"deposit_updates":           len(b.updates),
+			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.wastings),
-		}).Infof("collected updates")
+		}).Infof("collected depositUpdates")
 
 		metric.Transfers.Add(float64(len(b.transfers)))
 		metric.Members.Add(float64(len(b.members)))
@@ -162,7 +162,7 @@ func makeBeautifier(
 		metric.Addresses.Add(float64(len(b.addresses)))
 
 		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
+		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Wastings.Add(float64(len(b.wastings)))
 
 		return b

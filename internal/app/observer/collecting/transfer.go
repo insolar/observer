@@ -78,34 +78,39 @@ func (c *TransferCollector) Collect(ctx context.Context, rec *observer.Record) *
 
 	transfer, err := c.build((*observer.Request)(&request), result)
 	if err != nil {
-		panic(errors.Wrapf(err, "recordID %s: failed to build transfer", rec.ID.String()))
+		return nil
 	}
 	return transfer
 }
 
 func (c *TransferCollector) build(request *observer.Request, result *observer.Result) (*observer.ExtendedTransfer, error) {
 	callArguments := request.ParseMemberCallArguments()
-	pn := request.ID.Pulse()
-	callParams := &TransferCallParams{}
-	request.ParseMemberContractCallParams(callParams)
-	resultValue := &member.TransferResponse{Fee: "0"}
-	result.ParseFirstPayloadValue(resultValue)
 	memberFrom, err := insolar.NewIDFromString(callArguments.Params.Reference)
 	if err != nil {
-		return nil, errors.New("invalid fromMemberReference")
+		return nil, errors.Wrap(err,"invalid fromMemberReference")
 	}
+
+	callParams := &TransferCallParams{}
+	request.ParseMemberContractCallParams(callParams)
+
 	memberTo := memberFrom
 	if callArguments.Params.CallSite == TransferMethod {
 		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
-			return nil, errors.New("invalid toMemberReference")
+			return nil, errors.Wrap(err, "invalid toMemberReference")
 		}
 	}
 
+	pn := request.ID.Pulse()
+
+	resultValue := &member.TransferResponse{Fee: "0"}
+	result.ParseFirstPayloadValue(resultValue)
+
 	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert transfer pulse to time")
+		return nil, errors.Wrap(err, "failed to convert transfer pulse to time")
 	}
+
 	return &observer.ExtendedTransfer{
 		DepositTransfer: observer.DepositTransfer{
 			Transfer: observer.Transfer{

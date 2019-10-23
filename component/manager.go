@@ -139,13 +139,13 @@ type beauty struct {
 	amends      []*observer.Amend
 	deactivates []*observer.Deactivate
 
-	transfers []*observer.ExtendedTransfer
-	members   map[insolar.ID]*observer.Member
-	balances  map[insolar.ID]*observer.Balance
-	deposits  map[insolar.ID]*observer.Deposit
-	updates   map[insolar.ID]*observer.DepositUpdate
-	addresses map[string]*observer.MigrationAddress
-	wastings  map[string]*observer.Wasting
+	transfers      []*observer.ExtendedTransfer
+	members        map[insolar.ID]*observer.Member
+	balances       map[insolar.ID]*observer.Balance
+	deposits       map[insolar.ID]*observer.Deposit
+	depositUpdates map[insolar.ID]*observer.DepositUpdate
+	addresses      map[string]*observer.MigrationAddress
+	wastings       map[string]*observer.Wasting
 }
 
 type state struct {
