@@ -75,11 +75,11 @@ func NewMGRCollector(log *logrus.Logger) *MGRCollector {
 type MerryGoRound struct {
 	foundation.BaseContract
 	GroupReference   insolar.Reference
-	StartRoundDate   uint32              // unix timestamp
-	FinishRoundDate  uint32              // unix timestamp
+	StartRoundDate   int64               // unix timestamp
+	FinishRoundDate  int64               // unix timestamp
 	AmountDue        string              // amount of money
 	PaymentFrequency string              // daily, weekly, monthly
-	NextPaymentTime  uint32              // unix timestamp, need to be calculated
+	NextPaymentTime  int64               // unix timestamp, need to be calculated
 	Sequence         []insolar.Reference // array of users refs, [0] element is first in queue
 	SwapProcess      Swap                // Swap started and finished processes
 }
@@ -146,11 +146,11 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 	return &observer.MGR{
 		Ref:              *insolar.NewReference(act.ObjectID),
 		GroupReference:   mgr.GroupReference,
-		StartRoundDate:   int64(mgr.StartRoundDate),
-		FinishRoundDate:  int64(mgr.FinishRoundDate),
+		StartRoundDate:   mgr.StartRoundDate,
+		FinishRoundDate:  mgr.FinishRoundDate,
 		AmountDue:        mgr.AmountDue,
 		PaymentFrequency: mgr.PaymentFrequency,
-		NextPaymentTime:  int64(mgr.NextPaymentTime),
+		NextPaymentTime:  mgr.NextPaymentTime,
 		Sequence:         mgr.Sequence,
 		Status:           "SUCCESS",
 		State:            act.ID.Bytes(),
@@ -180,7 +180,6 @@ func isMGRActivate(chain interface{}) bool {
 
 	// TODO: import from platform
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
-	logrus.Info("isMGRActivate = ", act.Image.Equal(*prototypeRef))
 	return act.Image.Equal(*prototypeRef)
 }
 
@@ -201,7 +200,6 @@ func isMGRNew(chain interface{}) bool {
 
 	// TODO: import from platform
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
-	logrus.Info("isMGRNew = ", in.Prototype.Equal(*prototypeRef))
 	return in.Prototype.Equal(*prototypeRef)
 }
 
