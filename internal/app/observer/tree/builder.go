@@ -22,7 +22,6 @@ type Outgoing struct {
 type SideEffect struct {
 	ID insolar.ID
 	// one is not nil
-	ID           insolar.ID
 	Activation   *record.Activate
 	Amend        *record.Amend
 	Deactivation *record.Deactivate

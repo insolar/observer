@@ -51,7 +51,7 @@ func makeBeautifier(
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
-	members := collecting.NewMemberCollector(cachedStore, treeBuilder)
+	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
 	transfers := collecting.NewTransferCollector(cachedStore)
 	extendedTransfers := collecting.NewExtendedTransferCollector(log, cachedStore, treeBuilder)
 	toDepositTransfers := collecting.NewToDepositTransferCollector(log)

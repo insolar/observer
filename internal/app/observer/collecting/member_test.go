@@ -33,6 +33,7 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -392,13 +393,23 @@ func TestMemberCollector_Collect(t *testing.T) {
 					Result: *callResult.Virtual.GetResult(),
 				}
 
-				expectedID := *callResult.Virtual.GetResult().Request.GetLocal()
-
 				fetcher.RequestMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
-					if reqID != expectedID {
-						return record.Material{}, store.ErrNotFound
+					switch reqID {
+					// Just a stub.
+					case uselessOut.ID:
+						return record.Material(*uselessOut), nil
+					case newAccount.ID:
+						return record.Material(*newAccount), nil
+					case newWallet.ID:
+						return record.Material(*newWallet), nil
+					case newMember.ID:
+						return record.Material(*newMember), nil
+					// Right ID
+					case call.ID:
+						return record.Material(*call), nil
+					default:
+						panic("unexpected ID")
 					}
-					return record.Material(*call), nil
 				})
 
 				builder.BuildMock.Expect(ctx, call.ID).Return(expectedContractStruct, nil)
@@ -412,10 +423,11 @@ func TestMemberCollector_Collect(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
 			mc := minimock.NewController(t)
+			log := logrus.New()
 
 			records, fetcher, builder, expected := test.mocks(mc)
 
-			collector := NewMemberCollector(fetcher, builder)
+			collector := NewMemberCollector(log, fetcher, builder)
 
 			actual := make([]*observer.Member, 0)
 			for _, rec := range records {

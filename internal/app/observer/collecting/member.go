@@ -34,7 +34,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -46,15 +46,19 @@ const (
 )
 
 type MemberCollector struct {
+	log *logrus.Logger
+
 	fetcher store.RecordFetcher
 	builder tree.Builder
 }
 
 func NewMemberCollector(
+	log *logrus.Logger,
 	fetcher store.RecordFetcher,
 	builder tree.Builder,
 ) *MemberCollector {
 	return &MemberCollector{
+		log:     log,
 		fetcher: fetcher,
 		builder: builder,
 	}
@@ -65,12 +69,12 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		return nil
 	}
 
-	// TODO: check - Are we really need int?
+	// Some magic with records from genesis pulse.
 	act := observer.CastToActivate(rec)
 	if act.IsActivate() {
 		if act.Virtual.GetActivate().Image.Equal(*proxyAccount.PrototypeReference) {
 			if act.ID.Pulse() == insolar.GenesisPulse.PulseNumber {
-				balance := accountBalance(record.Unwrap(&act.Virtual).(*record.Activate))
+				balance := c.accountBalance(act.Virtual.GetActivate())
 				return &observer.Member{
 					MemberRef:    gen.ID(),
 					Balance:      balance,
@@ -100,12 +104,10 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	// Fetch root request.
 	originRequest, err := c.fetcher.Request(ctx, requestID)
 	if err != nil {
-		if errors.Cause(err) != store.ErrNotFound {
-			panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
-		}
+		panic(errors.Wrapf(err, "recordID %s: failed to fetch request", rec.ID.String()))
 	}
 
-	if !isMemberCreateRequest(originRequest) {
+	if !c.isMemberCreateRequest(originRequest) {
 		return nil
 	}
 
@@ -123,15 +125,14 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 
 	accountTree, walletTree, memberTree := childTrees(children)
 
-	balance := accountBalance(accountTree.SideEffect.Activation)
-	walletRef := walletRef(memberTree.SideEffect.Activation)
-	accountRef := accountRef(walletTree.SideEffect.Activation)
+	balance := c.accountBalance(accountTree.SideEffect.Activation)
+	walletRef := c.walletRef(memberTree.SideEffect.Activation)
+	accountRef := c.accountRef(walletTree.SideEffect.Activation)
 
-	response := createResponse(contractResult)
+	response := c.createResponse(contractResult)
 
 	memberRef, err := insolar.NewIDFromString(response.Reference)
 	if err != nil || memberRef == nil {
-		log.Error("invalid member reference")
 		panic("invalid member reference")
 	}
 
@@ -146,31 +147,9 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 	}
 }
 
-func childTrees(
-	children []tree.Outgoing,
-) (
-	accountTree *tree.Structure,
-	walletTree *tree.Structure,
-	memberTree *tree.Structure,
-) {
-	for _, child := range children {
-		if isNewAccount(child.Structure.Request) {
-			accountTree = child.Structure
-		}
-		if isNewWallet(child.Structure.Request) {
-			walletTree = child.Structure
-		}
-		if isNewMember(child.Structure.Request) {
-			memberTree = child.Structure
-		}
-	}
-
-	return accountTree, walletTree, memberTree
-}
-
-func isMemberCreateRequest(materialRequest record.Material) bool {
-	incoming, ok := record.Unwrap(&materialRequest.Virtual).(*record.IncomingRequest)
-	if !ok {
+func (c *MemberCollector) isMemberCreateRequest(materialRequest record.Material) bool {
+	incoming := materialRequest.Virtual.GetIncomingRequest()
+	if incoming == nil {
 		return false
 	}
 
@@ -180,7 +159,7 @@ func isMemberCreateRequest(materialRequest record.Material) bool {
 
 	args := incoming.Arguments
 
-	reqParams := ParseMemberCallArguments(args)
+	reqParams := c.ParseMemberCallArguments(args)
 	switch reqParams.Params.CallSite {
 	case "member.create", "member.migrationCreate":
 		return true
@@ -188,9 +167,158 @@ func isMemberCreateRequest(materialRequest record.Material) bool {
 	return false
 }
 
-func successResult(chain interface{}) bool {
-	result := observer.CastToResult(chain)
-	return result.IsSuccess()
+func (c *MemberCollector) createResponse(result record.Result) member.MigrationCreateResponse {
+	response := &member.MigrationCreateResponse{}
+
+	c.ParseFirstValueResult(&result, response)
+
+	return *response
+}
+
+func (c *MemberCollector) accountBalance(act *record.Activate) string {
+	memory := act.Memory
+	balance := ""
+
+	if memory == nil {
+		c.log.Warn(errors.New("account memory is nil"))
+		return "0"
+	}
+
+	acc := account.Account{}
+	if err := insolar.Deserialize(memory, &acc); err != nil {
+		c.log.Error(errors.New("failed to deserialize account memory"))
+	} else {
+		balance = acc.Balance
+	}
+	return balance
+}
+
+func (c *MemberCollector) accountRef(act *record.Activate) insolar.Reference {
+	memory := act.Memory
+
+	if memory == nil {
+		c.log.Warn(errors.New("wallet memory is nil"))
+		return insolar.Reference{}
+	}
+
+	wlt := wallet.Wallet{}
+	if err := insolar.Deserialize(memory, &wlt); err != nil {
+		c.log.Error(errors.New("failed to deserialize wallet memory"))
+		return insolar.Reference{}
+	}
+
+	walletRef, err := insolar.NewReferenceFromString(wlt.Accounts["XNS"])
+	if err != nil {
+		panic("SOMETHING WENT WRONG: can't create reference from string")
+	}
+
+	return *walletRef
+}
+
+func (c *MemberCollector) walletRef(act *record.Activate) insolar.Reference {
+	memory := act.Memory
+
+	if memory == nil {
+		c.log.Warn(errors.New("failed to deserialize member memory"))
+		return insolar.Reference{}
+	}
+
+	mbr := member.Member{}
+	if err := insolar.Deserialize(memory, &mbr); err != nil {
+		c.log.Error(errors.New("failed to deserialize member memory")) // TODO
+		return insolar.Reference{}
+	}
+
+	return mbr.Wallet
+}
+
+func (c *MemberCollector) ParseResultPayload(res *record.Result) (foundation.Result, error) {
+	var firstValue interface{}
+	var contractErr *foundation.Error
+	requestErr, err := foundation.UnmarshalMethodResult(res.Payload, &firstValue, &contractErr)
+
+	if err != nil {
+		return foundation.Result{}, errors.Wrap(err, "failed to unmarshal result payload")
+	}
+
+	result := foundation.Result{
+		Error:   requestErr,
+		Returns: []interface{}{firstValue, contractErr},
+	}
+	return result, nil
+}
+
+func (c *MemberCollector) ParseFirstValueResult(res *record.Result, v interface{}) {
+	result, err := c.ParseResultPayload(res)
+	if err != nil {
+		return
+	}
+	returns := result.Returns
+	data, err := json.Marshal(returns[0])
+	if err != nil {
+		c.log.Warn("failed to marshal Payload.Returns[0]")
+		debug.PrintStack()
+	}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		c.log.Warnf("failed to unmarshal Payload.Returns[0]: %v", string(data))
+		debug.PrintStack()
+	}
+}
+
+func (c *MemberCollector) ParseMemberCallArguments(rawArguments []byte) member.Request {
+	var args []interface{}
+
+	err := insolar.Deserialize(rawArguments, &args)
+	if err != nil {
+		c.log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		return member.Request{}
+	}
+
+	request := member.Request{}
+	if len(args) > 0 {
+		if rawRequest, ok := args[0].([]byte); ok {
+			var (
+				pulseTimeStamp int64
+				signature      string
+				raw            []byte
+			)
+			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			if err != nil {
+				c.log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				return member.Request{}
+			}
+			err = json.Unmarshal(raw, &request)
+			if err != nil {
+				c.log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				return member.Request{}
+			}
+		}
+	}
+	return request
+}
+
+func childTrees(
+	children []tree.Outgoing,
+) (
+	accountTree *tree.Structure,
+	walletTree *tree.Structure,
+	memberTree *tree.Structure,
+) {
+	for _, child := range children {
+		request := child.Structure.Request
+
+		switch {
+		case isNewAccount(request):
+			accountTree = child.Structure
+		case isNewWallet(request):
+			walletTree = child.Structure
+		case isNewMember(request):
+			memberTree = child.Structure
+		}
+	}
+
+	return accountTree, walletTree, memberTree
 }
 
 func isNewAccount(request record.IncomingRequest) bool {
@@ -221,135 +349,4 @@ func isNewMember(request record.IncomingRequest) bool {
 		return false
 	}
 	return request.Prototype.Equal(*proxyMember.PrototypeReference)
-}
-
-func createResponse(result record.Result) member.MigrationCreateResponse {
-	response := &member.MigrationCreateResponse{}
-
-	ParseFirstValueResult(&result, response)
-
-	return *response
-}
-
-func accountBalance(act *record.Activate) string {
-	memory := act.Memory
-	balance := ""
-
-	if memory == nil {
-		log.Warn(errors.New("account memory is nil"))
-		return "0"
-	}
-
-	acc := account.Account{}
-	if err := insolar.Deserialize(memory, &acc); err != nil {
-		log.Error(errors.New("failed to deserialize account memory"))
-	} else {
-		balance = acc.Balance
-	}
-	return balance
-}
-
-func accountRef(act *record.Activate) insolar.Reference {
-	memory := act.Memory
-
-	if memory == nil {
-		log.Warn(errors.New("wallet memory is nil"))
-		return insolar.Reference{}
-	}
-
-	wlt := wallet.Wallet{}
-	if err := insolar.Deserialize(memory, &wlt); err != nil {
-		log.Error(errors.New("failed to deserialize wallet memory"))
-		return insolar.Reference{}
-	}
-
-	walletRef, err := insolar.NewReferenceFromString(wlt.Accounts["XNS"])
-	if err != nil {
-		panic("SOMETHING WENT WRONG: can't create reference from string")
-	}
-
-	return *walletRef
-}
-
-func walletRef(act *record.Activate) insolar.Reference {
-	memory := act.Memory
-
-	if memory == nil {
-		log.Warn(errors.New("failed to deserialize member memory"))
-		return insolar.Reference{}
-	}
-
-	mbr := member.Member{}
-	if err := insolar.Deserialize(memory, &mbr); err != nil {
-		log.Error(errors.New("failed to deserialize member memory")) // TODO
-		return insolar.Reference{}
-	}
-
-	return mbr.Wallet
-}
-
-func ParseResultPayload(res *record.Result) (foundation.Result, error) {
-	var firstValue interface{}
-	var contractErr *foundation.Error
-	requestErr, err := foundation.UnmarshalMethodResult(res.Payload, &firstValue, &contractErr)
-
-	if err != nil {
-		return foundation.Result{}, errors.Wrap(err, "failed to unmarshal result payload")
-	}
-
-	result := foundation.Result{
-		Error:   requestErr,
-		Returns: []interface{}{firstValue, contractErr},
-	}
-	return result, nil
-}
-
-func ParseFirstValueResult(res *record.Result, v interface{}) {
-	result, err := ParseResultPayload(res)
-	if err != nil {
-		return
-	}
-	returns := result.Returns
-	data, err := json.Marshal(returns[0])
-	if err != nil {
-		log.Warn("failed to marshal Payload.Returns[0]")
-		debug.PrintStack()
-	}
-	err = json.Unmarshal(data, v)
-	if err != nil {
-		log.WithField("json", string(data)).Warn("failed to unmarshal Payload.Returns[0]")
-		debug.PrintStack()
-	}
-}
-
-func ParseMemberCallArguments(rawArguments []byte) member.Request {
-	var args []interface{}
-
-	err := insolar.Deserialize(rawArguments, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}
-			}
-		}
-	}
-	return request
 }
