@@ -71,14 +71,13 @@ func (r *Result) ParsePayload() (foundation.Result, error) {
 	}
 	payload := r.Virtual.GetResult().Payload
 	if payload == nil {
-		log.Warn("trying to parse nil Result.Payload")
 		return foundation.Result{}, nil
 	}
 
 	return ExtractFoundationResult(payload)
 }
 
-func ExtractFoundationResult (payload []byte) (foundation.Result, error) {
+func ExtractFoundationResult(payload []byte) (foundation.Result, error) {
 	if payload == nil {
 		log.Warn("trying to parse nil Result.Payload")
 		return foundation.Result{}, nil
