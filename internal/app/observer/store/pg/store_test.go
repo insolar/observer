@@ -131,6 +131,33 @@ func TestStore_RequestBadRecord(t *testing.T) {
 	require.Error(t, store.SetRequest(ctx, *request))
 }
 
+func TestStore_DuplicateRequest(t *testing.T) {
+	request := makeRequestWith("some", gen.RecordReference(), nil)
+	store := NewPgStore(db)
+	ctx := context.Background()
+	require.NoError(t, store.SetRequest(ctx, *request))
+
+	require.NoError(t, store.SetRequest(ctx, *request))
+}
+
+func TestStore_DuplicateResult(t *testing.T) {
+	result := makeResultWith(gen.ID(), gen.RecordReference(), nil)
+	store := NewPgStore(db)
+	ctx := context.Background()
+	require.NoError(t, store.SetResult(ctx, *result))
+
+	require.NoError(t, store.SetResult(ctx, *result))
+}
+
+func TestStore_DuplicateSideEffect(t *testing.T) {
+	sideEffect := makeSideEffectWith(gen.RecordReference(), nil)
+	store := NewPgStore(db)
+	ctx := context.Background()
+	require.NoError(t, store.SetSideEffect(ctx, *sideEffect))
+
+	require.NoError(t, store.SetSideEffect(ctx, *sideEffect))
+}
+
 func TestStore_RequestNotFound(t *testing.T) {
 	pgStore := NewPgStore(db)
 	queryReq, err := pgStore.Request(context.Background(), gen.ID())

@@ -142,7 +142,8 @@ func (s *Store) SetResult(ctx context.Context, resultRecord record.Material) err
 		return errors.Wrap(err, "failed to marshal result")
 	}
 
-	_, err = s.db.ExecContext(ctx, `insert into raw_results (request_id, result_body) values (?, ?)`,
+	_, err = s.db.ExecContext(ctx, `insert into raw_results (request_id, result_body) values (?, ?)
+                                           ON CONFLICT DO NOTHING`,
 		id.String(), body)
 
 	return errors.Wrap(err, "failed to insert result")
@@ -165,7 +166,8 @@ func (s *Store) SetSideEffect(ctx context.Context, sideEffectRecord record.Mater
 		return errors.Wrap(err, "failed to marshal side effect")
 	}
 
-	_, err = s.db.ExecContext(ctx, `insert into raw_side_effects (request_id, side_effect_body) values (?, ?)`,
+	_, err = s.db.ExecContext(ctx, `insert into raw_side_effects (request_id, side_effect_body) values (?, ?)
+                                           ON CONFLICT DO NOTHING`,
 		id.String(), body)
 
 	return errors.Wrap(err, "failed to insert result")
@@ -182,7 +184,8 @@ func (s *Store) SetRequest(ctx context.Context, requestRecord record.Material) e
 		return errors.Wrap(err, "failed to marshal request")
 	}
 
-	_, err = s.db.ExecContext(ctx, `insert into raw_requests (request_id, reason_id, request_body) values (?, ?, ?)`,
+	_, err = s.db.ExecContext(ctx, `insert into raw_requests (request_id, reason_id, request_body) values (?, ?, ?)
+                                           ON CONFLICT DO NOTHING`,
 		id.String(), reason.String(), body)
 
 	return errors.Wrap(err, "failed to insert request")
