@@ -17,6 +17,8 @@
 package observer
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/insolar"
 )
 
@@ -34,6 +36,6 @@ type PulseStorage interface {
 
 //go:generate minimock -i github.com/insolar/observer/internal/app/observer.PulseFetcher -o ./ -s _mock.go -g
 type PulseFetcher interface {
-	Fetch(insolar.PulseNumber) (*Pulse, error)
-	FetchCurrent() (insolar.PulseNumber, error)
+	Fetch(context.Context, insolar.PulseNumber) (*Pulse, error)
+	FetchCurrent(ctx context.Context) (insolar.PulseNumber, error)
 }

@@ -18,7 +18,6 @@ package grpc
 
 import (
 	"context"
-	"io"
 
 	"github.com/sirupsen/logrus"
 
@@ -50,8 +49,7 @@ func NewPulseFetcher(
 	}
 }
 
-func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) {
-	ctx := context.Background()
+func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*observer.Pulse, error) {
 	client := f.client
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
 	f.log.Debugf("Fetching %d pulses from %s", request.Count, last)
@@ -69,12 +67,9 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 		}
 
 		resp, err = stream.Recv()
-		if err != nil && err != io.EOF {
+		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
-		}
-		if err != nil {
-			f.log.Error("stream err ", err.Error())
 		}
 
 		return err
@@ -94,8 +89,7 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 	return model, nil
 }
 
-func (f *PulseFetcher) FetchCurrent() (insolar.PulseNumber, error) {
-	ctx := context.Background()
+func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, error) {
 	client := f.client
 	request := &exporter.GetTopSyncPulse{}
 	tsp := &exporter.TopSyncPulseResponse{}

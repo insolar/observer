@@ -29,7 +29,7 @@ func NewSeparatorFilter() *SeparatorFilter {
 }
 
 func (*SeparatorFilter) Filter(
-	records []*observer.Record,
+	records map[uint32]*observer.Record,
 ) (
 	requests []*observer.Request,
 	results []*observer.Result,

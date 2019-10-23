@@ -37,7 +37,7 @@ type Manager struct {
 	cfg      *configuration.Configuration
 	log      logrus.Logger
 	init     func() *state
-	fetch    func(*state) *raw
+	fetch    func(context.Context, *state) *raw
 	beautify func(context.Context, *raw) *beauty
 	filter   func(*beauty) *beauty
 	store    func(*beauty, *state) *observer.Statistic
@@ -99,7 +99,7 @@ func (m *Manager) needStop() bool {
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
 	ctx := context.Background()
-	raw := m.fetch(s)
+	raw := m.fetch(ctx, s)
 	beauty := m.beautify(ctx, raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
@@ -130,14 +130,14 @@ func (m *Manager) run(s *state) {
 
 type raw struct {
 	pulse             *observer.Pulse
-	batch             []*observer.Record
+	batch             map[uint32]*observer.Record
 	shouldIterateFrom insolar.PulseNumber
 	currentHeavyPN    insolar.PulseNumber
 }
 
 type beauty struct {
 	pulse       *observer.Pulse
-	records     []*observer.Record
+	records     map[uint32]*observer.Record
 	requests    []*observer.Request
 	results     []*observer.Result
 	activates   []*observer.Activate

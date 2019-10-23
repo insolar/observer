@@ -17,6 +17,8 @@
 package component
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -28,14 +30,14 @@ func makeFetcher(
 	obs *observability.Observability,
 	pulses observer.PulseFetcher,
 	records observer.RecordFetcher,
-) func(*state) *raw {
+) func(context.Context, *state) *raw {
 	log := obs.Log()
 	lastPulseMetric, recordCounterMetric := fetchingMetrics(obs)
 
-	return func(s *state) *raw {
+	return func(ctx context.Context, s *state) *raw {
 		// Get next pulse
 		// todo: get batch of empty pulses, if shouldIterateFrom set
-		pulse, err := pulses.Fetch(s.last)
+		pulse, err := pulses.Fetch(ctx, s.last)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
 			return nil
@@ -52,7 +54,7 @@ func makeFetcher(
 		}
 
 		// Get records
-		batch, shouldIterateFrom, err := records.Fetch(pulse.Number)
+		batch, shouldIterateFrom, err := records.Fetch(ctx, pulse.Number)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch records by pulse"))
 			return nil
@@ -62,7 +64,7 @@ func makeFetcher(
 			Infof("fetched records")
 
 		// Get current heavy pulse
-		currentFinalisedPulse, err := pulses.FetchCurrent()
+		currentFinalisedPulse, err := pulses.FetchCurrent(ctx)
 		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom, currentHeavyPN: currentFinalisedPulse}
 	}
 }

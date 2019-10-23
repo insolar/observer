@@ -17,6 +17,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -33,6 +34,7 @@ import (
 
 func Test_makeFetcher(t *testing.T) {
 	mc := minimock.NewController(t)
+	ctx := context.Background()
 	var cfg *configuration.Configuration
 	var obs *observability.Observability
 	var pulseFetcher *observer.PulseFetcherMock
@@ -50,14 +52,14 @@ func Test_makeFetcher(t *testing.T) {
 		defer mc.Finish()
 
 		pn := gen.PulseNumber()
-		pulseFetcher.FetchMock.Inspect(func(p1 insolar.PulseNumber) {
+		pulseFetcher.FetchMock.Inspect(func(ctx context.Context, p1 insolar.PulseNumber) {
 			assert.Equal(t, pn-10, p1)
 		}).Return(&observer.Pulse{
 			Number: pn,
 		}, nil)
 
-		rec := []*observer.Record{
-			{
+		rec := map[uint32]*observer.Record{
+			0: {
 				Polymorph: 0,
 				Virtual:   record.Virtual{},
 				ID:        insolar.ID{},
@@ -66,7 +68,7 @@ func Test_makeFetcher(t *testing.T) {
 				Signature: nil,
 			},
 		}
-		recordFetcher.FetchMock.Inspect(func(pulse insolar.PulseNumber) {
+		recordFetcher.FetchMock.Inspect(func(ctx context.Context, pulse insolar.PulseNumber) {
 			assert.Equal(t, pn, pulse)
 		}).Return(rec, gen.PulseNumber(), nil)
 
@@ -75,7 +77,7 @@ func Test_makeFetcher(t *testing.T) {
 			last: pn - 10,
 		}
 		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
-		raw := fetcher(&s)
+		raw := fetcher(ctx, &s)
 
 		assert.Equal(t, pn, raw.pulse.Number)
 		assert.Equal(t, rec, raw.batch)
@@ -87,7 +89,7 @@ func Test_makeFetcher(t *testing.T) {
 
 		pn := gen.PulseNumber()
 		nextActivePulse := pn + 100
-		pulseFetcher.FetchMock.Inspect(func(p1 insolar.PulseNumber) {
+		pulseFetcher.FetchMock.Inspect(func(ctx context.Context, p1 insolar.PulseNumber) {
 			assert.Equal(t, pn-10, p1)
 		}).Return(&observer.Pulse{
 			Number: pn,
@@ -100,7 +102,7 @@ func Test_makeFetcher(t *testing.T) {
 			},
 		}
 		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
-		raw := fetcher(&s)
+		raw := fetcher(ctx, &s)
 
 		assert.Equal(t, pn, raw.pulse.Number)
 		assert.Equal(t, nextActivePulse, raw.shouldIterateFrom)
@@ -111,7 +113,7 @@ func Test_makeFetcher(t *testing.T) {
 		defer mc.Finish()
 
 		pn := gen.PulseNumber()
-		pulseFetcher.FetchMock.Inspect(func(p1 insolar.PulseNumber) {
+		pulseFetcher.FetchMock.Inspect(func(ctx context.Context, p1 insolar.PulseNumber) {
 			assert.Equal(t, pn-10, p1)
 		}).Return(nil, errors.New("test"))
 
@@ -119,7 +121,7 @@ func Test_makeFetcher(t *testing.T) {
 			last: pn - 10,
 		}
 		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
-		raw := fetcher(&s)
+		raw := fetcher(ctx, &s)
 		assert.Nil(t, raw)
 	})
 
@@ -128,13 +130,13 @@ func Test_makeFetcher(t *testing.T) {
 		defer mc.Finish()
 
 		pn := gen.PulseNumber()
-		pulseFetcher.FetchMock.Inspect(func(p1 insolar.PulseNumber) {
+		pulseFetcher.FetchMock.Inspect(func(ctx context.Context, p1 insolar.PulseNumber) {
 			assert.Equal(t, pn-10, p1)
 		}).Return(&observer.Pulse{
 			Number: pn,
 		}, nil)
 
-		recordFetcher.FetchMock.Inspect(func(pulse insolar.PulseNumber) {
+		recordFetcher.FetchMock.Inspect(func(ctx context.Context, pulse insolar.PulseNumber) {
 			assert.Equal(t, pn, pulse)
 		}).Return(nil, gen.PulseNumber(), errors.New("test"))
 
@@ -142,7 +144,7 @@ func Test_makeFetcher(t *testing.T) {
 			last: pn - 10,
 		}
 		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
-		raw := fetcher(&s)
+		raw := fetcher(ctx, &s)
 
 		assert.Nil(t, raw)
 	})
