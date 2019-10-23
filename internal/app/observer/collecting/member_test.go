@@ -364,6 +364,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 								RequestID: accountActivate.ID,
 								Request:   *newAccountIncoming,
 								SideEffect: &tree.SideEffect{
+									ID:         accountActivate.ID,
 									Activation: accountActivateSideEffect,
 								},
 							},
