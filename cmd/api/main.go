@@ -17,12 +17,12 @@
 package main
 
 import (
-	"github.com/observer/internal/app/api"
+	"github.com/insolar/observer/internal/app/api"
 	"net/http"
 )
 
 func main() {
-	var myApi api.ServerInterfaceImpl // This implements the pet store interface
+	var myApi api.ObserverApi
 	r := api.Handler(&myApi)
 	http.ListenAndServe(":3000", r)
 }

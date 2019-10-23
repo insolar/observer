@@ -20,29 +20,29 @@ import (
 	"net/http"
 )
 
-type ServerInterfaceImpl struct {
+type ObserverApi struct {
 }
 
-func (s *ServerInterfaceImpl) Balance(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Balance(w http.ResponseWriter, r *http.Request) {
 }
 
-func (s *ServerInterfaceImpl) Fee(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Fee(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) Member(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Member(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) Notification(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Notification(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) Transaction(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Transaction(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) TransactionList(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) TransactionList(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) TransactionsSearch(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) TransactionsSearch(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) Coins(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) Coins(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) CoinsCirculating(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) CoinsCirculating(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) CoinsMax(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) CoinsMax(w http.ResponseWriter, r *http.Request) {
 }
-func (s *ServerInterfaceImpl) CoinsTotal(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverApi) CoinsTotal(w http.ResponseWriter, r *http.Request) {
 }
