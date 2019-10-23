@@ -25,19 +25,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/insolar/insolar/application/api/requester"
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
-	"github.com/stretchr/testify/require"
-
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/application/api/requester"
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	"github.com/insolar/insolar/application/builtin/proxy/member"
+	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/ory/dockertest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -180,6 +180,68 @@ func TestBeautifier_Run(t *testing.T) {
 			address: {
 				Addr: address,
 			}}, res.wastings)
+	})
+
+	t.Run("transfer happy path", func(t *testing.T) {
+		cfg := &configuration.Configuration{
+			Replicator: configuration.Replicator{
+				CacheSize: 100000,
+			},
+			LogLevel: "debug",
+		}
+		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+		ctx := context.Background()
+		tdg := NewTreeDataGenerator()
+
+		pn := insolar.GenesisPulse.PulseNumber
+		amount := "42"
+		fee := "7"
+		from := gen.IDWithPulse(pn)
+		to := gen.IDWithPulse(pn)
+		call := makeTransferCall(amount, from.String(), to.String(), pn)
+		out := tdg.makeOutgouingRequest(gen.Reference(), gen.Reference())
+		timestamp, err := pn.AsApproximateTime()
+		if err != nil {
+			panic("failed to calc timestamp by pulse")
+		}
+
+		expected := []*observer.ExtendedTransfer{
+			{
+				DepositTransfer: observer.DepositTransfer{
+					Transfer: observer.Transfer{
+						TxID:      call.ID,
+						From:      from,
+						To:        to,
+						Amount:    amount,
+						Fee:       fee,
+						Pulse:     pn,
+						Timestamp: timestamp.Unix(),
+					},
+				},
+			},
+			{
+				DepositTransfer: observer.DepositTransfer{
+					Transfer: observer.Transfer{
+						TxID:      call.ID,
+						Timestamp: timestamp.Unix(),
+						Pulse:     call.ID.Pulse(),
+						Status:    "FAILED",
+					},
+					EthHash: "",
+				},
+			},
+		}
+
+		raw := &raw{
+			batch: []*observer.Record{
+				out,
+				call,
+				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
+			},
+		}
+		res := beautifier(ctx, raw)
+		assert.Equal(t, expected, res.transfers)
 	})
 
 	t.Run("deposit", func(t *testing.T) {
@@ -405,6 +467,45 @@ func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundat
 				Result: &record.Result{
 					Request: *ref,
 					Payload: payload,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
+	request := &requester.ContractRequest{
+		Params: requester.Params{
+			CallSite: collecting.TransferMethod,
+			CallParams: collecting.TransferCallParams{
+				Amount:            amount,
+				ToMemberReference: to,
+			},
+			Reference: from,
+		},
+	}
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		panic("failed to marshal request")
+	}
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{requestBody, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "Call",
+					Arguments: args,
 				},
 			},
 		},

@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	transferMethod = "member.transfer"
+	TransferMethod = "member.transfer"
 )
 
 type ExtendedTransferCollector struct {
@@ -178,7 +178,7 @@ func (c *ExtendedTransferCollector) build(
 
 	callArguments := apiCall.ParseMemberCallArguments()
 	pn := apiCall.ID.Pulse()
-	callParams := &transferCallParams{}
+	callParams := &TransferCallParams{}
 	apiCall.ParseMemberContractCallParams(callParams)
 	resultValue := &member.TransferResponse{Fee: "0"}
 	result.ParseFirstPayloadValue(resultValue)
@@ -187,7 +187,7 @@ func (c *ExtendedTransferCollector) build(
 		return nil, errors.New("invalid fromMemberReference")
 	}
 	memberTo := memberFrom
-	if callArguments.Params.CallSite == transferMethod {
+	if callArguments.Params.CallSite == TransferMethod {
 		memberTo, err = insolar.NewIDFromString(callParams.ToMemberReference)
 		if err != nil {
 			return nil, errors.New("invalid toMemberReference")
@@ -245,7 +245,7 @@ func (c *ExtendedTransferCollector) isTransferCall(rec *record.Material) (*obser
 	}
 
 	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == transferMethod
+	return request, args.Params.CallSite == TransferMethod
 }
 
 func (c *ExtendedTransferCollector) isGetFeeMember(req *record.IncomingRequest) bool {
