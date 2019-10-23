@@ -27,14 +27,14 @@ import (
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
-	"github.com/insolar/insolar/application/api/requester"
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	"github.com/insolar/insolar/application/builtin/proxy/member"
-	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/xns/api/requester"
+	"github.com/insolar/xns/builtin/contract/deposit"
+	"github.com/insolar/xns/builtin/proxy/member"
+	"github.com/insolar/xns/builtin/proxy/migrationdaemon"
 	"github.com/ory/dockertest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,78 +244,79 @@ func TestBeautifier_Run(t *testing.T) {
 		assert.Equal(t, expected, res.transfers)
 	})
 
-	t.Run("deposit", func(t *testing.T) {
-		cfg := &configuration.Configuration{
-			Replicator: configuration.Replicator{
-				CacheSize: 100000,
-			},
-			LogLevel: "debug",
-		}
-		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
-		ctx := context.Background()
-		pn := insolar.GenesisPulse.PulseNumber
-		tdg := NewTreeDataGenerator()
+}
 
-		call := tdg.makeDepositMigrationCall(pn)
+func TestBeautifier_Deposit(t *testing.T) {
+	cfg := &configuration.Configuration{
+		Replicator: configuration.Replicator{
+			CacheSize: 100000,
+		},
+		LogLevel: "debug",
+	}
+	beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
+	ctx := context.Background()
+	pn := insolar.GenesisPulse.PulseNumber
+	tdg := NewTreeDataGenerator()
 
-		memberRef := gen.Reference()
-		out := tdg.makeOutgouingRequest(*insolar.NewReference(call.ID), gen.Reference())
-		in := tdg.makeIncomingFromOutgoing(out.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	call := tdg.makeDepositMigrationCall(pn)
 
-		balance := "123"
-		amount := "456"
-		txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+	memberRef := gen.Reference()
+	out := tdg.makeOutgouingRequest(*insolar.NewReference(call.ID), gen.Reference())
+	in := tdg.makeIncomingFromOutgoing(out.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
-		dep := deposit.Deposit{
-			Balance:            balance,
-			Amount:             amount,
-			TxHash:             txHash,
-			PulseDepositUnHold: pn + 3,
-		}
-		memory, err := insolar.Serialize(dep)
-		if err != nil {
-			panic("fail serialize memory")
-		}
+	balance := "123"
+	amount := "456"
+	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
 
-		act := tdg.makeActivation(
-			*insolar.NewReference(in.ID),
-			*migrationdaemon.PrototypeReference,
-			memory,
-		)
+	dep := deposit.Deposit{
+		Balance:            balance,
+		Amount:             amount,
+		TxHash:             txHash,
+		PulseDepositUnHold: pn + 3,
+	}
+	memory, err := insolar.Serialize(dep)
+	if err != nil {
+		panic("fail serialize memory")
+	}
 
-		raw := &raw{
-			batch: []*observer.Record{
-				call,
-				out,
-				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				in,
-				tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				act,
-				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
-					migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
-					nil,
-				}}),
-			},
-		}
-		transferDate, err := act.ID.Pulse().AsApproximateTime()
-		require.NoError(t, err)
+	act := tdg.makeActivation(
+		*insolar.NewReference(in.ID),
+		*migrationdaemon.PrototypeReference,
+		memory,
+	)
 
-		res := beautifier(ctx, raw)
+	raw := &raw{
+		batch: []*observer.Record{
+			call,
+			out,
+			tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			in,
+			tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			act,
+			tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
+				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
+				nil,
+			}}),
+		},
+	}
+	transferDate, err := act.ID.Pulse().AsApproximateTime()
+	require.NoError(t, err)
 
-		assert.Equal(t, 1, len(res.deposits))
-		assert.Equal(t, map[insolar.ID]*observer.Deposit{
-			act.ID: {
-				EthHash:         strings.ToLower(txHash),
-				Ref:             in.ID,
-				Member:          *memberRef.GetLocal(),
-				Timestamp:       transferDate.Unix(),
-				HoldReleaseDate: 0,
-				Amount:          amount,
-				Balance:         balance,
-				DepositState:    act.ID,
-			},
-		}, res.deposits)
-	})
+	res := beautifier(ctx, raw)
+
+	assert.Equal(t, 1, len(res.deposits))
+	assert.Equal(t, map[insolar.ID]*observer.Deposit{
+		act.ID: {
+			EthHash:         strings.ToLower(txHash),
+			Ref:             in.ID,
+			Member:          *memberRef.GetLocal(),
+			Timestamp:       transferDate.Unix(),
+			HoldReleaseDate: 0,
+			Amount:          amount,
+			Balance:         balance,
+			DepositState:    act.ID,
+		},
+	}, res.deposits)
 }
 
 type treeDataGenerator struct {

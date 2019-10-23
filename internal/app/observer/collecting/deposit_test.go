@@ -196,6 +196,7 @@ func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
 	return []*observer.Deposit{deposit}, records
 }
 
+// TODO: need unit tests
 func TestDepositCollector_Collect(t *testing.T) {
 	t.Skip("TestBeautifier_Run->deposit cover happy path")
 	//log := logrus.New()

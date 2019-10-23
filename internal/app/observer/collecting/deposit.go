@@ -41,9 +41,9 @@ const (
 )
 
 type DepositCollector struct {
-	log       *logrus.Logger
-	fetcher   store.RecordFetcher
-	builder   tree.Builder
+	log     *logrus.Logger
+	fetcher store.RecordFetcher
+	builder tree.Builder
 }
 
 func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *DepositCollector {
@@ -52,14 +52,6 @@ func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *Depos
 		fetcher: fetcher,
 		builder: tree.NewBuilder(fetcher),
 	}
-}
-
-func (c *DepositCollector) SetFetcher(fetcher store.RecordFetcher) {
-	c.fetcher = fetcher
-}
-
-func (c *DepositCollector) SetBuilder(builder tree.Builder) {
-	c.builder = builder
 }
 
 func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Deposit {
@@ -95,20 +87,25 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *o
 
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "result without request"))
-		return nil
+		if errors.Cause(err) == store.ErrNotFound {
+			c.log.Error(errors.Wrap(err, "result without request"))
+			return nil
+		}
+		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
 	_, ok := c.isDepositCall(&req)
 	if !ok {
-		c.log.Debug("not a deposit call, skipping")
 		return nil
 	}
 
 	callTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "couldn't build tree"))
-		return nil
+		if errors.Cause(err) == store.ErrNotFound {
+			c.log.Error(errors.Wrap(err, "couldn't build tree"))
+			return nil
+		}
+		panic(errors.Wrap(err, "failed to build tree"))
 	}
 
 	var (
@@ -137,7 +134,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) *o
 	}
 
 	if activate == nil {
-		c.log.Error("failed to find activation")
+		c.log.Warn("failed to find activation")
 		return nil
 	}
 
