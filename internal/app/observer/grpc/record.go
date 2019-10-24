@@ -59,6 +59,7 @@ func (f *RecordFetcher) Fetch(
 	error,
 ) {
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	client := f.client
 
 	f.request.PulseNumber = pulse
@@ -100,7 +101,6 @@ func (f *RecordFetcher) Fetch(
 			// If we see next pulse, then stop iteration
 			if resp.Record.ID.Pulse() != pulse {
 				f.log.Debug("next pulse received ", resp.Record.ID.Pulse())
-				cancel()
 				// If we have no records in this pulse, then go to next not empty pulse
 				if len(batch) == 0 {
 					shouldIterateFrom = resp.Record.ID.Pulse()
