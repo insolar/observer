@@ -18,7 +18,7 @@ type GroupSchema struct {
 	Ref            []byte `sql:",pk"`
 	Title          string
 	Goal           string
-	Purpose        string
+	Image          string
 	GroupOwner     []byte
 	TreasureHolder []byte
 	Status         string
@@ -74,7 +74,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 
 	res, err := s.db.Model(&GroupSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
-		Set("purpose=?,goal=?", model.Purpose, model.Goal).
+		Set("image=?,goal=?", model.Image, model.Goal).
 		Set("type=?", model.ProductType).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("state=?", model.GroupState.Bytes()).
@@ -184,7 +184,7 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		Title:      model.Title,
 		Goal:       model.Goal,
 		GroupOwner: model.ChairMan.Bytes(),
-		Purpose:    model.Purpose,
+		Image:      model.Image,
 		Status:     model.Status,
 		State:      model.State.Bytes(),
 	}
