@@ -29,26 +29,28 @@ import (
 
 const (
 	ConfigName     = "observer"
+	APIConfigName     = "observerapi"
 	ConfigType     = "yaml"
 	ConfigFilePath = ConfigName + "." + ConfigType
+	APIConfigFilePath = APIConfigName + "." + ConfigType
 )
 
-func Load() *Configuration {
+func Load(configName string) *Configuration {
 	printWorkingDir()
-	actual := load()
+	actual := load(configName)
 	printConfig(actual)
 	return actual
 }
 
-func load() *Configuration {
+func load(configName string) *Configuration {
 	v := viper.New()
-	v.SetConfigName(ConfigName)
+	v.SetConfigName(configName)
 	v.SetConfigType(ConfigType)
 	v.AddConfigPath(".")
 	v.AddConfigPath(".artifacts")
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Warnf("config file not found (file=%v). Default configuration is used", ConfigFilePath)
+			log.Warnf("config file not found (file=%v). Default configuration is used", configName + "." + ConfigType)
 		} else {
 			log.Error(errors.Wrapf(err, "failed to load config. Default configuration is used"))
 		}

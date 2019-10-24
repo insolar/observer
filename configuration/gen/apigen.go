@@ -14,31 +14,23 @@
 // limitations under the License.
 //
 
-package configuration
+package main
 
 import (
-	"time"
+	"github.com/insolar/observer/configuration"
+	"io/ioutil"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
-type API struct {
-	Addr string
-}
-
-type APIConfiguration struct {
-	API        API
-	DB         DB
-}
-
-func APIDefault() *APIConfiguration {
-	return &APIConfiguration{
-		API: API{
-			Addr: ":0",
-		},
-		DB: DB{
-			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
-			Attempts:        5,
-			AttemptInterval: 3 * time.Second,
-			CreateTables:    false,
-		},
+func main() {
+	cfg := configuration.APIDefault()
+	out, _ := yaml.Marshal(cfg)
+	err := ioutil.WriteFile(configuration.APIConfigFilePath, out, 0644)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to write config file"))
+		return
 	}
 }
