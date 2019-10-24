@@ -17,31 +17,27 @@
 package component
 
 import (
-	"github.com/insolar/insolar/ledger/heavy/exporter"
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/connectivity"
-	"github.com/insolar/observer/internal/app/observer/grpc"
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 )
 
 func makeFetcher(
-	cfg *configuration.Configuration,
 	obs *observability.Observability,
-	conn *connectivity.Connectivity,
-) func(*state) *raw {
+	pulses observer.PulseFetcher,
+	records observer.HeavyRecordFetcher,
+) func(context.Context, *state) *raw {
 	log := obs.Log()
 	lastPulseMetric, recordCounterMetric := fetchingMetrics(obs)
-	pulseClient := exporter.NewPulseExporterClient(conn.GRPC())
-	recordClient := exporter.NewRecordExporterClient(conn.GRPC())
-	pulses := grpc.NewPulseFetcher(cfg, obs, pulseClient)
-	records := grpc.NewRecordFetcher(cfg, obs, recordClient)
-	return func(s *state) *raw {
+
+	return func(ctx context.Context, s *state) *raw {
 		// Get next pulse
-		// todo: skip empty pulses, if shouldIterateFrom set
-		pulse, err := pulses.Fetch(s.last)
+		// todo: get batch of empty pulses, if shouldIterateFrom set
+		pulse, err := pulses.Fetch(ctx, s.last)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
 			return nil
@@ -54,11 +50,11 @@ func makeFetcher(
 		if pulse.Number < s.rp.ShouldIterateFrom {
 			log.WithField("should_iterate_from", s.rp.ShouldIterateFrom).
 				Debug("skipped record fetching")
-			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom}
+			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom, currentHeavyPN: s.rp.ShouldIterateFrom}
 		}
 
 		// Get records
-		batch, shouldIterateFrom, err := records.Fetch(pulse.Number)
+		batch, shouldIterateFrom, err := records.Fetch(ctx, pulse.Number)
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to fetch records by pulse"))
 			return nil
@@ -66,7 +62,13 @@ func makeFetcher(
 		recordCounterMetric.Add(float64(len(batch)))
 		log.WithField("batch_size", len(batch)).
 			Infof("fetched records")
-		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
+
+		// Get current heavy pulse
+		currentFinalisedPulse, err := pulses.FetchCurrent(ctx)
+		if err != nil {
+			return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
+		}
+		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom, currentHeavyPN: currentFinalisedPulse}
 	}
 }
 

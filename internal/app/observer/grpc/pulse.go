@@ -18,7 +18,6 @@ package grpc
 
 import (
 	"context"
-	"io"
 
 	"github.com/sirupsen/logrus"
 
@@ -50,8 +49,7 @@ func NewPulseFetcher(
 	}
 }
 
-func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) {
-	ctx := context.Background()
+func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*observer.Pulse, error) {
 	client := f.client
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
 	f.log.Debugf("Fetching %d pulses from %s", request.Count, last)
@@ -69,10 +67,11 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 		}
 
 		resp, err = stream.Recv()
-		if err != nil && err != io.EOF {
+		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
 		}
+
 		return err
 	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
 
@@ -88,4 +87,29 @@ func (f *PulseFetcher) Fetch(last insolar.PulseNumber) (*observer.Pulse, error) 
 	}
 	f.log.Debug("Received pulse ", model)
 	return model, nil
+}
+
+func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, error) {
+	client := f.client
+	request := &exporter.GetTopSyncPulse{}
+	tsp := &exporter.TopSyncPulseResponse{}
+	var err error
+	f.log.Debug("Fetching top sync pulse")
+
+	cycle.UntilError(func() error {
+		tsp, err = client.TopSyncPulse(ctx, request)
+		if err != nil {
+			f.log.WithField("request", request).
+				Error(errors.Wrapf(err, "failed to get tsp"))
+			return err
+		}
+		return nil
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+
+	if err != nil {
+		return insolar.GenesisPulse.PulseNumber, errors.Wrapf(err, "exceeded attempts of getting top sync pulse from HME")
+	}
+
+	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
+	return insolar.PulseNumber(tsp.PulseNumber), nil
 }
