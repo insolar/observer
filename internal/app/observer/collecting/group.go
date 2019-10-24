@@ -116,9 +116,10 @@ type Group struct {
 	Title       string
 	Membership  foundation.StableMap
 	Goal        string
-	Image       string
-	ProductType string
+	ProductType observer.ProductType
 	Product     insolar.Reference
+	Balance     *insolar.Reference
+	Image       string
 }
 
 type Membership struct {

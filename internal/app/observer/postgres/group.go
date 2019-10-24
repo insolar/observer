@@ -72,10 +72,19 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		return nil
 	}
 
+	var productType string
+
+	switch model.ProductType {
+	case observer.MerryGoRound:
+		productType = "merry-go-round"
+	case observer.Saving:
+		productType = "saving"
+	}
+
 	res, err := s.db.Model(&GroupSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
 		Set("image=?,goal=?", model.Image, model.Goal).
-		Set("type=?", model.ProductType).
+		Set("type=?", productType).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("state=?", model.GroupState.Bytes()).
 		Update()

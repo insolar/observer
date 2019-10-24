@@ -14,7 +14,7 @@ type MGR struct {
 	NextPaymentTime  int64
 	Sequence         []insolar.Reference
 	Status           string
-	State            []byte
+	State            insolar.Reference
 }
 
 type MGRUpdate struct {
