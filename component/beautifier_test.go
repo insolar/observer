@@ -142,8 +142,8 @@ func TestBeautifier_Run(t *testing.T) {
 
 		tdg := NewTreeDataGenerator()
 		raw := &raw{
-			batch: []*observer.Record{
-				tdg.makeRequestWith("hello", gen.RecordReference(), nil),
+			batch: map[uint32]*observer.Record{
+				0: tdg.makeRequestWith("hello", gen.RecordReference(), nil),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -168,11 +168,11 @@ func TestBeautifier_Run(t *testing.T) {
 		call := tdg.makeGetMigrationAddressCall(pn)
 
 		raw := &raw{
-			batch: []*observer.Record{
-				out,
-				call,
-				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
+			batch: map[uint32]*observer.Record{
+				0: out,
+				1: call,
+				2: tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				3: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -215,11 +215,11 @@ func TestBeautifier_Run(t *testing.T) {
 		}
 
 		raw := &raw{
-			batch: []*observer.Record{
-				out,
-				call,
-				tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
+			batch: map[uint32]*observer.Record{
+				0: out,
+				1: call,
+				2: tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				3: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -268,14 +268,14 @@ func TestBeautifier_Deposit(t *testing.T) {
 	)
 
 	raw := &raw{
-		batch: []*observer.Record{
-			call,
-			out,
-			tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			in,
-			tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			act,
-			tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
+		batch: map[uint32]*observer.Record{
+			0: call,
+			1: out,
+			2: tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			3: in,
+			4: tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			5: act,
+			6: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
 				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
 				nil,
 			}}),

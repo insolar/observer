@@ -21,11 +21,13 @@ import (
 	"time"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/grpc"
 	"github.com/insolar/observer/observability"
 )
 
@@ -36,7 +38,7 @@ type Manager struct {
 	log           logrus.Logger
 	init          func() *state
 	commonMetrics *observability.CommonObserverMetrics
-	fetch         func(*state) *raw
+	fetch         func(context.Context, *state) *raw
 	beautify      func(context.Context, *raw) *beauty
 	filter        func(*beauty) *beauty
 	store         func(*beauty, *state) *observer.Statistic
@@ -50,12 +52,14 @@ func Prepare() *Manager {
 	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
+	pulses := grpc.NewPulseFetcher(cfg, obs, exporter.NewPulseExporterClient(conn.GRPC()))
+	records := grpc.NewRecordFetcher(cfg, obs, exporter.NewRecordExporterClient(conn.GRPC()))
 	return &Manager{
 		stopSignal:    make(chan bool, 1),
 		init:          makeInitter(cfg, obs, conn),
 		log:           *obs.Log(),
 		commonMetrics: observability.MakeCommonMetrics(obs),
-		fetch:         makeFetcher(cfg, obs, conn),
+		fetch:         makeFetcher(obs, pulses, records),
 		beautify:      makeBeautifier(cfg, obs, conn),
 		filter:        makeFilter(obs),
 		store:         makeStorer(cfg, obs, conn),
@@ -97,7 +101,7 @@ func (m *Manager) needStop() bool {
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
 	ctx := context.Background()
-	raw := m.fetch(s)
+	raw := m.fetch(ctx, s)
 	beauty := m.beautify(ctx, raw)
 	collapsed := m.filter(beauty)
 	statistic := m.store(collapsed, s)
@@ -115,7 +119,7 @@ func (m *Manager) run(s *state) {
 		sleepTime -= timeExecuted
 
 		// fast forward, empty pulses
-		if raw.shouldIterateFrom > raw.pulse.Number {
+		if raw.currentHeavyPN > raw.pulse.Number {
 			sleepTime = m.cfg.Replicator.FastForwardInterval
 		}
 	}
@@ -130,13 +134,14 @@ func (m *Manager) run(s *state) {
 
 type raw struct {
 	pulse             *observer.Pulse
-	batch             []*observer.Record
+	batch             map[uint32]*observer.Record
 	shouldIterateFrom insolar.PulseNumber
+	currentHeavyPN    insolar.PulseNumber
 }
 
 type beauty struct {
 	pulse       *observer.Pulse
-	records     []*observer.Record
+	records     map[uint32]*observer.Record
 	requests    []*observer.Request
 	results     []*observer.Result
 	activates   []*observer.Activate
@@ -150,6 +155,10 @@ type beauty struct {
 	depositUpdates map[insolar.ID]*observer.DepositUpdate
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
+
+	txRegister   []observer.TxRegister   // nolint
+	txResult     []observer.TxResult     // nolint
+	txSagaResult []observer.TxSagaResult // nolint
 }
 
 type state struct {

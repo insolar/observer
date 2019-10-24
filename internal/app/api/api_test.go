@@ -84,26 +84,18 @@ func TestMain(t *testing.M) {
 
 func Test(t *testing.T) {
 	expectedTransaction := transaction{
-		PulseNumber: 1,
-		Type:        TTypeMigration,
-		Status:      TStatusSent,
-		Amount:      "10",
-		Fee:         "1",
+		TransactionID:    []byte{1, 2, 3},
+		PulseNumber:      1,
+		StatusRegistered: true,
+		Amount:           "10",
+		Fee:              "1",
 	}
-	_, err := db.Exec(
-		`insert into simple_transactions (pulse_number, type, status, amount, fee) values (?, ?, ?, ?, ?)`,
-		expectedTransaction.PulseNumber,
-		expectedTransaction.Type,
-		expectedTransaction.Status,
-		expectedTransaction.Amount,
-		expectedTransaction.Fee,
-	)
+	err := db.Insert(&expectedTransaction)
 	require.NoError(t, err)
 
 	receivedTransaction := transaction{}
 	_, err = db.QueryOne(&receivedTransaction, "select * from simple_transactions")
 	require.NoError(t, err)
 
-	receivedTransaction.ID = 0
 	assert.Equal(t, expectedTransaction, receivedTransaction)
 }

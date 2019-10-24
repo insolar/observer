@@ -17,6 +17,8 @@
 package observer
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 )
@@ -29,8 +31,9 @@ type RecordStorage interface {
 	Insert(*Record) error
 }
 
-type RecordFetcher interface {
-	Fetch(insolar.PulseNumber) ([]*Record, error)
+//go:generate minimock -i github.com/insolar/observer/internal/app/observer.HeavyRecordFetcher -o ./ -s _mock.go -g
+type HeavyRecordFetcher interface {
+	Fetch(context.Context, insolar.PulseNumber) (map[uint32]*Record, insolar.PulseNumber, error)
 }
 
 func (r *Record) Marshal() ([]byte, error) {

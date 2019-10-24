@@ -115,8 +115,8 @@ func makeBeautifier(
 				b.transfers = append(b.transfers, standardTransfer)
 			}
 
-			deposit := deposits.Collect(ctx, rec)
-			if deposit != nil {
+			deposits := deposits.Collect(ctx, rec)
+			for _, deposit := range deposits {
 				b.deposits[deposit.DepositState] = deposit
 			}
 

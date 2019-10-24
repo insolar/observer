@@ -262,7 +262,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:553a09e5bd4c15ccc4079485feb732f733c9e7eec65102c69d29e74562c62a13"
+  digest = "1:e8986a62101cceb37ac951153be77cf83f289ca8f4470e4e68460d40e224bf5c"
   name = "github.com/insolar/insolar"
   packages = [
     "application",
@@ -272,6 +272,7 @@
     "application/builtin/contract/member",
     "application/builtin/contract/member/signer",
     "application/builtin/contract/migrationshard",
+    "application/builtin/contract/pkshard",
     "application/builtin/contract/wallet",
     "application/builtin/proxy/account",
     "application/builtin/proxy/costcenter",
@@ -281,6 +282,7 @@
     "application/builtin/proxy/migrationdaemon",
     "application/builtin/proxy/migrationshard",
     "application/builtin/proxy/nodedomain",
+    "application/builtin/proxy/pkshard",
     "application/builtin/proxy/rootdomain",
     "application/builtin/proxy/wallet",
     "application/genesisrefs",
@@ -902,6 +904,7 @@
     "github.com/insolar/insolar/application/builtin/contract/member",
     "github.com/insolar/insolar/application/builtin/contract/member/signer",
     "github.com/insolar/insolar/application/builtin/contract/migrationshard",
+    "github.com/insolar/insolar/application/builtin/contract/pkshard",
     "github.com/insolar/insolar/application/builtin/contract/wallet",
     "github.com/insolar/insolar/application/builtin/proxy/account",
     "github.com/insolar/insolar/application/builtin/proxy/costcenter",
@@ -910,6 +913,7 @@
     "github.com/insolar/insolar/application/builtin/proxy/migrationadmin",
     "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon",
     "github.com/insolar/insolar/application/builtin/proxy/migrationshard",
+    "github.com/insolar/insolar/application/builtin/proxy/pkshard",
     "github.com/insolar/insolar/application/builtin/proxy/wallet",
     "github.com/insolar/insolar/application/genesisrefs",
     "github.com/insolar/insolar/insolar",

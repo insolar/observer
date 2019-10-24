@@ -50,14 +50,22 @@ func NewRecordFetcher(
 	}
 }
 
-func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, insolar.PulseNumber, error) {
-	ctx := context.Background()
+func (f *RecordFetcher) Fetch(
+	ctx context.Context,
+	pulse insolar.PulseNumber,
+) (
+	map[uint32]*observer.Record,
+	insolar.PulseNumber,
+	error,
+) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	client := f.client
 
 	f.request.PulseNumber = pulse
 	f.request.RecordNumber = 0
 
-	var batch []*observer.Record
+	batch := make(map[uint32]*observer.Record)
 	var counter uint32
 	shouldIterateFrom := insolar.PulseNumber(0)
 	// Get pulse batches
@@ -67,6 +75,7 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 		stream, err := client.Export(ctx, f.request)
 
 		if err != nil {
+			f.log.Debug("Data request failed: ", err)
 			return batch, shouldIterateFrom, errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method")
 		}
 
@@ -85,31 +94,23 @@ func (f *RecordFetcher) Fetch(pulse insolar.PulseNumber) ([]*observer.Record, in
 			// There is no records at all
 			if resp.ShouldIterateFrom != nil {
 				f.log.Debug("Received Should iterate from ", resp.ShouldIterateFrom.String())
-				err := stream.CloseSend()
-				if err != nil {
-					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
-				}
 				shouldIterateFrom = *resp.ShouldIterateFrom
 				return batch, shouldIterateFrom, nil
 			}
 
 			// If we see next pulse, then stop iteration
 			if resp.Record.ID.Pulse() != pulse {
-				f.log.Debug("wrong pulse received ", resp.Record.ID.Pulse())
-				err := stream.CloseSend()
-				if err != nil {
-					return batch, shouldIterateFrom, errors.Wrap(err, "error while closing gRPC stream")
-				}
-
+				f.log.Debug("next pulse received ", resp.Record.ID.Pulse())
 				// If we have no records in this pulse, then go to next not empty pulse
 				if len(batch) == 0 {
 					shouldIterateFrom = resp.Record.ID.Pulse()
 					f.log.Debug("shouldIterateFrom set to ", shouldIterateFrom)
 				}
+				// todo we can read records by several pulses
 				return batch, shouldIterateFrom, nil
 			}
 			model := (*observer.Record)(&resp.Record)
-			batch = append(batch, model)
+			batch[resp.RecordNumber] = model
 
 			counter++
 			f.request.RecordNumber = resp.RecordNumber
