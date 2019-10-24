@@ -22,6 +22,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -33,9 +34,12 @@ import (
 )
 
 func TestPulseFetcher_Fetch(t *testing.T) {
+	ctx := context.Background()
 	t.Run("empty_stream", func(t *testing.T) {
 		cfg := configuration.Default()
 		obs := observability.Make(cfg)
+		cfg.Replicator.AttemptInterval = 0
+		cfg.Replicator.Attempts = 1
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
 			return nil, io.EOF
@@ -47,9 +51,10 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		pulse, err := fetcher.Fetch(0)
-		require.Error(t, err)
-		require.Nil(t, pulse)
+		require.Panics(t, func() {
+			_, _ = fetcher.Fetch(ctx, 0)
+		})
+
 	})
 
 	t.Run("one_pulse", func(t *testing.T) {
@@ -67,7 +72,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		pulse, err := fetcher.Fetch(0)
+		pulse, err := fetcher.Fetch(ctx, 0)
 		require.NoError(t, err)
 		require.Equal(t, expected, pulse)
 	})
@@ -87,7 +92,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		pulse, err := fetcher.Fetch(0)
+		pulse, err := fetcher.Fetch(ctx, 0)
 		require.NoError(t, err)
 		require.Equal(t, expected, pulse)
 	})
@@ -99,12 +104,13 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return nil, errors.New("failed export")
 		}
-		cfg.Replicator.Attempts = 1
+		cfg.Replicator.AttemptInterval = 0
+		cfg.Replicator.Attempts = 5
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		pulse, err := fetcher.Fetch(0)
-		require.Error(t, err)
-		require.Nil(t, pulse)
+		require.Panics(t, func() {
+			_, _ = fetcher.Fetch(ctx, 0)
+		})
 	})
 
 	t.Run("failed_recv", func(t *testing.T) {
@@ -112,7 +118,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		obs := observability.Make(cfg)
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
-			return nil, errors.New("failed recv")
+			return nil, io.EOF
 		}
 		client := &pulseClient{}
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
@@ -121,9 +127,50 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		pulse, err := fetcher.Fetch(0)
-		require.Error(t, err)
-		require.Nil(t, pulse)
+		require.Panics(t, func() {
+			_, _ = fetcher.Fetch(ctx, 0)
+		})
+	})
+}
+
+func TestPulseFetcher_FetchCurrent(t *testing.T) {
+	ctx := context.Background()
+	t.Run("happy topsyncpulse", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make(cfg)
+		cfg.Replicator.AttemptInterval = 0
+		cfg.Replicator.Attempts = 1
+		pn := insolar.PulseNumber(10000)
+		client := &pulseClient{}
+		client.topSyncPulse = func(ctx context.Context, in *exporter.GetTopSyncPulse, opts ...grpc.CallOption) (response *exporter.TopSyncPulseResponse, e error) {
+			return &exporter.TopSyncPulseResponse{
+				Polymorph:   0,
+				PulseNumber: pn.AsUint32(),
+			}, nil
+		}
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
+
+		tsp, err := fetcher.FetchCurrent(ctx)
+		require.NoError(t, err)
+		require.Equal(t, pn, tsp)
+	})
+
+	t.Run("topsyncpulse returns error", func(t *testing.T) {
+		cfg := configuration.Default()
+		obs := observability.Make(cfg)
+		cfg.Replicator.AttemptInterval = 0
+		cfg.Replicator.Attempts = 1
+		client := &pulseClient{}
+		client.topSyncPulse = func(ctx context.Context, in *exporter.GetTopSyncPulse, opts ...grpc.CallOption) (response *exporter.TopSyncPulseResponse, e error) {
+			return &exporter.TopSyncPulseResponse{}, errors.New("test")
+		}
+		cfg.Replicator.Attempts = 1
+		fetcher := NewPulseFetcher(cfg, obs, client)
+
+		require.Panics(t, func() {
+			_, _ = fetcher.FetchCurrent(ctx)
+		})
 	})
 }
 
