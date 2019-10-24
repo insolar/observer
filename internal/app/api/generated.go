@@ -240,13 +240,14 @@ func BalanceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var err error
+
 		// ------------- Path parameter "reference" -------------
-		var pathErr error
 		var reference string
 
-		pathErr = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if pathErr != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", pathErr), http.StatusBadRequest)
+		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
 			return
 		}
 
@@ -261,13 +262,14 @@ func FeeCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var err error
+
 		// ------------- Path parameter "amount" -------------
-		var pathErr error
 		var amount string
 
-		pathErr = runtime.BindStyledParameter("simple", false, "amount", chi.URLParam(r, "amount"), &amount)
-		if pathErr != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", pathErr), http.StatusBadRequest)
+		err = runtime.BindStyledParameter("simple", false, "amount", chi.URLParam(r, "amount"), &amount)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 			return
 		}
 
@@ -282,13 +284,14 @@ func MemberCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var err error
+
 		// ------------- Path parameter "reference" -------------
-		var pathErr error
 		var reference string
 
-		pathErr = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if pathErr != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", pathErr), http.StatusBadRequest)
+		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
 			return
 		}
 
@@ -312,13 +315,14 @@ func TransactionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var err error
+
 		// ------------- Path parameter "txID" -------------
-		var pathErr error
 		var txID string
 
-		pathErr = runtime.BindStyledParameter("simple", false, "txID", chi.URLParam(r, "txID"), &txID)
-		if pathErr != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter txID: %s", pathErr), http.StatusBadRequest)
+		err = runtime.BindStyledParameter("simple", false, "txID", chi.URLParam(r, "txID"), &txID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid format for parameter txID: %s", err), http.StatusBadRequest)
 			return
 		}
 
@@ -338,19 +342,19 @@ func TransactionListCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		var err error
+
 		// ------------- Path parameter "reference" -------------
-		var pathErr error
 		var reference string
 
-		pathErr = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if pathErr != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", pathErr), http.StatusBadRequest)
+		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
 			return
 		}
 
 		ctx = context.WithValue(r.Context(), "reference", reference)
 
-		var err error
 		// Parameter object where we will unmarshal all parameters from the context
 		var params TransactionListParams
 
@@ -390,7 +394,7 @@ func TransactionListCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(r.Context(), "TransactionListParams", &params)
+		ctx = context.WithValue(ctx, "TransactionListParams", &params)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -407,6 +411,7 @@ func TransactionsSearchCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 
 		var err error
+
 		// Parameter object where we will unmarshal all parameters from the context
 		var params TransactionsSearchParams
 
@@ -457,7 +462,7 @@ func TransactionsSearchCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(r.Context(), "TransactionsSearchParams", &params)
+		ctx = context.WithValue(ctx, "TransactionsSearchParams", &params)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
