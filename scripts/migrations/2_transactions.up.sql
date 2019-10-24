@@ -5,6 +5,7 @@ create table simple_transactions
 
     status_registered bool,
     pulse_number bigint,
+    record_number bigint,
     member_from_ref bytea,
     member_to_ref bytea,
     migration_to_ref bytea,

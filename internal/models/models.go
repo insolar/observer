@@ -24,6 +24,16 @@ type Deposit struct {
 	Balance         string `sql:"balance"`
 }
 
+type TransactionStatus string
+
+const (
+	TStatusUnknown  TransactionStatus = "unknown"
+	TStatusPending  TransactionStatus = "pending"
+	TStatusSent     TransactionStatus = "sent"
+	TStatusReceived TransactionStatus = "received"
+	TStatusFailed   TransactionStatus = "failed"
+)
+
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
@@ -34,6 +44,7 @@ type Transaction struct {
 	// Request registered.
 	StatusRegistered      bool   `sql:"status_registered"`
 	PulseNumber           int64  `sql:"pulse_number"`
+	RecordNumber          int64  `sql:"record_number"`
 	MemberFromReference   []byte `sql:"member_from_ref"`
 	MemberToReference     []byte `sql:"member_to_ref"`
 	MigrationsToReference []byte `sql:"migration_to_ref"`
@@ -49,4 +60,25 @@ type Transaction struct {
 	FinishSuccess      bool  `sql:"finish_success"`
 	FinishPulseNumber  int64 `sql:"finish_pulse_number"`
 	FinishRecordNumber int64 `sql:"finish_record_number"`
+}
+
+func (t *Transaction) Status() TransactionStatus {
+	registered := t.StatusRegistered
+	sent := t.StatusRegistered && t.StatusSent
+	finished := t.StatusRegistered && t.StatusFinished
+
+	if finished {
+		if t.FinishSuccess {
+			return TStatusReceived
+		}
+		return TStatusFailed
+	}
+	if sent {
+		return TStatusSent
+	}
+	if registered {
+		return TStatusPending
+	}
+
+	return TStatusUnknown
 }
