@@ -95,7 +95,7 @@ jobs:
         path: go/src/github.com/insolar/observer
     - name: Get dependencies
       run: |
-        make dep
+        make ensure_deps
       env:
         GOPATH: /home/runner/work/observer/go
     - name: Run linter
