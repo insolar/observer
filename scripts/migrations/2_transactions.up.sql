@@ -20,3 +20,6 @@ create table simple_transactions
     finish_pulse_number bigint,
     finish_record_number bigint
 );
+
+CREATE UNIQUE INDEX simple_transactions__unique__pulse_record ON simple_transactions (pulse_number, record_number);
+CREATE UNIQUE INDEX simple_transactions__unique__finish_pulse_record ON simple_transactions (finish_pulse_number, finish_record_number);
