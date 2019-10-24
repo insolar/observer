@@ -28,7 +28,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 

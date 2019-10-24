@@ -36,15 +36,7 @@ build: $(BIN_DIR) $(OBSERVER) ## build!
 env: $(CONFIG) ## gen config + artifacts
 
 .PHONY: install_deps
-install_deps: dep minimock
-
-.PHONY: dep
-dep: gobin
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-
-.PHONY: ensure_deps
-ensure_deps: dep
-	dep ensure
+install_deps: minimock golangci
 
 gobin: ## ensure gopath/bin
 	mkdir -p ${GOPATH}/bin
@@ -57,7 +49,7 @@ golangci: $(BIN_DIR)
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${BIN_DIR} v1.21.0
 
 .PHONY: generate
-generate: minimock
+generate:
 	go generate ./...
 
 .PHONY: lint
@@ -79,10 +71,6 @@ $(CONFIG): $(ARTIFACTS)
 	go run ./configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
 
-.PHONY: ensure
-ensure: ## dep ensure
-	dep ensure -v
-
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
@@ -94,7 +82,7 @@ integration:
 	go test ./... -tags=integration -v
 
 .PHONY: all
-all: ensure env build ## ensure + build + artifacts
+all: env build ## ensure + build + artifacts
 
 .PHONY: help
 help: ## Display this help screen

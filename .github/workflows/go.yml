@@ -15,19 +15,10 @@ jobs:
       with:
         fetch-depth: 1
         path: go/src/github.com/insolar/observer
-    - name: Get dependencies
-      run: |
-        make ensure_deps
-      env:
-        GOPATH: /home/runner/work/observer/go
     - name: Env
       run: make env
-      env:
-        GOPATH: /home/runner/work/observer/go
     - name: Build
       run: make build
-      env:
-        GOPATH: /home/runner/work/observer/go
   test:
     name: Unit tests
     runs-on: ubuntu-latest
@@ -42,15 +33,8 @@ jobs:
       with:
         fetch-depth: 1
         path: go/src/github.com/insolar/observer
-    - name: Get dependencies
-      run: |
-        make ensure_deps
-      env:
-        GOPATH: /home/runner/work/observer/go
     - name: Test
       run: make test
-      env:
-        GOPATH: /home/runner/work/observer/go
   mocks:
     name: Check mocks
     runs-on: ubuntu-latest
@@ -65,20 +49,14 @@ jobs:
       with:
         fetch-depth: 1
         path: go/src/github.com/insolar/observer
-    - name: Get dependencies
-      run: |
-        make ensure_deps
-      env:
-        GOPATH: /home/runner/work/observer/go
     - name: Check all necessary mocks were build
       continue-on-error: false
       run: |
+        make minimock
         make generate
         git status
         git diff
         [[ $(git status -z | wc -c) -eq 0 ]]
-      env:
-        GOPATH: /home/runner/work/observer/go
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -93,14 +71,7 @@ jobs:
       with:
         fetch-depth: 1
         path: go/src/github.com/insolar/observer
-    - name: Get dependencies
-      run: |
-        make ensure_deps
-      env:
-        GOPATH: /home/runner/work/observer/go
     - name: Run linter
       continue-on-error: false
       run: |
        make lint
-      env:
-        GOPATH: /home/runner/work/observer/go
