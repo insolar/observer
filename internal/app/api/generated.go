@@ -100,45 +100,25 @@ type DefinitionsResponsesNotificationInfoYaml struct {
 }
 
 // DefinitionsResponsesTransactionYaml defines model for definitions-responses-transaction-yaml.
-type DefinitionsResponsesTransactionYaml struct {
-	Amount      string      `json:"amount"`
-	Fee         string      `json:"fee"`
-	Index       float32     `json:"index"`
-	PulseNumber float32     `json:"pulseNumber"`
-	References  interface{} `json:"references"`
-	Status      string      `json:"status"`
-	Timestamp   float32     `json:"timestamp"`
-}
+type DefinitionsResponsesTransactionYaml interface{}
 
 // DefinitionsResponsesTransactionListYaml defines model for definitions-responses-transactionList-yaml.
-type DefinitionsResponsesTransactionListYaml []struct {
-	// Embedded fields due to inline allOf schema
-	Amount      string      `json:"amount"`
-	Fee         string      `json:"fee"`
-	Index       float32     `json:"index"`
-	PulseNumber float32     `json:"pulseNumber"`
-	References  interface{} `json:"references"`
-	Status      string      `json:"status"`
-	Timestamp   float32     `json:"timestamp"`
-}
+type DefinitionsResponsesTransactionListYaml []interface{}
 
 // DefinitionsResponsesTransactionsYaml defines model for definitions-responses-transactions-yaml.
-type DefinitionsResponsesTransactionsYaml []struct {
-	// Embedded fields due to inline allOf schema
-	Amount      string      `json:"amount"`
-	Fee         string      `json:"fee"`
-	Index       float32     `json:"index"`
-	PulseNumber float32     `json:"pulseNumber"`
-	References  interface{} `json:"references"`
-	Status      string      `json:"status"`
-	Timestamp   float32     `json:"timestamp"`
-}
+type DefinitionsResponsesTransactionsYaml []interface{}
 
 // Migration defines model for migration.
 type Migration struct {
+	Amount              string `json:"amount"`
+	Fee                 string `json:"fee"`
 	FromMemberReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"fromMemberReference"`
+	Index              float32 `json:"index"`
+	PulseNumber        float32 `json:"pulseNumber"`
+	Status             string  `json:"status"`
+	Timestamp          float32 `json:"timestamp"`
 	ToDepositReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"toDepositReference"`
@@ -150,9 +130,15 @@ type Migration struct {
 
 // Release defines model for release.
 type Release struct {
+	Amount               string `json:"amount"`
+	Fee                  string `json:"fee"`
 	FromDepositReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"fromDepositReference"`
+	Index             float32 `json:"index"`
+	PulseNumber       float32 `json:"pulseNumber"`
+	Status            string  `json:"status"`
+	Timestamp         float32 `json:"timestamp"`
 	ToMemberReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"toMemberReference"`
@@ -161,9 +147,15 @@ type Release struct {
 
 // Transfer defines model for transfer.
 type Transfer struct {
+	Amount              string `json:"amount"`
+	Fee                 string `json:"fee"`
 	FromMemberReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"fromMemberReference"`
+	Index             float32 `json:"index"`
+	PulseNumber       float32 `json:"pulseNumber"`
+	Status            string  `json:"status"`
+	Timestamp         float32 `json:"timestamp"`
 	ToMemberReference struct {
 		// Embedded fields due to inline allOf schema
 	} `json:"toMemberReference"`
