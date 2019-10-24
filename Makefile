@@ -54,7 +54,7 @@ generate:
 
 .PHONY: lint
 lint: golangci
-	${BIN_DIR}/golangci-lint --color=always run ./...
+	${BIN_DIR}/golangci-lint --color=always run ./... -v
 
 $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
