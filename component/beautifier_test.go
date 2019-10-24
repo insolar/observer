@@ -35,7 +35,7 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -57,6 +57,7 @@ var (
 		ApplicationName: "observer",
 	}
 )
+
 
 func TestMain(t *testing.M) {
 	var err error

@@ -17,6 +17,8 @@
 package component
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-pg/pg"
@@ -125,6 +127,20 @@ func makeStorer(
 					}
 				}
 
+				// Uncomment when migrations are ready.
+				// err = StoreTxRegister(tx, b.txRegister)
+				// if err != nil {
+				// 	return err
+				// }
+				// err = StoreTxResult(tx, b.txResult)
+				// if err != nil {
+				// 	return err
+				// }
+				// err = StoreTxSagaResult(tx, b.txSagaResult)
+				// if err != nil {
+				// 	return err
+				// }
+
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
 					err := deposits.Insert(deposit)
@@ -220,6 +236,150 @@ func makeStorer(
 
 		return stat
 	}
+}
+
+func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	columns := []string{
+		"tx_id",
+		"status_registered",
+		"pulse_number",
+		"member_from_ref",
+		"member_to_ref",
+		"migration_to_ref",
+		"vesting_from_ref",
+		"amount",
+		"fee",
+	}
+	var values []interface{}
+	for _, t := range transactions {
+		values = append(
+			values,
+			t.TransactionID,
+			true,
+			t.PulseNumber,
+			t.MemberFromReference,
+			t.MemberToReference,
+			t.MigrationsToReference,
+			t.VestingFromReference,
+			t.Amount,
+			t.Fee,
+		)
+	}
+	_, err := tx.Exec(
+		fmt.Sprintf( // nolint: gosec
+			`
+				INSERT INTO simple_transactions (%s) VALUES %s
+				ON CONFLICT (tx_id) DO UPDATE SET 
+					status_registered = EXCLUDED.status_registered,
+					pulse_number = EXCLUDED.pulse_number,
+					member_from_ref = EXCLUDED.member_from_ref,
+					member_to_ref = EXCLUDED.member_to_ref,
+					migration_to_ref = EXCLUDED.migration_to_ref,
+					vesting_from_ref = EXCLUDED.vesting_from_ref,
+					amount = EXCLUDED.amount,
+					fee = EXCLUDED.fee
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(transactions)),
+		),
+		values...,
+	)
+	return err
+}
+
+func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	columns := []string{
+		"tx_id",
+		"status_sent",
+	}
+	var values []interface{}
+	for _, t := range transactions {
+		values = append(
+			values,
+			t.TransactionID,
+			true,
+		)
+	}
+	_, err := tx.Exec(
+		fmt.Sprintf( // nolint: gosec
+			`
+				INSERT INTO simple_transactions (%s) VALUES %s
+				ON CONFLICT (tx_id) DO UPDATE SET
+					status_sent = EXCLUDED.status_sent
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(transactions)),
+		),
+		values...,
+	)
+	return err
+}
+
+func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	columns := []string{
+		"tx_id",
+		"status_finished",
+		"finish_success",
+		"finish_pulse_number",
+		"finish_record_number",
+	}
+	var values []interface{}
+	for _, t := range transactions {
+		values = append(
+			values,
+			t.TransactionID,
+			true,
+			t.FinishSuccess,
+			t.FinishPulseNumber,
+			t.FinishRecordNumber,
+		)
+	}
+	_, err := tx.Exec(
+		fmt.Sprintf( // nolint: gosec
+			`
+				INSERT INTO simple_transactions (%s) VALUES %s
+				ON CONFLICT (tx_id) DO UPDATE SET 
+					status_finished = EXCLUDED.status_finished,
+					finish_success = EXCLUDED.finish_success,
+					finish_pulse_number = EXCLUDED.finish_pulse_number,
+					finish_record_number = EXCLUDED.finish_record_number
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(transactions)),
+		),
+		values...,
+	)
+	return err
+}
+
+func valuesTemplate(columns, rows int) string {
+	b := strings.Builder{}
+	for r := 0; r < rows; r++ {
+		b.WriteString("(")
+		for c := 0; c < columns; c++ {
+			b.WriteString("?")
+			if c < columns-1 {
+				b.WriteString(",")
+			}
+		}
+		b.WriteString(")")
+		if r < rows-1 {
+			b.WriteString(",")
+		}
+	}
+	return b.String()
 }
 
 func month(pn insolar.PulseNumber) int64 {

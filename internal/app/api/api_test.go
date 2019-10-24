@@ -8,9 +8,11 @@ import (
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
-	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/internal/models"
 )
 
 const (
@@ -83,7 +85,7 @@ func TestMain(t *testing.M) {
 }
 
 func Test(t *testing.T) {
-	expectedTransaction := transaction{
+	expectedTransaction := models.Transaction{
 		TransactionID:    []byte{1, 2, 3},
 		PulseNumber:      1,
 		StatusRegistered: true,
@@ -93,7 +95,7 @@ func Test(t *testing.T) {
 	err := db.Insert(&expectedTransaction)
 	require.NoError(t, err)
 
-	receivedTransaction := transaction{}
+	receivedTransaction := models.Transaction{}
 	_, err = db.QueryOne(&receivedTransaction, "select * from simple_transactions")
 	require.NoError(t, err)
 
