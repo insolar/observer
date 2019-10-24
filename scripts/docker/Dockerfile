@@ -1,11 +1,8 @@
 FROM tsovak/golang as builder
 
-RUN go get -u github.com/golang/dep/cmd/dep
+ADD . /observer
 
-ADD . /go/src/github.com/insolar/observer
-
-WORKDIR /go/src/github.com/insolar/observer
-RUN make ensure
+WORKDIR /observer
 RUN make build
 
 FROM alpine:3.4

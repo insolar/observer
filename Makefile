@@ -4,6 +4,7 @@ OBSERVER = observer
 CONFIG = config
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
+GO111MODULE := on
 
 VERSION	:=
 ifeq ($(OS),Windows_NT)
