@@ -48,3 +48,9 @@ Healthcheck url: ${api.addr}/healthcheck
 
 #### Alerts
 Currently not provided.
+
+
+#### Development
+Install deps (dep, minimock) running
+
+`make install_deps`
