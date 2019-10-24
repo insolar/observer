@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -73,7 +74,30 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 		s.log.Warnf("trying to apply nil update mgr model")
 		return nil
 	}
-	logrus.Info("Not implemented update for mgr:", model)
+
+	var arrRef []string
+	for _, v := range model.Sequence {
+		arrRef = append(arrRef, v.String())
+	}
+
+	res, err := s.db.Model(&MGRSchema{}).
+		Where("state=?", model.PrevState.Bytes()).
+		Set("period=?,amount=?", model.PaymentFrequency, model.AmountDue).
+		Set("sequence=?", pg.Array(arrRef)).
+		Set("start_date=?", model.StartRoundDate).
+		Set("fin_date=?", model.FinishRoundDate).
+		Set("next_payment=?", model.NextPaymentTime).
+		Set("state=?", model.MGRState.Bytes()).
+		Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update mgr =%v", model)
+	}
+
+	if res.RowsAffected() == 0 {
+		s.errorCounter.Inc()
+		s.log.WithField("upd", model).Errorf("failed to update mgr")
+	}
 	return nil
 }
 
@@ -92,6 +116,6 @@ func mgrSchema(model *observer.MGR) *MGRSchema {
 		NextPaymentDate:  model.NextPaymentTime,
 		Sequence:         arrRef,
 		Status:           model.Status,
-		State:            model.State,
+		State:            model.State.Bytes(),
 	}
 }
