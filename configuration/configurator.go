@@ -35,22 +35,22 @@ const (
 	APIConfigFilePath = APIConfigName + "." + ConfigType
 )
 
-func Load(configName string) *Configuration {
+func Load() *Configuration {
 	printWorkingDir()
-	actual := load(configName)
+	actual := load()
 	printConfig(actual)
 	return actual
 }
 
-func load(configName string) *Configuration {
+func load() *Configuration {
 	v := viper.New()
-	v.SetConfigName(configName)
+	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
 	v.AddConfigPath(".")
 	v.AddConfigPath(".artifacts")
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Warnf("config file not found (file=%v). Default configuration is used", configName + "." + ConfigType)
+			log.Warnf("config file not found (file=%v). Default configuration is used", ConfigFilePath)
 		} else {
 			log.Error(errors.Wrapf(err, "failed to load config. Default configuration is used"))
 		}
@@ -70,8 +70,17 @@ func printWorkingDir() {
 	log.Infof("Working dir: %s", wd)
 }
 
-func printConfig(c *Configuration) {
-	cc, err := cleanSecrects(c)
+func printConfig(c interface{}) {
+	var cc interface{}
+	var err error
+
+	switch v := c.(type) {
+	case *Configuration:
+		cc, err = cleanSecrects(v)
+	case *APIConfiguration:
+		cc, err = apicleanSecrects(v)
+	}
+
 	if err != nil {
 		log.Error(err)
 		return

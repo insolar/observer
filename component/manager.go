@@ -48,7 +48,7 @@ type Manager struct {
 }
 
 func Prepare() *Manager {
-	cfg := configuration.Load(configuration.ConfigName)
+	cfg := configuration.Load()
 	obs := observability.Make(cfg)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)

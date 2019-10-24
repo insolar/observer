@@ -25,7 +25,7 @@ import (
 func main() {
 	var observerAPI api.ObserverServer
 	e := echo.New()
-	cfg := configuration.Load(configuration.APIConfigName)
+	cfg := configuration.APILoad()
 	api.RegisterHandlers(e, &observerAPI)
 	e.Logger.Fatal(e.Start(cfg.API.Addr))
 }
