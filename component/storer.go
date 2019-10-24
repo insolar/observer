@@ -127,18 +127,19 @@ func makeStorer(
 					}
 				}
 
-				err = StoreTxRegister(tx, b.txRegister)
-				if err != nil {
-					return err
-				}
-				err = StoreTxResult(tx, b.txResult)
-				if err != nil {
-					return err
-				}
-				err = StoreTxSagaResult(tx, b.txSagaResult)
-				if err != nil {
-					return err
-				}
+				// Uncomment when migrations are ready.
+				// err = StoreTxRegister(tx, b.txRegister)
+				// if err != nil {
+				// 	return err
+				// }
+				// err = StoreTxResult(tx, b.txResult)
+				// if err != nil {
+				// 	return err
+				// }
+				// err = StoreTxSagaResult(tx, b.txSagaResult)
+				// if err != nil {
+				// 	return err
+				// }
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
@@ -269,7 +270,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 		)
 	}
 	_, err := tx.Exec(
-		fmt.Sprintf(
+		fmt.Sprintf( // nolint: gosec
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET 
@@ -308,7 +309,7 @@ func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
 		)
 	}
 	_, err := tx.Exec(
-		fmt.Sprintf(
+		fmt.Sprintf( // nolint: gosec
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET
@@ -346,7 +347,7 @@ func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
 		)
 	}
 	_, err := tx.Exec(
-		fmt.Sprintf(
+		fmt.Sprintf( // nolint: gosec
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET 
