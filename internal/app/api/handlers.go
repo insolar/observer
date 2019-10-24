@@ -17,51 +17,51 @@
 package api
 
 import (
-	"net/http"
+	"github.com/labstack/echo/v4"
 )
 
 type ObserverServer struct{}
 
-func (s *ObserverServer) Balance(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Fee(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Member(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Notification(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Notification(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Transaction(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TransactionList(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) TransactionList(ctx echo.Context, reference string, params TransactionListParams) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TransactionsSearch(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Coins(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) Coins(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) CoinsCirculating(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) CoinsMax(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) CoinsTotal(w http.ResponseWriter, r *http.Request) {
+func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
 	panic("implement me")
 }

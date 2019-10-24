@@ -8,6 +8,7 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
+	github.com/deepmap/oapi-codegen v1.3.0
 	github.com/dgraph-io/badger v1.6.0 // indirect
 	github.com/go-pg/migrations v6.7.3+incompatible
 	github.com/go-pg/pg v8.0.6+incompatible
@@ -20,6 +21,7 @@ require (
 	github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799 // indirect
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/labstack/echo/v4 v4.1.11
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
@@ -38,7 +40,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.4.0
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/tylerb/gls v0.0.0-20150407001822-e606233f194d // indirect
 	github.com/tylerb/is v2.1.4+incompatible // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect

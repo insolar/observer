@@ -18,11 +18,12 @@ package main
 
 import (
 	"github.com/insolar/observer/internal/app/api"
-	"net/http"
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
 	var observerAPI api.ObserverServer
-	r := api.Handler(&observerAPI)
-	http.ListenAndServe(":3000", r)
+	e := echo.New()
+	api.RegisterHandlers(e, &observerAPI)
+	e.Logger.Fatal(e.Start(":3000"))
 }

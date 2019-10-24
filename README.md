@@ -54,3 +54,15 @@ Currently not provided.
 Install deps (dep, minimock) running
 
 `make install_deps`
+
+## API Observer
+API for observer service. We use chi as router.
+
+To generate API implementation from open-api spec, use oapi-codegen. Get it via:
+```
+go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
+``` 
+Generate types and API:
+```
+oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
+```

@@ -4,10 +4,9 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
-	"github.com/go-chi/chi"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
@@ -210,349 +209,267 @@ type TransactionsSearchParams struct {
 	Type *string `json:"type,omitempty"`
 }
 
+// ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// balance (GET /api/balance/{reference})
-	Balance(w http.ResponseWriter, r *http.Request)
-	// fee (GET /api/fee/{amount})
-	Fee(w http.ResponseWriter, r *http.Request)
-	// member (GET /api/member/{reference})
-	Member(w http.ResponseWriter, r *http.Request)
-	// notification (GET /api/notification)
-	Notification(w http.ResponseWriter, r *http.Request)
-	// transaction (GET /api/transaction/{txID})
-	Transaction(w http.ResponseWriter, r *http.Request)
-	// transactionList (GET /api/transactionList/{reference})
-	TransactionList(w http.ResponseWriter, r *http.Request)
-	// transactions (GET /api/transactions)
-	TransactionsSearch(w http.ResponseWriter, r *http.Request)
-	// coins (GET /coins)
-	Coins(w http.ResponseWriter, r *http.Request)
-	// coins/circulating (GET /coins/circulating)
-	CoinsCirculating(w http.ResponseWriter, r *http.Request)
-	// coins/max (GET /coins/max)
-	CoinsMax(w http.ResponseWriter, r *http.Request)
-	// coins/total (GET /coins/total)
-	CoinsTotal(w http.ResponseWriter, r *http.Request)
+	// balance// (GET /api/balance/{reference})
+	Balance(ctx echo.Context, reference string) error
+	// fee// (GET /api/fee/{amount})
+	Fee(ctx echo.Context, amount string) error
+	// member// (GET /api/member/{reference})
+	Member(ctx echo.Context, reference string) error
+	// notification// (GET /api/notification)
+	Notification(ctx echo.Context) error
+	// transaction// (GET /api/transaction/{txID})
+	Transaction(ctx echo.Context, txID string) error
+	// transactionList// (GET /api/transactionList/{reference})
+	TransactionList(ctx echo.Context, reference string, params TransactionListParams) error
+	// transactions// (GET /api/transactions)
+	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
+	// coins// (GET /coins)
+	Coins(ctx echo.Context) error
+	// coins/circulating// (GET /coins/circulating)
+	CoinsCirculating(ctx echo.Context) error
+	// coins/max// (GET /coins/max)
+	CoinsMax(ctx echo.Context) error
+	// coins/total// (GET /coins/total)
+	CoinsTotal(ctx echo.Context) error
 }
 
-// Balance operation middleware
-func BalanceCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		var err error
-
-		// ------------- Path parameter "reference" -------------
-		var reference string
-
-		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(r.Context(), "reference", reference)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+// ServerInterfaceWrapper converts echo contexts to parameters.
+type ServerInterfaceWrapper struct {
+	Handler ServerInterface
 }
 
-// Fee operation middleware
-func FeeCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// Balance converts echo context to params.
+func (w *ServerInterfaceWrapper) Balance(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "reference" -------------
+	var reference string
 
-		var err error
+	err = runtime.BindStyledParameter("simple", false, "reference", ctx.Param("reference"), &reference)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter reference: %s", err))
+	}
 
-		// ------------- Path parameter "amount" -------------
-		var amount string
-
-		err = runtime.BindStyledParameter("simple", false, "amount", chi.URLParam(r, "amount"), &amount)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(r.Context(), "amount", amount)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Balance(ctx, reference)
+	return err
 }
 
-// Member operation middleware
-func MemberCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// Fee converts echo context to params.
+func (w *ServerInterfaceWrapper) Fee(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "amount" -------------
+	var amount string
 
-		var err error
+	err = runtime.BindStyledParameter("simple", false, "amount", ctx.Param("amount"), &amount)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter amount: %s", err))
+	}
 
-		// ------------- Path parameter "reference" -------------
-		var reference string
-
-		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(r.Context(), "reference", reference)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Fee(ctx, amount)
+	return err
 }
 
-// Notification operation middleware
-func NotificationCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// Member converts echo context to params.
+func (w *ServerInterfaceWrapper) Member(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "reference" -------------
+	var reference string
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	err = runtime.BindStyledParameter("simple", false, "reference", ctx.Param("reference"), &reference)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter reference: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Member(ctx, reference)
+	return err
 }
 
-// Transaction operation middleware
-func TransactionCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// Notification converts echo context to params.
+func (w *ServerInterfaceWrapper) Notification(ctx echo.Context) error {
+	var err error
 
-		var err error
-
-		// ------------- Path parameter "txID" -------------
-		var txID string
-
-		err = runtime.BindStyledParameter("simple", false, "txID", chi.URLParam(r, "txID"), &txID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter txID: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(r.Context(), "txID", txID)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Notification(ctx)
+	return err
 }
 
-// ParamsForTransactionList operation parameters from context
-func ParamsForTransactionList(ctx context.Context) *TransactionListParams {
-	return ctx.Value("TransactionListParams").(*TransactionListParams)
+// Transaction converts echo context to params.
+func (w *ServerInterfaceWrapper) Transaction(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "txID" -------------
+	var txID string
+
+	err = runtime.BindStyledParameter("simple", false, "txID", ctx.Param("txID"), &txID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter txID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Transaction(ctx, txID)
+	return err
 }
 
-// TransactionList operation middleware
-func TransactionListCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// TransactionList converts echo context to params.
+func (w *ServerInterfaceWrapper) TransactionList(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "reference" -------------
+	var reference string
 
-		var err error
+	err = runtime.BindStyledParameter("simple", false, "reference", ctx.Param("reference"), &reference)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter reference: %s", err))
+	}
 
-		// ------------- Path parameter "reference" -------------
-		var reference string
+	// Parameter object where we will unmarshal all parameters from the context
+	var params TransactionListParams
+	// ------------- Optional query parameter "lastIndex" -------------
+	if paramValue := ctx.QueryParam("lastIndex"); paramValue != "" {
 
-		err = runtime.BindStyledParameter("simple", false, "reference", chi.URLParam(r, "reference"), &reference)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter reference: %s", err), http.StatusBadRequest)
-			return
-		}
+	}
 
-		ctx = context.WithValue(r.Context(), "reference", reference)
+	err = runtime.BindQueryParameter("form", true, false, "lastIndex", ctx.QueryParams(), &params.LastIndex)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err))
+	}
 
-		// Parameter object where we will unmarshal all parameters from the context
-		var params TransactionListParams
+	// ------------- Required query parameter "limit" -------------
+	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
 
-		// ------------- Optional query parameter "lastIndex" -------------
-		if paramValue := r.URL.Query().Get("lastIndex"); paramValue != "" {
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
+	}
 
-		}
+	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
 
-		err = runtime.BindQueryParameter("form", true, false, "lastIndex", r.URL.Query(), &params.LastIndex)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err), http.StatusBadRequest)
-			return
-		}
+	// ------------- Optional query parameter "type" -------------
+	if paramValue := ctx.QueryParam("type"); paramValue != "" {
 
-		// ------------- Required query parameter "limit" -------------
-		if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
+	}
 
-		} else {
-			http.Error(w, "Query argument limit is required, but not found", http.StatusBadRequest)
-			return
-		}
+	err = runtime.BindQueryParameter("form", true, false, "type", ctx.QueryParams(), &params.Type)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
+	}
 
-		err = runtime.BindQueryParameter("form", true, true, "limit", r.URL.Query(), &params.Limit)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter limit: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		// ------------- Optional query parameter "type" -------------
-		if paramValue := r.URL.Query().Get("type"); paramValue != "" {
-
-		}
-
-		err = runtime.BindQueryParameter("form", true, false, "type", r.URL.Query(), &params.Type)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter type: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(ctx, "TransactionListParams", &params)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.TransactionList(ctx, reference, params)
+	return err
 }
 
-// ParamsForTransactionsSearch operation parameters from context
-func ParamsForTransactionsSearch(ctx context.Context) *TransactionsSearchParams {
-	return ctx.Value("TransactionsSearchParams").(*TransactionsSearchParams)
+// TransactionsSearch converts echo context to params.
+func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params TransactionsSearchParams
+	// ------------- Optional query parameter "value" -------------
+	if paramValue := ctx.QueryParam("value"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "value", ctx.QueryParams(), &params.Value)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter value: %s", err))
+	}
+
+	// ------------- Required query parameter "limit" -------------
+	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "lastIndex" -------------
+	if paramValue := ctx.QueryParam("lastIndex"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "lastIndex", ctx.QueryParams(), &params.LastIndex)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err))
+	}
+
+	// ------------- Optional query parameter "type" -------------
+	if paramValue := ctx.QueryParam("type"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "type", ctx.QueryParams(), &params.Type)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.TransactionsSearch(ctx, params)
+	return err
 }
 
-// TransactionsSearch operation middleware
-func TransactionsSearchCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// Coins converts echo context to params.
+func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
+	var err error
 
-		var err error
-
-		// Parameter object where we will unmarshal all parameters from the context
-		var params TransactionsSearchParams
-
-		// ------------- Optional query parameter "value" -------------
-		if paramValue := r.URL.Query().Get("value"); paramValue != "" {
-
-		}
-
-		err = runtime.BindQueryParameter("form", true, false, "value", r.URL.Query(), &params.Value)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter value: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		// ------------- Required query parameter "limit" -------------
-		if paramValue := r.URL.Query().Get("limit"); paramValue != "" {
-
-		} else {
-			http.Error(w, "Query argument limit is required, but not found", http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindQueryParameter("form", true, true, "limit", r.URL.Query(), &params.Limit)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter limit: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		// ------------- Optional query parameter "lastIndex" -------------
-		if paramValue := r.URL.Query().Get("lastIndex"); paramValue != "" {
-
-		}
-
-		err = runtime.BindQueryParameter("form", true, false, "lastIndex", r.URL.Query(), &params.LastIndex)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		// ------------- Optional query parameter "type" -------------
-		if paramValue := r.URL.Query().Get("type"); paramValue != "" {
-
-		}
-
-		err = runtime.BindQueryParameter("form", true, false, "type", r.URL.Query(), &params.Type)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid format for parameter type: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		ctx = context.WithValue(ctx, "TransactionsSearchParams", &params)
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Coins(ctx)
+	return err
 }
 
-// Coins operation middleware
-func CoinsCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// CoinsCirculating converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
+	var err error
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsCirculating(ctx)
+	return err
 }
 
-// CoinsCirculating operation middleware
-func CoinsCirculatingCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// CoinsMax converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
+	var err error
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsMax(ctx)
+	return err
 }
 
-// CoinsMax operation middleware
-func CoinsMaxCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// CoinsTotal converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
+	var err error
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsTotal(ctx)
+	return err
 }
 
-// CoinsTotal operation middleware
-func CoinsTotalCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+// RegisterHandlers adds each server route to the EchoRouter.
+func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+	wrapper := ServerInterfaceWrapper{
+		Handler: si,
+	}
 
-// Handler creates http.Handler with routing matching OpenAPI spec.
-func Handler(si ServerInterface) http.Handler {
-	r := chi.NewRouter()
+	router.GET("/api/balance/:reference", wrapper.Balance)
+	router.GET("/api/fee/:amount", wrapper.Fee)
+	router.GET("/api/member/:reference", wrapper.Member)
+	router.GET("/api/notification", wrapper.Notification)
+	router.GET("/api/transaction/:txID", wrapper.Transaction)
+	router.GET("/api/transactionList/:reference", wrapper.TransactionList)
+	router.GET("/api/transactions", wrapper.TransactionsSearch)
+	router.GET("/coins", wrapper.Coins)
+	router.GET("/coins/circulating", wrapper.CoinsCirculating)
+	router.GET("/coins/max", wrapper.CoinsMax)
+	router.GET("/coins/total", wrapper.CoinsTotal)
 
-	r.Group(func(r chi.Router) {
-		r.Use(BalanceCtx)
-		r.Get("/api/balance/{reference}", si.Balance)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(FeeCtx)
-		r.Get("/api/fee/{amount}", si.Fee)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(MemberCtx)
-		r.Get("/api/member/{reference}", si.Member)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(NotificationCtx)
-		r.Get("/api/notification", si.Notification)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(TransactionCtx)
-		r.Get("/api/transaction/{txID}", si.Transaction)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(TransactionListCtx)
-		r.Get("/api/transactionList/{reference}", si.TransactionList)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(TransactionsSearchCtx)
-		r.Get("/api/transactions", si.TransactionsSearch)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(CoinsCtx)
-		r.Get("/coins", si.Coins)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(CoinsCirculatingCtx)
-		r.Get("/coins/circulating", si.CoinsCirculating)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(CoinsMaxCtx)
-		r.Get("/coins/max", si.CoinsMax)
-	})
-	r.Group(func(r chi.Router) {
-		r.Use(CoinsTotalCtx)
-		r.Get("/coins/total", si.CoinsTotal)
-	})
-
-	return r
 }
 
