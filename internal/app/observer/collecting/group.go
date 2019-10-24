@@ -116,7 +116,7 @@ type Group struct {
 	Title       string
 	Membership  foundation.StableMap
 	Goal        string
-	Purpose     string
+	Image       string
 	ProductType string
 	Product     insolar.Reference
 }
@@ -164,7 +164,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 		Title:      state.Title,
 		ChairMan:   state.ChairMan,
 		Goal:       state.Goal,
-		Purpose:    state.Purpose,
+		Image:      state.Image,
 		Membership: state.Membership,
 		Members:    members.Members,
 		Status:     "SUCCESS",

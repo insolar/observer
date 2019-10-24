@@ -68,7 +68,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		PrevState:      *insolar.NewReference(amd.PrevState),
 		GroupState:     *insolar.NewReference(rec.ID),
 		Goal:           group.Goal,
-		Purpose:        group.Purpose,
+		Image:          group.Image,
 		ProductType:    group.ProductType,
 		Treasurer:      group.Treasurer,
 		Membership:     group.Membership,
