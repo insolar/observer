@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// +build integration
 
 package grpc
 
@@ -189,8 +188,7 @@ func (c *pulseClient) TopSyncPulse(ctx context.Context, in *exporter.GetTopSyncP
 
 type pulseStream struct {
 	grpc.ClientStream
-	pulse []*exporter.Pulse
-	recv  func() (*exporter.Pulse, error)
+	recv func() (*exporter.Pulse, error)
 }
 
 func (s *pulseStream) Recv() (*exporter.Pulse, error) {
