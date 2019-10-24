@@ -29,7 +29,7 @@ import (
 func makeFetcher(
 	obs *observability.Observability,
 	pulses observer.PulseFetcher,
-	records observer.RecordFetcher,
+	records observer.HeavyRecordFetcher,
 ) func(context.Context, *state) *raw {
 	log := obs.Log()
 	lastPulseMetric, recordCounterMetric := fetchingMetrics(obs)

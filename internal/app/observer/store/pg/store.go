@@ -170,7 +170,7 @@ func (s *Store) SetSideEffect(ctx context.Context, sideEffectRecord record.Mater
                                            ON CONFLICT DO NOTHING`,
 		id.String(), body)
 
-	return errors.Wrap(err, "failed to insert result")
+	return errors.Wrap(err, "failed to insert side effect")
 }
 
 func (s *Store) SetRequest(ctx context.Context, requestRecord record.Material) error {

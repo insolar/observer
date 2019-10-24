@@ -38,13 +38,13 @@ func Test_makeFetcher(t *testing.T) {
 	var cfg *configuration.Configuration
 	var obs *observability.Observability
 	var pulseFetcher *observer.PulseFetcherMock
-	var recordFetcher *observer.RecordFetcherMock
+	var recordFetcher *observer.HeavyRecordFetcherMock
 
 	resetComponents := func() {
 		cfg = configuration.Default()
 		obs = observability.Make(cfg)
 		pulseFetcher = observer.NewPulseFetcherMock(mc)
-		recordFetcher = observer.NewRecordFetcherMock(mc)
+		recordFetcher = observer.NewHeavyRecordFetcherMock(mc)
 	}
 
 	t.Run("happy path", func(t *testing.T) {

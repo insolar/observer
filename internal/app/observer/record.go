@@ -31,8 +31,8 @@ type RecordStorage interface {
 	Insert(*Record) error
 }
 
-//go:generate minimock -i github.com/insolar/observer/internal/app/observer.RecordFetcher -o ./ -s _mock.go -g
-type RecordFetcher interface {
+//go:generate minimock -i github.com/insolar/observer/internal/app/observer.HeavyRecordFetcher -o ./ -s _mock.go -g
+type HeavyRecordFetcher interface {
 	Fetch(context.Context, insolar.PulseNumber) (map[uint32]*Record, insolar.PulseNumber, error)
 }
 
