@@ -247,6 +247,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 		"tx_id",
 		"status_registered",
 		"pulse_number",
+		"record_number",
 		"member_from_ref",
 		"member_to_ref",
 		"migration_to_ref",
@@ -261,6 +262,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 			t.TransactionID,
 			true,
 			t.PulseNumber,
+			t.RecordNumber,
 			t.MemberFromReference,
 			t.MemberToReference,
 			t.MigrationsToReference,
@@ -276,6 +278,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 				ON CONFLICT (tx_id) DO UPDATE SET 
 					status_registered = EXCLUDED.status_registered,
 					pulse_number = EXCLUDED.pulse_number,
+					record_number = EXCLUDED.record_number,
 					member_from_ref = EXCLUDED.member_from_ref,
 					member_to_ref = EXCLUDED.member_to_ref,
 					migration_to_ref = EXCLUDED.migration_to_ref,

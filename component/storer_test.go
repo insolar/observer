@@ -60,6 +60,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		{
 			TransactionID:       []byte{byte(rand.Int())},
 			PulseNumber:         rand.Int63(),
+			RecordNumber:        rand.Int63(),
 			MemberFromReference: []byte{byte(rand.Int())},
 			MemberToReference:   []byte{byte(rand.Int())},
 			Amount:              strconv.Itoa(rand.Int()),
@@ -74,6 +75,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		{
 			TransactionID:         []byte{byte(rand.Int())},
 			PulseNumber:           rand.Int63(),
+			RecordNumber:          rand.Int63(),
 			MigrationsToReference: []byte{byte(rand.Int())},
 			Amount:                strconv.Itoa(rand.Int()),
 			Fee:                   strconv.Itoa(rand.Int()),
@@ -90,6 +92,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 					{
 						TransactionID:       expectedTransactions[0].TransactionID,
 						PulseNumber:         expectedTransactions[0].PulseNumber,
+						RecordNumber:        expectedTransactions[0].RecordNumber,
 						MemberFromReference: expectedTransactions[0].MemberFromReference,
 						MemberToReference:   expectedTransactions[0].MemberToReference,
 						Amount:              expectedTransactions[0].Amount,
@@ -98,6 +101,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 					{
 						TransactionID:         expectedTransactions[1].TransactionID,
 						PulseNumber:           expectedTransactions[1].PulseNumber,
+						RecordNumber:          expectedTransactions[1].RecordNumber,
 						MigrationsToReference: expectedTransactions[1].MigrationsToReference,
 						Amount:                expectedTransactions[1].Amount,
 						Fee:                   expectedTransactions[1].Fee,

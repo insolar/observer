@@ -34,6 +34,7 @@ type Transaction struct {
 	// Request registered.
 	StatusRegistered      bool   `sql:"status_registered"`
 	PulseNumber           int64  `sql:"pulse_number"`
+	RecordNumber          int64  `sql:"record_number"`
 	MemberFromReference   []byte `sql:"member_from_ref"`
 	MemberToReference     []byte `sql:"member_to_ref"`
 	MigrationsToReference []byte `sql:"migration_to_ref"`

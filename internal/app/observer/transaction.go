@@ -3,6 +3,7 @@ package observer
 type TxRegister struct {
 	TransactionID         []byte
 	PulseNumber           int64
+	RecordNumber          int64
 	MemberFromReference   []byte
 	MemberToReference     []byte
 	MigrationsToReference []byte
