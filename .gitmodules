@@ -1,3 +1,0 @@
-[submodule "application"]
-	path = application
-	url = git@github.com:insolar/xns.git
