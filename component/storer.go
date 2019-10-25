@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/observer/internal/models"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/configuration"
@@ -243,18 +244,6 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 		return nil
 	}
 
-	columns := []string{
-		"tx_id",
-		"status_registered",
-		"pulse_number",
-		"record_number",
-		"member_from_ref",
-		"member_to_ref",
-		"migration_to_ref",
-		"vesting_from_ref",
-		"amount",
-		"fee",
-	}
 	var values []interface{}
 	for _, t := range transactions {
 		values = append(
@@ -286,8 +275,8 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 					amount = EXCLUDED.amount,
 					fee = EXCLUDED.fee
 			`,
-			strings.Join(columns, ","),
-			valuesTemplate(len(columns), len(transactions)),
+			strings.Join(models.TransactionColumns(), ","),
+			valuesTemplate(len(models.TransactionColumns()), len(transactions)),
 		),
 		values...,
 	)
