@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/go-pg/migrations"
@@ -35,4 +36,5 @@ func main() {
 	if err != nil {
 		log.Panicf("Could not migrate: %s", err)
 	}
+	fmt.Println("migrated successfully!")
 }
