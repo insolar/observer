@@ -75,10 +75,6 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 		return err
 	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "exceeded attempts of getting pulse record from HME")
-	}
-
 	model := &observer.Pulse{
 		Number:    resp.PulseNumber,
 		Entropy:   resp.Entropy,
@@ -105,10 +101,6 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 		}
 		return nil
 	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
-
-	if err != nil {
-		return insolar.GenesisPulse.PulseNumber, errors.Wrapf(err, "exceeded attempts of getting top sync pulse from HME")
-	}
 
 	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
 	return insolar.PulseNumber(tsp.PulseNumber), nil

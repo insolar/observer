@@ -30,6 +30,8 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
+//go:generate minimock -g -i github.com/insolar/insolar/ledger/heavy/exporter.RecordExporterClient -s "_mock.go"
+
 type RecordFetcher struct {
 	log     *logrus.Logger
 	client  exporter.RecordExporterClient

@@ -12,7 +12,7 @@ require (
 	github.com/dgraph-io/badger v1.6.0 // indirect
 	github.com/go-pg/migrations v6.7.3+incompatible
 	github.com/go-pg/pg v8.0.6+incompatible
-	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/gofuzz v0.0.0-20190920162303-b906efc57a55 // indirect
