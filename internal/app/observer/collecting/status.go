@@ -23,5 +23,5 @@ type Status int
 const (
 	StatusInvite Status = iota + 1
 	StatusActive
-	StatusReject
+	StatusInactive
 )

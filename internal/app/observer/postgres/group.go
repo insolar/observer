@@ -85,6 +85,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		Where("state=?", model.PrevState.Bytes()).
 		Set("image=?,goal=?", model.Image, model.Goal).
 		Set("type=?", productType).
+		Set("title=?", model.Title).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("state=?", model.GroupState.Bytes()).
 		Update()
@@ -126,8 +127,8 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 				dbState = "invited"
 			case collecting.StatusActive:
 				dbState = "active"
-			case collecting.StatusReject:
-				dbState = "rejected"
+			case collecting.StatusInactive:
+				dbState = "inactive"
 			}
 
 			switch membership.MemberRole {
