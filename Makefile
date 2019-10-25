@@ -92,3 +92,7 @@ help: ## Display this help screen
 .PHONY: build-docker
 build-docker:
 	docker build -t insolar/observer -f scripts/docker/Dockerfile .
+
+.PHONY: migrate
+migrate:
+	go run ./cmd/migrate/migrate.go
