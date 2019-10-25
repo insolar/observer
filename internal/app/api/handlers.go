@@ -55,6 +55,36 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 	panic("implement me")
 }
 
+func writeTxResponse(ctx echo.Context, txID string, tx models.Transaction) error {
+	internalTx := TxToApiTx(txID, tx)
+	switch tx.Type() {
+	case models.TTypeMigration:
+		return ctx.JSON(http.StatusOK, Migration{
+			Transaction:         internalTx,
+			FromMemberReference: NullableString(string(tx.MemberFromReference)),
+			ToDepositReference:  NullableString(string(tx.MigrationsToReference)),
+			ToMemberReference:   NullableString(string(tx.MemberToReference)),
+			Type:                NullableInterface(tx.Type()),
+		})
+	case models.TTypeTransfer:
+		return ctx.JSON(http.StatusOK, Transfer{
+			Transaction:         internalTx,
+			FromMemberReference: NullableString(string(tx.MemberFromReference)),
+			ToMemberReference:   NullableString(string(tx.MemberToReference)),
+			Type:                NullableInterface(tx.Type()),
+		})
+	case models.TTypeRelease:
+		return ctx.JSON(http.StatusOK, Release{
+			Transaction:          internalTx,
+			FromDepositReference: NullableString(string(tx.VestingFromReference)),
+			ToMemberReference:    NullableString(string(tx.MemberToReference)),
+			Type:                 NullableInterface(tx.Type()),
+		})
+	default:
+		return ctx.JSON(http.StatusOK, internalTx)
+	}
+}
+
 func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	strings.TrimSpace(txID)
 	if len(txID) == 0 {
@@ -71,7 +101,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, tx)
+	return writeTxResponse(ctx, txID, tx)
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {

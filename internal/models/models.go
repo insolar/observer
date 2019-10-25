@@ -34,6 +34,15 @@ const (
 	TStatusFailed   TransactionStatus = "failed"
 )
 
+type TransactionType string
+
+const (
+	TTYpeUnknown   TransactionType = "unknown"
+	TTypeTransfer  TransactionType = "transfer"
+	TTypeMigration TransactionType = "migration"
+	TTypeRelease   TransactionType = "release"
+)
+
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
@@ -81,4 +90,19 @@ func (t *Transaction) Status() TransactionStatus {
 	}
 
 	return TStatusUnknown
+}
+
+func (t *Transaction) Type() TransactionType {
+	if len(t.VestingFromReference) > 0 {
+		return TTypeRelease
+	}
+	if len(t.MigrationsToReference) > 0 {
+		return TTypeMigration
+	}
+
+	if len(t.MemberFromReference) > 0 && len(t.MemberToReference) > 0 {
+		return TTypeTransfer
+	}
+
+	return TTYpeUnknown
 }
