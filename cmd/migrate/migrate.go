@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -11,7 +12,10 @@ import (
 	"github.com/insolar/observer/configuration"
 )
 
+var migrationDir = flag.String("dir", "", "directory with migrations")
+
 func main() {
+	flag.Parse()
 	cfg := configuration.Load()
 
 	opt, err := pg.ParseURL(cfg.DB.URL)
@@ -27,7 +31,7 @@ func main() {
 		log.Panicf("Could not init migrations: %s", err)
 	}
 
-	err = migrationCollection.DiscoverSQLMigrations("scripts/migrations")
+	err = migrationCollection.DiscoverSQLMigrations(*migrationDir)
 	if err != nil {
 		log.Panicf("Failed to read migrations: %s", err)
 	}

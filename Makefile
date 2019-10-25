@@ -99,4 +99,4 @@ build-migrate:
 
 .PHONY: migrate
 migrate:
-	go run ./cmd/migrate/migrate.go
+	go run ./cmd/migrate/migrate.go -dir scripts/migrations
