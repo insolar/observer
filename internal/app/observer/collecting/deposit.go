@@ -23,13 +23,14 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
-	"github.com/insolar/insolar/log"
 
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
 
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -99,25 +100,22 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		activate   *record.Activate
 		activateID insolar.ID
 	)
-	for _, o := range callTree.Outgoings {
-		subTree := o.Structure
-		if subTree == nil {
-			log.Debug("outgoing has no sub-tree (saga), skipping")
-			continue
-		}
-		effect := o.Structure.SideEffect
-		if effect == nil {
-			log.Debug("called request is has no side effect, skipping")
-			continue
-		}
-		if effect.Activation == nil {
-			log.Debug("called request is not activation, skipping")
-			continue
-		}
-		if effect.Activation.Image.Equal(*migrationdaemon.PrototypeReference) {
-			activate = effect.Activation
-			activateID = effect.ID
-		}
+
+	daemonCall, err := c.find(callTree.Outgoings, c.isDepositMigrationCall)
+	if err != nil {
+		// TODO: maybe should create failed deposit
+		return nil
+	}
+
+	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
+	if err != nil {
+		// TODO: maybe should create failed deposit
+		return nil
+	}
+
+	if newCall != nil {
+		activateID = newCall.SideEffect.ID
+		activate = newCall.SideEffect.Activation
 	}
 
 	if activate == nil {
@@ -184,13 +182,13 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			continue
 		}
 		if depositRef != nil {
-			depositID = *depositRef.GetLocal()
 			depositActivate, err := c.fetcher.SideEffect(ctx, *depositRef.GetLocal())
 			if err != nil {
 				c.log.WithField("deposit_ref", depositRef).
 					Error("failed to find deposit activate record")
 				continue
 			}
+			depositID = depositActivate.ID
 			activate = depositActivate.Virtual.GetActivate()
 			depositState = c.initialDepositState(activate)
 			ethHash = strings.ToLower(depositState.TxHash)
@@ -256,6 +254,39 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		Balance:         state.Balance,
 		DepositState:    id,
 	}, nil
+}
+
+func (c *DepositCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
+	for _, req := range outs {
+		if predicate(&req.Structure.Request) {
+			return req.Structure, nil
+		}
+	}
+	return nil, errors.New("failed to find corresponding request in calls tree")
+}
+
+func (c *DepositCollector) isDepositMigrationCall(req *record.IncomingRequest) bool {
+	if req.Method != "DepositMigrationCall" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
+}
+
+func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
+	if req.Method != "New" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
 }
 
 func isPKShardActivate(rec *observer.Record) bool {
