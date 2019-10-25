@@ -21,13 +21,13 @@ import (
 	"time"
 )
 
-type APIConfiguration struct {
+type Configuration struct {
 	API configuration.API
 	DB  configuration.DB
 }
 
-func APIDefault() *APIConfiguration {
-	return &APIConfiguration{
+func Default() *Configuration {
+	return &Configuration{
 		API: configuration.API{
 			Addr: ":0",
 		},

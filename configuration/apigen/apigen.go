@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-	cfg := apiconfiguration.APIDefault()
+	cfg := apiconfiguration.Default()
 	out, _ := yaml.Marshal(cfg)
 	err := ioutil.WriteFile(apiconfiguration.ConfigFilePath, out, 0644)
 	if err != nil {

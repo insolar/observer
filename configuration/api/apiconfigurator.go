@@ -33,14 +33,14 @@ const (
 	ConfigFilePath = ConfigName + "." + ConfigType
 )
 
-func Load() *APIConfiguration {
+func Load() *Configuration {
 	printWorkingDir()
 	actual := load()
 	printConfig(actual)
 	return actual
 }
 
-func load() *APIConfiguration {
+func load() *Configuration {
 	v := viper.New()
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
@@ -52,13 +52,13 @@ func load() *APIConfiguration {
 		} else {
 			log.Error(errors.Wrapf(err, "failed to load config. Default configuration is used"))
 		}
-		return APIDefault()
+		return Default()
 	}
-	actual := &APIConfiguration{}
+	actual := &Configuration{}
 	err := v.Unmarshal(actual)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to unmarshal readed from file config into configuration structure. Default configuration is used"))
-		return APIDefault()
+		return Default()
 	}
 	return actual
 }
@@ -68,7 +68,7 @@ func printWorkingDir() {
 	log.Infof("Working dir: %s", wd)
 }
 
-func printConfig(c *APIConfiguration) {
+func printConfig(c *Configuration) {
 	cc, err := cleanSecrects(c)
 	if err != nil {
 		log.Error(err)
@@ -81,12 +81,12 @@ func printConfig(c *APIConfiguration) {
 	log.Infof("Loaded configuration: \n %s \n", string(out))
 }
 
-func cleanSecrects(c *APIConfiguration) (*APIConfiguration, error) {
+func cleanSecrects(c *Configuration) (*Configuration, error) {
 	buf, err := insolar.Serialize(c)
 	if err != nil {
 		return nil, errors.New("failed to serialize config")
 	}
-	cc := &APIConfiguration{}
+	cc := &Configuration{}
 	if err := insolar.Deserialize(buf, cc); err != nil {
 		return nil, errors.New("failed to deserialize config")
 	}
