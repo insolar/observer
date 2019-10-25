@@ -109,6 +109,11 @@ func (c *MigrationTransferCollector) Collect(ctx context.Context, rec *observer.
 		// return c.build(call, result, depositMigrationCallStructure, nil, nil, nil)
 	}
 
+	_, err = c.find(depositMigrationCallStructure.Outgoings, c.isDepositNew)
+	if err == nil { // It is just first confirmation but not transfer.
+		return nil
+	}
+
 	depositConfirmStructure, err := c.find(depositMigrationCallStructure.Outgoings, c.isDepositConfirm)
 	if err != nil {
 		c.log.WithField("api_call", req.ID).
@@ -243,6 +248,18 @@ func (c *MigrationTransferCollector) isDepositMigrationCall(req *record.Incoming
 	}
 
 	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
+}
+
+func (c *MigrationTransferCollector) isDepositNew(req *record.IncomingRequest) bool {
+	if req.Method != "New" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
 }
 
 func (c *MigrationTransferCollector) isDepositConfirm(req *record.IncomingRequest) bool {
