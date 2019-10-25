@@ -123,6 +123,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/insolar/insolar v0.9.14-0.20191024143936-765bad6a86f8 h1:OgwLCzQ1VW8Of1rLJuXnCX1ihG+pIF9ObP2P3Wf1p/A=
 github.com/insolar/insolar v0.9.14-0.20191024143936-765bad6a86f8/go.mod h1:OdoTgDVvJkcZCOTMImFtP+LoFlm+68mV8svSjTT6LOU=
+github.com/insolar/insolar v0.9.16-0.20191024161728-7fb195afd124 h1:zkOeWqkQOxCpbNaCzt6M3Ho08TFCZqYn53H/bar+JlU=
+github.com/insolar/insolar v0.9.16-0.20191024161728-7fb195afd124/go.mod h1:OdoTgDVvJkcZCOTMImFtP+LoFlm+68mV8svSjTT6LOU=
 github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799 h1:4nHncpSQzy4IT0sATw5TV8GhAXe/td7jXMi0vyVsaok=
 github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799/go.mod h1:9mvKFD2wFLEGmK8pNFIowmGRTjfyn3YHtr10s7DHpBY=
 github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 h1:4zOlv2my+vf98jT1nQt4bT/yKWUImevYPJ2H344CloE=
@@ -247,6 +249,7 @@ github.com/spf13/jwalterweatherman v1.1.0/go.mod h1:aNWZUN0dPAAO/Ljvb5BEdw96iTZ0
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
+github.com/spf13/viper v1.3.2 h1:VUFqw5KcqRf7i70GOzW7N+Q7+gxVBkSSqiXB12+JQ4M=
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
 github.com/spf13/viper v1.4.0 h1:yXHLWeravcrgGyFSyCgdYpXQ9dR9c/WED3pg1RhxqEU=
 github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/yZzE=
@@ -268,8 +271,11 @@ github.com/uber/jaeger-client-go v2.19.0+incompatible h1:pbwbYfHUoaase0oPQOdZ1Gc
 github.com/uber/jaeger-client-go v2.19.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.2.0+incompatible h1:MxZXOiR2JuoANZ3J6DE/U0kSFv/eJ/GfSYVCjK7dyaw=
 github.com/uber/jaeger-lib v2.2.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
+github.com/ugorji/go v1.1.2-0.20181209151446-772ced7fd4c2 h1:PEhRFEeZyZTu6hNgJZ+aUqWLiJQ/edkkgn3fIDwFUqU=
+github.com/ugorji/go v1.1.2-0.20181209151446-772ced7fd4c2/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
 github.com/ugorji/go v1.1.4 h1:j4s+tAvLfL3bZyefP2SEWmhBzmuIlH/eqNuPdFPgngw=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
+github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 h1:3SVOIvH7Ae1KRYyQWRjXWJEA9sS/c/pjvH++55Gr648=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
