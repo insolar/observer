@@ -14,18 +14,28 @@
 // limitations under the License.
 //
 
-package main
+package api
 
 import (
-	apiconfiguration "github.com/insolar/observer/configuration/api"
-	"github.com/insolar/observer/internal/app/api"
-	"github.com/labstack/echo/v4"
+	"github.com/insolar/observer/configuration"
+	"time"
 )
 
-func main() {
-	var observerAPI api.ObserverServer
-	e := echo.New()
-	cfg := apiconfiguration.Load()
-	api.RegisterHandlers(e, &observerAPI)
-	e.Logger.Fatal(e.Start(cfg.API.Addr))
+type Configuration struct {
+	API configuration.API
+	DB  configuration.DB
+}
+
+func Default() *Configuration {
+	return &Configuration{
+		API: configuration.API{
+			Addr: ":0",
+		},
+		DB: configuration.DB{
+			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
+			Attempts:        5,
+			AttemptInterval: 3 * time.Second,
+			CreateTables:    false,
+		},
+	}
 }
