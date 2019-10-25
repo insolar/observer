@@ -35,15 +35,19 @@ func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
 	return &ObserverServer{db: db, log: log}
 }
 
-func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	panic("implement me")
-}
-
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 	panic("implement me")
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -68,10 +72,6 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	}
 
 	return ctx.JSON(http.StatusOK, tx)
-}
-
-func (s *ObserverServer) TransactionList(ctx echo.Context, reference string, params TransactionListParams) error {
-	panic("implement me")
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
