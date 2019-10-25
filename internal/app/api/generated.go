@@ -81,6 +81,9 @@ type DefinitionsResponsesInvalidTransactionListParametersYaml struct {
 	Error []string `json:"error"`
 }
 
+// DefinitionsResponsesMemberTransactionsYaml defines model for definitions-responses-member-transactions-yaml.
+type DefinitionsResponsesMemberTransactionsYaml []interface{}
+
 // DefinitionsResponsesMemberBalanceYaml defines model for definitions-responses-memberBalance-yaml.
 type DefinitionsResponsesMemberBalanceYaml struct {
 	Balance string `json:"balance"`
@@ -93,9 +96,6 @@ type DefinitionsResponsesNotificationInfoYaml struct {
 
 // DefinitionsResponsesTransactionYaml defines model for definitions-responses-transaction-yaml.
 type DefinitionsResponsesTransactionYaml interface{}
-
-// DefinitionsResponsesTransactionListYaml defines model for definitions-responses-transactionList-yaml.
-type DefinitionsResponsesTransactionListYaml []interface{}
 
 // DefinitionsResponsesTransactionsYaml defines model for definitions-responses-transactions-yaml.
 type DefinitionsResponsesTransactionsYaml []interface{}
@@ -126,7 +126,7 @@ type Transaction struct {
 	Amount      string  `json:"amount"`
 	Fee         string  `json:"fee"`
 	Index       float32 `json:"index"`
-	PulseNumber float32 `json:"pulseNumber"`
+	PulseNumber int64   `json:"pulseNumber"`
 	Status      string  `json:"status"`
 	Timestamp   float32 `json:"timestamp"`
 	TxID        string  `json:"txID"`
@@ -146,11 +146,17 @@ type Transfer struct {
 // MemberTransactionsParams defines parameters for MemberTransactions.
 type MemberTransactionsParams struct {
 
-	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
-	LastIndex *float32 `json:"lastIndex,omitempty"`
-
 	// Number of entries per list.
 	Limit int `json:"limit"`
+
+	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
+	Index *float32 `json:"index,omitempty"`
+
+	// Chronological `direction` of the transaction list starting from a given `index`:
+	//
+	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
+	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
+	Direction *string `json:"direction,omitempty"`
 
 	// Transaction type:
 	//
@@ -180,7 +186,13 @@ type TransactionsSearchParams struct {
 	Limit int `json:"limit"`
 
 	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
-	LastIndex *int `json:"lastIndex,omitempty"`
+	Index *float32 `json:"index,omitempty"`
+
+	// Chronological `direction` of the transaction list starting from a given `index`:
+	//
+	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
+	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
+	Direction *string `json:"direction,omitempty"`
 
 	// Transaction type:
 	//
@@ -196,6 +208,22 @@ type TransactionsSearchParams struct {
 	// * `received` — transfer of funds to the receiver is finalized.
 	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
 	Status *string `json:"status,omitempty"`
+}
+
+// ClosedTransactionsParams defines parameters for ClosedTransactions.
+type ClosedTransactionsParams struct {
+
+	// Number of entries per list.
+	Limit int `json:"limit"`
+
+	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
+	Index *float32 `json:"index,omitempty"`
+
+	// Chronological `direction` of the transaction list starting from a given `index`:
+	//
+	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
+	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
+	Direction *string `json:"direction,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
@@ -214,6 +242,8 @@ type ServerInterface interface {
 	Transaction(ctx echo.Context, txID string) error
 	// transactions// (GET /api/transactions)
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
+	// closed transactions// (GET /api/transactions/closed)
+	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
 	// coins// (GET /coins)
 	Coins(ctx echo.Context) error
 	// coins/circulating// (GET /coins/circulating)
@@ -290,16 +320,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params MemberTransactionsParams
-	// ------------- Optional query parameter "lastIndex" -------------
-	if paramValue := ctx.QueryParam("lastIndex"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "lastIndex", ctx.QueryParams(), &params.LastIndex)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err))
-	}
-
 	// ------------- Required query parameter "limit" -------------
 	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
 
@@ -310,6 +330,26 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "index" -------------
+	if paramValue := ctx.QueryParam("index"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
+	}
+
+	// ------------- Optional query parameter "direction" -------------
+	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
 	}
 
 	// ------------- Optional query parameter "type" -------------
@@ -390,14 +430,24 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
 	}
 
-	// ------------- Optional query parameter "lastIndex" -------------
-	if paramValue := ctx.QueryParam("lastIndex"); paramValue != "" {
+	// ------------- Optional query parameter "index" -------------
+	if paramValue := ctx.QueryParam("index"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "lastIndex", ctx.QueryParams(), &params.LastIndex)
+	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter lastIndex: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
+	}
+
+	// ------------- Optional query parameter "direction" -------------
+	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
 	}
 
 	// ------------- Optional query parameter "type" -------------
@@ -422,6 +472,49 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.TransactionsSearch(ctx, params)
+	return err
+}
+
+// ClosedTransactions converts echo context to params.
+func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ClosedTransactionsParams
+	// ------------- Required query parameter "limit" -------------
+	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "index" -------------
+	if paramValue := ctx.QueryParam("index"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
+	}
+
+	// ------------- Optional query parameter "direction" -------------
+	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.ClosedTransactions(ctx, params)
 	return err
 }
 
@@ -475,6 +568,7 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/notification", wrapper.Notification)
 	router.GET("/api/transaction/:txID", wrapper.Transaction)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
+	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 	router.GET("/coins", wrapper.Coins)
 	router.GET("/coins/circulating", wrapper.CoinsCirculating)
 	router.GET("/coins/max", wrapper.CoinsMax)
