@@ -22,6 +22,10 @@ import (
 
 type ObserverServer struct{}
 
+func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
+	panic("implement me")
+}
+
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 	panic("implement me")
 }
