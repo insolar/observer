@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package configuration
+package api
 
 import (
 	"os"
@@ -28,19 +28,19 @@ import (
 )
 
 const (
-	ConfigName     = "observer"
+	ConfigName     = "observerapi"
 	ConfigType     = "yaml"
 	ConfigFilePath = ConfigName + "." + ConfigType
 )
 
-func Load() *Configuration {
+func Load() *APIConfiguration {
 	printWorkingDir()
 	actual := load()
 	printConfig(actual)
 	return actual
 }
 
-func load() *Configuration {
+func load() *APIConfiguration {
 	v := viper.New()
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
@@ -52,13 +52,13 @@ func load() *Configuration {
 		} else {
 			log.Error(errors.Wrapf(err, "failed to load config. Default configuration is used"))
 		}
-		return Default()
+		return APIDefault()
 	}
-	actual := &Configuration{}
+	actual := &APIConfiguration{}
 	err := v.Unmarshal(actual)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to unmarshal readed from file config into configuration structure. Default configuration is used"))
-		return Default()
+		return APIDefault()
 	}
 	return actual
 }
@@ -68,7 +68,7 @@ func printWorkingDir() {
 	log.Infof("Working dir: %s", wd)
 }
 
-func printConfig(c *Configuration) {
+func printConfig(c *APIConfiguration) {
 	cc, err := cleanSecrects(c)
 	if err != nil {
 		log.Error(err)
@@ -81,12 +81,12 @@ func printConfig(c *Configuration) {
 	log.Infof("Loaded configuration: \n %s \n", string(out))
 }
 
-func cleanSecrects(c *Configuration) (*Configuration, error) {
+func cleanSecrects(c *APIConfiguration) (*APIConfiguration, error) {
 	buf, err := insolar.Serialize(c)
 	if err != nil {
 		return nil, errors.New("failed to serialize config")
 	}
-	cc := &Configuration{}
+	cc := &APIConfiguration{}
 	if err := insolar.Deserialize(buf, cc); err != nil {
 		return nil, errors.New("failed to deserialize config")
 	}

@@ -19,7 +19,7 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/insolar/observer/configuration"
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -27,9 +27,9 @@ import (
 )
 
 func main() {
-	cfg := configuration.APIDefault()
+	cfg := apiconfiguration.APIDefault()
 	out, _ := yaml.Marshal(cfg)
-	err := ioutil.WriteFile(configuration.APIConfigFilePath, out, 0644)
+	err := ioutil.WriteFile(apiconfiguration.ConfigFilePath, out, 0644)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to write config file"))
 		return
