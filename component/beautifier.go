@@ -95,8 +95,8 @@ func makeBeautifier(
 		for _, rec := range r.batch {
 			// entities
 
-			member := members.Collect(ctx, rec)
-			if member != nil {
+			members := members.Collect(ctx, rec)
+			for _, member := range members {
 				b.members[member.AccountState] = member
 			}
 

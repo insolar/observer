@@ -25,12 +25,12 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
+	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
@@ -64,26 +64,14 @@ func NewMemberCollector(
 	}
 }
 
-func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Member {
+func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*observer.Member {
 	if rec == nil {
 		return nil
 	}
 
-	// Some magic with records from genesis pulse.
-	act := observer.CastToActivate(rec)
-	if act.IsActivate() {
-		if act.Virtual.GetActivate().Image.Equal(*proxyAccount.PrototypeReference) {
-			if act.ID.Pulse() == insolar.GenesisPulse.PulseNumber {
-				balance := c.accountBalance(act.Virtual.GetActivate())
-				return &observer.Member{
-					MemberRef:    gen.ID(),
-					Balance:      balance,
-					AccountState: rec.ID,
-					Status:       "INTERNAL",
-					// TODO: Some fields
-				}
-			}
-		}
+	// genesis member records
+	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec) {
+		return c.processGenesisRecord(ctx, rec)
 	}
 
 	result := observer.CastToResult(rec) // TODO: still observer.Result
@@ -143,7 +131,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		panic("invalid member reference")
 	}
 
-	return &observer.Member{
+	return []*observer.Member{{
 		MemberRef:        *memberRef,
 		WalletRef:        *walletRef.GetLocal(),
 		AccountRef:       *accountRef.GetLocal(),
@@ -151,7 +139,78 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) *ob
 		MigrationAddress: response.MigrationAddress,
 		AccountState:     accountTree.SideEffect.ID,
 		Status:           "SUCCESS",
+	}}
+}
+
+func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observer.Record) []*observer.Member {
+	var (
+		memberState      *member.Member
+		walletState      *wallet.Wallet
+		accountRefString string
+		activateID       insolar.ID
+		balance          string
+	)
+	activate := rec.Virtual.GetActivate()
+	shard := c.initialPKShard(activate)
+	var (
+		members []*observer.Member
+	)
+	for _, memberRefStr := range shard.Map {
+		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
+		if err != nil {
+			c.log.WithField("member_ref_str", memberRefStr).
+				Errorf("failed to build reference from string")
+			continue
+		}
+		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
+		if err != nil {
+			c.log.WithField("member_ref", memberRef).
+				Error("failed to find member activate record")
+			continue
+		}
+		activate := memberActivate.Virtual.GetActivate()
+		memberState = c.initialMemberState(activate)
+		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
+		if err != nil {
+			c.log.WithField("wallet_ref", memberState.Wallet).
+				Warnf("failed to find wallet activate record")
+			continue
+		}
+		activate = walletActivate.Virtual.GetActivate()
+		walletState = c.initialWalletState(activate)
+
+		for _, value := range walletState.Accounts {
+			accountRefString = value
+			break
+		}
+		accountRef, err := insolar.NewReferenceFromString(accountRefString)
+		if err != nil {
+			c.log.WithField("account_ref_str", accountRefString).
+				Warnf("failed to build reference from string")
+			continue
+		}
+		if accountRef != nil {
+			accountActivate, err := c.fetcher.SideEffect(ctx, *accountRef.GetLocal())
+			if err != nil {
+				c.log.WithField("account_ref", accountRef).
+					Error("failed to find account activate record")
+				continue
+			}
+			activateID = accountActivate.ID
+			activate = accountActivate.Virtual.GetActivate()
+			balance = c.accountBalance(activate)
+		}
+
+		members = append(members, &observer.Member{
+			MemberRef:    *memberRef.GetLocal(),
+			WalletRef:    *memberState.Wallet.GetLocal(),
+			AccountRef:   *accountRef.GetLocal(),
+			Balance:      balance,
+			AccountState: activateID,
+			Status:       "INTERNAL",
+		})
 	}
+	return members
 }
 
 func (c *MemberCollector) isMemberCreateRequest(materialRequest record.Material) bool {
@@ -356,4 +415,31 @@ func isNewMember(request record.IncomingRequest) bool {
 		return false
 	}
 	return request.Prototype.Equal(*proxyMember.PrototypeReference)
+}
+
+func (c *MemberCollector) initialPKShard(act *record.Activate) *pkshard.PKShard {
+	shard := pkshard.PKShard{}
+	err := insolar.Deserialize(act.Memory, &shard)
+	if err != nil {
+		c.log.Error(errors.New("failed to deserialize pkshard contract state"))
+	}
+	return &shard
+}
+
+func (c *MemberCollector) initialMemberState(act *record.Activate) *member.Member {
+	m := member.Member{}
+	err := insolar.Deserialize(act.Memory, &m)
+	if err != nil {
+		c.log.Error(errors.New("failed to deserialize member contract state"))
+	}
+	return &m
+}
+
+func (c *MemberCollector) initialWalletState(act *record.Activate) *wallet.Wallet {
+	w := wallet.Wallet{}
+	err := insolar.Deserialize(act.Memory, &w)
+	if err != nil {
+		c.log.Error(errors.New("failed to deserialize wallet contract state"))
+	}
+	return &w
 }
