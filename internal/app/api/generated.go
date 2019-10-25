@@ -12,11 +12,9 @@ import (
 
 // DefinitionsResponsesBalanceYaml defines model for definitions-responses-balance-yaml.
 type DefinitionsResponsesBalanceYaml struct {
-	AccountReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"accountReference"`
-	Balance  string `json:"balance"`
-	Deposits *[]struct {
+	AccountReference string `json:"accountReference"`
+	Balance          string `json:"balance"`
+	Deposits         *[]struct {
 		AmountOnHold    string  `json:"amountOnHold"`
 		AvailableAmount string  `json:"availableAmount"`
 		EthTxHash       string  `json:"ethTxHash"`
@@ -26,20 +24,14 @@ type DefinitionsResponsesBalanceYaml struct {
 			Amount    string `json:"amount"`
 			Timestamp int64  `json:"timestamp"`
 		} `json:"nextRelease,omitempty"`
-		Reference *struct {
-			// Embedded fields due to inline allOf schema
-		} `json:"reference,omitempty"`
-		ReleaseEndDate int64  `json:"releaseEndDate"`
-		ReleasedAmount string `json:"releasedAmount"`
-		Status         string `json:"status"`
-		Timestamp      int64  `json:"timestamp"`
+		Reference      *string `json:"reference,omitempty"`
+		ReleaseEndDate int64   `json:"releaseEndDate"`
+		ReleasedAmount string  `json:"releasedAmount"`
+		Status         string  `json:"status"`
+		Timestamp      int64   `json:"timestamp"`
 	} `json:"deposits,omitempty"`
-	MigrationAddress *struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"migrationAddress,omitempty"`
-	WalletReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"walletReference"`
+	MigrationAddress *string `json:"migrationAddress,omitempty"`
+	WalletReference  string  `json:"walletReference"`
 }
 
 // DefinitionsResponsesCoinsYaml defines model for definitions-responses-coins-yaml.
@@ -110,60 +102,49 @@ type DefinitionsResponsesTransactionsYaml []interface{}
 
 // Migration defines model for migration.
 type Migration struct {
-	Amount              string `json:"amount"`
-	Fee                 string `json:"fee"`
-	FromMemberReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"fromMemberReference"`
-	Index              float32 `json:"index"`
-	PulseNumber        float32 `json:"pulseNumber"`
-	Status             string  `json:"status"`
-	Timestamp          float32 `json:"timestamp"`
-	ToDepositReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"toDepositReference"`
-	ToMemberReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"toMemberReference"`
-	Type string `json:"type"`
+	// Embedded struct due to allOf(#/components/schemas/transaction)
+	Transaction
+	// Embedded fields due to inline allOf schema
+	FromMemberReference *string      `json:"fromMemberReference,omitempty"`
+	ToDepositReference  *string      `json:"toDepositReference,omitempty"`
+	ToMemberReference   *string      `json:"toMemberReference,omitempty"`
+	Type                *interface{} `json:"type,omitempty"`
 }
 
 // Release defines model for release.
 type Release struct {
-	Amount               string `json:"amount"`
-	Fee                  string `json:"fee"`
-	FromDepositReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"fromDepositReference"`
-	Index             float32 `json:"index"`
-	PulseNumber       float32 `json:"pulseNumber"`
-	Status            string  `json:"status"`
-	Timestamp         float32 `json:"timestamp"`
-	ToMemberReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"toMemberReference"`
-	Type string `json:"type"`
+	// Embedded struct due to allOf(#/components/schemas/transaction)
+	Transaction
+	// Embedded fields due to inline allOf schema
+	FromDepositReference *string      `json:"fromDepositReference,omitempty"`
+	ToMemberReference    *string      `json:"toMemberReference,omitempty"`
+	Type                 *interface{} `json:"type,omitempty"`
+}
+
+// Transaction defines model for transaction.
+type Transaction struct {
+	Amount      string  `json:"amount"`
+	Fee         string  `json:"fee"`
+	Index       float32 `json:"index"`
+	PulseNumber float32 `json:"pulseNumber"`
+	Status      string  `json:"status"`
+	Timestamp   float32 `json:"timestamp"`
+	TxID        string  `json:"txID"`
+	Type        string  `json:"type"`
 }
 
 // Transfer defines model for transfer.
 type Transfer struct {
-	Amount              string `json:"amount"`
-	Fee                 string `json:"fee"`
-	FromMemberReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"fromMemberReference"`
-	Index             float32 `json:"index"`
-	PulseNumber       float32 `json:"pulseNumber"`
-	Status            string  `json:"status"`
-	Timestamp         float32 `json:"timestamp"`
-	ToMemberReference struct {
-		// Embedded fields due to inline allOf schema
-	} `json:"toMemberReference"`
-	Type string `json:"type"`
+	// Embedded struct due to allOf(#/components/schemas/transaction)
+	Transaction
+	// Embedded fields due to inline allOf schema
+	FromMemberReference *string      `json:"fromMemberReference,omitempty"`
+	ToMemberReference   *string      `json:"toMemberReference,omitempty"`
+	Type                *interface{} `json:"type,omitempty"`
 }
 
-// TransactionListParams defines parameters for TransactionList.
-type TransactionListParams struct {
+// MemberTransactionsParams defines parameters for MemberTransactions.
+type MemberTransactionsParams struct {
 
 	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
 	LastIndex *float32 `json:"lastIndex,omitempty"`
@@ -177,6 +158,14 @@ type TransactionListParams struct {
 	// * `migration` - transactions only to member's deposits,
 	// * `release` - transactions only from member's deposits to member's account.
 	Type *string `json:"type,omitempty"`
+
+	// Transaction status:
+	//
+	// * `registered` — transfer request is registered;
+	// * `sent` — transfer of funds from the sender is finalized;
+	// * `received` — transfer of funds to the receiver is finalized.
+	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	Status *string `json:"status,omitempty"`
 }
 
 // TransactionsSearchParams defines parameters for TransactionsSearch.
@@ -199,22 +188,30 @@ type TransactionsSearchParams struct {
 	// * `migration` - transactions only to member's deposits,
 	// * `release` - transactions only from member's deposits to member's account.
 	Type *string `json:"type,omitempty"`
+
+	// Transaction status:
+	//
+	// * `registered` — transfer request is registered;
+	// * `sent` — transfer of funds from the sender is finalized;
+	// * `received` — transfer of funds to the receiver is finalized.
+	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	Status *string `json:"status,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// balance// (GET /api/balance/{reference})
-	Balance(ctx echo.Context, reference string) error
 	// fee// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
 	// member// (GET /api/member/{reference})
 	Member(ctx echo.Context, reference string) error
+	// member balance// (GET /api/member/{reference}/balance)
+	Balance(ctx echo.Context, reference string) error
+	// member transactions// (GET /api/member/{reference}/transactions)
+	MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error
 	// notification// (GET /api/notification)
 	Notification(ctx echo.Context) error
 	// transaction// (GET /api/transaction/{txID})
 	Transaction(ctx echo.Context, txID string) error
-	// transactionList// (GET /api/transactionList/{reference})
-	TransactionList(ctx echo.Context, reference string, params TransactionListParams) error
 	// transactions// (GET /api/transactions)
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
 	// coins// (GET /coins)
@@ -230,22 +227,6 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
-}
-
-// Balance converts echo context to params.
-func (w *ServerInterfaceWrapper) Balance(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "reference" -------------
-	var reference string
-
-	err = runtime.BindStyledParameter("simple", false, "reference", ctx.Param("reference"), &reference)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter reference: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Balance(ctx, reference)
-	return err
 }
 
 // Fee converts echo context to params.
@@ -280,33 +261,24 @@ func (w *ServerInterfaceWrapper) Member(ctx echo.Context) error {
 	return err
 }
 
-// Notification converts echo context to params.
-func (w *ServerInterfaceWrapper) Notification(ctx echo.Context) error {
+// Balance converts echo context to params.
+func (w *ServerInterfaceWrapper) Balance(ctx echo.Context) error {
 	var err error
+	// ------------- Path parameter "reference" -------------
+	var reference string
 
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Notification(ctx)
-	return err
-}
-
-// Transaction converts echo context to params.
-func (w *ServerInterfaceWrapper) Transaction(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "txID" -------------
-	var txID string
-
-	err = runtime.BindStyledParameter("simple", false, "txID", ctx.Param("txID"), &txID)
+	err = runtime.BindStyledParameter("simple", false, "reference", ctx.Param("reference"), &reference)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter txID: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter reference: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Transaction(ctx, txID)
+	err = w.Handler.Balance(ctx, reference)
 	return err
 }
 
-// TransactionList converts echo context to params.
-func (w *ServerInterfaceWrapper) TransactionList(ctx echo.Context) error {
+// MemberTransactions converts echo context to params.
+func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "reference" -------------
 	var reference string
@@ -317,7 +289,7 @@ func (w *ServerInterfaceWrapper) TransactionList(ctx echo.Context) error {
 	}
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params TransactionListParams
+	var params MemberTransactionsParams
 	// ------------- Optional query parameter "lastIndex" -------------
 	if paramValue := ctx.QueryParam("lastIndex"); paramValue != "" {
 
@@ -350,8 +322,43 @@ func (w *ServerInterfaceWrapper) TransactionList(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
 	}
 
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := ctx.QueryParam("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter status: %s", err))
+	}
+
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.TransactionList(ctx, reference, params)
+	err = w.Handler.MemberTransactions(ctx, reference, params)
+	return err
+}
+
+// Notification converts echo context to params.
+func (w *ServerInterfaceWrapper) Notification(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Notification(ctx)
+	return err
+}
+
+// Transaction converts echo context to params.
+func (w *ServerInterfaceWrapper) Transaction(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "txID" -------------
+	var txID string
+
+	err = runtime.BindStyledParameter("simple", false, "txID", ctx.Param("txID"), &txID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter txID: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Transaction(ctx, txID)
 	return err
 }
 
@@ -403,6 +410,16 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
 	}
 
+	// ------------- Optional query parameter "status" -------------
+	if paramValue := ctx.QueryParam("status"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter status: %s", err))
+	}
+
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.TransactionsSearch(ctx, params)
 	return err
@@ -451,12 +468,12 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 		Handler: si,
 	}
 
-	router.GET("/api/balance/:reference", wrapper.Balance)
 	router.GET("/api/fee/:amount", wrapper.Fee)
 	router.GET("/api/member/:reference", wrapper.Member)
+	router.GET("/api/member/:reference/balance", wrapper.Balance)
+	router.GET("/api/member/:reference/transactions", wrapper.MemberTransactions)
 	router.GET("/api/notification", wrapper.Notification)
 	router.GET("/api/transaction/:txID", wrapper.Transaction)
-	router.GET("/api/transactionList/:reference", wrapper.TransactionList)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/coins", wrapper.Coins)
 	router.GET("/coins/circulating", wrapper.CoinsCirculating)
