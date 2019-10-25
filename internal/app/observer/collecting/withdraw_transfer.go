@@ -98,6 +98,10 @@ func (c *WithdrawTransferCollector) Collect(ctx context.Context, rec *observer.R
 
 func (c *WithdrawTransferCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
 	for _, req := range outs {
+		if req.Structure == nil {
+			continue
+		}
+
 		if predicate(&req.Structure.Request) {
 			return req.Structure, nil
 		}
