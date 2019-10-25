@@ -39,6 +39,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
@@ -57,7 +60,6 @@ var (
 		ApplicationName: "observer",
 	}
 )
-
 
 func TestMain(t *testing.M) {
 	var err error
@@ -244,8 +246,14 @@ func TestBeautifier_Deposit(t *testing.T) {
 	call := tdg.makeDepositMigrationCall(pn)
 
 	memberRef := gen.Reference()
-	out := tdg.makeOutgouingRequest(*insolar.NewReference(call.ID), gen.Reference())
-	in := tdg.makeIncomingFromOutgoing(out.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	// out := tdg.makeOutgouingRequest(*insolar.NewReference(call.ID), gen.Reference())
+	// in := tdg.makeIncomingFromOutgoing(out.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+
+	daemonCall := tdg.makeMigrationDaemonCall(pn, *insolar.NewReference(call.ID))
+	daemonCallIn := tdg.makeIncomingFromOutgoing(daemonCall.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+
+	newDepositCall := tdg.makeNewDepositRequest(pn, *insolar.NewReference(daemonCallIn.ID))
+	newDepositCallIn := tdg.makeIncomingFromOutgoing(newDepositCall.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
 	balance := "123"
 	amount := "456"
@@ -263,7 +271,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 	}
 
 	act := tdg.makeActivation(
-		*insolar.NewReference(in.ID),
+		*insolar.NewReference(newDepositCallIn.ID),
 		*migrationdaemon.PrototypeReference,
 		memory,
 	)
@@ -271,12 +279,16 @@ func TestBeautifier_Deposit(t *testing.T) {
 	raw := &raw{
 		batch: map[uint32]*observer.Record{
 			0: call,
-			1: out,
-			2: tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			3: in,
-			4: tdg.makeResultWith(in.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			5: act,
-			6: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
+			1: daemonCall,
+			2: tdg.makeResultWith(daemonCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			3: daemonCallIn,
+			4: tdg.makeResultWith(daemonCallIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			5: newDepositCall,
+			6: tdg.makeResultWith(newDepositCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			7: newDepositCallIn,
+			8: tdg.makeResultWith(newDepositCallIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			9: act,
+			10: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
 				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
 				nil,
 			}}),
@@ -291,7 +303,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 	assert.Equal(t, map[insolar.ID]*observer.Deposit{
 		act.ID: {
 			EthHash:         strings.ToLower(txHash),
-			Ref:             in.ID,
+			Ref:             newDepositCallIn.ID,
 			Member:          *memberRef.GetLocal(),
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 0,
@@ -355,6 +367,9 @@ func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRe
 					Reason:    outgoing.Reason,
 					Nonce:     outgoing.Nonce,
 					Prototype: outgoing.Prototype,
+					Method:    outgoing.Method,
+					Arguments: outgoing.Arguments,
+					Object:    outgoing.Object,
 				},
 			},
 		},
@@ -431,6 +446,62 @@ func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *ob
 					Method:    "Call",
 					Arguments: args,
 					Nonce:     t.GetNonce(),
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func (t *treeDataGenerator) makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_OutgoingRequest{
+				OutgoingRequest: &record.OutgoingRequest{
+					Nonce:     t.GetNonce(),
+					Method:    "DepositMigrationCall",
+					Arguments: args,
+					Prototype: proxyDaemon.PrototypeReference,
+					Reason:    reason,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func (t *treeDataGenerator) makeNewDepositRequest(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_OutgoingRequest{
+				OutgoingRequest: &record.OutgoingRequest{
+					Nonce:     t.GetNonce(),
+					Method:    "New",
+					Arguments: args,
+					Prototype: proxyDeposit.PrototypeReference,
+					Reason:    reason,
 				},
 			},
 		},
