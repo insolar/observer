@@ -22,10 +22,6 @@ import (
 
 type ObserverServer struct{}
 
-func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	panic("implement me")
-}
-
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 	panic("implement me")
 }
@@ -34,15 +30,19 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
+func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
+	panic("implement me")
+}
+
 func (s *ObserverServer) Notification(ctx echo.Context) error {
 	panic("implement me")
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
-	panic("implement me")
-}
-
-func (s *ObserverServer) TransactionList(ctx echo.Context, reference string, params TransactionListParams) error {
 	panic("implement me")
 }
 
