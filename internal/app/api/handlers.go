@@ -56,7 +56,7 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
-	strings.TrimSpace(txID)
+	txID = strings.TrimSpace(txID)
 	if len(txID) == 0 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
 	}
