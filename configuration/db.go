@@ -24,6 +24,7 @@ import (
 
 type DB struct {
 	URL             string
+	Migration       string
 	Attempts        cycle.Limit
 	AttemptInterval time.Duration
 	CreateTables    bool
