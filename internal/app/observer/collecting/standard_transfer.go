@@ -128,6 +128,10 @@ func (c *StandardTransferCollector) Collect(ctx context.Context, rec *observer.R
 
 func (c *StandardTransferCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
 	for _, req := range outs {
+		if req.Structure == nil {
+			continue
+		}
+
 		if predicate(&req.Structure.Request) {
 			return req.Structure, nil
 		}

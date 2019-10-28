@@ -17,18 +17,21 @@
 package main
 
 import (
+	"io/ioutil"
+
 	apiconfiguration "github.com/insolar/observer/configuration/api"
-	"github.com/insolar/observer/internal/app/api"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
-	"github.com/labstack/echo/v4"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
-	var observerAPI api.ObserverServer
-	e := echo.New()
-	cfg := apiconfiguration.Load()
-	observerapi.RegisterHandlers(e, &observerAPI)
-	internalapi.RegisterHandlers(e, &observerAPI)
-	e.Logger.Fatal(e.Start(cfg.API.Addr))
+	cfg := apiconfiguration.Default()
+	out, _ := yaml.Marshal(cfg)
+	err := ioutil.WriteFile(apiconfiguration.ConfigFilePath, out, 0644)
+	if err != nil {
+		log.Error(errors.Wrapf(err, "failed to write config file"))
+		return
+	}
 }

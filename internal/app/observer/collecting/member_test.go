@@ -431,8 +431,8 @@ func TestMemberCollector_Collect(t *testing.T) {
 
 			actual := make([]*observer.Member, 0)
 			for _, rec := range records {
-				mbr := collector.Collect(ctx, rec)
-				if mbr != nil {
+				mbrs := collector.Collect(ctx, rec)
+				for _, mbr := range mbrs {
 					actual = append(actual, mbr)
 				}
 			}
