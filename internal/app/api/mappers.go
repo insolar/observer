@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -28,11 +29,11 @@ func NullableInterface(i interface{}) *interface{} {
 }
 
 func TxToApiTx(txID string, tx models.Transaction) interface{} {
-	internalTx := Transaction{
+	internalTx := observerapi.SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         tx.Fee,
 		Index:       0,
-		PulseNumber: float32(tx.PulseNumber),
+		PulseNumber: tx.PulseNumber,
 		Status:      string(tx.Status()),
 		Timestamp:   0,
 		TxID:        txID,
@@ -41,26 +42,26 @@ func TxToApiTx(txID string, tx models.Transaction) interface{} {
 
 	switch tx.Type() {
 	case models.TTypeMigration:
-		return Migration{
-			Transaction:         internalTx,
-			FromMemberReference: NullableString(string(tx.MemberFromReference)),
-			ToDepositReference:  NullableString(string(tx.MigrationsToReference)),
-			ToMemberReference:   NullableString(string(tx.MemberToReference)),
-			Type:                NullableInterface(tx.Type()),
+		return observerapi.SchemaMigration{
+			SchemasTransactionAbstract: internalTx,
+			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
+			ToDepositReference:         NullableString(string(tx.MigrationsToReference)),
+			ToMemberReference:          NullableString(string(tx.MemberToReference)),
+			Type:                       NullableString(string(tx.Type())),
 		}
 	case models.TTypeTransfer:
-		return Transfer{
-			Transaction:         internalTx,
-			FromMemberReference: NullableString(string(tx.MemberFromReference)),
-			ToMemberReference:   NullableString(string(tx.MemberToReference)),
-			Type:                NullableInterface(tx.Type()),
+		return observerapi.SchemaTransfer{
+			SchemasTransactionAbstract: internalTx,
+			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
+			ToMemberReference:          NullableString(string(tx.MemberToReference)),
+			Type:                       NullableString(string(tx.Type())),
 		}
 	case models.TTypeRelease:
-		return Release{
-			Transaction:          internalTx,
-			FromDepositReference: NullableString(string(tx.VestingFromReference)),
-			ToMemberReference:    NullableString(string(tx.MemberToReference)),
-			Type:                 NullableInterface(tx.Type()),
+		return observerapi.SchemaRelease{
+			SchemasTransactionAbstract: internalTx,
+			FromDepositReference:       NullableString(string(tx.VestingFromReference)),
+			ToMemberReference:          NullableString(string(tx.MemberToReference)),
+			Type:                       NullableString(string(tx.Type())),
 		}
 	default:
 		return internalTx
