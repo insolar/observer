@@ -20,6 +20,7 @@ import (
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
 	"github.com/insolar/observer/internal/app/api/internalapi"
+	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,7 +28,7 @@ func main() {
 	var observerAPI api.ObserverServer
 	e := echo.New()
 	cfg := apiconfiguration.Load()
-	api.RegisterHandlers(e, &observerAPI)
+	observerapi.RegisterHandlers(e, &observerAPI)
 	internalapi.RegisterHandlers(e, &observerAPI)
 	e.Logger.Fatal(e.Start(cfg.API.Addr))
 }
