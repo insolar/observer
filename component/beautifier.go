@@ -110,10 +110,8 @@ func makeBeautifier(
 				b.transfers = append(b.transfers, withdrawTransfer)
 			}
 
-			standardTransfer := standardTransfers.Collect(ctx, rec)
-			if standardTransfer != nil {
-				b.transfers = append(b.transfers, standardTransfer)
-			}
+			standardTransfers := standardTransfers.Collect(ctx, rec)
+			b.transfers = append(b.transfers, standardTransfers...)
 
 			deposits := deposits.Collect(ctx, rec)
 			for _, deposit := range deposits {

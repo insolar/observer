@@ -56,7 +56,7 @@ func NewStandardTransferCollector(log *logrus.Logger, fetcher store.RecordFetche
 	return c
 }
 
-func (c *StandardTransferCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Transfer {
+func (c *StandardTransferCollector) Collect(ctx context.Context, rec *observer.Record) []*observer.Transfer {
 	if rec == nil {
 		return nil
 	}
@@ -139,9 +139,9 @@ func (c *StandardTransferCollector) find(outs []tree.Outgoing, predicate func(*r
 	return nil, errors.New("failed to find corresponding request in calls tree")
 }
 
-func (c *StandardTransferCollector) makeFailedTransfer(apiCall *observer.Request) *observer.Transfer {
+func (c *StandardTransferCollector) makeFailedTransfer(apiCall *observer.Request) []*observer.Transfer {
 	from, to, amount := c.parseCall(apiCall)
-	return &observer.Transfer{
+	return []*observer.Transfer{{
 		TxID:      apiCall.ID,
 		From:      from,
 		To:        to,
@@ -149,7 +149,7 @@ func (c *StandardTransferCollector) makeFailedTransfer(apiCall *observer.Request
 		Status:    observer.Failed,
 		Kind:      observer.Standard,
 		Direction: observer.APICall,
-	}
+	}}
 }
 
 func (c *StandardTransferCollector) build(
@@ -159,7 +159,7 @@ func (c *StandardTransferCollector) build(
 	account *tree.Structure,
 	calc *tree.Structure, // nolint: unparam
 	getFeeMember *tree.Structure, // nolint: unparam
-) *observer.Transfer {
+) []*observer.Transfer {
 
 	from, to, amount := c.parseCall(apiCall)
 	resultValue := &member.TransferResponse{Fee: "0"}
@@ -172,15 +172,24 @@ func (c *StandardTransferCollector) build(
 	// 	costCenter = *costCenterRef.GetLocal()
 	// }
 	//
-	// var serializedRef []byte
-	// observer.ParseFirstValueResult(&getFeeMember.Result, &serializedRef)
-	// feeMemberRef := insolar.NewReferenceFromBytes(serializedRef)
-	// feeMember := *feeMemberRef.GetLocal()
+	var serializedRef []byte
+	var feeMember *insolar.ID
+	if getFeeMember != nil {
+		observer.ParseFirstValueResult(&getFeeMember.Result, &serializedRef)
+		feeMemberRef := insolar.NewReferenceFromBytes(serializedRef)
+		if feeMemberRef != nil {
+			feeMember = feeMemberRef.GetLocal()
+		} else {
+			c.log.WithField("serialized", serializedRef).Warnf("failed to parse feeMemberRef from bytes")
+		}
+	} else {
+		c.log.Warnf("getFeeMember is nil")
+	}
 	var detachRequest *insolar.ID
 	if account != nil {
 		detachRequest = &account.RequestID
 	}
-	return &observer.Transfer{
+	return []*observer.Transfer{{
 		TxID:          apiCall.ID,
 		From:          from,
 		To:            to,
@@ -197,7 +206,17 @@ func (c *StandardTransferCollector) build(
 		// FeeMemberRequest:       getFeeMember.RequestID,
 		// CostCenterRef:          costCenter,
 		// FeeMemberRef:           feeMember,
-	}
+	}, {
+		TxID:          apiCall.ID,
+		From:          from,
+		To:            feeMember,
+		Amount:        resultValue.Fee,
+		Fee:           "0",
+		Status:        observer.Success,
+		Kind:          observer.Standard,
+		Direction:     observer.APICall,
+		DetachRequest: detachRequest,
+	}}
 }
 
 func (c *StandardTransferCollector) parseCall(apiCall *observer.Request) (*insolar.ID, *insolar.ID, string) {

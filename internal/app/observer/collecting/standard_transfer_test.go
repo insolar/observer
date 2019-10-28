@@ -35,6 +35,7 @@ import (
 	"github.com/insolar/observer/internal/app/observer/tree"
 
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
+	proxyCostCenter "github.com/insolar/insolar/application/builtin/proxy/costcenter"
 	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 )
 
@@ -63,6 +64,60 @@ func makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.R
 				Result: &record.Result{
 					Request: *ref,
 					Payload: payload,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeCalcFeeCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "CalcFee",
+					Arguments: args,
+					Prototype: proxyCostCenter.PrototypeReference,
+					Reason:    reason,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeGetFeeMemberCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+	signature := ""
+	pulseTimeStamp := 0
+	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+	args, err := insolar.Serialize([]interface{}{raw})
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method:    "GetFeeMember",
+					Arguments: args,
+					Prototype: proxyCostCenter.PrototypeReference,
+					Reason:    reason,
 				},
 			},
 		},
@@ -155,6 +210,9 @@ func TestStandardTransferCollector_Collect(t *testing.T) {
 	call := makeStandardTransferCall(amount, from.String(), to.String(), pn)
 	walletTransfer := makeWalletTransfer(pn)
 	accountTransfer := makeAccountTransfer(pn)
+	calcFee := makeCalcFeeCall(pn, *insolar.NewReference(accountTransfer.ID))
+	getFeeMember := makeGetFeeMemberCall(pn, *insolar.NewReference(accountTransfer.ID))
+	feeMember := gen.ReferenceWithPulse(pn)
 	records := []*observer.Record{
 		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
@@ -186,6 +244,24 @@ func TestStandardTransferCollector_Collect(t *testing.T) {
 								Structure: &tree.Structure{
 									RequestID: accountTransfer.ID,
 									Request:   *accountTransfer.Virtual.GetIncomingRequest(),
+									Outgoings: []tree.Outgoing{
+										{
+											Structure: &tree.Structure{
+												RequestID: calcFee.ID,
+												Request:   *calcFee.Virtual.GetIncomingRequest(),
+											},
+										},
+										{
+											Structure: &tree.Structure{
+												RequestID: getFeeMember.ID,
+												Request:   *getFeeMember.Virtual.GetIncomingRequest(),
+												Result: *makeResultWith(getFeeMember.ID,
+													&foundation.Result{Returns: []interface{}{feeMember.Bytes(), nil}}).
+													Virtual.
+													GetResult(),
+											},
+										},
+									},
 								},
 							},
 						},
@@ -208,16 +284,25 @@ func TestStandardTransferCollector_Collect(t *testing.T) {
 			Direction:     observer.APICall,
 			DetachRequest: &accountTransfer.ID,
 		},
+		{
+			TxID:          call.ID,
+			From:          &from,
+			To:            feeMember.GetLocal(),
+			Amount:        fee,
+			Fee:           "0",
+			Status:        observer.Success,
+			Kind:          observer.Standard,
+			Direction:     observer.APICall,
+			DetachRequest: &accountTransfer.ID,
+		},
 	}
 
 	var actual []*observer.Transfer
 	for _, r := range records {
-		transfer := collector.Collect(ctx, r)
-		if transfer != nil {
-			actual = append(actual, transfer)
-		}
+		transfers := collector.Collect(ctx, r)
+		actual = append(actual, transfers...)
 	}
 
-	require.Len(t, actual, 1)
+	require.Len(t, actual, 2)
 	require.Equal(t, expected, actual)
 }
