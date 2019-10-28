@@ -17,12 +17,38 @@
 package api
 
 import (
+	"github.com/insolar/observer/internal/app/api/internalapi"
+	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/labstack/echo/v4"
 )
 
 type ObserverServer struct{}
 
-func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
+func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params internalapi.GetMigrationAddressesParams) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params internalapi.TokenGetInfoParams) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) TokenWeekPrice(ctx echo.Context, interval int) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -38,7 +64,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params observerapi.MemberTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -50,7 +76,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
+func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
 	panic("implement me")
 }
 
