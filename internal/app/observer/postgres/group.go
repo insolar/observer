@@ -94,10 +94,6 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		return errors.Wrapf(err, "failed to update group =%v", model)
 	}
 
-	if res.RowsAffected() == 0 {
-		s.errorCounter.Inc()
-		s.log.WithField("upd", model).Errorf("failed to update group")
-	}
 	if !model.Treasurer.IsEmpty() {
 		res, err = s.db.Model(&UserGroupSchema{}).
 			Where("user_ref=?", model.Treasurer.Bytes()).
