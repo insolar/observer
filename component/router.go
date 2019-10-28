@@ -61,6 +61,11 @@ func NewRouter(cfg *configuration.Configuration, obs *observability.Observabilit
 	return r
 }
 
+type RouterInterface interface {
+	Start()
+	Stop()
+}
+
 type Router struct {
 	hs  *http.Server
 	obs *observability.Observability

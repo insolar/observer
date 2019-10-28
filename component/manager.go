@@ -44,7 +44,8 @@ type Manager struct {
 	store         func(*beauty, *state) *observer.Statistic
 	stop          func()
 
-	router *Router
+	router       RouterInterface
+	sleepCounter sleepCounter
 }
 
 func Prepare() *Manager {
@@ -54,6 +55,7 @@ func Prepare() *Manager {
 	router := NewRouter(cfg, obs)
 	pulses := grpc.NewPulseFetcher(cfg, obs, exporter.NewPulseExporterClient(conn.GRPC()))
 	records := grpc.NewRecordFetcher(cfg, obs, exporter.NewRecordExporterClient(conn.GRPC()))
+	sm := NewSleepManager(cfg)
 	return &Manager{
 		stopSignal:    make(chan bool, 1),
 		init:          makeInitter(cfg, obs, conn),
@@ -66,6 +68,7 @@ func Prepare() *Manager {
 		stop:          makeStopper(obs, conn, router),
 		router:        router,
 		cfg:           cfg,
+		sleepCounter:  sm,
 	}
 }
 
@@ -110,24 +113,16 @@ func (m *Manager) run(s *state) {
 	m.commonMetrics.PulseProcessingTime.Set(timeExecuted.Seconds())
 	m.log.Debug("timeExecuted: ", timeExecuted)
 
-	sleepTime := m.cfg.Replicator.AttemptInterval
 	if raw != nil {
 		s.last = raw.pulse.Number
 		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
-
-		// adjusting sleep time by execution time
-		sleepTime -= timeExecuted
-
-		// fast forward, empty pulses
-		if raw.currentHeavyPN > raw.pulse.Number {
-			sleepTime = m.cfg.Replicator.FastForwardInterval
-		}
 	}
 
 	if statistic != nil {
 		s.stat = *statistic
 	}
 
+	sleepTime := m.sleepCounter.Count(ctx, raw, timeExecuted)
 	m.log.Debug("Sleep: ", sleepTime)
 	time.Sleep(sleepTime)
 }
