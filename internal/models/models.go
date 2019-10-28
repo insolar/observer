@@ -53,7 +53,7 @@ const (
 type TransactionType string
 
 const (
-	TTYpeUnknown   TransactionType = "unknown"
+	TTypeUnknown   TransactionType = "unknown"
 	TTypeTransfer  TransactionType = "transfer"
 	TTypeMigration TransactionType = "migration"
 	TTypeRelease   TransactionType = "release"
@@ -71,6 +71,11 @@ func TransactionColumns() []string {
 		"vesting_from_ref",
 		"amount",
 		"fee",
+		"status_sent",
+		"status_finished",
+		"finish_success",
+		"finish_pulse_number",
+		"finish_record_number",
 	}
 }
 
@@ -135,5 +140,5 @@ func (t *Transaction) Type() TransactionType {
 		return TTypeTransfer
 	}
 
-	return TTYpeUnknown
+	return TTypeUnknown
 }
