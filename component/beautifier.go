@@ -35,18 +35,19 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	addresses := collecting.NewMigrationAddressesCollector()
 
 	balances := collecting.NewBalanceCollector(log)
-	kycs := collecting.NewKYCCollector(log)
-	groupUpdate := collecting.NewGroupUpdateCollector(log)
-	mgrsUpdate := collecting.NewMGRUpdateCollector(log)
 	updates := collecting.NewDepositUpdateCollector(log)
 	wastings := collecting.NewWastingCollector()
 
 	// SAIV
 
+	mgrsUpdate := collecting.NewMGRUpdateCollector(log)
+	groupUpdate := collecting.NewGroupUpdateCollector(log)
+	kycs := collecting.NewKYCCollector(log)
 	users := collecting.NewUserCollector(log)
 	groups := collecting.NewGroupCollector(log)
 	mgrs := collecting.NewMGRCollector(log)
 	notifications := collecting.NewNotificationCollector(log)
+	transactions := collecting.NewTransactionCollector(log)
 
 	return func(r *raw) *beauty {
 		if r == nil {
@@ -69,6 +70,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrs:          make(map[insolar.Reference]*observer.MGR),
 			mgrUpdates:    make(map[insolar.Reference]*observer.MGRUpdate),
 			notifications: make(map[insolar.Reference]*observer.Notification),
+			transactions:  []*observer.Transaction{},
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -110,6 +112,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			notification := notifications.Collect(rec)
 			if notification != nil {
 				b.notifications[notification.Ref] = notification
+			}
+
+			tx := transactions.Collect(rec)
+			if tx != nil {
+				b.transactions = append(b.transactions, tx)
 			}
 
 			// updates
