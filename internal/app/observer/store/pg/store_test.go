@@ -100,7 +100,14 @@ func TestMain(t *testing.M) {
 		log.Panicf("Could not migrate: %s", err)
 	}
 
-	os.Exit(t.Run())
+	retCode := t.Run()
+
+	err = pool.Purge(resource)
+	if err != nil {
+		log.Panicf("failed to purge docker pool: %s", err)
+	}
+
+	os.Exit(retCode)
 }
 
 func makeRequestWith(method string, reason insolar.Reference, args []byte) *record.Material {
