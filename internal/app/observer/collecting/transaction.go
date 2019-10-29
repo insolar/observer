@@ -207,29 +207,15 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		return nil, errors.Wrapf(err, "failed to convert transaction create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	var txDirection string
-	var from, to insolar.Reference
-	switch tx.TxDirection {
-	case GU:
-		txDirection = "g2u"
-		from = tx.GroupRef
-		to = tx.MemberRef
-	case UG:
-		txDirection = "u2g"
-		from = tx.MemberRef
-		to = tx.GroupRef
-	}
-
 	fmt.Println("Collect new transaction ref:", act.ID.String())
 	return &observer.Transaction{
 		Amount:      strconv.FormatUint(tx.Amount, 10),
 		Timestamp:   date.Unix(),
 		ExtTxId:     tx.ExtTxId,
-		TxDirection: txDirection,
+		TxDirection: tx.TxDirection.String(),
 		OrderRef:    tx.OrderRef,
 		GroupRef:    tx.GroupRef,
-		From:        from,
-		To:          to,
+		MemberRef:   tx.MemberRef,
 	}, nil
 }
 
@@ -263,7 +249,6 @@ func isTransactionNew(chain interface{}) bool {
 
 	// TODO: import from platform
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq") // transaction
-	logrus.Info("isTransactionNew = ", in.Prototype.Equal(*prototypeRef))
 	return in.Prototype.Equal(*prototypeRef)
 }
 

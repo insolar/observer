@@ -25,10 +25,9 @@ type Transaction struct {
 	Timestamp   int64
 	ExtTxId     string
 	TxDirection string
+	MemberRef   insolar.Reference
 	GroupRef    insolar.Reference
 	OrderRef    *insolar.Reference
-	From        insolar.Reference
-	To          insolar.Reference
 }
 
 type TransactionStorage interface {
