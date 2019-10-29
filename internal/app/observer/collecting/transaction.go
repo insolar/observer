@@ -207,20 +207,12 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		return nil, errors.Wrapf(err, "failed to convert transaction create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	var txDirection string
-	switch tx.TxDirection {
-	case GU:
-		txDirection = "g2u"
-	case UG:
-		txDirection = "u2g"
-	}
-
 	fmt.Println("Collect new transaction ref:", act.ID.String())
 	return &observer.Transaction{
 		Amount:      strconv.FormatUint(tx.Amount, 10),
 		Timestamp:   date.Unix(),
 		ExtTxId:     tx.ExtTxId,
-		TxDirection: txDirection,
+		TxDirection: tx.TxDirection.String(),
 		OrderRef:    tx.OrderRef,
 		GroupRef:    tx.GroupRef,
 		MemberRef:   tx.MemberRef,

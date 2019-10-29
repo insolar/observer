@@ -24,3 +24,18 @@ const (
 	GU
 	UU
 )
+
+func (d *TxDirection) String() string {
+	switch *d {
+	case GU:
+		return "g2u"
+	case UG:
+		return "u2g"
+	case UU:
+		return "u2u"
+	case GG:
+		return "g2g"
+	default:
+		return "unknown"
+	}
+}
