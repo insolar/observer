@@ -70,7 +70,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrs:          make(map[insolar.Reference]*observer.MGR),
 			mgrUpdates:    make(map[insolar.Reference]*observer.MGRUpdate),
 			notifications: make(map[insolar.Reference]*observer.Notification),
-			transactions:  make(map[string]*observer.Transaction),
+			transactions:  []*observer.Transaction{},
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -116,7 +116,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 			tx := transactions.Collect(rec)
 			if tx != nil {
-				b.transactions[tx.ExtTxId] = tx
+				b.transactions = append(b.transactions, tx)
 			}
 
 			// updates
