@@ -59,29 +59,26 @@ func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
 		{
 			TransactionID:       []byte{byte(rand.Int())},
-			PulseNumber:         rand.Int63(),
-			RecordNumber:        rand.Int63(),
+			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
 			MemberFromReference: []byte{byte(rand.Int())},
 			MemberToReference:   []byte{byte(rand.Int())},
 			Amount:              strconv.Itoa(rand.Int()),
 			Fee:                 strconv.Itoa(rand.Int()),
 			FinishSuccess:       rand.Int()/2 == 0,
-			FinishPulseNumber:   rand.Int63(),
-			FinishRecordNumber:  rand.Int63(),
+			FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
 			StatusRegistered:    true,
 			StatusSent:          true,
 			StatusFinished:      true,
 		},
 		{
-			TransactionID:         []byte{byte(rand.Int())},
-			PulseNumber:           rand.Int63(),
-			RecordNumber:          rand.Int63(),
-			MigrationsToReference: []byte{byte(rand.Int())},
-			Amount:                strconv.Itoa(rand.Int()),
-			Fee:                   strconv.Itoa(rand.Int()),
-			StatusRegistered:      true,
-			StatusSent:            true,
-			StatusFinished:        false,
+			TransactionID:      []byte{byte(rand.Int())},
+			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
+			DepositToReference: []byte{byte(rand.Int())},
+			Amount:             strconv.Itoa(rand.Int()),
+			Fee:                strconv.Itoa(rand.Int()),
+			StatusRegistered:   true,
+			StatusSent:         true,
+			StatusFinished:     false,
 		},
 	}
 	_ = db.RunInTransaction(func(tx *pg.Tx) error {
@@ -91,20 +88,18 @@ func TestStoreSimpleTransactions(t *testing.T) {
 				return StoreTxRegister(tx, []observer.TxRegister{
 					{
 						TransactionID:       expectedTransactions[0].TransactionID,
-						PulseNumber:         expectedTransactions[0].PulseNumber,
-						RecordNumber:        expectedTransactions[0].RecordNumber,
+						PulseNumber:         expectedTransactions[0].PulseRecord[0],
+						RecordNumber:        expectedTransactions[0].PulseRecord[1],
 						MemberFromReference: expectedTransactions[0].MemberFromReference,
 						MemberToReference:   expectedTransactions[0].MemberToReference,
 						Amount:              expectedTransactions[0].Amount,
-						Fee:                 expectedTransactions[0].Fee,
 					},
 					{
-						TransactionID:         expectedTransactions[1].TransactionID,
-						PulseNumber:           expectedTransactions[1].PulseNumber,
-						RecordNumber:          expectedTransactions[1].RecordNumber,
-						MigrationsToReference: expectedTransactions[1].MigrationsToReference,
-						Amount:                expectedTransactions[1].Amount,
-						Fee:                   expectedTransactions[1].Fee,
+						TransactionID:      expectedTransactions[1].TransactionID,
+						PulseNumber:        expectedTransactions[1].PulseRecord[0],
+						RecordNumber:       expectedTransactions[1].PulseRecord[1],
+						DepositToReference: expectedTransactions[1].DepositToReference,
+						Amount:             expectedTransactions[1].Amount,
 					},
 				})
 			},
@@ -112,9 +107,11 @@ func TestStoreSimpleTransactions(t *testing.T) {
 				return StoreTxResult(tx, []observer.TxResult{
 					{
 						TransactionID: expectedTransactions[0].TransactionID,
+						Fee:           expectedTransactions[0].Fee,
 					},
 					{
 						TransactionID: expectedTransactions[1].TransactionID,
+						Fee:           expectedTransactions[1].Fee,
 					},
 				})
 			},
@@ -123,8 +120,8 @@ func TestStoreSimpleTransactions(t *testing.T) {
 					{
 						TransactionID:      expectedTransactions[0].TransactionID,
 						FinishSuccess:      expectedTransactions[0].FinishSuccess,
-						FinishPulseNumber:  expectedTransactions[0].FinishPulseNumber,
-						FinishRecordNumber: expectedTransactions[0].FinishRecordNumber,
+						FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+						FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
 					},
 				})
 			},
