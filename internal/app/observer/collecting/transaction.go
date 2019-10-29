@@ -249,7 +249,6 @@ func isTransactionNew(chain interface{}) bool {
 
 	// TODO: import from platform
 	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq") // transaction
-	logrus.Info("isTransactionNew = ", in.Prototype.Equal(*prototypeRef))
 	return in.Prototype.Equal(*prototypeRef)
 }
 

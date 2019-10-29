@@ -60,7 +60,7 @@ func NewTransactionStorage(obs *observability.Observability, db orm.DB) *Transac
 
 func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 	if model == nil {
-		s.log.Warnf("trying to insert nil group model")
+		s.log.Warnf("trying to insert nil transaction model")
 		return nil
 	}
 	row := transactionSchema(model)
@@ -69,7 +69,7 @@ func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 		Insert(row)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert group %v, %v", row, err.Error())
+		return errors.Wrapf(err, "failed to insert transaction %v, %v", row, err.Error())
 	}
 
 	if res.RowsAffected() == 0 {
