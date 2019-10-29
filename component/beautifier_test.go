@@ -72,7 +72,6 @@ func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
 }
 
 func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
-	// fmt.Println(q.FormattedQuery())
 	return
 }
 
