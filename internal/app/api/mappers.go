@@ -29,7 +29,7 @@ func NullableInterface(i interface{}) *interface{} {
 	return &i
 }
 
-func TxToAPITx(txID insolar.ID, tx models.Transaction) interface{} {
+func TxToAPITx(txID string, tx models.Transaction) interface{} {
 	internalTx := observerapi.SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         NullableString(tx.Fee),
@@ -37,7 +37,7 @@ func TxToAPITx(txID insolar.ID, tx models.Transaction) interface{} {
 		PulseNumber: tx.PulseNumber(),
 		Status:      string(tx.Status()),
 		Timestamp:   0,
-		TxID:        txID.String(),
+		TxID:        txID,
 		Type:        string(tx.Type),
 	}
 
