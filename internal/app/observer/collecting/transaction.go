@@ -174,15 +174,6 @@ type Transaction struct {
 	OrderRef    *insolar.Reference
 }
 
-type TxDirection int
-
-const (
-	UG TxDirection = iota
-	GG
-	GU
-	UU
-)
-
 func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transaction, error) {
 	if act == nil {
 		return nil, errors.New("trying to create transaction from non complete builder")
