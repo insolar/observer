@@ -48,7 +48,7 @@ func (s *UserGroupStorage) Insert(model *observer.Group) error {
 	// User status
 	// 1	invited
 	// 2	active
-	// 3	rejected
+	// 3	inactive
 	// 4	expelled
 	for _, u := range model.Members {
 		// regular roles with invited status

@@ -31,12 +31,21 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 	createTables(cfg, obs, conn)
 	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
+	DBSchemaMustBeSupported(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
 	return func() *state {
 		return &state{
 			last: last,
 			rp:   recordPosition,
 		}
+	}
+}
+
+func DBSchemaMustBeSupported(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) {
+	migrations := postgres.NewChangeLogStorage(cfg, obs, db)
+	isRequiredChangeSet := migrations.CheckVersion(cfg.DB.Migration)
+	if !isRequiredChangeSet {
+		panic("Version of DB schema is not supported please apply corresponding migration")
 	}
 }
 
