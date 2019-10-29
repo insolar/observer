@@ -1,7 +1,12 @@
 package observer
 
+import (
+	"github.com/insolar/observer/internal/models"
+)
+
 type TxRegister struct {
 	TransactionID        []byte
+	Type                 models.TransactionType
 	PulseNumber          int64
 	RecordNumber         int64
 	MemberFromReference  []byte

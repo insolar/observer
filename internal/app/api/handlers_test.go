@@ -44,6 +44,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 		Amount:            "10",
 		Fee:               "1",
 		FinishPulseRecord: [2]int64{1, 2},
+		Type:              models.TTypeMigration,
 	}
 
 	err := db.Insert(&transaction)
@@ -64,7 +65,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 		Status:      "pending",
 		Timestamp:   0,
 		TxID:        txID,
-		Type:        "unknown",
+		Type:        string(models.TTypeMigration),
 	}
 
 	err = json.Unmarshal(bodyBytes, receivedTransaction)

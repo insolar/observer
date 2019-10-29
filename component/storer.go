@@ -246,6 +246,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 	columns := []string{
 		"tx_id",
 		"status_registered",
+		"type",
 		"pulse_record",
 		"member_from_ref",
 		"member_to_ref",
@@ -259,6 +260,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 			values,
 			t.TransactionID,
 			true,
+			t.Type,
 			pg.Array([2]int64{t.PulseNumber, t.RecordNumber}),
 			t.MemberFromReference,
 			t.MemberToReference,
@@ -273,6 +275,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET 
 					status_registered = EXCLUDED.status_registered,
+					type = EXCLUDED.type,
 					pulse_record = EXCLUDED.pulse_record,
 					member_from_ref = EXCLUDED.member_from_ref,
 					member_to_ref = EXCLUDED.member_to_ref,

@@ -67,14 +67,15 @@ type Transaction struct {
 	TransactionID []byte `sql:"tx_id"`
 
 	// Request registered.
-	StatusRegistered     bool     `sql:"status_registered"`
-	PulseRecord          [2]int64 `sql:"pulse_record,array"`
-	MemberFromReference  []byte   `sql:"member_from_ref"`
-	MemberToReference    []byte   `sql:"member_to_ref"`
-	DepositToReference   []byte   `sql:"deposit_to_ref"`
-	DepositFromReference []byte   `sql:"deposit_from_ref"`
-	Amount               string   `sql:"amount"`
-	Fee                  string   `sql:"fee"`
+	StatusRegistered     bool            `sql:"status_registered"`
+	Type                 TransactionType `sql:"type"`
+	PulseRecord          [2]int64        `sql:"pulse_record,array"`
+	MemberFromReference  []byte          `sql:"member_from_ref"`
+	MemberToReference    []byte          `sql:"member_to_ref"`
+	DepositToReference   []byte          `sql:"deposit_to_ref"`
+	DepositFromReference []byte          `sql:"deposit_from_ref"`
+	Amount               string          `sql:"amount"`
+	Fee                  string          `sql:"fee"`
 
 	// Result received.
 	StatusSent bool `sql:"status_sent"`
@@ -112,19 +113,4 @@ func (t *Transaction) PulseNumber() int64 {
 
 func (t *Transaction) RecordNumber() int64 {
 	return t.PulseRecord[1]
-}
-
-func (t *Transaction) Type() TransactionType {
-	if len(t.DepositFromReference) > 0 {
-		return TTypeRelease
-	}
-	if len(t.DepositToReference) > 0 {
-		return TTypeMigration
-	}
-
-	if len(t.MemberFromReference) > 0 && len(t.MemberToReference) > 0 {
-		return TTypeTransfer
-	}
-
-	return TTypeUnknown
 }
