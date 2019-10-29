@@ -17,12 +17,25 @@
 package api
 
 import (
+	"net/http"
+	"strings"
+
+	"github.com/go-pg/pg"
 	"github.com/insolar/observer/internal/app/api/internalapi"
 	"github.com/insolar/observer/internal/app/api/observerapi"
+	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
-type ObserverServer struct{}
+type ObserverServer struct {
+	db  *pg.DB
+	log *logrus.Logger
+}
+
+func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
+	return &ObserverServer{db: db, log: log}
+}
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params internalapi.GetMigrationAddressesParams) error {
 	panic("implement me")
@@ -73,7 +86,22 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
-	panic("implement me")
+	txID = strings.TrimSpace(txID)
+	if len(txID) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
+	}
+
+	tx := &models.Transaction{}
+	_, err := s.db.QueryOne(tx, "select ?0 from simple_transactions where id = ?1", models.TransactionColumns(), txID)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, TxToAPITx(txID, *tx))
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
