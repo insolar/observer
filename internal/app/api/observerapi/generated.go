@@ -5,35 +5,10 @@ package observerapi
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
-
-// ResponsesBalanceYaml defines model for responses-balance-yaml.
-type ResponsesBalanceYaml struct {
-	AccountReference string `json:"accountReference"`
-	Balance          string `json:"balance"`
-	Deposits         *[]struct {
-		AmountOnHold    string  `json:"amountOnHold"`
-		AvailableAmount string  `json:"availableAmount"`
-		EthTxHash       string  `json:"ethTxHash"`
-		HoldReleaseDate int64   `json:"holdReleaseDate"`
-		Index           float32 `json:"index"`
-		NextRelease     *struct {
-			Amount    string `json:"amount"`
-			Timestamp int64  `json:"timestamp"`
-		} `json:"nextRelease,omitempty"`
-		Reference      *string `json:"reference,omitempty"`
-		ReleaseEndDate int64   `json:"releaseEndDate"`
-		ReleasedAmount string  `json:"releasedAmount"`
-		Status         string  `json:"status"`
-		Timestamp      int64   `json:"timestamp"`
-	} `json:"deposits,omitempty"`
-	MigrationAddress *string `json:"migrationAddress,omitempty"`
-	WalletReference  string  `json:"walletReference"`
-}
 
 // ResponsesCoinsYaml defines model for responses-coins-yaml.
 type ResponsesCoinsYaml struct {
@@ -77,6 +52,15 @@ type ResponsesInvalidTransactionIdYaml struct {
 	Error []string `json:"error"`
 }
 
+// ResponsesMemberYaml defines model for responses-member-yaml.
+type ResponsesMemberYaml struct {
+	AccountReference string           `json:"accountReference"`
+	Balance          string           `json:"balance"`
+	Deposits         *[]SchemaDeposit `json:"deposits,omitempty"`
+	MigrationAddress *string          `json:"migrationAddress,omitempty"`
+	WalletReference  string           `json:"walletReference"`
+}
+
 // ResponsesMemberBalanceYaml defines model for responses-memberBalance-yaml.
 type ResponsesMemberBalanceYaml struct {
 	Balance string `json:"balance"`
@@ -85,6 +69,25 @@ type ResponsesMemberBalanceYaml struct {
 // ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.
 type ResponsesNotificationInfoYaml struct {
 	Notification string `json:"notification"`
+}
+
+// SchemaDeposit defines model for schema-deposit.
+type SchemaDeposit struct {
+	AmountOnHold     string  `json:"amountOnHold"`
+	AvailableAmount  string  `json:"availableAmount"`
+	DepositReference string  `json:"depositReference"`
+	EthTxHash        string  `json:"ethTxHash"`
+	HoldReleaseDate  int64   `json:"holdReleaseDate"`
+	Index            float32 `json:"index"`
+	MemberReference  *string `json:"memberReference,omitempty"`
+	NextRelease      *struct {
+		Amount    string `json:"amount"`
+		Timestamp int64  `json:"timestamp"`
+	} `json:"nextRelease,omitempty"`
+	ReleaseEndDate int64  `json:"releaseEndDate"`
+	ReleasedAmount string `json:"releasedAmount"`
+	Status         string `json:"status"`
+	Timestamp      int64  `json:"timestamp"`
 }
 
 // SchemaMigration defines model for schema-migration.
@@ -124,8 +127,8 @@ type SchemasTransaction interface{}
 // SchemasTransactionAbstract defines model for schemas-transactionAbstract.
 type SchemasTransactionAbstract struct {
 	Amount      string  `json:"amount"`
-	Fee         string  `json:"fee"`
-	Index       float32 `json:"index"`
+	Fee         *string `json:"fee,omitempty"`
+	Index       string  `json:"index"`
 	PulseNumber int64   `json:"pulseNumber"`
 	Status      string  `json:"status"`
 	Timestamp   float32 `json:"timestamp"`
@@ -154,8 +157,12 @@ type MemberTransactionsParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
-	Index *float32 `json:"index,omitempty"`
+	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
+	//
+	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Index *string `json:"index,omitempty"`
 
 	// Chronological `direction` of the transaction list starting from a given `index`:
 	//
@@ -190,8 +197,12 @@ type TransactionsSearchParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
-	Index *float32 `json:"index,omitempty"`
+	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
+	//
+	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Index *string `json:"index,omitempty"`
 
 	// Chronological `direction` of the transaction list starting from a given `index`:
 	//
@@ -221,8 +232,12 @@ type ClosedTransactionsParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the transaction from which to start the list. To get the list of most recent transactions, do not specify.
-	Index *float32 `json:"index,omitempty"`
+	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
+	//
+	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Index *string `json:"index,omitempty"`
 
 	// Chronological `direction` of the transaction list starting from a given `index`:
 	//

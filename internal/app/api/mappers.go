@@ -31,8 +31,8 @@ func NullableInterface(i interface{}) *interface{} {
 func TxToAPITx(txID string, tx models.Transaction) interface{} {
 	internalTx := observerapi.SchemasTransactionAbstract{
 		Amount:      tx.Amount,
-		Fee:         tx.Fee,
-		Index:       0,
+		Fee:         NullableString(tx.Fee),
+		Index:       "0",
 		PulseNumber: tx.PulseNumber(),
 		Status:      string(tx.Status()),
 		Timestamp:   0,
