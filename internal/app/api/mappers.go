@@ -33,7 +33,7 @@ func TxToAPITx(txID string, tx models.Transaction) interface{} {
 		Amount:      tx.Amount,
 		Fee:         tx.Fee,
 		Index:       0,
-		PulseNumber: tx.PulseNumber,
+		PulseNumber: tx.PulseNumber(),
 		Status:      string(tx.Status()),
 		Timestamp:   0,
 		TxID:        txID,
@@ -45,7 +45,7 @@ func TxToAPITx(txID string, tx models.Transaction) interface{} {
 		return observerapi.SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
 			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
-			ToDepositReference:         NullableString(string(tx.MigrationsToReference)),
+			ToDepositReference:         NullableString(string(tx.DepositToReference)),
 			ToMemberReference:          NullableString(string(tx.MemberToReference)),
 			Type:                       NullableString(string(tx.Type())),
 		}
@@ -59,7 +59,7 @@ func TxToAPITx(txID string, tx models.Transaction) interface{} {
 	case models.TTypeRelease:
 		return observerapi.SchemaRelease{
 			SchemasTransactionAbstract: internalTx,
-			FromDepositReference:       NullableString(string(tx.VestingFromReference)),
+			FromDepositReference:       NullableString(string(tx.DepositFromReference)),
 			ToMemberReference:          NullableString(string(tx.MemberToReference)),
 			Type:                       NullableString(string(tx.Type())),
 		}

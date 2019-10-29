@@ -27,8 +27,6 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/observer/internal/app/api/internalapi"
 	"github.com/insolar/observer/internal/app/api/observerapi"
-	"github.com/labstack/echo/v4"
-	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,7 +118,7 @@ func TestMain(t *testing.M) {
 func Test(t *testing.T) {
 	expectedTransaction := models.Transaction{
 		TransactionID:    []byte{1, 2, 3},
-		PulseNumber:      1,
+		PulseRecord:      [2]int64{1, 2},
 		StatusRegistered: true,
 		Amount:           "10",
 		Fee:              "1",

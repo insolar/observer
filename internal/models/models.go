@@ -106,11 +106,19 @@ func (t *Transaction) Status() TransactionStatus {
 	return TStatusUnknown
 }
 
+func (t *Transaction) PulseNumber() int64 {
+	return t.PulseRecord[0]
+}
+
+func (t *Transaction) RecordNumber() int64 {
+	return t.PulseRecord[1]
+}
+
 func (t *Transaction) Type() TransactionType {
-	if len(t.VestingFromReference) > 0 {
+	if len(t.DepositFromReference) > 0 {
 		return TTypeRelease
 	}
-	if len(t.MigrationsToReference) > 0 {
+	if len(t.DepositToReference) > 0 {
 		return TTypeMigration
 	}
 

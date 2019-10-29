@@ -38,7 +38,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 
 	transaction := models.Transaction{
 		TransactionID:    []byte(txID),
-		PulseNumber:      1,
+		PulseRecord:      [2]int64{1, 2},
 		StatusRegistered: true,
 		Amount:           "10",
 		Fee:              "1",
