@@ -208,16 +208,11 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 	}
 
 	var txDirection string
-	var from, to insolar.Reference
 	switch tx.TxDirection {
 	case GU:
 		txDirection = "g2u"
-		from = tx.GroupRef
-		to = tx.MemberRef
 	case UG:
 		txDirection = "u2g"
-		from = tx.MemberRef
-		to = tx.GroupRef
 	}
 
 	fmt.Println("Collect new transaction ref:", act.ID.String())
@@ -228,8 +223,7 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		TxDirection: txDirection,
 		OrderRef:    tx.OrderRef,
 		GroupRef:    tx.GroupRef,
-		From:        from,
-		To:          to,
+		MemberRef:   tx.MemberRef,
 	}, nil
 }
 

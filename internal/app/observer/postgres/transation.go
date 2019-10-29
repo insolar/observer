@@ -33,10 +33,9 @@ type TransactionSchema struct {
 	ExternalTransactionId string `sql:",pk"`
 	Timestamp             int64
 	Direction             string
-	From                  []byte
-	To                    []byte
 	OrderRef              []byte
 	GroupRef              []byte
+	UserRef               []byte
 	Amount                string
 }
 
@@ -92,8 +91,7 @@ func transactionSchema(model *observer.Transaction) *TransactionSchema {
 		Direction:             model.TxDirection,
 		OrderRef:              orderRef.Bytes(),
 		GroupRef:              model.GroupRef.Bytes(),
-		From:                  model.From.Bytes(),
-		To:                    model.To.Bytes(),
+		UserRef:               model.MemberRef.Bytes(),
 		Amount:                model.Amount,
 	}
 }
