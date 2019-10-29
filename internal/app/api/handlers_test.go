@@ -17,14 +17,55 @@
 package api
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/insolar/observer/internal/app/api/observerapi"
+	"github.com/insolar/observer/internal/models"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTransaction(t *testing.T) {
+func TestTransaction_NoContent(t *testing.T) {
 	resp, err := http.Get("http://" + apihost + "/api/transaction/123")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestTransaction_SingleRecord(t *testing.T) {
+	txID := "123"
+
+	transaction := models.Transaction{
+		TransactionID:    []byte(txID),
+		PulseNumber:      1,
+		StatusRegistered: true,
+		Amount:           "10",
+		Fee:              "1",
+	}
+
+	err := db.Insert(&transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	receivedTransaction := &observerapi.SchemasTransactionAbstract{}
+	expectedTransaction := &observerapi.SchemasTransactionAbstract{
+		Amount:      "10",
+		Fee:         "1",
+		Index:       0,
+		PulseNumber: 1,
+		Status:      "pending",
+		Timestamp:   0,
+		TxID:        txID,
+		Type:        "unknown",
+	}
+
+	err = json.Unmarshal(bodyBytes, receivedTransaction)
+	require.NoError(t, err)
+	require.Equal(t, expectedTransaction, receivedTransaction)
 }

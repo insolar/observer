@@ -92,7 +92,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	}
 
 	tx := &models.Transaction{}
-	_, err := s.db.QueryOne(tx, "select ?0 from simple_transactions where id = ?1", models.TransactionColumns(), txID)
+	_, err := s.db.QueryOne(tx, "select * from simple_transactions where tx_id = ?0", txID)
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return ctx.JSON(http.StatusNoContent, struct{}{})
