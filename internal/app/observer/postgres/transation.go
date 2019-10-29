@@ -18,6 +18,7 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
@@ -81,11 +82,15 @@ func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 }
 
 func transactionSchema(model *observer.Transaction) *TransactionSchema {
+	var orderRef insolar.Reference
+	if model.OrderRef != nil {
+		orderRef = *model.OrderRef
+	}
 	return &TransactionSchema{
 		ExternalTransactionId: model.ExtTxId,
 		Timestamp:             model.PulseTx,
 		Direction:             model.TxDirection,
-		OrderRef:              model.OrderRef.Bytes(),
+		OrderRef:              orderRef.Bytes(),
 		GroupRef:              model.GroupRef.Bytes(),
 		From:                  model.From.Bytes(),
 		To:                    model.To.Bytes(),

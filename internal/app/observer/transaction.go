@@ -26,7 +26,7 @@ type Transaction struct {
 	ExtTxId     string
 	TxDirection string
 	GroupRef    insolar.Reference
-	OrderRef    insolar.Reference
+	OrderRef    *insolar.Reference
 	From        insolar.Reference
 	To          insolar.Reference
 }

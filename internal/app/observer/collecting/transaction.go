@@ -219,10 +219,6 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		from = tx.MemberRef
 		to = tx.GroupRef
 	}
-	var orderRef insolar.Reference
-	if tx.OrderRef != nil {
-		orderRef = *tx.OrderRef
-	}
 
 	fmt.Println("Collect new transaction ref:", act.ID.String())
 	return &observer.Transaction{
@@ -230,7 +226,8 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		PulseTx:     date.Unix(),
 		ExtTxId:     tx.ExtTxId,
 		TxDirection: txDirection,
-		OrderRef:    orderRef,
+		OrderRef:    tx.OrderRef,
+		GroupRef:    tx.GroupRef,
 		From:        from,
 		To:          to,
 	}, nil
