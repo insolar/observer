@@ -16,3 +16,15 @@
 
 package api
 
+import (
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestTransaction(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transaction/123")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
