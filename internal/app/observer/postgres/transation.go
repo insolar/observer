@@ -88,7 +88,7 @@ func transactionSchema(model *observer.Transaction) *TransactionSchema {
 	}
 	return &TransactionSchema{
 		ExternalTransactionId: model.ExtTxId,
-		Timestamp:             model.PulseTx,
+		Timestamp:             model.Timestamp,
 		Direction:             model.TxDirection,
 		OrderRef:              orderRef.Bytes(),
 		GroupRef:              model.GroupRef.Bytes(),

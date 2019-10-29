@@ -22,7 +22,7 @@ import (
 
 type Transaction struct {
 	Amount      string
-	PulseTx     int64
+	Timestamp   int64
 	ExtTxId     string
 	TxDirection string
 	GroupRef    insolar.Reference

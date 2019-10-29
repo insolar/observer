@@ -223,7 +223,7 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 	fmt.Println("Collect new transaction ref:", act.ID.String())
 	return &observer.Transaction{
 		Amount:      strconv.FormatUint(tx.Amount, 10),
-		PulseTx:     date.Unix(),
+		Timestamp:   date.Unix(),
 		ExtTxId:     tx.ExtTxId,
 		TxDirection: txDirection,
 		OrderRef:    tx.OrderRef,
