@@ -62,6 +62,7 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 }
 
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
+	// AALEKSEEV TODO
 	panic("implement me")
 }
 
