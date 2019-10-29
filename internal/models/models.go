@@ -59,26 +59,6 @@ const (
 	TTypeRelease   TransactionType = "release"
 )
 
-func TransactionColumns() []string {
-	return []string{
-		"tx_id",
-		"status_registered",
-		"pulse_number",
-		"record_number",
-		"member_from_ref",
-		"member_to_ref",
-		"migration_to_ref",
-		"vesting_from_ref",
-		"amount",
-		"fee",
-		"status_sent",
-		"status_finished",
-		"finish_success",
-		"finish_pulse_number",
-		"finish_record_number",
-	}
-}
-
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
