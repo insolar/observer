@@ -167,7 +167,6 @@ func isMGRCreationCall(chain interface{}) bool {
 		return false
 	}
 	args := request.ParseMemberCallArguments()
-	logrus.Info("isMGRCreationCall = ", args.Params.CallSite == "group.setMGR")
 	return args.Params.CallSite == "group.setMGR"
 }
 

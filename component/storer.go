@@ -165,6 +165,14 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			transactions := postgres.NewTransactionStorage(obs, tx)
+			for _, tx := range b.transactions {
+				err := transactions.Insert(tx)
+				if err != nil {
+					return err
+				}
+			}
+
 			// updates
 
 			for _, mgr := range b.mgrUpdates {
