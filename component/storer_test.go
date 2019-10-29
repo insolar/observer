@@ -59,6 +59,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
 		{
 			TransactionID:       []byte{byte(rand.Int())},
+			Type:                models.TTypeTransfer,
 			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
 			MemberFromReference: []byte{byte(rand.Int())},
 			MemberToReference:   []byte{byte(rand.Int())},
@@ -72,6 +73,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		},
 		{
 			TransactionID:      []byte{byte(rand.Int())},
+			Type:               models.TTypeMigration,
 			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
 			DepositToReference: []byte{byte(rand.Int())},
 			Amount:             strconv.Itoa(rand.Int()),
@@ -88,6 +90,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 				return StoreTxRegister(tx, []observer.TxRegister{
 					{
 						TransactionID:       expectedTransactions[0].TransactionID,
+						Type:                expectedTransactions[0].Type,
 						PulseNumber:         expectedTransactions[0].PulseRecord[0],
 						RecordNumber:        expectedTransactions[0].PulseRecord[1],
 						MemberFromReference: expectedTransactions[0].MemberFromReference,
@@ -96,6 +99,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 					},
 					{
 						TransactionID:      expectedTransactions[1].TransactionID,
+						Type:               expectedTransactions[1].Type,
 						PulseNumber:        expectedTransactions[1].PulseRecord[0],
 						RecordNumber:       expectedTransactions[1].PulseRecord[1],
 						DepositToReference: expectedTransactions[1].DepositToReference,

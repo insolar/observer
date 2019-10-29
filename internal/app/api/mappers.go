@@ -37,31 +37,31 @@ func TxToAPITx(txID string, tx models.Transaction) interface{} {
 		Status:      string(tx.Status()),
 		Timestamp:   0,
 		TxID:        txID,
-		Type:        string(tx.Type()),
+		Type:        string(tx.Type),
 	}
 
-	switch tx.Type() {
+	switch tx.Type {
 	case models.TTypeMigration:
 		return observerapi.SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
 			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
 			ToDepositReference:         NullableString(string(tx.DepositToReference)),
 			ToMemberReference:          NullableString(string(tx.MemberToReference)),
-			Type:                       NullableString(string(tx.Type())),
+			Type:                       NullableString(string(tx.Type)),
 		}
 	case models.TTypeTransfer:
 		return observerapi.SchemaTransfer{
 			SchemasTransactionAbstract: internalTx,
 			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
 			ToMemberReference:          NullableString(string(tx.MemberToReference)),
-			Type:                       NullableString(string(tx.Type())),
+			Type:                       NullableString(string(tx.Type)),
 		}
 	case models.TTypeRelease:
 		return observerapi.SchemaRelease{
 			SchemasTransactionAbstract: internalTx,
 			FromDepositReference:       NullableString(string(tx.DepositFromReference)),
 			ToMemberReference:          NullableString(string(tx.MemberToReference)),
-			Type:                       NullableString(string(tx.Type())),
+			Type:                       NullableString(string(tx.Type)),
 		}
 	default:
 		return internalTx
