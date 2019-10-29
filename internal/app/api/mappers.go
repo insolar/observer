@@ -28,7 +28,7 @@ func NullableInterface(i interface{}) *interface{} {
 	return &i
 }
 
-func TxToApiTx(txID string, tx models.Transaction) interface{} {
+func TxToAPITx(txID string, tx models.Transaction) interface{} {
 	internalTx := observerapi.SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         tx.Fee,

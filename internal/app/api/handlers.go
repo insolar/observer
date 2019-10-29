@@ -101,7 +101,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, TxToApiTx(txID, *tx))
+	return ctx.JSON(http.StatusOK, TxToAPITx(txID, *tx))
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
