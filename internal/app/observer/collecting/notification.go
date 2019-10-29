@@ -160,7 +160,7 @@ func (c *NotificationCollector) Collect(rec *observer.Record) *observer.Notifica
 
 	m, err := c.build(coupleAct)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build transaction"))
+		log.Error(errors.Wrapf(err, "failed to build notification"))
 		return nil
 	}
 	return m
@@ -184,7 +184,7 @@ func (c *NotificationCollector) unwrapNotificationChain(chain *observer.Chain) *
 
 func (c *NotificationCollector) build(act *observer.Activate) (*observer.Notification, error) {
 	if act == nil {
-		return nil, errors.New("trying to create transaction from non complete builder")
+		return nil, errors.New("trying to create notification from non complete builder")
 	}
 
 	var notification Notification
@@ -196,7 +196,7 @@ func (c *NotificationCollector) build(act *observer.Activate) (*observer.Notific
 
 	date, err := act.ID.Pulse().AsApproximateTime()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert transaction create pulse (%d) to time", act.ID.Pulse())
+		return nil, errors.Wrapf(err, "failed to convert notification create pulse (%d) to time", act.ID.Pulse())
 	}
 
 	fmt.Println("Insert new transaction ref:", insolar.NewReference(act.ObjectID).String())
