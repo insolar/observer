@@ -25,12 +25,14 @@ import (
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
+	echo "github.com/labstack/echo/v4"
+	dockertest "github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/insolar/observer/internal/app/api/internalapi"
+	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
