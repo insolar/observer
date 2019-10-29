@@ -4,12 +4,11 @@ create table simple_transactions
     tx_id bytea not null constraint simple_transactions_tx_id_key unique,
 
     status_registered bool,
-    pulse_number bigint,
-    record_number bigint,
+    pulse_record bigint[2] unique,
     member_from_ref bytea,
     member_to_ref bytea,
-    migration_to_ref bytea,
-    vesting_from_ref bytea,
+    deposit_to_ref bytea,
+    deposit_from_ref bytea,
     amount varchar(256),
     fee varchar(256),
 
@@ -17,9 +16,5 @@ create table simple_transactions
 
     status_finished bool,
     finish_success bool,
-    finish_pulse_number bigint,
-    finish_record_number bigint
+    finish_pulse_record bigint[2] unique
 );
-
-CREATE UNIQUE INDEX simple_transactions__unique__pulse_record ON simple_transactions (pulse_number, record_number);
-CREATE UNIQUE INDEX simple_transactions__unique__finish_pulse_record ON simple_transactions (finish_pulse_number, finish_record_number);

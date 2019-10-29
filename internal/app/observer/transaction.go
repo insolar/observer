@@ -1,20 +1,20 @@
 package observer
 
 type TxRegister struct {
-	TransactionID         []byte
-	PulseNumber           int64
-	RecordNumber          int64
-	MemberFromReference   []byte
-	MemberToReference     []byte
-	MigrationsToReference []byte
-	VestingFromReference  []byte
-	Amount                string
-	Fee                   string
+	TransactionID        []byte
+	PulseNumber          int64
+	RecordNumber         int64
+	MemberFromReference  []byte
+	MemberToReference    []byte
+	DepositToReference   []byte
+	DepositFromReference []byte
+	Amount               string
 }
 
 type TxResult struct {
 	TransactionID []byte
 	StatusSent    bool
+	Fee           string
 }
 
 type TxSagaResult struct {

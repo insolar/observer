@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/observer/internal/models"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/configuration"
@@ -244,20 +243,28 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 		return nil
 	}
 
+	columns := []string{
+		"tx_id",
+		"status_registered",
+		"pulse_record",
+		"member_from_ref",
+		"member_to_ref",
+		"deposit_to_ref",
+		"deposit_from_ref",
+		"amount",
+	}
 	var values []interface{}
 	for _, t := range transactions {
 		values = append(
 			values,
 			t.TransactionID,
 			true,
-			t.PulseNumber,
-			t.RecordNumber,
+			pg.Array([2]int64{t.PulseNumber, t.RecordNumber}),
 			t.MemberFromReference,
 			t.MemberToReference,
-			t.MigrationsToReference,
-			t.VestingFromReference,
+			t.DepositToReference,
+			t.DepositFromReference,
 			t.Amount,
-			t.Fee,
 		)
 	}
 	_, err := tx.Exec(
@@ -266,17 +273,15 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET 
 					status_registered = EXCLUDED.status_registered,
-					pulse_number = EXCLUDED.pulse_number,
-					record_number = EXCLUDED.record_number,
+					pulse_record = EXCLUDED.pulse_record,
 					member_from_ref = EXCLUDED.member_from_ref,
 					member_to_ref = EXCLUDED.member_to_ref,
-					migration_to_ref = EXCLUDED.migration_to_ref,
-					vesting_from_ref = EXCLUDED.vesting_from_ref,
-					amount = EXCLUDED.amount,
-					fee = EXCLUDED.fee
+					deposit_to_ref = EXCLUDED.deposit_to_ref,
+					deposit_from_ref = EXCLUDED.deposit_from_ref,
+					amount = EXCLUDED.amount
 			`,
-			strings.Join(models.TransactionColumns(), ","),
-			valuesTemplate(len(models.TransactionColumns()), len(transactions)),
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(transactions)),
 		),
 		values...,
 	)
@@ -291,6 +296,7 @@ func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
 	columns := []string{
 		"tx_id",
 		"status_sent",
+		"fee",
 	}
 	var values []interface{}
 	for _, t := range transactions {
@@ -298,6 +304,7 @@ func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
 			values,
 			t.TransactionID,
 			true,
+			t.Fee,
 		)
 	}
 	_, err := tx.Exec(
@@ -305,7 +312,8 @@ func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET
-					status_sent = EXCLUDED.status_sent
+					status_sent = EXCLUDED.status_sent,
+					fee = EXCLUDED.fee
 			`,
 			strings.Join(columns, ","),
 			valuesTemplate(len(columns), len(transactions)),
@@ -324,8 +332,7 @@ func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
 		"tx_id",
 		"status_finished",
 		"finish_success",
-		"finish_pulse_number",
-		"finish_record_number",
+		"finish_pulse_record",
 	}
 	var values []interface{}
 	for _, t := range transactions {
@@ -334,8 +341,7 @@ func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
 			t.TransactionID,
 			true,
 			t.FinishSuccess,
-			t.FinishPulseNumber,
-			t.FinishRecordNumber,
+			pg.Array([2]int64{t.FinishPulseNumber, t.FinishRecordNumber}),
 		)
 	}
 	_, err := tx.Exec(
@@ -345,8 +351,7 @@ func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
 				ON CONFLICT (tx_id) DO UPDATE SET 
 					status_finished = EXCLUDED.status_finished,
 					finish_success = EXCLUDED.finish_success,
-					finish_pulse_number = EXCLUDED.finish_pulse_number,
-					finish_record_number = EXCLUDED.finish_record_number
+					finish_pulse_record = EXCLUDED.finish_pulse_record
 			`,
 			strings.Join(columns, ","),
 			valuesTemplate(len(columns), len(transactions)),

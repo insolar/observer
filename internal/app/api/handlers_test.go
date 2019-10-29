@@ -22,9 +22,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTransaction_NoContent(t *testing.T) {
@@ -37,11 +38,12 @@ func TestTransaction_SingleRecord(t *testing.T) {
 	txID := "123"
 
 	transaction := models.Transaction{
-		TransactionID:    []byte(txID),
-		PulseNumber:      1,
-		StatusRegistered: true,
-		Amount:           "10",
-		Fee:              "1",
+		TransactionID:     []byte(txID),
+		PulseRecord:       [2]int64{3, 4},
+		StatusRegistered:  true,
+		Amount:            "10",
+		Fee:               "1",
+		FinishPulseRecord: [2]int64{1, 2},
 	}
 
 	err := db.Insert(&transaction)
@@ -58,7 +60,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 		Amount:      "10",
 		Fee:         "1",
 		Index:       0,
-		PulseNumber: 1,
+		PulseNumber: 3,
 		Status:      "pending",
 		Timestamp:   0,
 		TxID:        txID,

@@ -59,26 +59,6 @@ const (
 	TTypeRelease   TransactionType = "release"
 )
 
-func TransactionColumns() []string {
-	return []string{
-		"tx_id",
-		"status_registered",
-		"pulse_number",
-		"record_number",
-		"member_from_ref",
-		"member_to_ref",
-		"migration_to_ref",
-		"vesting_from_ref",
-		"amount",
-		"fee",
-		"status_sent",
-		"status_finished",
-		"finish_success",
-		"finish_pulse_number",
-		"finish_record_number",
-	}
-}
-
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
@@ -87,24 +67,22 @@ type Transaction struct {
 	TransactionID []byte `sql:"tx_id"`
 
 	// Request registered.
-	StatusRegistered      bool   `sql:"status_registered"`
-	PulseNumber           int64  `sql:"pulse_number"`
-	RecordNumber          int64  `sql:"record_number"`
-	MemberFromReference   []byte `sql:"member_from_ref"`
-	MemberToReference     []byte `sql:"member_to_ref"`
-	MigrationsToReference []byte `sql:"migration_to_ref"`
-	VestingFromReference  []byte `sql:"vesting_from_ref"`
-	Amount                string `sql:"amount"`
-	Fee                   string `sql:"fee"`
+	StatusRegistered     bool     `sql:"status_registered"`
+	PulseRecord          [2]int64 `sql:"pulse_record,array"`
+	MemberFromReference  []byte   `sql:"member_from_ref"`
+	MemberToReference    []byte   `sql:"member_to_ref"`
+	DepositToReference   []byte   `sql:"deposit_to_ref"`
+	DepositFromReference []byte   `sql:"deposit_from_ref"`
+	Amount               string   `sql:"amount"`
+	Fee                  string   `sql:"fee"`
 
 	// Result received.
 	StatusSent bool `sql:"status_sent"`
 
 	// Saga result received.
-	StatusFinished     bool  `sql:"status_finished"`
-	FinishSuccess      bool  `sql:"finish_success"`
-	FinishPulseNumber  int64 `sql:"finish_pulse_number"`
-	FinishRecordNumber int64 `sql:"finish_record_number"`
+	StatusFinished    bool     `sql:"status_finished"`
+	FinishSuccess     bool     `sql:"finish_success"`
+	FinishPulseRecord [2]int64 `sql:"finish_pulse_record,array"`
 }
 
 func (t *Transaction) Status() TransactionStatus {
@@ -128,11 +106,19 @@ func (t *Transaction) Status() TransactionStatus {
 	return TStatusUnknown
 }
 
+func (t *Transaction) PulseNumber() int64 {
+	return t.PulseRecord[0]
+}
+
+func (t *Transaction) RecordNumber() int64 {
+	return t.PulseRecord[1]
+}
+
 func (t *Transaction) Type() TransactionType {
-	if len(t.VestingFromReference) > 0 {
+	if len(t.DepositFromReference) > 0 {
 		return TTypeRelease
 	}
-	if len(t.MigrationsToReference) > 0 {
+	if len(t.DepositToReference) > 0 {
 		return TTypeMigration
 	}
 
