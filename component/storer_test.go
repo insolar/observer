@@ -19,6 +19,7 @@ package component
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -26,6 +27,8 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -58,11 +61,11 @@ func Test_makeStorer(t *testing.T) {
 func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
 		{
-			TransactionID:       []byte{byte(rand.Int())},
+			TransactionID:       gen.ID().Bytes(),
 			Type:                models.TTypeTransfer,
 			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
-			MemberFromReference: []byte{byte(rand.Int())},
-			MemberToReference:   []byte{byte(rand.Int())},
+			MemberFromReference: gen.RecordReference().Bytes(),
+			MemberToReference:   gen.RecordReference().Bytes(),
 			Amount:              strconv.Itoa(rand.Int()),
 			Fee:                 strconv.Itoa(rand.Int()),
 			FinishSuccess:       rand.Int()/2 == 0,
@@ -72,10 +75,10 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			StatusFinished:      true,
 		},
 		{
-			TransactionID:      []byte{byte(rand.Int())},
+			TransactionID:      gen.ID().Bytes(),
 			Type:               models.TTypeMigration,
 			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
-			DepositToReference: []byte{byte(rand.Int())},
+			DepositToReference: gen.RecordReference().Bytes(),
 			Amount:             strconv.Itoa(rand.Int()),
 			Fee:                strconv.Itoa(rand.Int()),
 			StatusRegistered:   true,
@@ -158,6 +161,97 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		})
 		// Compare transactions.
 		assert.Equal(t, expectedTransactions, selected)
+		return tx.Rollback()
+	})
+}
+
+func TestTransactionGet(t *testing.T) {
+	expectedTransactions := []models.Transaction{
+		{
+			TransactionID:       gen.ID().Bytes(),
+			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+			MemberFromReference: gen.RecordReference().Bytes(),
+			MemberToReference:   gen.RecordReference().Bytes(),
+			Amount:              strconv.Itoa(rand.Int()),
+			Fee:                 strconv.Itoa(rand.Int()),
+			FinishSuccess:       rand.Int()/2 == 0,
+			FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+			StatusRegistered:    true,
+			StatusSent:          true,
+			StatusFinished:      true,
+		},
+		{
+			TransactionID:      gen.ID().Bytes(),
+			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
+			DepositToReference: gen.RecordReference().Bytes(),
+			Amount:             strconv.Itoa(rand.Int()),
+			Fee:                strconv.Itoa(rand.Int()),
+			StatusRegistered:   true,
+			StatusSent:         true,
+			StatusFinished:     false,
+		},
+	}
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+		// Create different update functions.
+		funcs := []func() error{
+			func() error {
+				return StoreTxRegister(tx, []observer.TxRegister{
+					{
+						TransactionID:       expectedTransactions[0].TransactionID,
+						PulseNumber:         expectedTransactions[0].PulseRecord[0],
+						RecordNumber:        expectedTransactions[0].PulseRecord[1],
+						MemberFromReference: expectedTransactions[0].MemberFromReference,
+						MemberToReference:   expectedTransactions[0].MemberToReference,
+						Amount:              expectedTransactions[0].Amount,
+					},
+					{
+						TransactionID:      expectedTransactions[1].TransactionID,
+						PulseNumber:        expectedTransactions[1].PulseRecord[0],
+						RecordNumber:       expectedTransactions[1].PulseRecord[1],
+						DepositToReference: expectedTransactions[1].DepositToReference,
+						Amount:             expectedTransactions[1].Amount,
+					},
+				})
+			},
+			func() error {
+				return StoreTxResult(tx, []observer.TxResult{
+					{
+						TransactionID: expectedTransactions[0].TransactionID,
+						Fee:           expectedTransactions[0].Fee,
+					},
+					{
+						TransactionID: expectedTransactions[1].TransactionID,
+						Fee:           expectedTransactions[1].Fee,
+					},
+				})
+			},
+			func() error {
+				return StoreTxSagaResult(tx, []observer.TxSagaResult{
+					{
+						TransactionID:      expectedTransactions[0].TransactionID,
+						FinishSuccess:      expectedTransactions[0].FinishSuccess,
+						FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+						FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
+					},
+				})
+			},
+		}
+
+		for _, f := range funcs {
+			err := f()
+			require.NoError(t, err)
+		}
+
+		ctx := context.Background()
+
+		for i := range expectedTransactions {
+			txID := insolar.NewIDFromBytes(expectedTransactions[i].TransactionID)
+			res, err := GetTx(ctx, tx, txID.Bytes())
+			require.NoError(t, err)
+			res.ID = 0
+			assert.Equal(t, &expectedTransactions[i], res)
+		}
+
 		return tx.Rollback()
 	})
 }

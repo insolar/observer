@@ -22,23 +22,30 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
-func TestTransaction_NoContent(t *testing.T) {
+func TestTransaction_Invalid(t *testing.T) {
 	resp, err := http.Get("http://" + apihost + "/api/transaction/123")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransaction_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + gen.ID().String())
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
 func TestTransaction_SingleRecord(t *testing.T) {
-	txID := "123"
+	txID := gen.ID()
 
 	transaction := models.Transaction{
-		TransactionID:     []byte(txID),
+		TransactionID:     txID.Bytes(),
 		PulseRecord:       [2]int64{3, 4},
 		StatusRegistered:  true,
 		Amount:            "10",
@@ -50,7 +57,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 	err := db.Insert(&transaction)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -64,7 +71,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 		PulseNumber: 3,
 		Status:      "pending",
 		Timestamp:   0,
-		TxID:        txID,
+		TxID:        txID.String(),
 		Type:        string(models.TTypeMigration),
 	}
 
