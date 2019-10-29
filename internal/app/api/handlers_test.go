@@ -58,8 +58,8 @@ func TestTransaction_SingleRecord(t *testing.T) {
 	receivedTransaction := &observerapi.SchemasTransactionAbstract{}
 	expectedTransaction := &observerapi.SchemasTransactionAbstract{
 		Amount:      "10",
-		Fee:         "1",
-		Index:       0,
+		Fee:         NullableString("1"),
+		Index:       "0",
 		PulseNumber: 3,
 		Status:      "pending",
 		Timestamp:   0,
