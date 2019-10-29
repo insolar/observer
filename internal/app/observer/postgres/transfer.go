@@ -31,14 +31,14 @@ type TransferSchema struct {
 	tableName struct{} `sql:"transactions"` //nolint: unused,structcheck
 
 	ID            uint                `sql:",pk_id"`
-	TxID          []byte              `sql:",unique"`
+	TxID          []byte              `sql:",unique:transfer_idx"`
 	Amount        string              `sql:",notnull"`
 	Fee           string              `sql:",notnull"`
 	TransferDate  int64               `sql:",notnull"`
 	PulseNum      insolar.PulseNumber `sql:",notnull"`
 	Status        string              `sql:",notnull"`
-	MemberFromRef []byte              `sql:",notnull"`
-	MemberToRef   []byte              `sql:",notnull"`
+	MemberFromRef []byte              `sql:",unique:transfer_idx"`
+	MemberToRef   []byte              `sql:",unique:transfer_idx"`
 	EthHash       string              `sql:",notnull"`
 
 	// TODO: hide them in `Details` field

@@ -1,3 +1,19 @@
+//
+// Copyright 2019 Insolar Technologies GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package models
 
 type Member struct {
@@ -33,6 +49,35 @@ const (
 	TStatusReceived TransactionStatus = "received"
 	TStatusFailed   TransactionStatus = "failed"
 )
+
+type TransactionType string
+
+const (
+	TTypeUnknown   TransactionType = "unknown"
+	TTypeTransfer  TransactionType = "transfer"
+	TTypeMigration TransactionType = "migration"
+	TTypeRelease   TransactionType = "release"
+)
+
+func TransactionColumns() []string {
+	return []string{
+		"tx_id",
+		"status_registered",
+		"pulse_number",
+		"record_number",
+		"member_from_ref",
+		"member_to_ref",
+		"migration_to_ref",
+		"vesting_from_ref",
+		"amount",
+		"fee",
+		"status_sent",
+		"status_finished",
+		"finish_success",
+		"finish_pulse_number",
+		"finish_record_number",
+	}
+}
 
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
@@ -79,4 +124,19 @@ func (t *Transaction) Status() TransactionStatus {
 	}
 
 	return TStatusUnknown
+}
+
+func (t *Transaction) Type() TransactionType {
+	if len(t.VestingFromReference) > 0 {
+		return TTypeRelease
+	}
+	if len(t.MigrationsToReference) > 0 {
+		return TTypeMigration
+	}
+
+	if len(t.MemberFromReference) > 0 && len(t.MemberToReference) > 0 {
+		return TTypeTransfer
+	}
+
+	return TTypeUnknown
 }
