@@ -199,7 +199,7 @@ func (c *NotificationCollector) build(act *observer.Activate) (*observer.Notific
 		return nil, errors.Wrapf(err, "failed to convert notification create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	fmt.Println("Insert new transaction ref:", insolar.NewReference(act.ObjectID).String())
+	fmt.Println("Insert new notification ref:", insolar.NewReference(act.ObjectID).String())
 	return &observer.Notification{
 		Ref:            *insolar.NewReference(act.ObjectID),
 		UserReference:  notification.MemberRef,
