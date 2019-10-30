@@ -69,9 +69,11 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
 	}
 
-	// TODO: check `index` and `direction`
+	// AALEKSEEV TODO: check `index` and `direction`
 
 	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
+	
+
 	panic("implement me")
 }
 
