@@ -19,6 +19,7 @@ package component
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -26,6 +27,8 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -58,11 +61,11 @@ func Test_makeStorer(t *testing.T) {
 func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
 		{
-			TransactionID:       []byte{byte(rand.Int())},
+			TransactionID:       gen.RecordReference().Bytes(),
 			Type:                models.TTypeTransfer,
 			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
-			MemberFromReference: []byte{byte(rand.Int())},
-			MemberToReference:   []byte{byte(rand.Int())},
+			MemberFromReference: gen.Reference().Bytes(),
+			MemberToReference:   gen.Reference().Bytes(),
 			Amount:              strconv.Itoa(rand.Int()),
 			Fee:                 strconv.Itoa(rand.Int()),
 			FinishSuccess:       rand.Int()/2 == 0,
@@ -72,10 +75,10 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			StatusFinished:      true,
 		},
 		{
-			TransactionID:      []byte{byte(rand.Int())},
+			TransactionID:      gen.RecordReference().Bytes(),
 			Type:               models.TTypeMigration,
 			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
-			DepositToReference: []byte{byte(rand.Int())},
+			DepositToReference: gen.Reference().Bytes(),
 			Amount:             strconv.Itoa(rand.Int()),
 			Fee:                strconv.Itoa(rand.Int()),
 			StatusRegistered:   true,
@@ -158,6 +161,16 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		})
 		// Compare transactions.
 		assert.Equal(t, expectedTransactions, selected)
+
+		ctx := context.Background()
+
+		for i := range expectedTransactions {
+			txID := insolar.NewReferenceFromBytes(expectedTransactions[i].TransactionID)
+			res, err := GetTx(ctx, tx, txID.Bytes())
+			require.NoError(t, err)
+			res.ID = 0
+			assert.Equal(t, &expectedTransactions[i], res)
+		}
 		return tx.Rollback()
 	})
 }

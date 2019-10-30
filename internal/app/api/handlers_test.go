@@ -18,6 +18,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -44,29 +45,34 @@ func TestTransaction_NoContent(t *testing.T) {
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
-	txID := gen.RecordReference().String()
-	fromMember := gen.Reference().String()
-	toMember := gen.Reference().String()
-	toDeposit := gen.Reference().String()
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
+	ts := pntime.Unix()
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+	toDeposit := gen.Reference()
 
 	transaction := models.Transaction{
-		TransactionID:     []byte(txID),
-		PulseRecord:       [2]int64{3, 4},
+		TransactionID:     txID.Bytes(),
+		PulseRecord:       [2]int64{int64(pulseNumber), 198},
 		StatusRegistered:  true,
 		Amount:            "10",
 		Fee:               "1",
 		FinishPulseRecord: [2]int64{1, 2},
 		Type:              models.TTypeMigration,
 
-		MemberFromReference: []byte(fromMember),
-		MemberToReference:   []byte(toMember),
-		DepositToReference:  []byte(toDeposit),
+		MemberFromReference: fromMember.Bytes(),
+		MemberToReference:   toMember.Bytes(),
+		DepositToReference:  toDeposit.Bytes(),
 	}
 
-	err := db.Insert(&transaction)
+	err = db.Insert(&transaction)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -77,54 +83,16 @@ func TestTransaction_TypeMigration(t *testing.T) {
 		SchemasTransactionAbstract: observerapi.SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
-			Index:       "0",
-			PulseNumber: 3,
+			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			PulseNumber: int64(pulseNumber),
 			Status:      "pending",
-			Timestamp:   0,
-			TxID:        txID,
-			Type:        string(models.TTypeMigration),
+			Timestamp:   float32(ts),
+			TxID:        txID.String(),
 		},
-		ToMemberReference:   &toMember,
-		FromMemberReference: &fromMember,
-		ToDepositReference:  &toDeposit,
-	}
-
-	err = json.Unmarshal(bodyBytes, receivedTransaction)
-	require.NoError(t, err)
-	require.Equal(t, expectedTransaction, receivedTransaction)
-}
-
-func TestTransaction_TypeTransfer(t *testing.T) {
-	txID := gen.RecordReference().String()
-	transaction := models.Transaction{
-		TransactionID:     []byte(txID),
-		PulseRecord:       [2]int64{3, 4},
-		StatusRegistered:  true,
-		Amount:            "10",
-		Fee:               "1",
-		FinishPulseRecord: [2]int64{1, 2},
-		Type:              models.TTypeMigration,
-	}
-
-	err := db.Insert(&transaction)
-	require.NoError(t, err)
-
-	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	receivedTransaction := &observerapi.SchemasTransactionAbstract{}
-	expectedTransaction := &observerapi.SchemasTransactionAbstract{
-		Amount:      "10",
-		Fee:         NullableString("1"),
-		Index:       "0",
-		PulseNumber: 3,
-		Status:      "pending",
-		Timestamp:   0,
-		TxID:        txID,
-		Type:        string(models.TTypeMigration),
+		ToMemberReference:   toMember.String(),
+		FromMemberReference: fromMember.String(),
+		ToDepositReference:  toDeposit.String(),
+		Type:                string(models.TTypeMigration),
 	}
 
 	err = json.Unmarshal(bodyBytes, receivedTransaction)

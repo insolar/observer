@@ -16,6 +16,13 @@
 
 package models
 
+import (
+	"fmt"
+	"github.com/insolar/insolar/pulse"
+	"reflect"
+	"sync"
+)
+
 type Member struct {
 	tableName struct{} `sql:"members"` //nolint: unused,structcheck
 
@@ -69,7 +76,7 @@ type Transaction struct {
 	// Request registered.
 	StatusRegistered     bool            `sql:"status_registered"`
 	Type                 TransactionType `sql:"type"`
-	PulseRecord          [2]int64        `sql:"pulse_record,array"`
+	PulseRecord          [2]int64        `sql:"pulse_record" pg:",array"`
 	MemberFromReference  []byte          `sql:"member_from_ref"`
 	MemberToReference    []byte          `sql:"member_to_ref"`
 	DepositToReference   []byte          `sql:"deposit_to_ref"`
@@ -83,7 +90,57 @@ type Transaction struct {
 	// Saga result received.
 	StatusFinished    bool     `sql:"status_finished"`
 	FinishSuccess     bool     `sql:"finish_success"`
-	FinishPulseRecord [2]int64 `sql:"finish_pulse_record,array"`
+	FinishPulseRecord [2]int64 `sql:"finish_pulse_record" pg:",array"`
+}
+
+type fieldCache struct {
+	sync.Mutex
+	cache map[reflect.Type][]string
+}
+
+var fieldsCache = fieldCache{
+	cache: make(map[reflect.Type][]string),
+}
+
+func (t Transaction) Fields() []string {
+	fieldsCache.Lock()
+	defer fieldsCache.Unlock()
+
+	tType := reflect.TypeOf(t)
+
+	if fields, ok := fieldsCache.cache[tType]; ok {
+		return append(fields[:0:0], fields...)
+	}
+	fieldsCache.cache[tType] = getFieldList(tType)
+	fields := fieldsCache.cache[tType]
+	return append(fields[:0:0], fields...)
+}
+
+func (t Transaction) QuotedFields() []string {
+	fields := t.Fields()
+	for i := range fields {
+		fields[i] = fmt.Sprintf("'%s'", fields[i])
+	}
+	return fields
+}
+
+func getFieldList(t reflect.Type) []string {
+	var fieldList []string
+
+	for i := 0; i < t.NumField(); i++ {
+		// ignore tableName
+		if t.Field(i).Name == "tableName" {
+			continue
+		}
+		tag := t.Field(i).Tag.Get("sql")
+		// Skip if tag is not defined or ignored
+		if tag == "" || tag == "-" {
+			continue
+		}
+		fieldList = append(fieldList, tag)
+	}
+
+	return fieldList
 }
 
 func (t *Transaction) Status() TransactionStatus {
@@ -113,4 +170,17 @@ func (t *Transaction) PulseNumber() int64 {
 
 func (t *Transaction) RecordNumber() int64 {
 	return t.PulseRecord[1]
+}
+
+func (t *Transaction) Index() string {
+	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+}
+
+func (t *Transaction) Timestamp() float32 {
+	p := t.PulseNumber()
+	pulseTime, err := pulse.Number(p).AsApproximateTime()
+	if err != nil {
+		return 0
+	}
+	return float32(pulseTime.Unix())
 }
