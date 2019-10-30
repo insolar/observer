@@ -56,7 +56,7 @@ func TestTransaction_SingleRecord(t *testing.T) {
 		Type:              models.TTypeMigration,
 	}
 
-	err := db.Insert(&transaction)
+	err := db.Insert(&transaction) // AALEKSEEV TODO <--- example
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
