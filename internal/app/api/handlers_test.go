@@ -42,7 +42,7 @@ func TestTransaction_NoContent(t *testing.T) {
 }
 
 func TestTransaction_SingleRecord(t *testing.T) {
-	txID := gen.ID()
+	txID := gen.RecordReference()
 	time := float32(1572428401)
 	pulseNumber := int64(26193138)
 

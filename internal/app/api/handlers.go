@@ -91,7 +91,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 	if len(txIDStr) == 0 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
 	}
-	txID, err := insolar.NewIDFromString(txIDStr)
+	txID, err := insolar.NewReferenceFromString(txIDStr)
 	if err != nil {
 		s.log.WithField("txID", txIDStr).Infof("invalid txID: %s", err)
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid tx id"))
