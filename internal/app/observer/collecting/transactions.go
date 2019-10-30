@@ -3,7 +3,6 @@ package collecting
 import (
 	"context"
 	"encoding/json"
-	"runtime/debug"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
@@ -29,7 +28,16 @@ const (
 	methodTransfer          = "Transfer"
 )
 
+const (
+	paramAmount      = "amount"
+	paramToMemberRef = "toMemberReference"
+)
+
 type TxRegisterCollector struct {
+}
+
+func NewTxRegisterCollector() *TxRegisterCollector {
+	return &TxRegisterCollector{}
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
@@ -38,19 +46,28 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 		return nil
 	}
 
+	var tx *observer.TxRegister
 	switch request.Method {
 	case methodCall:
-		return collectTransfer(ctx, rec)
+		tx = collectTransfer(rec)
 	case methodTransferToDeposit:
-		return collectMigration(ctx, rec)
+		tx = collectMigration(rec)
 	case methodTransfer:
-		return collectRelease(ctx, rec)
+		tx = collectRelease(rec)
+	default:
+		log.Error("unknown method: ", request.Method)
 	}
-	log.Error("unknown method: ", request.Method)
-	return nil
+	if tx == nil {
+		return nil
+	}
+	if err := tx.Validate(); err != nil {
+		log.Error(errors.Wrap(err, "invalid transaction received"))
+		return nil
+	}
+	return tx
 }
 
-func collectTransfer(ctx context.Context, rec exporter.Record) *observer.TxRegister {
+func collectTransfer(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -61,11 +78,16 @@ func collectTransfer(ctx context.Context, rec exporter.Record) *observer.TxRegis
 		return nil
 	}
 
+	// Skip saga.
 	if request.IsDetachedCall() {
 		return nil
 	}
 
-	args, callParams := parseExternalArguments(request.Arguments)
+	args, callParams, err := parseExternalArguments(request.Arguments)
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse arguments"))
+		return nil
+	}
 	if args.Params.CallSite != txTransfer {
 		return nil
 	}
@@ -75,9 +97,19 @@ func collectTransfer(ctx context.Context, rec exporter.Record) *observer.TxRegis
 		log.Error(errors.Wrap(err, "failed to parse from reference"))
 		return nil
 	}
-	memberTo, err := insolar.NewObjectReferenceFromString(callParams.ToMemberReference)
+	toMemberStr, ok := callParams[paramToMemberRef].(string)
+	if !ok {
+		log.Error(errors.Wrap(err, "failed to parse from reference"))
+		return nil
+	}
+	memberTo, err := insolar.NewObjectReferenceFromString(toMemberStr)
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse to reference"))
+		return nil
+	}
+	amount, ok := callParams[paramAmount].(string)
+	if !ok {
+		log.Error(errors.Wrap(err, "failed to parse from amount"))
 		return nil
 	}
 
@@ -86,13 +118,13 @@ func collectTransfer(ctx context.Context, rec exporter.Record) *observer.TxRegis
 		TransactionID:       insolar.NewReference(rec.Record.ID).Bytes(),
 		PulseNumber:         int64(rec.Record.ID.Pulse()),
 		RecordNumber:        int64(rec.RecordNumber),
-		Amount:              callParams.Amount,
+		Amount:              amount,
 		MemberFromReference: memberFrom.Bytes(),
 		MemberToReference:   memberTo.Bytes(),
 	}
 }
 
-func collectMigration(ctx context.Context, rec exporter.Record) *observer.TxRegister {
+func collectMigration(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -103,36 +135,16 @@ func collectMigration(ctx context.Context, rec exporter.Record) *observer.TxRegi
 		return nil
 	}
 
-	args := parseInternalArguments(request.Arguments)
-	if len(args) < 5 {
-		log.Error("not enough call params")
+	var (
+		amount                                string
+		txID, toDeposit, fromMember, toMember insolar.Reference
+	)
+	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember})
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
-	amount, ok := args[0].(string)
-	if !ok {
-		log.Error("failed to parse amount")
-		return nil
-	}
-	toDeposit, ok := args[1].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse toDeposit")
-		return nil
-	}
-	fromMember, ok := args[2].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse fromMember")
-		return nil
-	}
-	txID, ok := args[3].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse txID")
-		return nil
-	}
-	toMember, ok := args[4].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse toMember")
-		return nil
-	}
+
 	return &observer.TxRegister{
 		Type:                models.TTypeMigration,
 		TransactionID:       txID.Bytes(),
@@ -145,7 +157,7 @@ func collectMigration(ctx context.Context, rec exporter.Record) *observer.TxRegi
 	}
 }
 
-func collectRelease(ctx context.Context, rec exporter.Record) *observer.TxRegister {
+func collectRelease(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -156,24 +168,13 @@ func collectRelease(ctx context.Context, rec exporter.Record) *observer.TxRegist
 		return nil
 	}
 
-	args := parseInternalArguments(request.Arguments)
-	if len(args) < 3 {
-		log.Error("not enough call params")
-		return nil
-	}
-	amount, ok := args[0].(string)
-	if !ok {
-		log.Error("failed to parse amount")
-		return nil
-	}
-	toMember, ok := args[1].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse toMember")
-		return nil
-	}
-	txID, ok := args[2].(insolar.Reference)
-	if !ok {
-		log.Error("failed to parse txID")
+	var (
+		amount         string
+		txID, toMember insolar.Reference
+	)
+	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toMember, &txID})
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
 
@@ -188,63 +189,36 @@ func collectRelease(ctx context.Context, rec exporter.Record) *observer.TxRegist
 	}
 }
 
-type externalCallParams struct {
-	Amount            string `json:"amount"`
-	ToMemberReference string `json:"toMemberReference"`
-}
-
-func parseInternalArguments(in []byte) []interface{} {
-	var args []interface{}
-	err := insolar.Deserialize(in, &args)
-	if err != nil {
-		log.Error(errors.Wrap(err, "failed to parse arguments"))
-		return nil
-	}
-	return args
-}
-
-func parseExternalArguments(in []byte) (member.Request, externalCallParams) {
+func parseExternalArguments(in []byte) (member.Request, map[string]interface{}, error) {
 	if in == nil {
-		return member.Request{}, externalCallParams{}
+		return member.Request{}, nil, nil
 	}
-	var args []interface{}
-	err := insolar.Deserialize(in, &args)
+	var signedRequest []byte
+	err := insolar.Deserialize(in, []interface{}{&signedRequest})
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return member.Request{}, externalCallParams{}
+		return member.Request{}, nil, err
 	}
 
+	if len(signedRequest) == 0 {
+		return member.Request{}, nil, errors.New("failed to parse signed request")
+	}
 	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
-			if err != nil {
-				log.Error(errors.Wrapf(err, "failed to unmarshal params"))
-				return member.Request{}, externalCallParams{}
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				log.Error(errors.Wrapf(err, "failed to unmarshal json member request"))
-				return member.Request{}, externalCallParams{}
-			}
+	{
+		var encodedRequest []byte
+		// IMPORTANT: argument number should match serialization. This is why we use nil as second and third values.
+		err = signer.UnmarshalParams(signedRequest, []interface{}{&encodedRequest, nil, nil}...)
+		if err != nil {
+			return member.Request{}, nil, errors.Wrapf(err, "failed to unmarshal params")
+		}
+		err = json.Unmarshal(encodedRequest, &request)
+		if err != nil {
+			return member.Request{}, nil, errors.Wrapf(err, "failed to unmarshal json member request")
 		}
 	}
 
-	callParams := externalCallParams{}
-	data, err := json.Marshal(request.Params.CallParams)
-	if err != nil {
-		log.Error("failed to marshal CallParams")
-		debug.PrintStack()
+	callParams, ok := request.Params.CallParams.(map[string]interface{})
+	if !ok {
+		return member.Request{}, nil, errors.New("failed to decode CallParams")
 	}
-	err = json.Unmarshal(data, &callParams)
-	if err != nil {
-		log.Error("failed to unmarshal CallParams")
-		debug.PrintStack()
-	}
-	return request, callParams
+	return request, callParams, nil
 }
