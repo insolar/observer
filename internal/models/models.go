@@ -18,6 +18,7 @@ package models
 
 import (
 	"fmt"
+	"github.com/insolar/insolar/pulse"
 	"reflect"
 	"sync"
 )
@@ -169,4 +170,17 @@ func (t *Transaction) PulseNumber() int64 {
 
 func (t *Transaction) RecordNumber() int64 {
 	return t.PulseRecord[1]
+}
+
+func (t *Transaction) Index() string {
+	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+}
+
+func (t *Transaction) Timestamp() float32 {
+	p := t.PulseNumber()
+	pulseTime, err := pulse.Number(p).AsApproximateTime()
+	if err != nil {
+		return 0
+	}
+	return float32(pulseTime.Unix())
 }
