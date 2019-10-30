@@ -62,8 +62,16 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 	panic("implement me")
 }
 
+// CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
-	// AALEKSEEV TODO
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+	}
+
+	// TODO: check `index` and `direction`
+
+	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
 	panic("implement me")
 }
 
