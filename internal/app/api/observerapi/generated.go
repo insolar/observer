@@ -95,10 +95,10 @@ type SchemaMigration struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromMemberReference *string `json:"fromMemberReference,omitempty"`
-	ToDepositReference  *string `json:"toDepositReference,omitempty"`
-	ToMemberReference   *string `json:"toMemberReference,omitempty"`
-	Type                *string `json:"type,omitempty"`
+	FromMemberReference string `json:"fromMemberReference"`
+	ToDepositReference  string `json:"toDepositReference"`
+	ToMemberReference   string `json:"toMemberReference"`
+	Type                string `json:"type"`
 }
 
 // SchemaRelease defines model for schema-release.
@@ -106,9 +106,9 @@ type SchemaRelease struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromDepositReference *string `json:"fromDepositReference,omitempty"`
-	ToMemberReference    *string `json:"toMemberReference,omitempty"`
-	Type                 *string `json:"type,omitempty"`
+	FromDepositReference string `json:"fromDepositReference"`
+	ToMemberReference    string `json:"toMemberReference"`
+	Type                 string `json:"type"`
 }
 
 // SchemaTransfer defines model for schema-transfer.
@@ -116,9 +116,9 @@ type SchemaTransfer struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromMemberReference *string `json:"fromMemberReference,omitempty"`
-	ToMemberReference   *string `json:"toMemberReference,omitempty"`
-	Type                *string `json:"type,omitempty"`
+	FromMemberReference string `json:"fromMemberReference"`
+	ToMemberReference   string `json:"toMemberReference"`
+	Type                string `json:"type"`
 }
 
 // SchemasTransaction defines model for schemas-transaction.

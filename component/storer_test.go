@@ -61,11 +61,11 @@ func Test_makeStorer(t *testing.T) {
 func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
 		{
-			TransactionID:       gen.ID().Bytes(),
+			TransactionID:       gen.RecordReference().Bytes(),
 			Type:                models.TTypeTransfer,
 			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
-			MemberFromReference: gen.RecordReference().Bytes(),
-			MemberToReference:   gen.RecordReference().Bytes(),
+			MemberFromReference: gen.Reference().Bytes(),
+			MemberToReference:   gen.Reference().Bytes(),
 			Amount:              strconv.Itoa(rand.Int()),
 			Fee:                 strconv.Itoa(rand.Int()),
 			FinishSuccess:       rand.Int()/2 == 0,
@@ -75,10 +75,10 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			StatusFinished:      true,
 		},
 		{
-			TransactionID:      gen.ID().Bytes(),
+			TransactionID:      gen.RecordReference().Bytes(),
 			Type:               models.TTypeMigration,
 			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
-			DepositToReference: gen.RecordReference().Bytes(),
+			DepositToReference: gen.Reference().Bytes(),
 			Amount:             strconv.Itoa(rand.Int()),
 			Fee:                strconv.Itoa(rand.Int()),
 			StatusRegistered:   true,
@@ -165,7 +165,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		ctx := context.Background()
 
 		for i := range expectedTransactions {
-			txID := insolar.NewIDFromBytes(expectedTransactions[i].TransactionID)
+			txID := insolar.NewReferenceFromBytes(expectedTransactions[i].TransactionID)
 			res, err := GetTx(ctx, tx, txID.Bytes())
 			require.NoError(t, err)
 			res.ID = 0

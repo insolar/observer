@@ -29,15 +29,15 @@ func NullableInterface(i interface{}) *interface{} {
 	return &i
 }
 
-func TxToAPITx(txID string, tx models.Transaction) interface{} {
+func TxToAPITx(tx models.Transaction) interface{} {
 	internalTx := observerapi.SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         NullableString(tx.Fee),
-		Index:       "0",
+		Index:       tx.Index(),
 		PulseNumber: tx.PulseNumber(),
 		Status:      string(tx.Status()),
-		Timestamp:   0,
-		TxID:        txID,
+		Timestamp:   tx.Timestamp(),
+		TxID:        insolar.NewReferenceFromBytes(tx.TransactionID).String(),
 		Type:        string(tx.Type),
 	}
 
@@ -45,54 +45,51 @@ func TxToAPITx(txID string, tx models.Transaction) interface{} {
 	case models.TTypeMigration:
 		res := observerapi.SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
-			Type:                       NullableString(string(tx.Type)),
+			Type:                       string(tx.Type),
 		}
 		if len(tx.MemberFromReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.MemberFromReference)
-			res.FromMemberReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.MemberFromReference)
+			res.FromMemberReference = ref.String()
 		}
 		if len(tx.DepositToReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.DepositToReference)
-			res.ToDepositReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.DepositToReference)
+			res.ToDepositReference = ref.String()
 		}
 		if len(tx.MemberToReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.MemberToReference)
-			res.ToMemberReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
+			res.ToMemberReference = ref.String()
 		}
 
 		return res
 	case models.TTypeTransfer:
 		res := observerapi.SchemaTransfer{
 			SchemasTransactionAbstract: internalTx,
-			FromMemberReference:        NullableString(string(tx.MemberFromReference)),
-			ToMemberReference:          NullableString(string(tx.MemberToReference)),
-			Type:                       NullableString(string(tx.Type)),
+			Type:                       string(tx.Type),
 		}
 		if len(tx.MemberFromReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.MemberFromReference)
-			res.FromMemberReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.MemberFromReference)
+			res.FromMemberReference = ref.String()
 		}
 		if len(tx.MemberToReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.MemberToReference)
-			res.ToMemberReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
+			res.ToMemberReference = ref.String()
 		}
+
 		return res
 	case models.TTypeRelease:
 		res := observerapi.SchemaRelease{
 			SchemasTransactionAbstract: internalTx,
-			FromDepositReference:       NullableString(string(tx.DepositFromReference)),
-			ToMemberReference:          NullableString(string(tx.MemberToReference)),
-			Type:                       NullableString(string(tx.Type)),
+			Type:                       string(tx.Type),
 		}
-
 		if len(tx.DepositFromReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.DepositFromReference)
-			res.FromDepositReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.DepositFromReference)
+			res.FromDepositReference = ref.String()
 		}
 		if len(tx.MemberToReference) > 0 {
-			ref := insolar.NewIDFromBytes(tx.MemberToReference)
-			res.ToMemberReference = NullableString(ref.String())
+			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
+			res.ToMemberReference = ref.String()
 		}
+
 		return res
 	default:
 		return internalTx
