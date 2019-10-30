@@ -40,7 +40,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		request := member.Request{
 			Params: member.Params{
 				Reference: memberFrom.String(),
-				CallSite:  txTransfer,
+				CallSite:  callSiteTransfer,
 				CallParams: map[string]interface{}{
 					paramToMemberRef: memberTo.String(),
 					paramAmount:      expectedTx.Amount,

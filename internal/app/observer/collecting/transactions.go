@@ -17,9 +17,7 @@ import (
 )
 
 const (
-	txTransfer  = "member.transfer"
-	txMigration = "deposit.migration"
-	txRelease   = "deposit.transfer"
+	callSiteTransfer = "member.transfer"
 )
 
 const (
@@ -88,7 +86,7 @@ func collectTransfer(rec exporter.Record) *observer.TxRegister {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
-	if args.Params.CallSite != txTransfer {
+	if args.Params.CallSite != callSiteTransfer {
 		return nil
 	}
 
