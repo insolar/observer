@@ -6,6 +6,8 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
@@ -53,7 +55,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	case methodTransfer:
 		tx = collectRelease(rec)
 	default:
-		log.Error("unknown method: ", request.Method)
+		return nil
 	}
 	if tx == nil {
 		return nil
@@ -68,6 +70,15 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 func collectTransfer(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		return nil
+	}
+
+	// Skip non-member objects.
+	if !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+		return nil
+	}
+
+	if request.Method != methodCall {
 		return nil
 	}
 
@@ -128,6 +139,15 @@ func collectMigration(rec exporter.Record) *observer.TxRegister {
 		return nil
 	}
 
+	// Skip non-deposit objects.
+	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		return nil
+	}
+
+	if request.Method != methodTransferToDeposit {
+		return nil
+	}
+
 	// Skip external calls.
 	if request.Caller.IsEmpty() {
 		return nil
@@ -158,6 +178,15 @@ func collectMigration(rec exporter.Record) *observer.TxRegister {
 func collectRelease(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		return nil
+	}
+
+	// Skip non-deposit objects.
+	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		return nil
+	}
+
+	if request.Method != methodTransfer {
 		return nil
 	}
 

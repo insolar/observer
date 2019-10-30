@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
+	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
@@ -61,6 +63,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					APINode:    gen.Reference(),
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
+					Prototype:  proxyMember.PrototypeReference,
 				}),
 				ID: txID,
 			},
@@ -104,6 +107,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
 					Caller:     gen.Reference(),
+					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID: *txID.GetLocal(),
 			},
@@ -144,6 +148,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
 					Caller:     gen.Reference(),
+					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID:       *txID.GetLocal(),
 				ObjectID: *depositFrom.GetLocal(),
