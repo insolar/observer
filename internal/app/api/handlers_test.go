@@ -19,50 +19,57 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/insolar/insolar/insolar/gen"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/insolar/insolar/insolar/gen"
+	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
-func TestTransaction_Invalid(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/transaction/123")
+func TestTransaction_WrongFormat(t *testing.T) {
+	txID := "123"
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestTransaction_NoContent(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/transaction/" + gen.ID().String())
+	txID := gen.RecordReference().String()
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
-func TestTransaction_SingleRecord(t *testing.T) {
+func TestTransaction_TypeMigration(t *testing.T) {
 	txID := gen.RecordReference()
-	/*
-		pulseNumber := gen.PulseNumber()
-		pulseNumber := int64(26193138)
-		pntime, err := pulseNumber.AsApproximateTime()
-	// ^ AALEKSEEV TODO
-	 */
-	time := float32(1572428401)
-	pulseNumber := int64(26193138)
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime() // AALEKSEEV TODO
+	require.NoError(t, err)
+	ts := pntime.Unix()
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+	toDeposit := gen.Reference()
 
 	transaction := models.Transaction{
 		TransactionID:     txID.Bytes(),
-		PulseRecord:       [2]int64{pulseNumber, 8},
+		PulseRecord:       [2]int64{int64(pulseNumber), 198},
 		StatusRegistered:  true,
 		Amount:            "10",
 		Fee:               "1",
 		FinishPulseRecord: [2]int64{1, 2},
 		Type:              models.TTypeMigration,
+
+		MemberFromReference: fromMember.Bytes(),
+		MemberToReference:   toMember.Bytes(),
+		DepositToReference:  toDeposit.Bytes(),
 	}
 
-	err := db.Insert(&transaction) // AALEKSEEV TODO <--- example
+	err = db.Insert(&transaction) // AALEKSEEV TODO <--- example
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
@@ -71,16 +78,21 @@ func TestTransaction_SingleRecord(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	receivedTransaction := &observerapi.SchemasTransactionAbstract{}
-	expectedTransaction := &observerapi.SchemasTransactionAbstract{
-		Amount:      "10",
-		Fee:         NullableString("1"),
-		Index:       fmt.Sprintf("%d:198", pulseNumber),
-		PulseNumber: pulseNumber,
-		Status:      "pending",
-		Timestamp:   time,
-		TxID:        txID.String(),
-		Type:        string(models.TTypeMigration),
+	receivedTransaction := &observerapi.SchemaMigration{}
+	expectedTransaction := &observerapi.SchemaMigration{
+		SchemasTransactionAbstract: observerapi.SchemasTransactionAbstract{
+			Amount:      "10",
+			Fee:         NullableString("1"),
+			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			PulseNumber: int64(pulseNumber),
+			Status:      "pending",
+			Timestamp:   float32(ts),
+			TxID:        txID.String(),
+		},
+		ToMemberReference:   toMember.String(),
+		FromMemberReference: fromMember.String(),
+		ToDepositReference:  toDeposit.String(),
+		Type:                string(models.TTypeMigration),
 	}
 
 	err = json.Unmarshal(bodyBytes, receivedTransaction)

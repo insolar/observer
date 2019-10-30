@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/api/internalapi"
 	"github.com/insolar/observer/internal/app/api/observerapi"
@@ -111,13 +112,14 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 	txIDStr = strings.TrimSpace(txIDStr)
+
 	if len(txIDStr) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx_id"))
 	}
-	txID, err := insolar.NewReferenceFromString(txIDStr)
+
+	txID, err := insolar.NewRecordReferenceFromString(txIDStr)
 	if err != nil {
-		s.log.WithField("txID", txIDStr).Infof("invalid txID: %s", err)
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid tx id"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("tx_id wrong format"))
 	}
 
 	tx, err := component.GetTx(ctx.Request().Context(), s.db, txID.Bytes())
