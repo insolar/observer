@@ -43,12 +43,18 @@ func TestTransaction_NoContent(t *testing.T) {
 
 func TestTransaction_SingleRecord(t *testing.T) {
 	txID := gen.RecordReference()
+	/*
+		pulseNumber := gen.PulseNumber()
+		pulseNumber := int64(26193138)
+		pntime, err := pulseNumber.AsApproximateTime()
+	// ^ AALEKSEEV TODO
+	 */
 	time := float32(1572428401)
 	pulseNumber := int64(26193138)
 
 	transaction := models.Transaction{
 		TransactionID:     txID.Bytes(),
-		PulseRecord:       [2]int64{pulseNumber, 198},
+		PulseRecord:       [2]int64{pulseNumber, 8},
 		StatusRegistered:  true,
 		Amount:            "10",
 		Fee:               "1",
