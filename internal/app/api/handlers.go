@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/insolar/observer/internal/models"
 	"net/http"
 	"strings"
 
@@ -72,7 +73,18 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi
 	// AALEKSEEV TODO: check `index` and `direction`
 
 	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
-	
+
+	var result []models.Transaction
+	err := s.db.Model(models.Transaction{}).
+		Where("status_finished = ?", true).
+		Order("finish_pulse_record desc").
+		Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	// AALEKSEEV TODO
 
 	panic("implement me")
 }
