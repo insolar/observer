@@ -21,9 +21,10 @@ import (
 	"strings"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/api/internalapi"
 	"github.com/insolar/observer/internal/app/api/observerapi"
-	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -86,23 +87,27 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
-	txID = strings.TrimSpace(txID)
-	if len(txID) == 0 {
+func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
+	txIDStr = strings.TrimSpace(txIDStr)
+	if len(txIDStr) == 0 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
 	}
-
-	tx := &models.Transaction{}
-	_, err := s.db.QueryOne(tx, "select * from simple_transactions where tx_id = ?0", txID)
+	txID, err := insolar.NewReferenceFromString(txIDStr)
 	if err != nil {
-		if err == pg.ErrNoRows {
+		s.log.WithField("txID", txIDStr).Infof("invalid txID: %s", err)
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid tx id"))
+	}
+
+	tx, err := component.GetTx(ctx.Request().Context(), s.db, txID.Bytes())
+	if err != nil {
+		if err == component.ErrTxNotFound {
 			return ctx.JSON(http.StatusNoContent, struct{}{})
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, TxToAPITx(txID, *tx))
+	return ctx.JSON(http.StatusOK, TxToAPITx(*tx))
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {

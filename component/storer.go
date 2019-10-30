@@ -17,17 +17,20 @@
 package component
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/internal/pkg/math"
 	"github.com/insolar/observer/observability"
@@ -238,7 +241,11 @@ func makeStorer(
 	}
 }
 
-func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
+type Execer interface {
+	Exec(query interface{}, params ...interface{}) (pg.Result, error)
+}
+
+func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	if len(transactions) == 0 {
 		return nil
 	}
@@ -246,6 +253,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 	columns := []string{
 		"tx_id",
 		"status_registered",
+		"type",
 		"pulse_record",
 		"member_from_ref",
 		"member_to_ref",
@@ -259,6 +267,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 			values,
 			t.TransactionID,
 			true,
+			t.Type,
 			pg.Array([2]int64{t.PulseNumber, t.RecordNumber}),
 			t.MemberFromReference,
 			t.MemberToReference,
@@ -273,6 +282,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET 
 					status_registered = EXCLUDED.status_registered,
+					type = EXCLUDED.type,
 					pulse_record = EXCLUDED.pulse_record,
 					member_from_ref = EXCLUDED.member_from_ref,
 					member_to_ref = EXCLUDED.member_to_ref,
@@ -288,7 +298,7 @@ func StoreTxRegister(tx *pg.Tx, transactions []observer.TxRegister) error {
 	return err
 }
 
-func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
+func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	if len(transactions) == 0 {
 		return nil
 	}
@@ -323,7 +333,7 @@ func StoreTxResult(tx *pg.Tx, transactions []observer.TxResult) error {
 	return err
 }
 
-func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
+func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 	if len(transactions) == 0 {
 		return nil
 	}
@@ -359,6 +369,30 @@ func StoreTxSagaResult(tx *pg.Tx, transactions []observer.TxSagaResult) error {
 		values...,
 	)
 	return err
+}
+
+type Querier interface {
+	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+}
+
+var (
+	ErrTxNotFound = errors.New("tx not found")
+)
+
+func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
+	tx := &models.Transaction{}
+	_, err := db.QueryOneContext(ctx, tx,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from simple_transactions where tx_id = ?0`, strings.Join(tx.Fields(), ",")),
+		txID)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrTxNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch tx")
+	}
+	return tx, nil
 }
 
 func valuesTemplate(columns, rows int) string {
