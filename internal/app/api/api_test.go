@@ -110,6 +110,8 @@ func TestMain(t *testing.M) {
 	go func() {
 		e.Logger.Fatal(e.Start(apihost))
 	}()
+	// TODO: wait until API started
+	// TODO: flush db
 	time.Sleep(5 * time.Second)
 	os.Exit(t.Run())
 }
