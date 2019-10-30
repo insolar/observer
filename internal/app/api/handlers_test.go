@@ -22,21 +22,80 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
+func TestTransaction_WrongFormat(t *testing.T) {
+	txID := "123"
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
 func TestTransaction_NoContent(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/transaction/123")
+	txID := gen.RecordReference().String()
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
-func TestTransaction_SingleRecord(t *testing.T) {
-	txID := "123"
+func TestTransaction_TypeMigration(t *testing.T) {
+	txID := gen.RecordReference().String()
+	fromMember := gen.Reference().String()
+	toMember := gen.Reference().String()
+	toDeposit := gen.Reference().String()
 
+	transaction := models.Transaction{
+		TransactionID:     []byte(txID),
+		PulseRecord:       [2]int64{3, 4},
+		StatusRegistered:  true,
+		Amount:            "10",
+		Fee:               "1",
+		FinishPulseRecord: [2]int64{1, 2},
+		Type:              models.TTypeMigration,
+
+		MemberFromReference: []byte(fromMember),
+		MemberToReference:   []byte(toMember),
+		DepositToReference:  []byte(toDeposit),
+	}
+
+	err := db.Insert(&transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	receivedTransaction := &observerapi.SchemaMigration{}
+	expectedTransaction := &observerapi.SchemaMigration{
+		SchemasTransactionAbstract: observerapi.SchemasTransactionAbstract{
+			Amount:      "10",
+			Fee:         NullableString("1"),
+			Index:       "0",
+			PulseNumber: 3,
+			Status:      "pending",
+			Timestamp:   0,
+			TxID:        txID,
+			Type:        string(models.TTypeMigration),
+		},
+		ToMemberReference:   &toMember,
+		FromMemberReference: &fromMember,
+		ToDepositReference:  &toDeposit,
+	}
+
+	err = json.Unmarshal(bodyBytes, receivedTransaction)
+	require.NoError(t, err)
+	require.Equal(t, expectedTransaction, receivedTransaction)
+}
+
+func TestTransaction_TypeTransfer(t *testing.T) {
+	txID := gen.RecordReference().String()
 	transaction := models.Transaction{
 		TransactionID:     []byte(txID),
 		PulseRecord:       [2]int64{3, 4},

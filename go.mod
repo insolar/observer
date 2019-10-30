@@ -17,7 +17,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/gofuzz v0.0.0-20190920162303-b906efc57a55 // indirect
 	github.com/hashicorp/golang-lru v0.5.3
-	github.com/insolar/insolar v0.9.16-0.20191024161728-7fb195afd124
+	github.com/insolar/insolar v0.9.14-0.20191029164809-4ca85f1d6242
 	github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799 // indirect
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

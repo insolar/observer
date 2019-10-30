@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/internal/app/api/internalapi"
 	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
@@ -87,12 +88,18 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
 	txID = strings.TrimSpace(txID)
+
 	if len(txID) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx_id"))
+	}
+
+	_, err := insolar.NewRecordReferenceFromString(txID)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("tx_id wrong format"))
 	}
 
 	tx := &models.Transaction{}
-	_, err := s.db.QueryOne(tx, "select * from simple_transactions where tx_id = ?0", txID)
+	_, err = s.db.QueryOne(tx, "select * from simple_transactions where tx_id = ?0", txID)
 	if err != nil {
 		if err == pg.ErrNoRows {
 			return ctx.JSON(http.StatusNoContent, struct{}{})
