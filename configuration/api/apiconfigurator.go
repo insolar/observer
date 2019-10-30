@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	ConfigName     = "observerapi"
+	ConfigName     = "api"
 	ConfigType     = "yaml"
 	ConfigFilePath = ConfigName + "." + ConfigType
 )
