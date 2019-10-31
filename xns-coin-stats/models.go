@@ -13,11 +13,11 @@ const TenBillion uint64 = 10000000000
 type StatsModel struct {
 	tableName struct{} `sql:"xns_coin_stats"` //nolint: unused,structcheck
 
-	ID          uint64    `sql:",pk"`
-	Created     time.Time `sql:"default:now(),notnull"`
-	Total       string    `sql:""`
-	Max         string    `sql:""`
-	Circulating string    `sql:""`
+	ID          uint64    `sql:"id,pk"`
+	Created     time.Time `sql:"created default:now(),notnull"`
+	Total       string    `sql:"total"`
+	Max         string    `sql:"max"`
+	Circulating string    `sql:"circulating"`
 }
 
 type XnsCoinStats struct {
