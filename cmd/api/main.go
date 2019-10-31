@@ -22,8 +22,6 @@ import (
 	"github.com/go-pg/pg"
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,7 +40,6 @@ func main() {
 	logger := logrus.New()
 	observerAPI := api.NewObserverServer(db, logger)
 
-	observerapi.RegisterHandlers(e, observerAPI)
-	internalapi.RegisterHandlers(e, observerAPI)
+	api.RegisterHandlers(e, observerAPI)
 	e.Logger.Fatal(e.Start(cfg.API.Addr))
 }
