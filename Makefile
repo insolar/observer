@@ -70,7 +70,7 @@ api:
 
 .PHONY: xns_stats_count
 xns_stats_count:
-	go build -o $(BIN_DIR)/xns_stats_count xns-coin-stats/cmd/*.go
+	go build -o $(BIN_DIR)/xns_stats_count cmd/xns-coin-stats/*.go
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)
