@@ -10,13 +10,14 @@ import (
 
 	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 )
 
 // HeavyRecordFetcherMock implements HeavyRecordFetcher
 type HeavyRecordFetcherMock struct {
 	t minimock.Tester
 
-	funcFetch          func(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*Record, p2 insolar.PulseNumber, err error)
+	funcFetch          func(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*exporter.Record, p2 insolar.PulseNumber, err error)
 	inspectFuncFetch   func(ctx context.Context, p1 insolar.PulseNumber)
 	afterFetchCounter  uint64
 	beforeFetchCounter uint64
@@ -61,7 +62,7 @@ type HeavyRecordFetcherMockFetchParams struct {
 
 // HeavyRecordFetcherMockFetchResults contains results of the HeavyRecordFetcher.Fetch
 type HeavyRecordFetcherMockFetchResults struct {
-	m1  map[uint32]*Record
+	m1  map[uint32]*exporter.Record
 	p2  insolar.PulseNumber
 	err error
 }
@@ -98,7 +99,7 @@ func (mmFetch *mHeavyRecordFetcherMockFetch) Inspect(f func(ctx context.Context,
 }
 
 // Return sets up results that will be returned by HeavyRecordFetcher.Fetch
-func (mmFetch *mHeavyRecordFetcherMockFetch) Return(m1 map[uint32]*Record, p2 insolar.PulseNumber, err error) *HeavyRecordFetcherMock {
+func (mmFetch *mHeavyRecordFetcherMockFetch) Return(m1 map[uint32]*exporter.Record, p2 insolar.PulseNumber, err error) *HeavyRecordFetcherMock {
 	if mmFetch.mock.funcFetch != nil {
 		mmFetch.mock.t.Fatalf("HeavyRecordFetcherMock.Fetch mock is already set by Set")
 	}
@@ -111,7 +112,7 @@ func (mmFetch *mHeavyRecordFetcherMockFetch) Return(m1 map[uint32]*Record, p2 in
 }
 
 //Set uses given function f to mock the HeavyRecordFetcher.Fetch method
-func (mmFetch *mHeavyRecordFetcherMockFetch) Set(f func(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*Record, p2 insolar.PulseNumber, err error)) *HeavyRecordFetcherMock {
+func (mmFetch *mHeavyRecordFetcherMockFetch) Set(f func(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*exporter.Record, p2 insolar.PulseNumber, err error)) *HeavyRecordFetcherMock {
 	if mmFetch.defaultExpectation != nil {
 		mmFetch.mock.t.Fatalf("Default expectation is already set for the HeavyRecordFetcher.Fetch method")
 	}
@@ -140,13 +141,13 @@ func (mmFetch *mHeavyRecordFetcherMockFetch) When(ctx context.Context, p1 insola
 }
 
 // Then sets up HeavyRecordFetcher.Fetch return parameters for the expectation previously defined by the When method
-func (e *HeavyRecordFetcherMockFetchExpectation) Then(m1 map[uint32]*Record, p2 insolar.PulseNumber, err error) *HeavyRecordFetcherMock {
+func (e *HeavyRecordFetcherMockFetchExpectation) Then(m1 map[uint32]*exporter.Record, p2 insolar.PulseNumber, err error) *HeavyRecordFetcherMock {
 	e.results = &HeavyRecordFetcherMockFetchResults{m1, p2, err}
 	return e.mock
 }
 
 // Fetch implements HeavyRecordFetcher
-func (mmFetch *HeavyRecordFetcherMock) Fetch(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*Record, p2 insolar.PulseNumber, err error) {
+func (mmFetch *HeavyRecordFetcherMock) Fetch(ctx context.Context, p1 insolar.PulseNumber) (m1 map[uint32]*exporter.Record, p2 insolar.PulseNumber, err error) {
 	mm_atomic.AddUint64(&mmFetch.beforeFetchCounter, 1)
 	defer mm_atomic.AddUint64(&mmFetch.afterFetchCounter, 1)
 

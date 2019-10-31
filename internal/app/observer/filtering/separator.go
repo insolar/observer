@@ -18,6 +18,7 @@ package filtering
 
 import (
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
@@ -29,7 +30,7 @@ func NewSeparatorFilter() *SeparatorFilter {
 }
 
 func (*SeparatorFilter) Filter(
-	records map[uint32]*observer.Record,
+	records map[uint32]*exporter.Record,
 ) (
 	requests []*observer.Request,
 	results []*observer.Result,
@@ -38,7 +39,7 @@ func (*SeparatorFilter) Filter(
 	deactivates []*observer.Deactivate,
 ) {
 	for _, rec := range records {
-		switch rec.Virtual.Union.(type) {
+		switch rec.Record.Virtual.Union.(type) {
 		case *record.Virtual_IncomingRequest:
 			req := observer.CastToRequest(rec)
 			requests = append(requests, req)
