@@ -43,10 +43,79 @@ func TestTransaction_NoContent(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
+func TestTransaction_ClosedBadRequest(t *testing.T) {
+	// if `limit` is not specified, API returns `bad request`
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransaction_ClosedSimple(t *testing.T) {
+	// insert a single closed transaction
+	var err error
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	//pntime, err := pulseNumber.AsApproximateTime()
+	///require.NoError(t, err)
+	////ts := pntime.Unix()
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+	toDeposit := gen.Reference()
+
+	transaction := models.Transaction{
+		TransactionID:     txID.Bytes(),
+		PulseRecord:       [2]int64{int64(pulseNumber), 198},
+		StatusRegistered:  true,
+		Amount:            "10",
+		Fee:               "1",
+		FinishPulseRecord: [2]int64{1, 2},
+		Type:              models.TTypeMigration,
+
+		MemberFromReference: fromMember.Bytes(),
+		MemberToReference:   toMember.Bytes(),
+		DepositToReference:  toDeposit.Bytes(),
+		StatusFinished: true,
+		FinishSuccess: true,
+	}
+
+	err = db.Insert(&transaction)
+	require.NoError(t, err)
+
+	// request closed transactions using API
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	/*receivedTransaction := &SchemaMigration{}
+	expectedTransaction := &SchemaMigration{
+		SchemasTransactionAbstract: SchemasTransactionAbstract{
+			Amount:      "10",
+			Fee:         NullableString("1"),
+			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			PulseNumber: int64(pulseNumber),
+			Status:      "pending",
+			Timestamp:   ts,
+			TxID:        txID.String(),
+		},
+		ToMemberReference:   toMember.String(),
+		FromMemberReference: fromMember.String(),
+		ToDepositReference:  toDeposit.String(),
+		Type:                string(models.TTypeMigration),
+	}*/
+
+	var received SchemasTransactions
+	err = json.Unmarshal(bodyBytes, received)
+	require.NoError(t, err)
+	fmt.Printf("%v\n", received)
+}
+
 func TestTransaction_TypeMigration(t *testing.T) {
 	txID := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
-	pntime, err := pulseNumber.AsApproximateTime() // AALEKSEEV TODO
+	pntime, err := pulseNumber.AsApproximateTime()
 	require.NoError(t, err)
 	ts := pntime.Unix()
 
@@ -68,7 +137,7 @@ func TestTransaction_TypeMigration(t *testing.T) {
 		DepositToReference:  toDeposit.Bytes(),
 	}
 
-	err = db.Insert(&transaction) // AALEKSEEV TODO <--- example
+	err = db.Insert(&transaction)
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
