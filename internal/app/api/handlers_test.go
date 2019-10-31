@@ -128,7 +128,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 1)
-	require.Equal(t, received[0], expectedTransaction)
+	require.Equal(t, expectedTransaction,  received[0])
 }
 
 func TestTransaction_ClosedLimitMultiple(t *testing.T) {
@@ -175,8 +175,10 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 2)
-	require.Equal(t, received[0].Status, string(models.TStatusReceived))
-	require.Equal(t, received[0].Status, string(models.TStatusFailed))
+	// the latest transaction comes first in json, thus it will be `failed`
+	// and the second (older) transaction in JSON will be `received`
+	require.Equal(t, string(models.TStatusFailed), received[0].Status)
+	require.Equal(t, string(models.TStatusReceived), received[1].Status)
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
