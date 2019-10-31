@@ -223,17 +223,17 @@ func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
 func checkIndex(i string) (int64, int64, error) {
 	index := strings.Split(i, ":")
 	if len(index) != 2 {
-		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.")
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
 	}
 	var err error
 	var pulseNumber, sequenceNumber int64
 	pulseNumber, err = strconv.ParseInt(index[0], 10, 64)
 	if err != nil {
-		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.")
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
 	}
 	sequenceNumber, err = strconv.ParseInt(index[1], 10, 64)
 	if err != nil {
-		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.")
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
 	}
 	return pulseNumber, sequenceNumber, nil
 }
