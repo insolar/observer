@@ -178,6 +178,12 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Here is the order of two transactions in the database:
+	// Finish pulse | Status
+	// -------------+-----------
+	//       1:3003 | failed
+	//       1:3002 | received
+
 	// request two recent closed transactions using API
 	{
 		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
@@ -209,6 +215,53 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, received, 1)
 		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+	}
+
+	// Request first (newer) transaction using a cursor, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3002&direction=after&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+	}
+
+	// Request both transactions using `before` condition
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3004&direction=before&limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request both transactions using `after` condition, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3001&direction=after&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+		require.Equal(t, string(models.TStatusFailed), received[1].Status)
 	}
 }
 
