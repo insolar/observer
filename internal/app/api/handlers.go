@@ -118,7 +118,8 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
-	xr := xnscoinstats.NewStatsRepository(s.db, s.log)
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
 	result, err := xr.Coins()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "")
@@ -128,7 +129,8 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
-	xr := xnscoinstats.NewStatsRepository(s.db, s.log)
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
@@ -138,7 +140,8 @@ func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
-	xr := xnscoinstats.NewStatsRepository(s.db, s.log)
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
@@ -148,7 +151,8 @@ func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
-	xr := xnscoinstats.NewStatsRepository(s.db, s.log)
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
