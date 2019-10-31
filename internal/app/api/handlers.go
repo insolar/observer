@@ -73,42 +73,26 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
 	}
 
-	direction := "before"
-	if params.Direction != nil {
-		direction = *params.Direction
-	}
-
-	if direction != "before" && direction != "after" {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`direction` should be 'before' or 'after'"))
-	}
-
-	/*var (
+	var (
 		pulseNumber int64
 		sequenceNumber int64
-	)*/
+		err error
+	)
 	if params.Index != nil {
-		// pulseNumber, sequenceNumber, err := checkIndex(*params.Index)
-		_, _, err := checkIndex(*params.Index)
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
 		}
 	}
 
-	orderBy := "desc"
-	if direction == "after" && params.Index != nil {
-		orderBy = "asc"
-	}
-
+	var result []models.Transaction
 	query := s.db.Model(&models.Transaction{}).
 		Where("status_finished = ?", true)
-	if params.Index != nil {
-		// query = query.Where()
-		// AALEKSEEV TODO
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
 	}
-
-	var result []models.Transaction
-	err := query.
-		Order("finish_pulse_record "+orderBy).
+	err = query.
 		Limit(limit).
 		Select(&result)
 	if err != nil {
