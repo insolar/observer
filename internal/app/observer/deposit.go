@@ -29,6 +29,8 @@ type Deposit struct {
 	Amount          string
 	Balance         string
 	DepositState    insolar.ID
+	Vesting         int64
+	VestingStep     int64
 }
 
 type DepositCollector interface {
