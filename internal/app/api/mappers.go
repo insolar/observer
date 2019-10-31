@@ -18,7 +18,6 @@ package api
 
 import (
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -30,7 +29,7 @@ func NullableInterface(i interface{}) *interface{} {
 }
 
 func TxToAPITx(tx models.Transaction) interface{} {
-	internalTx := observerapi.SchemasTransactionAbstract{
+	internalTx := SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         NullableString(tx.Fee),
 		Index:       tx.Index(),
@@ -43,7 +42,7 @@ func TxToAPITx(tx models.Transaction) interface{} {
 
 	switch tx.Type {
 	case models.TTypeMigration:
-		res := observerapi.SchemaMigration{
+		res := SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),
 		}
@@ -62,7 +61,7 @@ func TxToAPITx(tx models.Transaction) interface{} {
 
 		return res
 	case models.TTypeTransfer:
-		res := observerapi.SchemaTransfer{
+		res := SchemaTransfer{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),
 		}
@@ -77,7 +76,7 @@ func TxToAPITx(tx models.Transaction) interface{} {
 
 		return res
 	case models.TTypeRelease:
-		res := observerapi.SchemaRelease{
+		res := SchemaRelease{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),
 		}

@@ -25,8 +25,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 
 	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -40,7 +38,7 @@ func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
 	return &ObserverServer{db: db, log: log}
 }
 
-func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params internalapi.GetMigrationAddressesParams) error {
+func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
 	panic("implement me")
 }
 
@@ -52,7 +50,7 @@ func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params internalapi.TokenGetInfoParams) error {
+func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error {
 	panic("implement me")
 }
 
@@ -65,7 +63,7 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 }
 
 // CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
-func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
+func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
@@ -86,8 +84,6 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi
 	}
 
 	// AALEKSEEV TODO
-
-	panic("implement me")
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
@@ -102,7 +98,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params observerapi.MemberTransactionsParams) error {
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -134,7 +130,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 	return ctx.JSON(http.StatusOK, TxToAPITx(*tx))
 }
 
-func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
+func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
 	panic("implement me")
 }
 

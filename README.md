@@ -64,9 +64,5 @@ go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 ``` 
 Generate types and API from observer API:
 ```
-oapi-codegen -package observerapi -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/observerapi/generated.go
-```
-Generate types and API from internal API:
-```
-oapi-codegen -package internalapi -generate types,server ../insolar-internal-api/api-exported.yaml > internal/app/api/internalapi/generated.go
+oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```

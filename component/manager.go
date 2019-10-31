@@ -129,14 +129,14 @@ func (m *Manager) run(s *state) {
 
 type raw struct {
 	pulse             *observer.Pulse
-	batch             map[uint32]*observer.Record
+	batch             map[uint32]*exporter.Record
 	shouldIterateFrom insolar.PulseNumber
 	currentHeavyPN    insolar.PulseNumber
 }
 
 type beauty struct {
 	pulse       *observer.Pulse
-	records     map[uint32]*observer.Record
+	records     map[uint32]*exporter.Record
 	requests    []*observer.Request
 	results     []*observer.Result
 	activates   []*observer.Activate

@@ -26,7 +26,6 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -78,15 +77,15 @@ func TestTransaction_TypeMigration(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	receivedTransaction := &observerapi.SchemaMigration{}
-	expectedTransaction := &observerapi.SchemaMigration{
-		SchemasTransactionAbstract: observerapi.SchemasTransactionAbstract{
+	receivedTransaction := &SchemaMigration{}
+	expectedTransaction := &SchemaMigration{
+		SchemasTransactionAbstract: SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
 			Index:       fmt.Sprintf("%d:198", pulseNumber),
 			PulseNumber: int64(pulseNumber),
 			Status:      "pending",
-			Timestamp:   float32(ts),
+			Timestamp:   ts,
 			TxID:        txID.String(),
 		},
 		ToMemberReference:   toMember.String(),

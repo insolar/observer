@@ -28,9 +28,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
 )
 
 const (
@@ -105,8 +102,7 @@ func TestMain(t *testing.M) {
 
 	logger := logrus.New()
 	observerAPI := NewObserverServer(db, logger)
-	observerapi.RegisterHandlers(e, observerAPI)
-	internalapi.RegisterHandlers(e, observerAPI)
+	RegisterHandlers(e, observerAPI)
 	go func() {
 		e.Logger.Fatal(e.Start(apihost))
 	}()

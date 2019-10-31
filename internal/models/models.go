@@ -176,11 +176,11 @@ func (t *Transaction) Index() string {
 	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
 }
 
-func (t *Transaction) Timestamp() float32 {
+func (t *Transaction) Timestamp() int64 {
 	p := t.PulseNumber()
 	pulseTime, err := pulse.Number(p).AsApproximateTime()
 	if err != nil {
 		return 0
 	}
-	return float32(pulseTime.Unix())
+	return pulseTime.Unix()
 }
