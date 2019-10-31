@@ -71,6 +71,8 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 }
 
 func TestTransaction_ClosedLimitSingle(t *testing.T) {
+	defer truncateDB(t)
+
 	// insert a single closed transaction
 	var err error
 	txID := gen.RecordReference()
@@ -94,8 +96,8 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 		MemberFromReference: fromMember.Bytes(),
 		MemberToReference:   toMember.Bytes(),
 		DepositToReference:  toDeposit.Bytes(),
-		StatusFinished: true,
-		FinishSuccess: true,
+		StatusFinished:      true,
+		FinishSuccess:       true,
 	}
 
 	err = db.Insert(&transaction)
@@ -128,10 +130,12 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 1)
-	require.Equal(t, expectedTransaction,  received[0])
+	require.Equal(t, expectedTransaction, received[0])
 }
 
 func TestTransaction_ClosedLimitMultiple(t *testing.T) {
+	defer truncateDB(t)
+
 	var err error
 
 	// insert two finished transactions, one with finishSuccess, second with !finishSuccess
@@ -362,24 +366,6 @@ func TestTransactionsSearch_ValueTx(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, received, 1)
 	require.Equal(t, txIDFirst.String(), received[0].TxID)
-}
-
-func TestTransactionsSearch_WrongValue(t *testing.T) {
-	resp, err := http.Get(
-		"http://" + apihost + "/api/transactions?" +
-			"limit=15&" +
-			"value=some_not_valid_value")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	received := ErrorMessage{}
-	err = json.Unmarshal(bodyBytes, &received)
-	require.NoError(t, err)
-	require.Len(t, received.Error, 1)
-	require.Equal(t, "Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.", received.Error[0])
 }
 
 func TestTransactionsSearch_WrongEverything(t *testing.T) {
