@@ -30,11 +30,54 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
+const (
+	recordNum       = 198
+	finishRecordNum = 256
+	amount          = "1020"
+	fee             = "178"
+)
+
+func requireEqualResponse(t *testing.T, resp *http.Response, received interface{}, expected interface{}) {
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(bodyBytes, received)
+	require.NoError(t, err)
+	require.Equal(t, expected, received)
+}
+
+func transactionModel(txID []byte, pulseNum int64) *models.Transaction {
+	return &models.Transaction{
+		TransactionID:     txID,
+		PulseRecord:       [2]int64{pulseNum, recordNum},
+		StatusRegistered:  true,
+		Amount:            amount,
+		Fee:               fee,
+		FinishPulseRecord: [2]int64{1, 2},
+	}
+}
+
+func transactionResponse(txID string, pulseNum int64, ts float32) *observerapi.SchemasTransactionAbstract {
+	return &observerapi.SchemasTransactionAbstract{
+		Amount:      amount,
+		Fee:         NullableString(fee),
+		Index:       fmt.Sprintf("%d:%d", pulseNum, recordNum),
+		PulseNumber: pulseNum,
+		Status:      "pending",
+		Timestamp:   ts,
+		TxID:        txID,
+	}
+}
+
 func TestTransaction_WrongFormat(t *testing.T) {
 	txID := "123"
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"tx_id wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
 }
 
 func TestTransaction_NoContent(t *testing.T) {
@@ -42,6 +85,10 @@ func TestTransaction_NoContent(t *testing.T) {
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"empty tx_id"}}
+	requireEqualResponse(t, resp, received, expected)
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
@@ -55,35 +102,25 @@ func TestTransaction_TypeMigration(t *testing.T) {
 	toMember := gen.Reference()
 	toDeposit := gen.Reference()
 
-	transaction := models.Transaction{
-		TransactionID:     txID.Bytes(),
-		PulseRecord:       [2]int64{int64(pulseNumber), 198},
-		StatusRegistered:  true,
-		Amount:            "10",
-		Fee:               "1",
-		FinishPulseRecord: [2]int64{1, 2},
-		Type:              models.TTypeMigration,
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeMigration
+	transaction.MemberFromReference = fromMember.Bytes()
+	transaction.MemberToReference = toMember.Bytes()
+	transaction.DepositToReference = toDeposit.Bytes()
 
-		MemberFromReference: fromMember.Bytes(),
-		MemberToReference:   toMember.Bytes(),
-		DepositToReference:  toDeposit.Bytes(),
-	}
-
-	err = db.Insert(&transaction)
+	err = db.Insert(transaction)
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
 
 	receivedTransaction := &observerapi.SchemaMigration{}
 	expectedTransaction := &observerapi.SchemaMigration{
 		SchemasTransactionAbstract: observerapi.SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			Index:       fmt.Sprintf("%d:%d", pulseNumber, recordNum),
 			PulseNumber: int64(pulseNumber),
 			Status:      "pending",
 			Timestamp:   float32(ts),
@@ -95,7 +132,5 @@ func TestTransaction_TypeMigration(t *testing.T) {
 		Type:                string(models.TTypeMigration),
 	}
 
-	err = json.Unmarshal(bodyBytes, receivedTransaction)
-	require.NoError(t, err)
-	require.Equal(t, expectedTransaction, receivedTransaction)
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
 }
