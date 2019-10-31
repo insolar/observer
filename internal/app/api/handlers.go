@@ -70,17 +70,29 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
 	}
 
-	// AALEKSEEV TODO: check `index` and `direction`
-
-	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
+	var (
+		pulseNumber int64
+		sequenceNumber int64
+		err error
+	)
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+		}
+	}
 
 	var result []models.Transaction
-	err := s.db.Model(&models.Transaction{}).
-		Where("status_finished = ?", true).
-		Order("finish_pulse_record desc").
+	query := s.db.Model(&models.Transaction{}).
+		Where("status_finished = ?", true)
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+	}
+	err = query.
 		Limit(limit).
 		Select(&result)
 	if err != nil {
@@ -90,7 +102,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 
 	resJSON := make([]interface{}, len(result))
 	for i := 0; i < len(result); i++ {
-		resJSON[i] = TxToAPITx(result[i])
+		resJSON[i] = TxToAPITx(result[i], models.TxIndexTypeFinishPulseRecord)
 	}
 	return ctx.JSON(http.StatusOK, resJSON)
 }
@@ -136,7 +148,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, TxToAPITx(*tx))
+	return ctx.JSON(http.StatusOK, TxToAPITx(*tx, models.TxIndexTypePulseRecord))
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
@@ -179,7 +191,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		}
 	}
 
-	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, byIndex)
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
@@ -201,7 +213,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 
 	res := SchemasTransactions{}
 	for _, t := range txs {
-		res = append(res, TxToAPITx(t))
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
 	}
 	return ctx.JSON(http.StatusOK, res)
 }

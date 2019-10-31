@@ -107,8 +107,18 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	// if limit is > 1000, API returns `bad request`
+	// if `limit` is > 1000, API returns `bad request`
 	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `direction` is not "before" or "after", API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&direction=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `index` is in a wrong format, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&index=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
@@ -157,7 +167,7 @@ func TestTransactions_ClosedLimitSingle(t *testing.T) {
 		SchemasTransactionAbstract: SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			Index:       "1:3001", // == FinishPulseRecord
 			PulseNumber: int64(pulseNumber),
 			Status:      string(models.TStatusReceived),
 			Timestamp:   pntime.Unix(),
@@ -211,21 +221,91 @@ func TestTransactions_ClosedLimitMultiple(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// request two recent closed transactions using API
-	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
+	// Here is the order of two transactions in the database:
+	// Finish pulse | Status
+	// -------------+-----------
+	//       1:3003 | failed
+	//       1:3002 | received
 
-	var received []SchemaMigration
-	err = json.Unmarshal(bodyBytes, &received)
-	require.NoError(t, err)
-	require.Len(t, received, 2)
-	// the latest transaction comes first in JSON, thus it will be `failed`
-	// and the second (older) transaction in JSON will be `received`
-	require.Equal(t, string(models.TStatusFailed), received[0].Status)
-	require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	// request two recent closed transactions using API
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		// the latest transaction comes first in JSON, thus it will be `failed`
+		// and the second (older) transaction in JSON will be `received`
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request second (older) transaction using a cursor
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3003&direction=before&limit=1")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+	}
+
+	// Request first (newer) transaction using a cursor, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3002&direction=after&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+	}
+
+	// Request both transactions using `before` condition
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3004&direction=before&limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request both transactions using `after` condition, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3001&direction=after&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+		require.Equal(t, string(models.TStatusFailed), received[1].Status)
+	}
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
