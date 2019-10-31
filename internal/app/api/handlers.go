@@ -84,6 +84,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	}
 
 	// AALEKSEEV TODO
+	return nil
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
