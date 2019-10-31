@@ -50,14 +50,13 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-func TestTransaction_ClosedSimple(t *testing.T) {
+func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	// insert a single closed transaction
 	var err error
 	txID := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
-	//pntime, err := pulseNumber.AsApproximateTime()
-	///require.NoError(t, err)
-	////ts := pntime.Unix()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
 
 	fromMember := gen.Reference()
 	toMember := gen.Reference()
@@ -89,27 +88,27 @@ func TestTransaction_ClosedSimple(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	/*receivedTransaction := &SchemaMigration{}
-	expectedTransaction := &SchemaMigration{
+	expectedTransaction := SchemaMigration{
 		SchemasTransactionAbstract: SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
 			Index:       fmt.Sprintf("%d:198", pulseNumber),
 			PulseNumber: int64(pulseNumber),
-			Status:      "pending",
-			Timestamp:   ts,
+			Status:      "received",
+			Timestamp:   pntime.Unix(),
 			TxID:        txID.String(),
 		},
 		ToMemberReference:   toMember.String(),
 		FromMemberReference: fromMember.String(),
 		ToDepositReference:  toDeposit.String(),
 		Type:                string(models.TTypeMigration),
-	}*/
+	}
 
-	var received SchemasTransactions
+	var received []SchemaMigration
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
-	fmt.Printf("%v\n", received)
+	require.Len(t, received, 1)
+	require.Equal(t, received[0], expectedTransaction)
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
