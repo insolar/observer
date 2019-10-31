@@ -23,6 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/insolar/observer/internal/models"
+	"github.com/stretchr/testify/require"
+
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
@@ -112,6 +115,7 @@ func TestMain(t *testing.M) {
 	os.Exit(t.Run())
 }
 
-func flushDB() {
-
+func truncateDB(t *testing.T) {
+	_, err := db.Model(&models.Transaction{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
 }

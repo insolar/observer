@@ -55,6 +55,7 @@ func makeBeautifier(
 	migrationTransfers := collecting.NewMigrationTransferCollector(log, cachedStore, treeBuilder)
 	withdrawTransfers := collecting.NewWithdrawTransferCollector(log, cachedStore, treeBuilder)
 	standardTransfers := collecting.NewStandardTransferCollector(log, cachedStore, treeBuilder)
+	txRegisters := collecting.NewTxRegisterCollector()
 	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
@@ -79,13 +80,13 @@ func makeBeautifier(
 		}
 
 		for _, rec := range r.batch {
-			switch rec.Virtual.Union.(type) {
+			switch rec.Record.Virtual.Union.(type) {
 			case *record.Virtual_IncomingRequest, *record.Virtual_OutgoingRequest:
-				err = cachedStore.SetRequest(ctx, record.Material(*rec))
+				err = cachedStore.SetRequest(ctx, rec.Record)
 			case *record.Virtual_Activate, *record.Virtual_Amend, *record.Virtual_Deactivate:
-				err = cachedStore.SetSideEffect(ctx, record.Material(*rec))
+				err = cachedStore.SetSideEffect(ctx, rec.Record)
 			case *record.Virtual_Result:
-				err = cachedStore.SetResult(ctx, record.Material(*rec))
+				err = cachedStore.SetResult(ctx, rec.Record)
 			}
 			if err != nil {
 				panic(err)
@@ -94,47 +95,52 @@ func makeBeautifier(
 
 		for _, rec := range r.batch {
 			// entities
+			obsRecord := observer.Record(rec.Record)
 
-			members := members.Collect(ctx, rec)
+			members := members.Collect(ctx, &obsRecord)
 			for _, member := range members {
 				b.members[member.AccountState] = member
 			}
 
-			migrationTransfer := migrationTransfers.Collect(ctx, rec)
+			migrationTransfer := migrationTransfers.Collect(ctx, &obsRecord)
 			if migrationTransfer != nil {
 				b.transfers = append(b.transfers, migrationTransfer)
 			}
 
-			withdrawTransfer := withdrawTransfers.Collect(ctx, rec)
+			withdrawTransfer := withdrawTransfers.Collect(ctx, &obsRecord)
 			if withdrawTransfer != nil {
 				b.transfers = append(b.transfers, withdrawTransfer)
 			}
 
-			standardTransfers := standardTransfers.Collect(ctx, rec)
+			standardTransfers := standardTransfers.Collect(ctx, &obsRecord)
 			b.transfers = append(b.transfers, standardTransfers...)
+			reg := txRegisters.Collect(ctx, *rec)
+			if reg != nil {
+				b.txRegister = append(b.txRegister, *reg)
+			}
 
-			deposits := deposits.Collect(ctx, rec)
+			deposits := deposits.Collect(ctx, &obsRecord)
 			for _, deposit := range deposits {
 				b.deposits[deposit.DepositState] = deposit
 			}
 
-			for _, address := range addresses.Collect(ctx, rec) {
+			for _, address := range addresses.Collect(ctx, &obsRecord) {
 				b.addresses[address.Addr] = address
 			}
 
 			// updates
 
-			balance := balances.Collect(rec)
+			balance := balances.Collect(&obsRecord)
 			if balance != nil {
 				b.balances[balance.AccountState] = balance
 			}
 
-			update := depositUpdates.Collect(rec)
+			update := depositUpdates.Collect(&obsRecord)
 			if update != nil {
 				b.depositUpdates[update.ID] = update
 			}
 
-			wasting := wastings.Collect(ctx, rec)
+			wasting := wastings.Collect(ctx, &obsRecord)
 			if wasting != nil {
 				b.wastings[wasting.Addr] = wasting
 			}

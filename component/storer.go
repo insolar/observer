@@ -19,6 +19,7 @@ package component
 import (
 	"context"
 	"fmt"
+	"github.com/go-pg/pg/orm"
 	"strings"
 	"time"
 
@@ -57,7 +58,6 @@ func makeStorer(
 
 		cycle.UntilError(func() error {
 			err := db.RunInTransaction(func(tx *pg.Tx) error {
-
 				// plain records
 
 				pulses := postgres.NewPulseStorage(cfg, obs, tx)
@@ -68,7 +68,11 @@ func makeStorer(
 
 				records := postgres.NewRecordStorage(cfg, obs, tx)
 				for _, rec := range b.records {
-					err := records.Insert(rec)
+					if rec == nil {
+						continue
+					}
+					obsRec := observer.Record(rec.Record)
+					err := records.Insert(&obsRec)
 					if err != nil {
 						return err
 					}
@@ -76,6 +80,9 @@ func makeStorer(
 
 				requests := postgres.NewRequestStorage(obs, tx)
 				for _, req := range b.requests {
+					if req == nil {
+						continue
+					}
 					err := requests.Insert(req)
 					if err != nil {
 						return err
@@ -84,6 +91,9 @@ func makeStorer(
 
 				results := postgres.NewResultStorage(obs, tx)
 				for _, res := range b.results {
+					if res == nil {
+						continue
+					}
 					err := results.Insert(res)
 					if err != nil {
 						return err
@@ -92,6 +102,9 @@ func makeStorer(
 
 				objects := postgres.NewObjectStorage(obs, tx)
 				for _, act := range b.activates {
+					if act == nil {
+						continue
+					}
 					err := objects.Insert(act)
 					if err != nil {
 						return err
@@ -99,6 +112,9 @@ func makeStorer(
 				}
 
 				for _, amd := range b.amends {
+					if amd == nil {
+						continue
+					}
 					err := objects.Insert(amd)
 					if err != nil {
 						return err
@@ -106,6 +122,9 @@ func makeStorer(
 				}
 
 				for _, deact := range b.deactivates {
+					if deact == nil {
+						continue
+					}
 					err := objects.Insert(deact)
 					if err != nil {
 						return err
@@ -116,6 +135,9 @@ func makeStorer(
 
 				members := postgres.NewMemberStorage(obs, tx)
 				for _, member := range b.members {
+					if member == nil {
+						continue
+					}
 					err := members.Insert(member)
 					if err != nil {
 						return err
@@ -124,6 +146,9 @@ func makeStorer(
 
 				transfers := postgres.NewTransferStorage(obs, tx)
 				for _, transfer := range b.transfers {
+					if transfers == nil {
+						continue
+					}
 					err := transfers.Insert(transfer)
 					if err != nil {
 						return err
@@ -131,10 +156,10 @@ func makeStorer(
 				}
 
 				// Uncomment when migrations are ready.
-				// err = StoreTxRegister(tx, b.txRegister)
-				// if err != nil {
-				// 	return err
-				// }
+				err = StoreTxRegister(tx, b.txRegister)
+				if err != nil {
+					return err
+				}
 				// err = StoreTxResult(tx, b.txResult)
 				// if err != nil {
 				// 	return err
@@ -146,6 +171,9 @@ func makeStorer(
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
+					if deposit == nil {
+						continue
+					}
 					err := deposits.Insert(deposit)
 					if err != nil {
 						return err
@@ -154,6 +182,9 @@ func makeStorer(
 
 				addresses := postgres.NewMigrationAddressStorage(cfg, obs, tx)
 				for _, address := range b.addresses {
+					if address == nil {
+						continue
+					}
 					err := addresses.Insert(address)
 					if err != nil {
 						return err
@@ -163,6 +194,9 @@ func makeStorer(
 				// updates
 
 				for _, balance := range b.balances {
+					if balance == nil {
+						continue
+					}
 					err := members.Update(balance)
 					if err != nil {
 						return err
@@ -170,6 +204,9 @@ func makeStorer(
 				}
 
 				for _, update := range b.depositUpdates {
+					if update == nil {
+						continue
+					}
 					err := deposits.Update(update)
 					if err != nil {
 						return err
@@ -177,6 +214,9 @@ func makeStorer(
 				}
 
 				for _, wasting := range b.wastings {
+					if wasting == nil {
+						continue
+					}
 					err := addresses.Update(wasting)
 					if err != nil {
 						return err
@@ -393,6 +433,73 @@ func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, e
 		return nil, errors.Wrap(err, "failed to fetch tx")
 	}
 	return tx, nil
+}
+
+func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
+	switch status {
+	case "registered":
+		query = query.Where("status_registered = true")
+	case "sent":
+		query = query.Where("status_registered = true and status_sent = true")
+	case "received":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = true")
+	case "failed":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = false")
+	default:
+		return query, errors.New("Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.") // nolint
+	}
+	return query, nil
+}
+
+func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
+	if t != "transfer" && t != "migration" && t != "after" {
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+	}
+	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByValue(query *orm.Query, value string) (*orm.Query, error) {
+	pulseNumber, err := insolar.NewPulseNumberFromStr(value)
+	if err == nil {
+		query = query.Where("pulse_record[1] = ?", pulseNumber)
+	} else {
+		ref, err := insolar.NewReferenceFromString(value)
+		if err != nil {
+			return query, errors.New("Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.") // nolint
+		}
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("tx_id = ?", ref.Bytes()).
+				WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	}
+
+	return query, nil
+}
+
+func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, byIndex bool) (*orm.Query, error) {
+	direction := "before"
+	if d != nil {
+		direction = *d
+	}
+
+	switch direction {
+	case "before":
+		if byIndex {
+			query = query.Where("pulse_record < array[?0,?1]::bigint[]", pulse, record)
+		}
+		query = query.Order("pulse_record DESC")
+	case "after":
+		if byIndex {
+			query = query.Where("pulse_record > array[?,?]::bigint[]", pulse, record)
+		}
+		query = query.Order("pulse_record ASC")
+	default:
+		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
+	}
+	return query, nil
 }
 
 func valuesTemplate(columns, rows int) string {
