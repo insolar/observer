@@ -88,7 +88,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 		StatusRegistered:  true,
 		Amount:            "10",
 		Fee:               "1",
-		FinishPulseRecord: [2]int64{1, 2},
+		FinishPulseRecord: [2]int64{1, 3001}, // keep this key unique between tests!
 		Type:              models.TTypeMigration,
 
 		MemberFromReference: fromMember.Bytes(),
@@ -150,7 +150,7 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 			StatusRegistered:  true,
 			Amount:            "10",
 			Fee:               "1",
-			FinishPulseRecord: [2]int64{1, 2 + int64(i)},
+			FinishPulseRecord: [2]int64{1, 3002 + int64(i)}, // keep this key unique between tests!
 			Type:              models.TTypeMigration,
 
 			MemberFromReference: fromMember.Bytes(),

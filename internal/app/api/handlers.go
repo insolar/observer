@@ -77,6 +77,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	err := s.db.Model(&models.Transaction{}).
 		Where("status_finished = ?", true).
 		Order("finish_pulse_record desc").
+		Limit(limit).
 		Select(&result)
 	if err != nil {
 		s.log.Error(err)
