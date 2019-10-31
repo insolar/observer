@@ -25,6 +25,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/insolar/observer/configuration"
@@ -58,14 +59,15 @@ func Test_makeFetcher(t *testing.T) {
 			Number: pn,
 		}, nil)
 
-		rec := map[uint32]*observer.Record{
-			0: {
+		rec := map[uint32]*exporter.Record{
+			0: {Record: record.Material{
 				Polymorph: 0,
 				Virtual:   record.Virtual{},
 				ID:        insolar.ID{},
 				ObjectID:  insolar.ID{},
 				JetID:     insolar.JetID{},
 				Signature: nil,
+			},
 			},
 		}
 		recordFetcher.FetchMock.Inspect(func(ctx context.Context, pulse insolar.PulseNumber) {
@@ -160,15 +162,15 @@ func Test_makeFetcher(t *testing.T) {
 			Number: pn,
 		}, nil)
 
-		rec := map[uint32]*observer.Record{
-			0: {
+		rec := map[uint32]*exporter.Record{
+			0: {Record: record.Material{
 				Polymorph: 0,
 				Virtual:   record.Virtual{},
 				ID:        insolar.ID{},
 				ObjectID:  insolar.ID{},
 				JetID:     insolar.JetID{},
 				Signature: nil,
-			},
+			}},
 		}
 		recordFetcher.FetchMock.Inspect(func(ctx context.Context, pulse insolar.PulseNumber) {
 			assert.Equal(t, pn, pulse)

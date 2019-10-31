@@ -54,7 +54,6 @@ func makeStorer(
 
 		cycle.UntilError(func() error {
 			err := db.RunInTransaction(func(tx *pg.Tx) error {
-
 				// plain records
 
 				pulses := postgres.NewPulseStorage(cfg, obs, tx)
@@ -65,7 +64,8 @@ func makeStorer(
 
 				records := postgres.NewRecordStorage(cfg, obs, tx)
 				for _, rec := range b.records {
-					err := records.Insert(rec)
+					obsRec := observer.Record(rec.Record)
+					err := records.Insert(&obsRec)
 					if err != nil {
 						return err
 					}
@@ -128,10 +128,10 @@ func makeStorer(
 				}
 
 				// Uncomment when migrations are ready.
-				// err = StoreTxRegister(tx, b.txRegister)
-				// if err != nil {
-				// 	return err
-				// }
+				err = StoreTxRegister(tx, b.txRegister)
+				if err != nil {
+					return err
+				}
 				// err = StoreTxResult(tx, b.txResult)
 				// if err != nil {
 				// 	return err

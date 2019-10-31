@@ -56,7 +56,7 @@ func (f *RecordFetcher) Fetch(
 	ctx context.Context,
 	pulse insolar.PulseNumber,
 ) (
-	map[uint32]*observer.Record,
+	map[uint32]*exporter.Record,
 	insolar.PulseNumber,
 	error,
 ) {
@@ -67,7 +67,7 @@ func (f *RecordFetcher) Fetch(
 	f.request.PulseNumber = pulse
 	f.request.RecordNumber = 0
 
-	batch := make(map[uint32]*observer.Record)
+	batch := make(map[uint32]*exporter.Record)
 	var counter uint32
 	shouldIterateFrom := insolar.PulseNumber(0)
 	// Get pulse batches
@@ -111,8 +111,7 @@ func (f *RecordFetcher) Fetch(
 				// todo we can read records by several pulses
 				return batch, shouldIterateFrom, nil
 			}
-			model := (*observer.Record)(&resp.Record)
-			batch[resp.RecordNumber] = model
+			batch[resp.RecordNumber] = resp
 
 			counter++
 			f.request.RecordNumber = resp.RecordNumber

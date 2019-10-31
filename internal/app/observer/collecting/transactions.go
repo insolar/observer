@@ -74,7 +74,7 @@ func collectTransfer(rec exporter.Record) *observer.TxRegister {
 	}
 
 	// Skip non-member objects.
-	if !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+	if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
 		return nil
 	}
 
@@ -140,7 +140,7 @@ func collectMigration(rec exporter.Record) *observer.TxRegister {
 	}
 
 	// Skip non-deposit objects.
-	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+	if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 		return nil
 	}
 
@@ -182,7 +182,7 @@ func collectRelease(rec exporter.Record) *observer.TxRegister {
 	}
 
 	// Skip non-deposit objects.
-	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+	if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 		return nil
 	}
 
