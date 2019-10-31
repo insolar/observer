@@ -17,7 +17,6 @@
 package api
 
 import (
-	"github.com/insolar/observer/internal/models"
 	"net/http"
 	"strconv"
 	"strings"
