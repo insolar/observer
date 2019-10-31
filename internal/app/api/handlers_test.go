@@ -101,7 +101,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	err = db.Insert(&transaction)
 	require.NoError(t, err)
 
-	// request closed transactions using API
+	// request one recent closed transaction using API
 	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=1")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -129,6 +129,54 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, received, 1)
 	require.Equal(t, received[0], expectedTransaction)
+}
+
+func TestTransaction_ClosedLimitMultiple(t *testing.T) {
+	var err error
+
+	// insert two finished transactions, one with finishSuccess, second with !finishSuccess
+	finishSuccessValues := []bool{true, false}
+	for i := 0; i < 2; i++ {
+		txID := gen.RecordReference()
+		pulseNumber := gen.PulseNumber()
+
+		fromMember := gen.Reference()
+		toMember := gen.Reference()
+		toDeposit := gen.Reference()
+
+		transaction := models.Transaction{
+			TransactionID:     txID.Bytes(),
+			PulseRecord:       [2]int64{int64(pulseNumber), 198 + int64(i)},
+			StatusRegistered:  true,
+			Amount:            "10",
+			Fee:               "1",
+			FinishPulseRecord: [2]int64{1, 2 + int64(i)},
+			Type:              models.TTypeMigration,
+
+			MemberFromReference: fromMember.Bytes(),
+			MemberToReference:   toMember.Bytes(),
+			DepositToReference:  toDeposit.Bytes(),
+			StatusFinished:      true,
+			FinishSuccess:       finishSuccessValues[i],
+		}
+
+		err = db.Insert(&transaction)
+		require.NoError(t, err)
+	}
+
+	// request two recent closed transactions using API
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []SchemaMigration
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, received[0].Status, "received")
+	require.Equal(t, received[0].Status, "failed")
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
