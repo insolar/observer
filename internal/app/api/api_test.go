@@ -111,3 +111,7 @@ func TestMain(t *testing.M) {
 	time.Sleep(5 * time.Second)
 	os.Exit(t.Run())
 }
+
+func flushDB() {
+
+}

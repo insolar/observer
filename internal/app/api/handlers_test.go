@@ -56,8 +56,8 @@ func transactionModel(txID []byte, pulseNum int64) *models.Transaction {
 	}
 }
 
-func transactionResponse(txID string, pulseNum int64, ts float32) *observerapi.SchemasTransactionAbstract {
-	return &observerapi.SchemasTransactionAbstract{
+func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransactionAbstract {
+	return &SchemasTransactionAbstract{
 		Amount:      amount,
 		Fee:         NullableString(fee),
 		Index:       fmt.Sprintf("%d:%d", pulseNum, recordNum),
@@ -116,19 +116,77 @@ func TestTransaction_TypeMigration(t *testing.T) {
 
 	receivedTransaction := &SchemaMigration{}
 	expectedTransaction := &SchemaMigration{
-		SchemasTransactionAbstract: SchemasTransactionAbstract{
-			Amount:      "10",
-			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:%d", pulseNumber, recordNum),
-			PulseNumber: int64(pulseNumber),
-			Status:      "pending",
-			Timestamp:   ts,
-			TxID:        txID.String(),
-		},
-		ToMemberReference:   toMember.String(),
-		FromMemberReference: fromMember.String(),
-		ToDepositReference:  toDeposit.String(),
-		Type:                string(models.TTypeMigration),
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		FromMemberReference:        fromMember.String(),
+		ToDepositReference:         toDeposit.String(),
+		Type:                       string(models.TTypeMigration),
+	}
+
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
+}
+
+func TestTransaction_TypeTransfer(t *testing.T) {
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
+	ts := pntime.Unix()
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeTransfer
+	transaction.MemberFromReference = fromMember.Bytes()
+	transaction.MemberToReference = toMember.Bytes()
+
+	err = db.Insert(transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	receivedTransaction := &SchemaMigration{}
+	expectedTransaction := &SchemaMigration{
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		FromMemberReference:        fromMember.String(),
+		Type:                       string(models.TTypeTransfer),
+	}
+
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
+}
+
+func TestTransaction_TypeRelease(t *testing.T) {
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
+	ts := pntime.Unix()
+
+	toMember := gen.Reference()
+	fromDeposit := gen.Reference()
+
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeRelease
+	transaction.MemberToReference = toMember.Bytes()
+	transaction.DepositToReference = fromDeposit.Bytes()
+
+	err = db.Insert(transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	receivedTransaction := &SchemaMigration{}
+	expectedTransaction := &SchemaMigration{
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		ToDepositReference:         fromDeposit.String(),
+		Type:                       string(models.TTypeRelease),
 	}
 
 	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
