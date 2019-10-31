@@ -63,11 +63,12 @@ func (s *StatsRepository) Coins() (XnsCoinStats, error) {
 	if err == pg.ErrNoRows {
 		return XnsCoinStats{}, errors.New("No data")
 	}
+	// todo make this more obvious
 	return XnsCoinStats{
 		Created:     lastStats.Created,
-		Total:       lastStats.Total,
-		Max:         lastStats.Max,
-		Circulating: lastStats.Circulating,
+		Total:       lastStats.Total[:len(lastStats.Total)-10] + "." + lastStats.Total[len(lastStats.Total)-10:],
+		Max:         lastStats.Max[:len(lastStats.Total)-10] + "." + lastStats.Max[len(lastStats.Total)-10:],
+		Circulating: lastStats.Circulating[:len(lastStats.Total)-10] + "." + lastStats.Circulating[len(lastStats.Total)-10:],
 	}, nil
 }
 
