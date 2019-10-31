@@ -70,3 +70,8 @@ Generate types and API from internal API:
 ```
 oapi-codegen -package internalapi -generate types,server ../insolar-internal-api/api-exported.yaml > internal/app/api/internalapi/generated.go
 ```
+## XNS coin stats
+Command calculating and saves stats for CMC every minute
+```
+./bin/xns_stats_count
+```

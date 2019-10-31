@@ -17,13 +17,17 @@
 package api
 
 import (
-	"github.com/insolar/observer/configuration"
+	"github.com/sirupsen/logrus"
+
 	"time"
+
+	"github.com/insolar/observer/configuration"
 )
 
 type Configuration struct {
-	API configuration.API
-	DB  configuration.DB
+	API      configuration.API
+	DB       configuration.DB
+	LogLevel string
 }
 
 func Default() *Configuration {
@@ -37,5 +41,6 @@ func Default() *Configuration {
 			AttemptInterval: 3 * time.Second,
 			CreateTables:    false,
 		},
+		LogLevel: logrus.DebugLevel.String(),
 	}
 }

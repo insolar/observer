@@ -19,19 +19,25 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/insolar/observer/configuration"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+
+	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/configuration/api"
 )
 
 func main() {
-	cfg := configuration.Default()
-	out, _ := yaml.Marshal(cfg)
-	err := ioutil.WriteFile(configuration.ConfigFilePath, out, 0644)
-	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to write config file"))
-		return
+	cfgs := make(map[string]interface{})
+	cfgs[api.ConfigFilePath] = api.Default()
+	cfgs[configuration.ConfigFilePath] = configuration.Default()
+
+	for filePath, cfg := range cfgs {
+		out, _ := yaml.Marshal(cfg)
+		err := ioutil.WriteFile(filePath, out, 0644)
+		if err != nil {
+			log.Error(errors.Wrapf(err, "failed to write config file"))
+			return
+		}
 	}
 }
