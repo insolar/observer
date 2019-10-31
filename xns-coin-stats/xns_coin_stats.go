@@ -23,16 +23,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type StatsModel struct {
-	tableName struct{} `sql:"xns_coin_stats"` //nolint: unused,structcheck
-
-	ID          uint64    `sql:"id,pk"`
-	Created     time.Time `sql:"created default:now(),notnull"`
-	Total       string    `sql:"total"`
-	Max         string    `sql:"max"`
-	Circulating string    `sql:"circulating"`
-}
-
 type XnsCoinStats struct {
 	Created     time.Time `json:"-"`
 	Total       string    `json:"total"`
@@ -98,9 +88,31 @@ func (s *StatsManager) Circulating() (string, error) {
 }
 
 func (s *StatsManager) CountStats() (XnsCoinStats, error) {
-	return s.repository.CountStats()
+	st, err := s.repository.CountStats()
+	if err != nil {
+		return XnsCoinStats{}, err
+	}
+	return s.toDTO(st), nil
 }
 
 func (s *StatsManager) InsertStats(xcs XnsCoinStats) error {
-	return s.repository.InsertStats(xcs)
+	return s.repository.InsertStats(s.fromDTO(xcs))
+}
+
+func (s *StatsManager) toDTO(stats StatsModel) XnsCoinStats {
+	return XnsCoinStats{
+		Created:     stats.Created,
+		Total:       stats.Total,
+		Max:         stats.Max,
+		Circulating: stats.Circulating,
+	}
+}
+
+func (s *StatsManager) fromDTO(stats XnsCoinStats) StatsModel {
+	return StatsModel{
+		Created:     stats.Created,
+		Total:       stats.Total,
+		Max:         stats.Max,
+		Circulating: stats.Circulating,
+	}
 }

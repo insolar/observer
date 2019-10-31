@@ -24,12 +24,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+type StatsModel struct {
+	tableName struct{} `sql:"xns_coin_stats"` //nolint: unused,structcheck
+
+	ID          uint64    `sql:"id,pk"`
+	Created     time.Time `sql:"created default:now(),notnull"`
+	Total       string    `sql:"total"`
+	Max         string    `sql:"max"`
+	Circulating string    `sql:"circulating"`
+}
+
 //go:generate minimock -i StatsRepo -o ./ -s _mock.go -g
 
 type StatsRepo interface {
 	LastStats() (StatsModel, error)
-	InsertStats(xcs XnsCoinStats) error
-	CountStats() (XnsCoinStats, error)
+	InsertStats(StatsModel) error
+	CountStats() (StatsModel, error)
 }
 
 type StatsRepository struct {
@@ -52,7 +62,7 @@ func (s *StatsRepository) LastStats() (StatsModel, error) {
 	return *lastStats, nil
 }
 
-func (s *StatsRepository) CountStats() (XnsCoinStats, error) {
+func (s *StatsRepository) CountStats() (StatsModel, error) {
 	sql := `
 WITH stats as (SELECT d.amount::numeric(24),
                       d.hold_release_date,
@@ -75,15 +85,15 @@ from sums,
      dep_balance
 ;
 `
-	stats := XnsCoinStats{}
+	stats := StatsModel{}
 	_, err := s.db.Query(&stats, sql)
 	if err != nil {
-		return XnsCoinStats{}, errors.Wrap(err, "failed request to db")
+		return StatsModel{}, errors.Wrap(err, "failed request to db")
 	}
 	return stats, nil
 }
 
-func (s *StatsRepository) InsertStats(xcs XnsCoinStats) error {
+func (s *StatsRepository) InsertStats(xcs StatsModel) error {
 	stats := StatsModel{
 		Created:     time.Now(),
 		Total:       xcs.Total,
