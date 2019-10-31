@@ -18,12 +18,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/insolar/observer/internal/models"
-	"github.com/stretchr/testify/require"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/insolar/observer/internal/models"
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
