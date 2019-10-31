@@ -1,5 +1,6 @@
 ARTIFACTS = .artifacts
 BIN_DIR = bin
+API = api
 OBSERVER = observer
 CONFIG = config
 GOPATH ?= $(shell go env GOPATH)
@@ -31,7 +32,7 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: $(BIN_DIR) $(OBSERVER) ## build!
+build: $(BIN_DIR) $(OBSERVER) $(API) ## build!
 
 .PHONY: env
 env: $(CONFIG) ## gen config + artifacts
@@ -63,6 +64,11 @@ $(BIN_DIR): ## create bin dir
 .PHONY: $(OBSERVER)
 $(OBSERVER):
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+
+.PHONY: $(API)
+$(API):
+	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
+
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)
