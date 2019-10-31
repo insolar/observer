@@ -446,14 +446,14 @@ func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
 	case "failed":
 		query = query.Where("status_registered = true and status_finished = true and finish_success = false")
 	default:
-		return query, errors.New("Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.")
+		return query, errors.New("Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.") // nolint
 	}
 	return query, nil
 }
 
 func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
 	if t != "transfer" && t != "migration" && t != "after" {
-		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.")
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
 	}
 	query = query.Where("type = ?", t)
 	return query, nil
@@ -466,7 +466,7 @@ func FilterByValue(query *orm.Query, value string) (*orm.Query, error) {
 	} else {
 		ref, err := insolar.NewReferenceFromString(value)
 		if err != nil {
-			return query, errors.New("Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.")
+			return query, errors.New("Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.") // nolint
 		}
 		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
 			q = q.WhereOr("tx_id = ?", ref.Bytes()).
@@ -497,7 +497,7 @@ func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, byInde
 		}
 		query = query.Order("pulse_record ASC")
 	default:
-		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.")
+		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
 	}
 	return query, nil
 }
