@@ -127,19 +127,18 @@ func makeStorer(
 					}
 				}
 
-				// Uncomment when migrations are ready.
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
 					return err
 				}
-				// err = StoreTxResult(tx, b.txResult)
-				// if err != nil {
-				// 	return err
-				// }
-				// err = StoreTxSagaResult(tx, b.txSagaResult)
-				// if err != nil {
-				// 	return err
-				// }
+				err = StoreTxResult(tx, b.txResult)
+				if err != nil {
+					return err
+				}
+				err = StoreTxSagaResult(tx, b.txSagaResult)
+				if err != nil {
+					return err
+				}
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
