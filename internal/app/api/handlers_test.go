@@ -179,20 +179,37 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 	}
 
 	// request two recent closed transactions using API
-	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
 
-	var received []SchemaMigration
-	err = json.Unmarshal(bodyBytes, &received)
-	require.NoError(t, err)
-	require.Len(t, received, 2)
-	// the latest transaction comes first in JSON, thus it will be `failed`
-	// and the second (older) transaction in JSON will be `received`
-	require.Equal(t, string(models.TStatusFailed), received[0].Status)
-	require.Equal(t, string(models.TStatusReceived), received[1].Status)
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		// the latest transaction comes first in JSON, thus it will be `failed`
+		// and the second (older) transaction in JSON will be `received`
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request second (older) transaction using a cursor
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3003&direction=before&limit=1")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+	}
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
