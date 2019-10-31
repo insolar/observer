@@ -43,6 +43,144 @@ func TestTransaction_NoContent(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
+func TestTransaction_ClosedBadRequest(t *testing.T) {
+	// if `limit` is not specified, API returns `bad request`
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is not a number, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is zero, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=0")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is negative, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=-10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if limit is > 1000, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransaction_ClosedLimitSingle(t *testing.T) {
+	// insert a single closed transaction
+	var err error
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+	toDeposit := gen.Reference()
+
+	transaction := models.Transaction{
+		TransactionID:     txID.Bytes(),
+		PulseRecord:       [2]int64{int64(pulseNumber), 198},
+		StatusRegistered:  true,
+		Amount:            "10",
+		Fee:               "1",
+		FinishPulseRecord: [2]int64{1, 3001}, // keep this key unique between tests!
+		Type:              models.TTypeMigration,
+
+		MemberFromReference: fromMember.Bytes(),
+		MemberToReference:   toMember.Bytes(),
+		DepositToReference:  toDeposit.Bytes(),
+		StatusFinished: true,
+		FinishSuccess: true,
+	}
+
+	err = db.Insert(&transaction)
+	require.NoError(t, err)
+
+	// request one recent closed transaction using API
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	expectedTransaction := SchemaMigration{
+		SchemasTransactionAbstract: SchemasTransactionAbstract{
+			Amount:      "10",
+			Fee:         NullableString("1"),
+			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			PulseNumber: int64(pulseNumber),
+			Status:      string(models.TStatusReceived),
+			Timestamp:   pntime.Unix(),
+			TxID:        txID.String(),
+		},
+		ToMemberReference:   toMember.String(),
+		FromMemberReference: fromMember.String(),
+		ToDepositReference:  toDeposit.String(),
+		Type:                string(models.TTypeMigration),
+	}
+
+	var received []SchemaMigration
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, expectedTransaction,  received[0])
+}
+
+func TestTransaction_ClosedLimitMultiple(t *testing.T) {
+	var err error
+
+	// insert two finished transactions, one with finishSuccess, second with !finishSuccess
+	finishSuccessValues := []bool{true, false}
+	for i := 0; i < 2; i++ {
+		txID := gen.RecordReference()
+		pulseNumber := gen.PulseNumber()
+
+		fromMember := gen.Reference()
+		toMember := gen.Reference()
+		toDeposit := gen.Reference()
+
+		transaction := models.Transaction{
+			TransactionID:     txID.Bytes(),
+			PulseRecord:       [2]int64{int64(pulseNumber), 198 + int64(i)},
+			StatusRegistered:  true,
+			Amount:            "10",
+			Fee:               "1",
+			FinishPulseRecord: [2]int64{1, 3002 + int64(i)}, // keep this key unique between tests!
+			Type:              models.TTypeMigration,
+
+			MemberFromReference: fromMember.Bytes(),
+			MemberToReference:   toMember.Bytes(),
+			DepositToReference:  toDeposit.Bytes(),
+			StatusFinished:      true,
+			FinishSuccess:       finishSuccessValues[i],
+		}
+
+		err = db.Insert(&transaction)
+		require.NoError(t, err)
+	}
+
+	// request two recent closed transactions using API
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []SchemaMigration
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	// the latest transaction comes first in JSON, thus it will be `failed`
+	// and the second (older) transaction in JSON will be `received`
+	require.Equal(t, string(models.TStatusFailed), received[0].Status)
+	require.Equal(t, string(models.TStatusReceived), received[1].Status)
+}
+
 func TestTransaction_TypeMigration(t *testing.T) {
 	txID := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()

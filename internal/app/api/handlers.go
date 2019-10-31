@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/insolar/observer/internal/models"
 	"net/http"
 	"strings"
 
@@ -61,8 +62,33 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 	panic("implement me")
 }
 
+// CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
-	panic("implement me")
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+	}
+
+	// AALEKSEEV TODO: check `index` and `direction`
+
+	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
+
+	var result []models.Transaction
+	err := s.db.Model(&models.Transaction{}).
+		Where("status_finished = ?", true).
+		Order("finish_pulse_record desc").
+		Limit(limit).
+		Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		resJSON[i] = TxToAPITx(result[i])
+	}
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
