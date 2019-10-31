@@ -67,6 +67,9 @@ func makeStorer(
 
 				records := postgres.NewRecordStorage(cfg, obs, tx)
 				for _, rec := range b.records {
+					if rec == nil {
+						continue
+					}
 					obsRec := observer.Record(rec.Record)
 					err := records.Insert(&obsRec)
 					if err != nil {
@@ -76,6 +79,9 @@ func makeStorer(
 
 				requests := postgres.NewRequestStorage(obs, tx)
 				for _, req := range b.requests {
+					if req == nil {
+						continue
+					}
 					err := requests.Insert(req)
 					if err != nil {
 						return err
@@ -84,6 +90,9 @@ func makeStorer(
 
 				results := postgres.NewResultStorage(obs, tx)
 				for _, res := range b.results {
+					if res == nil {
+						continue
+					}
 					err := results.Insert(res)
 					if err != nil {
 						return err
@@ -92,6 +101,9 @@ func makeStorer(
 
 				objects := postgres.NewObjectStorage(obs, tx)
 				for _, act := range b.activates {
+					if act == nil {
+						continue
+					}
 					err := objects.Insert(act)
 					if err != nil {
 						return err
@@ -99,6 +111,9 @@ func makeStorer(
 				}
 
 				for _, amd := range b.amends {
+					if amd == nil {
+						continue
+					}
 					err := objects.Insert(amd)
 					if err != nil {
 						return err
@@ -106,6 +121,9 @@ func makeStorer(
 				}
 
 				for _, deact := range b.deactivates {
+					if deact == nil {
+						continue
+					}
 					err := objects.Insert(deact)
 					if err != nil {
 						return err
@@ -116,6 +134,9 @@ func makeStorer(
 
 				members := postgres.NewMemberStorage(obs, tx)
 				for _, member := range b.members {
+					if member == nil {
+						continue
+					}
 					err := members.Insert(member)
 					if err != nil {
 						return err
@@ -124,6 +145,9 @@ func makeStorer(
 
 				transfers := postgres.NewTransferStorage(obs, tx)
 				for _, transfer := range b.transfers {
+					if transfers == nil {
+						continue
+					}
 					err := transfers.Insert(transfer)
 					if err != nil {
 						return err
@@ -146,6 +170,9 @@ func makeStorer(
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
+					if deposit == nil {
+						continue
+					}
 					err := deposits.Insert(deposit)
 					if err != nil {
 						return err
@@ -154,6 +181,9 @@ func makeStorer(
 
 				addresses := postgres.NewMigrationAddressStorage(cfg, obs, tx)
 				for _, address := range b.addresses {
+					if address == nil {
+						continue
+					}
 					err := addresses.Insert(address)
 					if err != nil {
 						return err
@@ -163,6 +193,9 @@ func makeStorer(
 				// updates
 
 				for _, balance := range b.balances {
+					if balance == nil {
+						continue
+					}
 					err := members.Update(balance)
 					if err != nil {
 						return err
@@ -170,6 +203,9 @@ func makeStorer(
 				}
 
 				for _, update := range b.depositUpdates {
+					if update == nil {
+						continue
+					}
 					err := deposits.Update(update)
 					if err != nil {
 						return err
@@ -177,6 +213,9 @@ func makeStorer(
 				}
 
 				for _, wasting := range b.wastings {
+					if wasting == nil {
+						continue
+					}
 					err := addresses.Update(wasting)
 					if err != nil {
 						return err
