@@ -14,13 +14,15 @@
 // limitations under the License.
 //
 
-package xnscoinstats
+package component
 
 import (
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/insolar/observer/internal/app/observer/postgres"
 )
 
 type XnsCoinStats struct {
@@ -39,10 +41,10 @@ type StatsGetter interface {
 
 type StatsManager struct {
 	log        *logrus.Logger
-	repository StatsRepo
+	repository postgres.StatsRepo
 }
 
-func NewStatsManager(log *logrus.Logger, r StatsRepo) *StatsManager {
+func NewStatsManager(log *logrus.Logger, r postgres.StatsRepo) *StatsManager {
 	return &StatsManager{
 		log:        log,
 		repository: r,
@@ -99,7 +101,7 @@ func (s *StatsManager) InsertStats(xcs XnsCoinStats) error {
 	return s.repository.InsertStats(s.fromDTO(xcs))
 }
 
-func (s *StatsManager) toDTO(stats StatsModel) XnsCoinStats {
+func (s *StatsManager) toDTO(stats postgres.StatsModel) XnsCoinStats {
 	return XnsCoinStats{
 		Created:     stats.Created,
 		Total:       stats.Total,
@@ -108,8 +110,8 @@ func (s *StatsManager) toDTO(stats StatsModel) XnsCoinStats {
 	}
 }
 
-func (s *StatsManager) fromDTO(stats XnsCoinStats) StatsModel {
-	return StatsModel{
+func (s *StatsManager) fromDTO(stats XnsCoinStats) postgres.StatsModel {
+	return postgres.StatsModel{
 		Created:     stats.Created,
 		Total:       stats.Total,
 		Max:         stats.Max,

@@ -23,8 +23,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
-	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 )
 
 func main() {
@@ -40,8 +41,8 @@ func main() {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	repo := xnscoinstats.NewStatsRepository(db)
-	sr := xnscoinstats.NewStatsManager(log, repo)
+	repo := postgres.NewStatsRepository(db)
+	sr := component.NewStatsManager(log, repo)
 	stats, err := sr.CountStats()
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to get stats"))

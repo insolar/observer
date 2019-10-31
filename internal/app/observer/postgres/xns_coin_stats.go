@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package xnscoinstats
+package postgres
 
 import (
 	"time"
