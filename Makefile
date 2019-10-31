@@ -77,7 +77,6 @@ $(ARTIFACTS):
 $(CONFIG): $(ARTIFACTS)
 	go run ./configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
-	# mv ./observerapi.yaml $(ARTIFACTS)/observerapi.yaml
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
