@@ -18,6 +18,8 @@ package api
 
 import (
 	"fmt"
+	"github.com/insolar/observer/internal/models"
+	"github.com/stretchr/testify/require"
 	"log"
 	"os"
 	"testing"
@@ -110,4 +112,9 @@ func TestMain(t *testing.M) {
 	// TODO: flush db
 	time.Sleep(5 * time.Second)
 	os.Exit(t.Run())
+}
+
+func truncateDB(t *testing.T) {
+	_, err := db.Model(&models.Transaction{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
 }
