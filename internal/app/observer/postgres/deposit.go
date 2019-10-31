@@ -37,6 +37,8 @@ type DepositSchema struct {
 	Amount          string `sql:",notnull"`
 	Balance         string `sql:",notnull"`
 	DepositState    []byte `sql:",notnull"`
+	Vesting         int64
+	VestingStep     int64
 }
 
 type DepositStorage struct {
@@ -114,5 +116,7 @@ func depositSchema(model *observer.Deposit) *DepositSchema {
 		Amount:          model.Amount,
 		Balance:         model.Balance,
 		DepositState:    model.DepositState.Bytes(),
+		Vesting:         model.Vesting,
+		VestingStep:     model.VestingStep,
 	}
 }

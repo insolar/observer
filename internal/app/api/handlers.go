@@ -18,13 +18,18 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-pg/pg"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
+	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
+
+	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,7 +42,7 @@ func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
 	return &ObserverServer{db: db, log: log}
 }
 
-func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params internalapi.GetMigrationAddressesParams) error {
+func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
 	panic("implement me")
 }
 
@@ -49,7 +54,7 @@ func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params internalapi.TokenGetInfoParams) error {
+func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error {
 	panic("implement me")
 }
 
@@ -61,8 +66,45 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 	panic("implement me")
 }
 
-func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
-	panic("implement me")
+// CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
+func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	var (
+		pulseNumber int64
+		sequenceNumber int64
+		err error
+	)
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+		}
+	}
+
+	var result []models.Transaction
+	query := s.db.Model(&models.Transaction{}).
+		Where("status_finished = ?", true)
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+	}
+	err = query.
+		Limit(limit).
+		Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		resJSON[i] = TxToAPITx(result[i], models.TxIndexTypeFinishPulseRecord)
+	}
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
@@ -77,7 +119,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params observerapi.MemberTransactionsParams) error {
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -85,41 +127,155 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) Transaction(ctx echo.Context, txID string) error {
-	txID = strings.TrimSpace(txID)
-	if len(txID) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx id"))
+func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
+	txIDStr = strings.TrimSpace(txIDStr)
+
+	if len(txIDStr) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx_id"))
 	}
 
-	tx := &models.Transaction{}
-	_, err := s.db.QueryOne(tx, "select * from simple_transactions where tx_id = ?0", txID)
+	txID, err := insolar.NewRecordReferenceFromString(txIDStr)
 	if err != nil {
-		if err == pg.ErrNoRows {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("tx_id wrong format"))
+	}
+
+	tx, err := component.GetTx(ctx.Request().Context(), s.db, txID.Bytes())
+	if err != nil {
+		if err == component.ErrTxNotFound {
 			return ctx.JSON(http.StatusNoContent, struct{}{})
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, TxToAPITx(txID, *tx))
+	return ctx.JSON(http.StatusOK, TxToAPITx(*tx, models.TxIndexTypePulseRecord))
 }
 
-func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
-	panic("implement me")
+func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
+	var errorMsg ErrorMessage
+	var err error
+
+	var txs []models.Transaction
+	query := s.db.Model(&txs)
+
+	if params.Value != nil {
+		query, err = component.FilterByValue(query, *params.Value)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Status != nil {
+		query, err = component.FilterByStatus(query, *params.Status)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Type != nil {
+		query, err = component.FilterByType(query, *params.Type)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	var pulseNumber int64
+	var sequenceNumber int64
+	byIndex := false
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		} else {
+			byIndex = true
+		}
+	}
+
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(params.Limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.JSON(http.StatusNoContent, struct{}{})
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Coins()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "")
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Circulating()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Max()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Total()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
+}
+
+func checkIndex(i string) (int64, int64, error) {
+	index := strings.Split(i, ":")
+	if len(index) != 2 {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	var err error
+	var pulseNumber, sequenceNumber int64
+	pulseNumber, err = strconv.ParseInt(index[0], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	sequenceNumber, err = strconv.ParseInt(index[1], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	return pulseNumber, sequenceNumber, nil
 }

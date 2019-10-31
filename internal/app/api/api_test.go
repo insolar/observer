@@ -23,17 +23,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-pg/migrations"
-	"github.com/go-pg/pg"
-	echo "github.com/labstack/echo/v4"
-	dockertest "github.com/ory/dockertest/v3"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
+	"github.com/insolar/observer/internal/models"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
-	"github.com/insolar/observer/internal/models"
+	"github.com/go-pg/migrations"
+	"github.com/go-pg/pg"
+	"github.com/labstack/echo/v4"
+	"github.com/ory/dockertest/v3"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -108,29 +105,17 @@ func TestMain(t *testing.M) {
 
 	logger := logrus.New()
 	observerAPI := NewObserverServer(db, logger)
-	observerapi.RegisterHandlers(e, observerAPI)
-	internalapi.RegisterHandlers(e, observerAPI)
+	RegisterHandlers(e, observerAPI)
 	go func() {
 		e.Logger.Fatal(e.Start(apihost))
 	}()
+	// TODO: wait until API started
+	// TODO: flush db
 	time.Sleep(5 * time.Second)
 	os.Exit(t.Run())
 }
 
-func Test(t *testing.T) {
-	expectedTransaction := models.Transaction{
-		TransactionID:    []byte{1, 2, 3},
-		PulseRecord:      [2]int64{1, 2},
-		StatusRegistered: true,
-		Amount:           "10",
-		Fee:              "1",
-	}
-	err := db.Insert(&expectedTransaction)
+func truncateDB(t *testing.T) {
+	_, err := db.Model(&models.Transaction{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
-
-	receivedTransaction := models.Transaction{}
-	_, err = db.QueryOne(&receivedTransaction, "select * from simple_transactions")
-	require.NoError(t, err)
-
-	assert.Equal(t, expectedTransaction, receivedTransaction)
 }

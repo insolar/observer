@@ -65,6 +65,17 @@ var (
 	}
 )
 
+type dbLogger struct{}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
+	fmt.Println(q.FormattedQuery())
+	return
+}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+	return
+}
+
 func TestMain(t *testing.M) {
 	var err error
 	pool, err := dockertest.NewPool("")
@@ -95,6 +106,9 @@ func TestMain(t *testing.M) {
 		log.Panicf("Could not connect to docker: %s", err)
 	}
 	defer db.Close()
+
+	// for debug purposes print all queries
+	db.AddQueryHook(dbLogger{})
 
 	migrationCollection := migrations.NewCollection()
 
@@ -307,6 +321,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Amount:             amount,
 		TxHash:             txHash,
 		PulseDepositUnHold: pn + 3,
+		Vesting:            10,
+		VestingStep:        10,
 	}
 	memory, err := insolar.Serialize(dep)
 	if err != nil {
@@ -353,6 +369,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 			Amount:          amount,
 			Balance:         balance,
 			DepositState:    act.Record.ID,
+			Vesting:         10,
+			VestingStep:     10,
 		},
 	}, res.deposits)
 }
