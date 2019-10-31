@@ -321,6 +321,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Amount:             amount,
 		TxHash:             txHash,
 		PulseDepositUnHold: pn + 3,
+		Vesting:            10,
+		VestingStep:        10,
 	}
 	memory, err := insolar.Serialize(dep)
 	if err != nil {
@@ -367,6 +369,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 			Amount:          amount,
 			Balance:         balance,
 			DepositState:    act.Record.ID,
+			Vesting:         10,
+			VestingStep:     10,
 		},
 	}, res.deposits)
 }

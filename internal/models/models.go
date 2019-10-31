@@ -18,9 +18,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/insolar/insolar/pulse"
 	"reflect"
 	"sync"
+
+	"github.com/insolar/insolar/pulse"
 )
 
 type Member struct {
@@ -45,6 +46,8 @@ type Deposit struct {
 	HoldReleaseDate int64  `sql:"hold_release_date"`
 	Amount          string `sql:"varchar"`
 	Balance         string `sql:"balance"`
+	Vesting         int64  `sql:"vesting"`
+	VestingStep     int64  `sql:"vesting_step"`
 }
 
 type TransactionStatus string
