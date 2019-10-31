@@ -175,7 +175,7 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 2)
-	// the latest transaction comes first in json, thus it will be `failed`
+	// the latest transaction comes first in JSON, thus it will be `failed`
 	// and the second (older) transaction in JSON will be `received`
 	require.Equal(t, string(models.TStatusFailed), received[0].Status)
 	require.Equal(t, string(models.TStatusReceived), received[1].Status)
