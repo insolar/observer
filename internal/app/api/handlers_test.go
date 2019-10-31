@@ -107,7 +107,7 @@ func TestTransaction_ClosedSimple(t *testing.T) {
 	}*/
 
 	var received SchemasTransactions
-	err = json.Unmarshal(bodyBytes, received)
+	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	fmt.Printf("%v\n", received)
 }

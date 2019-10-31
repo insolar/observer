@@ -74,7 +74,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
 
 	var result []models.Transaction
-	err := s.db.Model(models.Transaction{}).
+	err := s.db.Model(&models.Transaction{}).
 		Where("status_finished = ?", true).
 		Order("finish_pulse_record desc").
 		Select(&result)
