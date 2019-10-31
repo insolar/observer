@@ -253,6 +253,8 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		Amount:          state.Amount,
 		Balance:         state.Balance,
 		DepositState:    id,
+		Vesting:         state.Vesting,
+		VestingStep:     state.VestingStep,
 	}, nil
 }
 

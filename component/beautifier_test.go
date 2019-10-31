@@ -34,6 +34,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
@@ -169,7 +170,7 @@ func TestBeautifier_Run(t *testing.T) {
 
 		tdg := NewTreeDataGenerator()
 		raw := &raw{
-			batch: map[uint32]*observer.Record{
+			batch: map[uint32]*exporter.Record{
 				0: tdg.makeRequestWith("hello", gen.RecordReference(), nil),
 			},
 		}
@@ -195,11 +196,11 @@ func TestBeautifier_Run(t *testing.T) {
 		call := tdg.makeGetMigrationAddressCall(pn)
 
 		raw := &raw{
-			batch: map[uint32]*observer.Record{
+			batch: map[uint32]*exporter.Record{
 				0: out,
 				1: call,
-				2: tdg.makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				3: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
+				2: tdg.makeResultWith(out.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				3: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{address, nil}}),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -226,19 +227,19 @@ func TestBeautifier_Run(t *testing.T) {
 		from := gen.IDWithPulse(pn)
 		to := gen.IDWithPulse(pn)
 		call := tdg.makeTransferCall(amount, from.String(), to.String(), pn)
-		walletTransfer := tdg.makeWalletTransferCall(pn, *insolar.NewReference(call.ID))
-		walletTransferIn := tdg.makeIncomingFromOutgoing(walletTransfer.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		accountTransfer := tdg.makeAccountTransferCall(pn, *insolar.NewReference(walletTransferIn.ID))
-		accountTransferIn := tdg.makeIncomingFromOutgoing(accountTransfer.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		calcFee := tdg.makeCalcFeeCall(pn, *insolar.NewReference(accountTransferIn.ID))
-		calcFeeIn := tdg.makeIncomingFromOutgoing(calcFee.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		getFeeMember := tdg.makeGetFeeMemberCall(pn, *insolar.NewReference(accountTransferIn.ID))
-		getFeeMemberIn := tdg.makeIncomingFromOutgoing(getFeeMember.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+		walletTransfer := tdg.makeWalletTransferCall(pn, *insolar.NewReference(call.Record.ID))
+		walletTransferIn := tdg.makeIncomingFromOutgoing(walletTransfer.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+		accountTransfer := tdg.makeAccountTransferCall(pn, *insolar.NewReference(walletTransferIn.Record.ID))
+		accountTransferIn := tdg.makeIncomingFromOutgoing(accountTransfer.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+		calcFee := tdg.makeCalcFeeCall(pn, *insolar.NewReference(accountTransferIn.Record.ID))
+		calcFeeIn := tdg.makeIncomingFromOutgoing(calcFee.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+		getFeeMember := tdg.makeGetFeeMemberCall(pn, *insolar.NewReference(accountTransferIn.Record.ID))
+		getFeeMemberIn := tdg.makeIncomingFromOutgoing(getFeeMember.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 		feeMember := gen.Reference()
 
 		expected := []*observer.Transfer{
 			{
-				TxID:          call.ID,
+				TxID:          call.Record.ID,
 				From:          &from,
 				To:            &to,
 				Amount:        amount,
@@ -246,10 +247,10 @@ func TestBeautifier_Run(t *testing.T) {
 				Status:        observer.Success,
 				Kind:          observer.Standard,
 				Direction:     observer.APICall,
-				DetachRequest: &accountTransferIn.ID,
+				DetachRequest: &accountTransferIn.Record.ID,
 			},
 			{
-				TxID:          call.ID,
+				TxID:          call.Record.ID,
 				From:          &from,
 				To:            feeMember.GetLocal(),
 				Amount:        fee,
@@ -257,30 +258,30 @@ func TestBeautifier_Run(t *testing.T) {
 				Status:        observer.Success,
 				Kind:          observer.Standard,
 				Direction:     observer.APICall,
-				DetachRequest: &accountTransferIn.ID,
+				DetachRequest: &accountTransferIn.Record.ID,
 			},
 		}
 
 		raw := &raw{
-			batch: map[uint32]*observer.Record{
+			batch: map[uint32]*exporter.Record{
 				0:  call,
 				1:  walletTransfer,
-				2:  tdg.makeResultWith(walletTransfer.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				2:  tdg.makeResultWith(walletTransfer.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				3:  walletTransferIn,
-				4:  tdg.makeResultWith(walletTransferIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				4:  tdg.makeResultWith(walletTransferIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				5:  accountTransfer,
-				6:  tdg.makeResultWith(accountTransfer.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				6:  tdg.makeResultWith(accountTransfer.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				7:  accountTransferIn,
-				8:  tdg.makeResultWith(accountTransferIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				8:  tdg.makeResultWith(accountTransferIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				9:  calcFee,
-				10: tdg.makeResultWith(calcFee.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				10: tdg.makeResultWith(calcFee.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				11: calcFeeIn,
-				12: tdg.makeResultWith(calcFeeIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				12: tdg.makeResultWith(calcFeeIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				13: getFeeMember,
-				14: tdg.makeResultWith(getFeeMember.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+				14: tdg.makeResultWith(getFeeMember.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 				15: getFeeMemberIn,
-				16: tdg.makeResultWith(getFeeMemberIn.ID, &foundation.Result{Returns: []interface{}{feeMember.Bytes(), nil}}),
-				17: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
+				16: tdg.makeResultWith(getFeeMemberIn.Record.ID, &foundation.Result{Returns: []interface{}{feeMember.Bytes(), nil}}),
+				17: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
 			},
 		}
 		res := beautifier(ctx, raw)
@@ -305,11 +306,11 @@ func TestBeautifier_Deposit(t *testing.T) {
 
 	memberRef := gen.Reference()
 
-	daemonCall := tdg.makeMigrationDaemonCall(pn, *insolar.NewReference(call.ID))
-	daemonCallIn := tdg.makeIncomingFromOutgoing(daemonCall.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	daemonCall := tdg.makeMigrationDaemonCall(pn, *insolar.NewReference(call.Record.ID))
+	daemonCallIn := tdg.makeIncomingFromOutgoing(daemonCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
-	newDepositCall := tdg.makeNewDepositRequest(pn, *insolar.NewReference(daemonCallIn.ID))
-	newDepositCallIn := tdg.makeIncomingFromOutgoing(newDepositCall.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	newDepositCall := tdg.makeNewDepositRequest(pn, *insolar.NewReference(daemonCallIn.Record.ID))
+	newDepositCallIn := tdg.makeIncomingFromOutgoing(newDepositCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
 	balance := "123"
 	amount := "456"
@@ -320,6 +321,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Amount:             amount,
 		TxHash:             txHash,
 		PulseDepositUnHold: pn + 3,
+		Vesting:            10,
+		VestingStep:        10,
 	}
 	memory, err := insolar.Serialize(dep)
 	if err != nil {
@@ -327,45 +330,47 @@ func TestBeautifier_Deposit(t *testing.T) {
 	}
 
 	act := tdg.makeActivation(
-		*insolar.NewReference(newDepositCallIn.ID),
+		*insolar.NewReference(newDepositCallIn.Record.ID),
 		*migrationdaemon.PrototypeReference,
 		memory,
 	)
 
 	raw := &raw{
-		batch: map[uint32]*observer.Record{
+		batch: map[uint32]*exporter.Record{
 			0: call,
 			1: daemonCall,
-			2: tdg.makeResultWith(daemonCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			2: tdg.makeResultWith(daemonCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			3: daemonCallIn,
-			4: tdg.makeResultWith(daemonCallIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			4: tdg.makeResultWith(daemonCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			5: newDepositCall,
-			6: tdg.makeResultWith(newDepositCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			6: tdg.makeResultWith(newDepositCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			7: newDepositCallIn,
-			8: tdg.makeResultWith(newDepositCallIn.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			8: tdg.makeResultWith(newDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			9: act,
-			10: tdg.makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{
+			10: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{
 				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
 				nil,
 			}}),
 		},
 	}
-	transferDate, err := act.ID.Pulse().AsApproximateTime()
+	transferDate, err := act.Record.ID.Pulse().AsApproximateTime()
 	require.NoError(t, err)
 
 	res := beautifier(ctx, raw)
 
 	assert.Equal(t, 1, len(res.deposits))
 	assert.Equal(t, map[insolar.ID]*observer.Deposit{
-		act.ID: {
+		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
-			Ref:             newDepositCallIn.ID,
+			Ref:             newDepositCallIn.Record.ID,
 			Member:          *memberRef.GetLocal(),
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 0,
 			Amount:          amount,
 			Balance:         balance,
-			DepositState:    act.ID,
+			DepositState:    act.Record.ID,
+			Vesting:         10,
+			VestingStep:     10,
 		},
 	}, res.deposits)
 }
@@ -385,37 +390,41 @@ func (t *treeDataGenerator) GetNonce() uint64 {
 	return nonce
 }
 
-func (t *treeDataGenerator) makeRequestWith(method string, reason insolar.Reference, args []byte) *observer.Record {
-	return &observer.Record{
-		ID: gen.ID(),
-		Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{IncomingRequest: &record.IncomingRequest{
-			Method:    method,
-			Reason:    reason,
-			Arguments: args,
-			Nonce:     t.GetNonce(),
-		}}}}
+func (t *treeDataGenerator) makeRequestWith(method string, reason insolar.Reference, args []byte) *exporter.Record {
+	return &exporter.Record{
+		Record: record.Material{
+			ID: gen.ID(),
+			Virtual: record.Virtual{Union: &record.Virtual_IncomingRequest{IncomingRequest: &record.IncomingRequest{
+				Method:    method,
+				Reason:    reason,
+				Arguments: args,
+				Nonce:     t.GetNonce(),
+			}}}},
+	}
 }
 
 // we need reasn for match too tree and some UNIQUE nonce
-func (t *treeDataGenerator) makeOutgouingRequest(reason insolar.Reference, prototypeRef insolar.Reference) *observer.Record {
-	rec := &record.Material{
-		ID: gen.ID(),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_OutgoingRequest{
-				OutgoingRequest: &record.OutgoingRequest{
-					Reason:    reason,
-					Prototype: &prototypeRef,
-					Nonce:     t.GetNonce(),
+func (t *treeDataGenerator) makeOutgouingRequest(reason insolar.Reference, prototypeRef insolar.Reference) *exporter.Record {
+	rec := &exporter.Record{
+		Record: record.Material{
+			ID: gen.ID(),
+			Virtual: record.Virtual{
+				Union: &record.Virtual_OutgoingRequest{
+					OutgoingRequest: &record.OutgoingRequest{
+						Reason:    reason,
+						Prototype: &prototypeRef,
+						Nonce:     t.GetNonce(),
+					},
 				},
 			},
 		},
 	}
-	return (*observer.Record)(rec)
+	return rec
 }
 
 // we need same nonce in makeOutgouingRequest and makeIncomingRequest
-func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRequest) *observer.Record {
-	rec := &record.Material{
+func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRequest) *exporter.Record {
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.ID(),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
@@ -429,12 +438,12 @@ func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRe
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeActivation(ref insolar.Reference, prototypreRef insolar.Reference, memory []byte) *observer.Record {
-	rec := &record.Material{
+func (t *treeDataGenerator) makeActivation(ref insolar.Reference, prototypreRef insolar.Reference, memory []byte) *exporter.Record {
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.ID(),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_Activate{
@@ -445,11 +454,11 @@ func (t *treeDataGenerator) makeActivation(ref insolar.Reference, prototypreRef 
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
+func (t *treeDataGenerator) makeGetMigrationAddressCall(pn insolar.PulseNumber) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -466,14 +475,14 @@ func (t *treeDataGenerator) makeGetMigrationAddressCall(pn insolar.PulseNumber) 
 		Arguments: args,
 	})
 
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID:      gen.IDWithPulse(pn),
 		Virtual: virtRecord,
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *observer.Record {
+func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *exporter.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
 			CallSite:   collecting.CallSite,
@@ -494,7 +503,7 @@ func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *ob
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
@@ -505,11 +514,11 @@ func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *ob
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -520,7 +529,7 @@ func (t *treeDataGenerator) makeMigrationDaemonCall(pn insolar.PulseNumber, reas
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -533,11 +542,11 @@ func (t *treeDataGenerator) makeMigrationDaemonCall(pn insolar.PulseNumber, reas
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeNewDepositRequest(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeNewDepositRequest(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -548,7 +557,7 @@ func (t *treeDataGenerator) makeNewDepositRequest(pn insolar.PulseNumber, reason
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -561,17 +570,17 @@ func (t *treeDataGenerator) makeNewDepositRequest(pn insolar.PulseNumber, reason
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundation.Result) *observer.Record {
+func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundation.Result) *exporter.Record {
 	payload, err := insolar.Serialize(result)
 	if err != nil {
 		panic("failed to serialize result")
 	}
 	ref := insolar.NewReference(requestID)
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.ID(),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_Result{
@@ -581,11 +590,11 @@ func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundat
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *observer.Record {
+func (t *treeDataGenerator) makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *exporter.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
 			CallSite: collecting.StandardTransferMethod,
@@ -610,7 +619,7 @@ func (t *treeDataGenerator) makeTransferCall(amount, from, to string, pulse inso
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pulse),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
@@ -621,11 +630,11 @@ func (t *treeDataGenerator) makeTransferCall(amount, from, to string, pulse inso
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeWalletTransferCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeWalletTransferCall(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -636,7 +645,7 @@ func (t *treeDataGenerator) makeWalletTransferCall(pn insolar.PulseNumber, reaso
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -649,11 +658,11 @@ func (t *treeDataGenerator) makeWalletTransferCall(pn insolar.PulseNumber, reaso
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeAccountTransferCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeAccountTransferCall(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -664,7 +673,7 @@ func (t *treeDataGenerator) makeAccountTransferCall(pn insolar.PulseNumber, reas
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -677,11 +686,11 @@ func (t *treeDataGenerator) makeAccountTransferCall(pn insolar.PulseNumber, reas
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeCalcFeeCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeCalcFeeCall(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -692,7 +701,7 @@ func (t *treeDataGenerator) makeCalcFeeCall(pn insolar.PulseNumber, reason insol
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -705,11 +714,11 @@ func (t *treeDataGenerator) makeCalcFeeCall(pn insolar.PulseNumber, reason insol
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }
 
-func (t *treeDataGenerator) makeGetFeeMemberCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
+func (t *treeDataGenerator) makeGetFeeMemberCall(pn insolar.PulseNumber, reason insolar.Reference) *exporter.Record {
 	signature := ""
 	pulseTimeStamp := 0
 	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
@@ -720,7 +729,7 @@ func (t *treeDataGenerator) makeGetFeeMemberCall(pn insolar.PulseNumber, reason 
 	if err != nil {
 		panic("failed to serialize arguments")
 	}
-	rec := &record.Material{
+	rec := &exporter.Record{Record: record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_OutgoingRequest{
@@ -733,6 +742,6 @@ func (t *treeDataGenerator) makeGetFeeMemberCall(pn insolar.PulseNumber, reason 
 				},
 			},
 		},
-	}
-	return (*observer.Record)(rec)
+	}}
+	return rec
 }

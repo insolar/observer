@@ -21,6 +21,7 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/ledger/heavy/exporter"
 )
 
 type Record record.Material
@@ -32,8 +33,9 @@ type RecordStorage interface {
 }
 
 //go:generate minimock -i github.com/insolar/observer/internal/app/observer.HeavyRecordFetcher -o ./ -s _mock.go -g
+
 type HeavyRecordFetcher interface {
-	Fetch(context.Context, insolar.PulseNumber) (map[uint32]*Record, insolar.PulseNumber, error)
+	Fetch(context.Context, insolar.PulseNumber) (map[uint32]*exporter.Record, insolar.PulseNumber, error)
 }
 
 func (r *Record) Marshal() ([]byte, error) {

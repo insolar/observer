@@ -18,9 +18,10 @@ package models
 
 import (
 	"fmt"
-	"github.com/insolar/insolar/pulse"
 	"reflect"
 	"sync"
+
+	"github.com/insolar/insolar/pulse"
 )
 
 type Member struct {
@@ -45,6 +46,8 @@ type Deposit struct {
 	HoldReleaseDate int64  `sql:"hold_release_date"`
 	Amount          string `sql:"varchar"`
 	Balance         string `sql:"balance"`
+	Vesting         int64  `sql:"vesting"`
+	VestingStep     int64  `sql:"vesting_step"`
 }
 
 type TransactionStatus string
@@ -176,11 +179,11 @@ func (t *Transaction) Index() string {
 	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
 }
 
-func (t *Transaction) Timestamp() float32 {
+func (t *Transaction) Timestamp() int64 {
 	p := t.PulseNumber()
 	pulseTime, err := pulse.Number(p).AsApproximateTime()
 	if err != nil {
 		return 0
 	}
-	return float32(pulseTime.Unix())
+	return pulseTime.Unix()
 }

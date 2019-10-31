@@ -17,6 +17,7 @@
 package api
 
 import (
+	"github.com/insolar/observer/internal/models"
 	"net/http"
 	"strings"
 
@@ -24,8 +25,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 
 	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/app/api/internalapi"
-	"github.com/insolar/observer/internal/app/api/observerapi"
 	"github.com/labstack/echo/v4"
 
 	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
@@ -41,7 +40,7 @@ func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
 	return &ObserverServer{db: db, log: log}
 }
 
-func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params internalapi.GetMigrationAddressesParams) error {
+func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
 	panic("implement me")
 }
 
@@ -53,7 +52,7 @@ func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params internalapi.TokenGetInfoParams) error {
+func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error {
 	panic("implement me")
 }
 
@@ -65,8 +64,33 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 	panic("implement me")
 }
 
-func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params observerapi.ClosedTransactionsParams) error {
-	panic("implement me")
+// CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
+func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+	}
+
+	// AALEKSEEV TODO: check `index` and `direction`
+
+	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
+
+	var result []models.Transaction
+	err := s.db.Model(&models.Transaction{}).
+		Where("status_finished = ?", true).
+		Order("finish_pulse_record desc").
+		Limit(limit).
+		Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		resJSON[i] = TxToAPITx(result[i])
+	}
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
@@ -81,7 +105,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params observerapi.MemberTransactionsParams) error {
+func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
 	panic("implement me")
 }
 
@@ -113,7 +137,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 	return ctx.JSON(http.StatusOK, TxToAPITx(*tx))
 }
 
-func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params observerapi.TransactionsSearchParams) error {
+func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
 	panic("implement me")
 }
 
