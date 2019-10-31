@@ -65,6 +65,7 @@ $(BIN_DIR): ## create bin dir
 $(OBSERVER):
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 
+.PHONY: $(API)
 $(API):
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 
@@ -76,6 +77,7 @@ $(ARTIFACTS):
 $(CONFIG): $(ARTIFACTS)
 	go run ./configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
+	# mv ./observerapi.yaml $(ARTIFACTS)/observerapi.yaml
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
