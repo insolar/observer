@@ -114,7 +114,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 			Fee:         NullableString("1"),
 			Index:       fmt.Sprintf("%d:198", pulseNumber),
 			PulseNumber: int64(pulseNumber),
-			Status:      "received",
+			Status:      string(models.TStatusReceived),
 			Timestamp:   pntime.Unix(),
 			TxID:        txID.String(),
 		},
@@ -175,8 +175,8 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 2)
-	require.Equal(t, received[0].Status, "received")
-	require.Equal(t, received[0].Status, "failed")
+	require.Equal(t, received[0].Status, string(models.TStatusReceived))
+	require.Equal(t, received[0].Status, string(models.TStatusFailed))
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
