@@ -53,11 +53,11 @@ type Deposit struct {
 type TransactionStatus string
 
 const (
-	TStatusUnknown  TransactionStatus = "unknown"
-	TStatusPending  TransactionStatus = "pending"
-	TStatusSent     TransactionStatus = "sent"
-	TStatusReceived TransactionStatus = "received"
-	TStatusFailed   TransactionStatus = "failed"
+	TStatusUnknown    TransactionStatus = "unknown"
+	TStatusRegistered TransactionStatus = "registered"
+	TStatusSent       TransactionStatus = "sent"
+	TStatusReceived   TransactionStatus = "received"
+	TStatusFailed     TransactionStatus = "failed"
 )
 
 type TransactionType string
@@ -161,7 +161,7 @@ func (t *Transaction) Status() TransactionStatus {
 		return TStatusSent
 	}
 	if registered {
-		return TStatusPending
+		return TStatusRegistered
 	}
 
 	return TStatusUnknown

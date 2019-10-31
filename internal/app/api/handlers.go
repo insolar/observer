@@ -17,14 +17,16 @@
 package api
 
 import (
-	"github.com/insolar/observer/internal/models"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -136,7 +138,70 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
-	panic("implement me")
+	var errorMsg ErrorMessage
+	var err error
+
+	var txs []models.Transaction
+	query := s.db.Model(&txs)
+
+	if params.Value != nil {
+		query, err = component.FilterByValue(query, *params.Value)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Status != nil {
+		query, err = component.FilterByStatus(query, *params.Status)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Type != nil {
+		query, err = component.FilterByType(query, *params.Type)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	var pulseNumber int64
+	var sequenceNumber int64
+	byIndex := false
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		} else {
+			byIndex = true
+		}
+	}
+
+	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, byIndex)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(params.Limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.JSON(http.StatusNoContent, struct{}{})
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
@@ -153,4 +218,22 @@ func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 
 func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
 	panic("implement me")
+}
+
+func checkIndex(i string) (int64, int64, error) {
+	index := strings.Split(i, ":")
+	if len(index) != 2 {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	var err error
+	var pulseNumber, sequenceNumber int64
+	pulseNumber, err = strconv.ParseInt(index[0], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	sequenceNumber, err = strconv.ParseInt(index[1], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	return pulseNumber, sequenceNumber, nil
 }

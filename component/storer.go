@@ -19,6 +19,7 @@ package component
 import (
 	"context"
 	"fmt"
+	"github.com/go-pg/pg/orm"
 	"strings"
 	"time"
 
@@ -432,6 +433,73 @@ func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, e
 		return nil, errors.Wrap(err, "failed to fetch tx")
 	}
 	return tx, nil
+}
+
+func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
+	switch status {
+	case "registered":
+		query = query.Where("status_registered = true")
+	case "sent":
+		query = query.Where("status_registered = true and status_sent = true")
+	case "received":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = true")
+	case "failed":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = false")
+	default:
+		return query, errors.New("Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.") // nolint
+	}
+	return query, nil
+}
+
+func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
+	if t != "transfer" && t != "migration" && t != "after" {
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+	}
+	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByValue(query *orm.Query, value string) (*orm.Query, error) {
+	pulseNumber, err := insolar.NewPulseNumberFromStr(value)
+	if err == nil {
+		query = query.Where("pulse_record[1] = ?", pulseNumber)
+	} else {
+		ref, err := insolar.NewReferenceFromString(value)
+		if err != nil {
+			return query, errors.New("Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.") // nolint
+		}
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("tx_id = ?", ref.Bytes()).
+				WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	}
+
+	return query, nil
+}
+
+func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, byIndex bool) (*orm.Query, error) {
+	direction := "before"
+	if d != nil {
+		direction = *d
+	}
+
+	switch direction {
+	case "before":
+		if byIndex {
+			query = query.Where("pulse_record < array[?0,?1]::bigint[]", pulse, record)
+		}
+		query = query.Order("pulse_record DESC")
+	case "after":
+		if byIndex {
+			query = query.Where("pulse_record > array[?,?]::bigint[]", pulse, record)
+		}
+		query = query.Order("pulse_record ASC")
+	default:
+		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
+	}
+	return query, nil
 }
 
 func valuesTemplate(columns, rows int) string {
