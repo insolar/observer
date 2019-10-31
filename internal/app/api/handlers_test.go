@@ -48,6 +48,26 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	resp, err := http.Get("http://" + apihost + "/api/transactions/closed")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is not a number, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is zero, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=0")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is negative, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=-10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if limit is > 1000, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestTransaction_ClosedLimitSingle(t *testing.T) {
