@@ -32,10 +32,10 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: $(BIN_DIR) $(OBSERVER) $(API) ## build!
+build: $(BIN_DIR) $(OBSERVER) $(API) xns_stats_count ## build!
 
 .PHONY: env
-env: $(CONFIG) ## gen config + artifacts
+env: $(CONFIG) ## gen configs + artifacts
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -69,6 +69,9 @@ $(OBSERVER):
 $(API):
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 
+.PHONY: xns_stats_count
+xns_stats_count:
+	go build -o $(BIN_DIR)/xns_stats_count cmd/xns-coin-stats/*.go
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)
@@ -77,6 +80,7 @@ $(ARTIFACTS):
 $(CONFIG): $(ARTIFACTS)
 	go run ./configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
+	mv ./observerapi.yaml $(ARTIFACTS)/observerapi.yaml
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json

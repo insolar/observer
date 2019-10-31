@@ -66,3 +66,9 @@ Generate types and API from observer API:
 ```
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
+## XNS coin stats
+Command calculates and saves stats for CMC, added to cron for 1/min execution.
+Uses observer config in .artifacts/observer.yaml
+```
+./bin/xns_stats_count
+```

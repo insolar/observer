@@ -28,6 +28,8 @@ import (
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
+
+	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
 	"github.com/sirupsen/logrus"
 )
 
@@ -205,19 +207,47 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Coins()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "")
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Circulating()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Max()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
 }
 
 func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
-	panic("implement me")
+	repo := xnscoinstats.NewStatsRepository(s.db)
+	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	result, err := xr.Total()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, "")
+	}
+
+	return ctx.String(http.StatusOK, result)
 }
 
 func checkIndex(i string) (int64, int64, error) {

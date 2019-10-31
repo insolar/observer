@@ -17,27 +17,39 @@
 package main
 
 import (
-	"io/ioutil"
-
+	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/configuration/api"
+	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
 )
 
 func main() {
-	cfgs := make(map[string]interface{})
-	cfgs[api.ConfigFilePath] = api.Default()
-	cfgs[configuration.ConfigFilePath] = configuration.Default()
+	cfg := configuration.Load()
+	opt, err := pg.ParseURL(cfg.DB.URL)
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
+	}
+	db := pg.Connect(opt)
+	log := logrus.New()
+	err = log.Level.UnmarshalText([]byte(cfg.LogLevel))
+	if err != nil {
+		log.SetLevel(logrus.InfoLevel)
+	}
 
-	for filePath, cfg := range cfgs {
-		out, _ := yaml.Marshal(cfg)
-		err := ioutil.WriteFile(filePath, out, 0644)
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to write config file"))
-			return
-		}
+	repo := xnscoinstats.NewStatsRepository(db)
+	sr := xnscoinstats.NewStatsManager(log, repo)
+	stats, err := sr.CountStats()
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to get stats"))
+	}
+
+	log.Debugf("Collected stats: %+v", stats)
+	err = sr.InsertStats(stats)
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to set stats"))
 	}
 }

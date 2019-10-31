@@ -15,6 +15,8 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
+	github.com/golang/protobuf v1.3.2
+	github.com/google/btree v1.0.0 // indirect
 	github.com/google/gofuzz v0.0.0-20190920162303-b906efc57a55 // indirect
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insolar v0.9.14-0.20191029164809-4ca85f1d6242

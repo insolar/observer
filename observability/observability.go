@@ -31,7 +31,7 @@ func Make(cfg *configuration.Configuration) *Observability {
 	log := logrus.New()
 	err := log.Level.UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
-		panic("wrong log level in config")
+		log.SetLevel(logrus.InfoLevel)
 	}
 	return &Observability{
 		log:      log,
