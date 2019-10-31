@@ -83,8 +83,11 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	// AALEKSEEV TODO
-	return nil
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		resJSON[i] = TxToAPITx(result[i])
+	}
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
