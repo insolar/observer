@@ -64,8 +64,13 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	// if limit is > 1000, API returns `bad request`
+	// if `limit` is > 1000, API returns `bad request`
 	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `direction` is not "before" or "after", API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&direction=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }

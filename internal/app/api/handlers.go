@@ -70,7 +70,16 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	direction := params.Direction
+	if direction == nil {
+		def := "before"
+		direction = &def
+	}
+	if *direction != "before" && *direction != "after" {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`direction` should be 'before' or 'after'"))
 	}
 
 	// AALEKSEEV TODO: check `index` and `direction`
