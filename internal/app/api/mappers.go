@@ -28,11 +28,11 @@ func NullableInterface(i interface{}) *interface{} {
 	return &i
 }
 
-func TxToAPITx(tx models.Transaction) interface{} {
+func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} {
 	internalTx := SchemasTransactionAbstract{
 		Amount:      tx.Amount,
 		Fee:         NullableString(tx.Fee),
-		Index:       tx.Index(),
+		Index:       tx.Index(indexType),
 		PulseNumber: tx.PulseNumber(),
 		Status:      string(tx.Status()),
 		Timestamp:   tx.Timestamp(),

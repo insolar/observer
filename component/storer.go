@@ -479,23 +479,35 @@ func FilterByValue(query *orm.Query, value string) (*orm.Query, error) {
 	return query, nil
 }
 
-func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, byIndex bool) (*orm.Query, error) {
+func indexTypeToColumnName(indexType models.TxIndexType) string {
+	var result string
+	switch indexType {
+	case models.TxIndexTypeFinishPulseRecord:
+		result = "finish_pulse_record"
+	default: // models.TxIndexTypePulseRecord
+		result = "pulse_record"
+	}
+	return result
+}
+
+func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, whereCondition bool, indexType models.TxIndexType) (*orm.Query, error) {
 	direction := "before"
 	if d != nil {
 		direction = *d
 	}
 
+	columnName := indexTypeToColumnName(indexType)
 	switch direction {
 	case "before":
-		if byIndex {
-			query = query.Where("pulse_record < array[?0,?1]::bigint[]", pulse, record)
+		if whereCondition {
+			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
-		query = query.Order("pulse_record DESC")
+		query = query.Order(columnName+" DESC")
 	case "after":
-		if byIndex {
-			query = query.Where("pulse_record > array[?,?]::bigint[]", pulse, record)
+		if whereCondition {
+			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
 		}
-		query = query.Order("pulse_record ASC")
+		query = query.Order(columnName+" ASC")
 	default:
 		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
 	}

@@ -69,6 +69,13 @@ const (
 	TTypeRelease   TransactionType = "release"
 )
 
+type TxIndexType int
+
+const (
+	TxIndexTypePulseRecord       TxIndexType = 1
+	TxIndexTypeFinishPulseRecord TxIndexType = 2
+)
+
 type Transaction struct {
 	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
 
@@ -175,8 +182,15 @@ func (t *Transaction) RecordNumber() int64 {
 	return t.PulseRecord[1]
 }
 
-func (t *Transaction) Index() string {
-	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+func (t *Transaction) Index(indexType TxIndexType) string {
+	var result string
+	switch indexType {
+	case TxIndexTypeFinishPulseRecord:
+		result = fmt.Sprintf("%d:%d", t.FinishPulseRecord[0], t.FinishPulseRecord[1])
+	default: // TxIndexTypePulseRecord
+		result = fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+	}
+	return result
 }
 
 func (t *Transaction) Timestamp() int64 {

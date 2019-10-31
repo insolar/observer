@@ -73,6 +73,11 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&direction=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `index` is in a wrong format, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&index=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
 func TestTransaction_ClosedLimitSingle(t *testing.T) {
@@ -119,7 +124,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 		SchemasTransactionAbstract: SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			Index:       "1:3001", // == FinishPulseRecord
 			PulseNumber: int64(pulseNumber),
 			Status:      string(models.TStatusReceived),
 			Timestamp:   pntime.Unix(),
