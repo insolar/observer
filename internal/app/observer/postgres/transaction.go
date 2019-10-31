@@ -18,7 +18,6 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
-	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
@@ -28,15 +27,16 @@ import (
 )
 
 type TransactionSchema struct {
-	tableName struct{} `sql:"transactions"`
-
-	ExternalTransactionId string `sql:",pk"`
+	tableName             struct{} `sql:"transactions"`
+	Ref                   []byte   `sql:",pk"`
+	ExternalTransactionId string
 	Timestamp             int64
 	Direction             string
-	OrderRef              []byte
 	GroupRef              []byte
 	UserRef               []byte
 	Amount                string
+	UID                   string
+	Status                string
 }
 
 type TransactionStorage struct {
@@ -81,17 +81,15 @@ func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 }
 
 func transactionSchema(model *observer.Transaction) *TransactionSchema {
-	var orderRef insolar.Reference
-	if model.OrderRef != nil {
-		orderRef = *model.OrderRef
-	}
 	return &TransactionSchema{
+		Ref:                   model.Reference.Bytes(),
 		ExternalTransactionId: model.ExtTxId,
 		Timestamp:             model.Timestamp,
 		Direction:             model.TxDirection,
-		OrderRef:              orderRef.Bytes(),
 		GroupRef:              model.GroupRef.Bytes(),
 		UserRef:               model.MemberRef.Bytes(),
 		Amount:                model.Amount,
+		UID:                   model.UID,
+		Status:                model.Status,
 	}
 }
