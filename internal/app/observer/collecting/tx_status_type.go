@@ -14,28 +14,32 @@
 // limitations under the License.
 //
 
-package observer
+package collecting
 
-import (
-	"github.com/insolar/insolar/insolar"
+// Status type of transaction
+type StatusTx int
+
+const (
+	TxOrder StatusTx = iota + 1
+	TxPending
+	TxExecuted
+	TxRejected
+	TxDefer
 )
 
-type Transaction struct {
-	Reference   insolar.Reference
-	Amount      string
-	Timestamp   int64
-	ExtTxId     string
-	TxDirection string
-	MemberRef   insolar.Reference
-	GroupRef    insolar.Reference
-	UID         string
-	Status      string
-}
-
-type TransactionStorage interface {
-	Insert(Transaction) error
-}
-
-type TransactionCollector interface {
-	Collect(*Record) *Transaction
+func (s *StatusTx) String() string {
+	switch *s {
+	case TxOrder:
+		return "order"
+	case TxPending:
+		return "pending"
+	case TxExecuted:
+		return "executed"
+	case TxRejected:
+		return "rejected"
+	case TxDefer:
+		return "defer"
+	default:
+		return "unknown"
+	}
 }

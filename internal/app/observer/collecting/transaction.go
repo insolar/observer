@@ -187,7 +187,8 @@ type Transaction struct {
 	TxDirection TxDirection
 	MemberRef   insolar.Reference
 	GroupRef    insolar.Reference
-	OrderRef    *insolar.Reference
+	UID         string
+	Status      StatusTx
 }
 
 func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transaction, error) {
@@ -209,13 +210,15 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 
 	fmt.Println("Collect new transaction ref:", act.ID.String())
 	return &observer.Transaction{
+		Reference:   *insolar.NewReference(act.ID),
 		Amount:      strconv.FormatUint(tx.Amount, 10),
 		Timestamp:   date.Unix(),
 		ExtTxId:     tx.ExtTxId,
 		TxDirection: tx.TxDirection.String(),
-		OrderRef:    tx.OrderRef,
 		GroupRef:    tx.GroupRef,
 		MemberRef:   tx.MemberRef,
+		UID:         tx.UID,
+		Status:      tx.Status.String(),
 	}, nil
 }
 
