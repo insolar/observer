@@ -41,7 +41,7 @@ func TestRecordStorage_Insert(t *testing.T) {
 	t.Run("insert_with_err", func(t *testing.T) {
 		cfg := configuration.Default()
 		obs := observability.Make(cfg)
-		db := &dbMock{}
+		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
 			return orm.NewQuery(db, model...)
 		}
@@ -57,7 +57,7 @@ func TestRecordStorage_Insert(t *testing.T) {
 	t.Run("insert_with_conflict", func(t *testing.T) {
 		cfg := configuration.Default()
 		obs := observability.Make(cfg)
-		db := &dbMock{}
+		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
 			return orm.NewQuery(db, model...)
 		}
@@ -74,7 +74,7 @@ func TestRecordStorage_Insert(t *testing.T) {
 		cfg := configuration.Default()
 		obs := observability.Make(cfg)
 		empty := &observer.Record{}
-		db := &dbMock{}
+		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
 			return orm.NewQuery(db, model...)
 		}

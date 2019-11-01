@@ -21,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type dbMock struct {
+type DBMock struct {
 	orm.DB
 	insert   func(model ...interface{}) error
 	model    func(model ...interface{}) *orm.Query
@@ -29,19 +29,19 @@ type dbMock struct {
 	query    func(model, query interface{}, params ...interface{}) (orm.Result, error)
 }
 
-func (m *dbMock) Insert(model ...interface{}) error {
+func (m *DBMock) Insert(model ...interface{}) error {
 	return m.insert(model...)
 }
 
-func (m *dbMock) Model(model ...interface{}) *orm.Query {
+func (m *DBMock) Model(model ...interface{}) *orm.Query {
 	return m.model(model...)
 }
 
-func (m *dbMock) QueryOne(model, query interface{}, params ...interface{}) (orm.Result, error) {
+func (m *DBMock) QueryOne(model, query interface{}, params ...interface{}) (orm.Result, error) {
 	return m.queryOne(model, query, params...)
 }
 
-func (m *dbMock) Query(model, query interface{}, params ...interface{}) (orm.Result, error) {
+func (m *DBMock) Query(model, query interface{}, params ...interface{}) (orm.Result, error) {
 	return m.query(model, query, params...)
 }
 

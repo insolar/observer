@@ -17,6 +17,8 @@
 package component
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -56,12 +58,23 @@ func (s *StatsManager) Coins() (XnsCoinStats, error) {
 	if err != nil {
 		return XnsCoinStats{}, errors.Wrap(err, "failed request get stats")
 	}
-	// todo make this more clear
+	total, err := s.convertToCMCFormat(lastStats.Total)
+	if err != nil {
+		return XnsCoinStats{}, errors.Wrap(err, "failed convert total")
+	}
+	max, err := s.convertToCMCFormat(lastStats.Max)
+	if err != nil {
+		return XnsCoinStats{}, errors.Wrap(err, "failed convert max")
+	}
+	circulating, err := s.convertToCMCFormat(lastStats.Circulating)
+	if err != nil {
+		return XnsCoinStats{}, errors.Wrap(err, "failed convert circulating")
+	}
 	return XnsCoinStats{
 		Created:     lastStats.Created,
-		Total:       lastStats.Total[:len(lastStats.Total)-10] + "." + lastStats.Total[len(lastStats.Total)-10:],
-		Max:         lastStats.Max[:len(lastStats.Total)-10] + "." + lastStats.Max[len(lastStats.Total)-10:],
-		Circulating: lastStats.Circulating[:len(lastStats.Total)-10] + "." + lastStats.Circulating[len(lastStats.Total)-10:],
+		Total:       total,
+		Max:         max,
+		Circulating: circulating,
 	}, nil
 }
 
@@ -117,4 +130,15 @@ func (s *StatsManager) fromDTO(stats XnsCoinStats) postgres.StatsModel {
 		Max:         stats.Max,
 		Circulating: stats.Circulating,
 	}
+}
+
+func (s *StatsManager) convertToCMCFormat(str string) (string, error) {
+	if len(str) <= 10 {
+		strInt, err := strconv.Atoi(str)
+		if err != nil {
+			return "", errors.Wrap(err, "failed request convert to CMC format")
+		}
+		str = fmt.Sprintf("%011d", strInt)
+	}
+	return str[:len(str)-10] + "." + str[len(str)-10:], nil
 }
