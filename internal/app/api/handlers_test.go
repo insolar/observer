@@ -22,10 +22,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
+	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -94,8 +97,8 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 		MemberFromReference: fromMember.Bytes(),
 		MemberToReference:   toMember.Bytes(),
 		DepositToReference:  toDeposit.Bytes(),
-		StatusFinished: true,
-		FinishSuccess: true,
+		StatusFinished:      true,
+		FinishSuccess:       true,
 	}
 
 	err = db.Insert(&transaction)
@@ -128,7 +131,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Len(t, received, 1)
-	require.Equal(t, expectedTransaction,  received[0])
+	require.Equal(t, expectedTransaction, received[0])
 }
 
 func TestTransaction_ClosedLimitMultiple(t *testing.T) {
@@ -235,4 +238,60 @@ func TestTransaction_TypeMigration(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, receivedTransaction)
 	require.NoError(t, err)
 	require.Equal(t, expectedTransaction, receivedTransaction)
+}
+
+func TestObserverServer_Coins(t *testing.T) {
+	total := "1111111111111"
+	totalr := "111.1111111111"
+	max := "2222222222222"
+	maxr := "222.2222222222"
+	circ := "33333333333333"
+	circr := "3333.3333333333"
+
+	coins := postgres.StatsModel{
+		Created:     time.Time{},
+		Total:       total,
+		Max:         max,
+		Circulating: circ,
+	}
+
+	err := db.Insert(&coins)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/coins")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	jsonResp := component.XnsCoinStats{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	expected := component.XnsCoinStats{
+		Total:       totalr,
+		Max:         maxr,
+		Circulating: circr,
+	}
+	require.Equal(t, expected, jsonResp)
+
+	resp, err = http.Get("http://" + apihost + "/coins/total")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, totalr, string(bodyBytes))
+
+	resp, err = http.Get("http://" + apihost + "/coins/max")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, maxr, string(bodyBytes))
+
+	resp, err = http.Get("http://" + apihost + "/coins/circulating")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, circr, string(bodyBytes))
 }
