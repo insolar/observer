@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
@@ -31,6 +32,7 @@ const (
 	methodCall              = "Call"
 	methodTransferToDeposit = "TransferToDeposit"
 	methodTransfer          = "Transfer"
+	methodAccept            = "Accept"
 )
 
 const (
@@ -332,7 +334,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		Returns: []interface{}{&response, nil},
 	})
 	if err != nil {
-		log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
 		return nil
 	}
 
@@ -345,4 +347,159 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 	return tx
+}
+
+type TxSagaResultCollector struct {
+	fetcher store.RecordFetcher
+	log     *logrus.Logger
+}
+
+func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxSagaResultCollector {
+	return &TxSagaResultCollector{
+		fetcher: fetcher,
+		log:     log,
+	}
+}
+
+func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
+	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
+	if !ok {
+		return nil
+	}
+
+	requestRecord, err := c.fetcher.Request(ctx, *result.Request.GetLocal())
+	if err != nil {
+		c.log.Error(errors.Wrapf(
+			err,
+			"failed to fetch request with id %s",
+			result.Request.GetLocal().DebugString()),
+		)
+		return nil
+	}
+
+	request, ok := record.Unwrap(&requestRecord.Virtual).(*record.IncomingRequest)
+	if !ok {
+		return nil
+	}
+
+	var tx *observer.TxSagaResult
+	switch request.Method {
+	case methodAccept:
+		tx = c.fromAccept(rec, *request, *result)
+	case methodCall:
+		tx = c.fromCall(rec, *request, *result)
+	}
+	if tx != nil {
+		if err := tx.Validate(); err != nil {
+			c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+			return nil
+		}
+	}
+	return tx
+}
+
+func (c *TxSagaResultCollector) fromAccept(
+	resultRec exporter.Record,
+	request record.IncomingRequest,
+	result record.Result,
+) *observer.TxSagaResult {
+	// Skip non-saga.
+	if !request.IsDetachedCall() {
+		return nil
+	}
+
+	var acceptArgs appfoundation.SagaAcceptInfo
+	err := insolar.Deserialize(request.Arguments, []interface{}{&acceptArgs})
+	if err != nil {
+		c.log.Error(errors.Wrap(err, "failed to deserialize method arguments"))
+		return nil
+	}
+	txID := acceptArgs.Request
+
+	response := foundation.Result{}
+	err = insolar.Deserialize(result.Payload, &response)
+	if err != nil {
+		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		return nil
+	}
+
+	if len(response.Returns) < 1 {
+		c.log.Error(errors.Wrap(err, "unexpected number of Accept method returned parameters"))
+		return nil
+	}
+
+	// The first return parameter of Accept method is error, so we check if its not nil.
+	if response.Error != nil || response.Returns[0] != nil {
+		c.log.WithField("request_id", txID.GetLocal().DebugString()).Error("saga resulted with error")
+		return &observer.TxSagaResult{
+			TransactionID:      txID.Bytes(),
+			FinishSuccess:      false,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+	}
+
+	return &observer.TxSagaResult{
+		TransactionID:      txID.Bytes(),
+		FinishSuccess:      true,
+		FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+		FinishRecordNumber: int64(resultRec.RecordNumber),
+	}
+}
+
+func (c *TxSagaResultCollector) fromCall(
+	resultRec exporter.Record,
+	request record.IncomingRequest,
+	result record.Result,
+) *observer.TxSagaResult {
+	txID := result.Request
+
+	// Skip non-API requests.
+	if request.APINode.IsEmpty() {
+		return nil
+	}
+	// Skip saga.
+	if request.IsDetachedCall() {
+		return nil
+	}
+	args, _, err := parseExternalArguments(request.Arguments)
+	if err != nil {
+		c.log.Error(errors.Wrap(err, "failed to parse request arguments"))
+		return nil
+	}
+
+	isTransfer := args.Params.CallSite == callSiteTransfer
+	isMigration := args.Params.CallSite == callSiteMigration
+	isRelease := args.Params.CallSite == callSiteRelease
+	if !isTransfer && !isMigration && !isRelease {
+		return nil
+	}
+
+	var response foundation.Result
+	err = insolar.Deserialize(result.Payload, &response)
+	if err != nil {
+		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		return nil
+	}
+	if len(response.Returns) < 2 {
+		c.log.Error(errors.Wrap(err, "unexpected number of Call method returned parameters"))
+		return nil
+	}
+
+	// The second return parameter of Call method is error, so we check if its not nil.
+	if response.Error != nil || response.Returns[1] != nil {
+		return &observer.TxSagaResult{
+			TransactionID:      txID.Bytes(),
+			FinishSuccess:      false,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+	}
+
+	return &observer.TxSagaResult{
+		TransactionID:      txID.Bytes(),
+		FinishSuccess:      true,
+		FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+		FinishRecordNumber: int64(resultRec.RecordNumber),
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gojuno/minimock"
+	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
@@ -300,5 +301,223 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		assert.Equal(t, &observer.TxResult{TransactionID: requestRef.Bytes(), Fee: "0"}, tx)
+	})
+}
+
+func TestTxSagaResultCollector_Collect(t *testing.T) {
+	ctx := context.Background()
+	mc := minimock.NewController(t)
+	log := logrus.New()
+	var (
+		fetcher   *store.RecordFetcherMock
+		collector *TxSagaResultCollector
+	)
+	setup := func() {
+		fetcher = store.NewRecordFetcherMock(mc)
+		collector = NewTxSagaResultCollector(log, fetcher)
+	}
+
+	t.Run("saga success", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		txID := gen.Reference()
+		arguments, err := insolar.Serialize([]interface{}{
+			appfoundation.SagaAcceptInfo{Request: txID},
+		})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnSaga,
+				Method:     methodAccept,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		requestRef := gen.Reference()
+
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{nil},
+		})
+		require.NoError(t, err)
+		resultRec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: requestRef,
+					Payload: resultPayload,
+				}),
+				ID: gen.ID(),
+			},
+			RecordNumber: rand.Uint32(),
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *requestRef.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, resultRec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		expectedTx := observer.TxSagaResult{
+			TransactionID:      txID.Bytes(),
+			FinishSuccess:      true,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("saga fail", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		txID := gen.Reference()
+		arguments, err := insolar.Serialize([]interface{}{
+			appfoundation.SagaAcceptInfo{Request: txID},
+		})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnSaga,
+				Method:     methodAccept,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		requestRef := gen.Reference()
+
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{&foundation.Error{S: "test error"}},
+		})
+		require.NoError(t, err)
+		resultRec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: requestRef,
+					Payload: resultPayload,
+				}),
+				ID: gen.ID(),
+			},
+			RecordNumber: rand.Uint32(),
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *requestRef.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, resultRec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		expectedTx := observer.TxSagaResult{
+			TransactionID:      txID.Bytes(),
+			FinishSuccess:      false,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("call success", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteTransfer}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		requestRef := gen.Reference()
+
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{nil, nil},
+		})
+		require.NoError(t, err)
+		resultRec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: requestRef,
+					Payload: resultPayload,
+				}),
+				ID: gen.ID(),
+			},
+			RecordNumber: rand.Uint32(),
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *requestRef.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, resultRec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		expectedTx := observer.TxSagaResult{
+			TransactionID:      requestRef.Bytes(),
+			FinishSuccess:      true,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("call fail", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteTransfer}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		requestRef := gen.Reference()
+
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{nil, &foundation.Error{S: "test error"}},
+		})
+		require.NoError(t, err)
+		resultRec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: requestRef,
+					Payload: resultPayload,
+				}),
+				ID: gen.ID(),
+			},
+			RecordNumber: rand.Uint32(),
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *requestRef.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, resultRec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		expectedTx := observer.TxSagaResult{
+			TransactionID:      requestRef.Bytes(),
+			FinishSuccess:      false,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+		assert.Equal(t, &expectedTx, tx)
 	})
 }
