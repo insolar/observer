@@ -21,15 +21,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/insolar/observer/internal/app/observer/postgres"
+
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/internal/models"
 	"github.com/labstack/echo/v4"
 
-	xnscoinstats "github.com/insolar/observer/xns-coin-stats"
+	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/internal/models"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -239,8 +241,8 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
-	repo := xnscoinstats.NewStatsRepository(s.db)
-	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	repo := postgres.NewStatsRepository(s.db)
+	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Coins()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "")
@@ -250,8 +252,8 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
-	repo := xnscoinstats.NewStatsRepository(s.db)
-	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	repo := postgres.NewStatsRepository(s.db)
+	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
@@ -261,8 +263,8 @@ func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
-	repo := xnscoinstats.NewStatsRepository(s.db)
-	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	repo := postgres.NewStatsRepository(s.db)
+	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
@@ -272,8 +274,8 @@ func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
-	repo := xnscoinstats.NewStatsRepository(s.db)
-	xr := xnscoinstats.NewStatsManager(s.log, repo)
+	repo := postgres.NewStatsRepository(s.db)
+	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, "")
