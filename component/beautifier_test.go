@@ -88,14 +88,6 @@ func TestMain(t *testing.M) {
 		log.Panicf("Could not start resource: %s", err)
 	}
 
-	defer func() {
-		// When you're done, kill and remove the container
-		err = pool.Purge(resource)
-		if err != nil {
-			log.Panicf("failed to purge docker pool: %s", err)
-		}
-	}()
-
 	if err = pool.Retry(func() error {
 		options := *pgOptions
 		options.Addr = fmt.Sprintf("%s:%s", options.Addr, resource.GetPort("5432/tcp"))

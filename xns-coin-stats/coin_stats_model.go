@@ -17,6 +17,7 @@
 package xnscoinstats
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -67,10 +68,18 @@ func (s *StatsManager) Coins() (XnsCoinStats, error) {
 	// todo make this more clear
 	return XnsCoinStats{
 		Created:     lastStats.Created,
-		Total:       lastStats.Total[:len(lastStats.Total)-10] + "." + lastStats.Total[len(lastStats.Total)-10:],
-		Max:         lastStats.Max[:len(lastStats.Total)-10] + "." + lastStats.Max[len(lastStats.Total)-10:],
-		Circulating: lastStats.Circulating[:len(lastStats.Total)-10] + "." + lastStats.Circulating[len(lastStats.Total)-10:],
+		Total:       PaddedNumber(lastStats.Total),
+		Max:         PaddedNumber(lastStats.Max),
+		Circulating: PaddedNumber(lastStats.Circulating),
 	}, nil
+}
+
+func PaddedNumber(number string) string {
+	if len(number) < 10 {
+		return fmt.Sprintf("0.%010v", number)
+	}
+
+	return number[:len(number)-10] + "." + number[len(number)-10:]
 }
 
 func (s *StatsManager) Total() (string, error) {
