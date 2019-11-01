@@ -39,8 +39,17 @@ func (t *TxRegister) Validate() error {
 
 type TxResult struct {
 	TransactionID []byte
-	StatusSent    bool
 	Fee           string
+}
+
+func (t *TxResult) Validate() error {
+	if len(t.TransactionID) == 0 {
+		return errors.New("TransactionID should not be empty")
+	}
+	if len(t.Fee) == 0 {
+		return errors.New("Fee should not be empty")
+	}
+	return nil
 }
 
 type TxSagaResult struct {

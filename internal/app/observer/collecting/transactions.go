@@ -12,14 +12,19 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/log"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/models"
 )
 
 const (
-	callSiteTransfer = "member.transfer"
+	callSiteTransfer  = "member.transfer"
+	callSiteMigration = "deposit.migration"
+	callSiteRelease   = "deposit.transfer"
 )
 
 const (
@@ -49,11 +54,11 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	var tx *observer.TxRegister
 	switch request.Method {
 	case methodCall:
-		tx = collectTransfer(rec)
+		tx = registerTransfer(rec)
 	case methodTransferToDeposit:
-		tx = collectMigration(rec)
+		tx = registerMigration(rec)
 	case methodTransfer:
-		tx = collectRelease(rec)
+		tx = registerRelease(rec)
 	default:
 		return nil
 	}
@@ -67,7 +72,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	return tx
 }
 
-func collectTransfer(rec exporter.Record) *observer.TxRegister {
+func registerTransfer(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -133,7 +138,7 @@ func collectTransfer(rec exporter.Record) *observer.TxRegister {
 	}
 }
 
-func collectMigration(rec exporter.Record) *observer.TxRegister {
+func registerMigration(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -175,7 +180,7 @@ func collectMigration(rec exporter.Record) *observer.TxRegister {
 	}
 }
 
-func collectRelease(rec exporter.Record) *observer.TxRegister {
+func registerRelease(rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		return nil
@@ -243,9 +248,101 @@ func parseExternalArguments(in []byte) (member.Request, map[string]interface{}, 
 		}
 	}
 
+	if request.Params.CallParams == nil {
+		return request, nil, nil
+	}
+
 	callParams, ok := request.Params.CallParams.(map[string]interface{})
 	if !ok {
 		return member.Request{}, nil, errors.New("failed to decode CallParams")
 	}
 	return request, callParams, nil
+}
+
+type TxResultCollector struct {
+	fetcher store.RecordFetcher
+	log     *logrus.Logger
+}
+
+func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxResultCollector {
+	return &TxResultCollector{
+		fetcher: fetcher,
+		log:     log,
+	}
+}
+
+func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
+	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
+	if !ok {
+		return nil
+	}
+
+	txID := result.Request
+	requestRecord, err := c.fetcher.Request(ctx, *txID.GetLocal())
+	if err != nil {
+		c.log.Error(errors.Wrapf(
+			err,
+			"failed to fetch request with id %s",
+			txID.GetLocal().DebugString()),
+		)
+		return nil
+	}
+
+	request, ok := record.Unwrap(&requestRecord.Virtual).(*record.IncomingRequest)
+	if !ok {
+		return nil
+	}
+
+	if request.Method != methodCall {
+		return nil
+	}
+	// Skip non-API requests.
+	if request.APINode.IsEmpty() {
+		return nil
+	}
+	// Skip saga.
+	if request.IsDetachedCall() {
+		return nil
+	}
+	args, _, err := parseExternalArguments(request.Arguments)
+	if err != nil {
+		c.log.Error(errors.Wrap(err, "failed to parse request arguments"))
+		return nil
+	}
+
+	// Migration and release don't have fees.
+	if args.Params.CallSite == callSiteMigration || args.Params.CallSite == callSiteRelease {
+		tx := &observer.TxResult{
+			TransactionID: txID.Bytes(),
+			Fee:           "0",
+		}
+		if err = tx.Validate(); err != nil {
+			c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+			return nil
+		}
+		return tx
+	}
+
+	// Processing transfer between members. Its the only transfer that has fee.
+	if args.Params.CallSite != callSiteTransfer {
+		return nil
+	}
+	response := member.TransferResponse{}
+	err = insolar.Deserialize(result.Payload, &foundation.Result{
+		Returns: []interface{}{&response, nil},
+	})
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		return nil
+	}
+
+	tx := &observer.TxResult{
+		TransactionID: txID.Bytes(),
+		Fee:           response.Fee,
+	}
+	if err = tx.Validate(); err != nil {
+		c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+		return nil
+	}
+	return tx
 }
