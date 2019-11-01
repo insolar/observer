@@ -442,6 +442,15 @@ func insertTransaction(t *testing.T, transactionID []byte, pulse int64, finishPu
 	require.NoError(t, err)
 }
 
+func insertMember(t *testing.T, reference []byte, balance string) {
+	member := models.Member{
+		Reference: reference,
+		Balance:   balance,
+	}
+	err := db.Insert(&member)
+	require.NoError(t, err)
+}
+
 func TestTransactionsSearch(t *testing.T) {
 	defer truncateDB(t)
 
@@ -571,4 +580,44 @@ func TestTransactionsSearch_WrongEverything(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, expected, received)
+}
+
+func TestMemberBalance_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/" + "not_valid_ref" + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"reference wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
+}
+
+func TestMemberBalance_NoContent(t *testing.T) {
+	ref := gen.Reference().String()
+	resp, err := http.Get("http://" + apihost + "/api/member/" + ref + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestMemberBalance(t *testing.T) {
+	defer truncateDB(t)
+	member1 := gen.Reference()
+	balance1 := "1234567"
+	member2 := gen.Reference()
+	balance2 := "567890"
+
+	insertMember(t, member1.Bytes(), balance1)
+	insertMember(t, member2.Bytes(), balance2)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member1.String() + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberBalanceYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, balance1, received.Balance)
 }

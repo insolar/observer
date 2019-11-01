@@ -155,19 +155,18 @@ func makeStorer(
 					}
 				}
 
-				// Uncomment when migrations are ready.
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
 					return err
 				}
-				// err = StoreTxResult(tx, b.txResult)
-				// if err != nil {
-				// 	return err
-				// }
-				// err = StoreTxSagaResult(tx, b.txSagaResult)
-				// if err != nil {
-				// 	return err
-				// }
+				err = StoreTxResult(tx, b.txResult)
+				if err != nil {
+					return err
+				}
+				err = StoreTxSagaResult(tx, b.txSagaResult)
+				if err != nil {
+					return err
+				}
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
@@ -417,8 +416,28 @@ type Querier interface {
 }
 
 var (
-	ErrTxNotFound = errors.New("tx not found")
+	ErrTxNotFound        = errors.New("tx not found")
+	ErrReferenceNotFound = errors.New("Reference not found")
 )
+
+func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
+	return getMember(ctx, db, reference, []string{"balance"})
+}
+
+func getMember(ctx context.Context, db Querier, reference []byte, fields []string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from members where member_ref = ?0`, strings.Join(fields, ",")),
+		reference)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
 
 func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
 	tx := &models.Transaction{}
@@ -507,7 +526,7 @@ func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, wher
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" ASC")
+		query = query.Order(columnName + " ASC")
 	default:
 		return query, errors.New("Query parameter 'order' should be 'reverse' or 'chronological'.") // nolint
 	}
