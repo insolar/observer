@@ -22,15 +22,15 @@ import (
 	"strings"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
-	"github.com/insolar/observer/internal/models"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
-	"github.com/labstack/echo/v4"
 
 	"github.com/sirupsen/logrus"
 )

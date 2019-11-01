@@ -643,7 +643,7 @@ func TestObserverServer_Coins(t *testing.T) {
 	err := db.Insert(&coins)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://" + apihost + "/coins")
+	resp, err := http.Get("http://" + apihost + "/api/coins")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -659,21 +659,21 @@ func TestObserverServer_Coins(t *testing.T) {
 	}
 	require.Equal(t, expected, jsonResp)
 
-	resp, err = http.Get("http://" + apihost + "/coins/total")
+	resp, err = http.Get("http://" + apihost + "/api/coins/total")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, totalr, string(bodyBytes))
 
-	resp, err = http.Get("http://" + apihost + "/coins/max")
+	resp, err = http.Get("http://" + apihost + "/api/coins/max")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, maxr, string(bodyBytes))
 
-	resp, err = http.Get("http://" + apihost + "/coins/circulating")
+	resp, err = http.Get("http://" + apihost + "/api/coins/circulating")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err = ioutil.ReadAll(resp.Body)
