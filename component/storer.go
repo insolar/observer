@@ -414,7 +414,6 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 type Querier interface {
 	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
 	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
-	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
 }
 
 var (
