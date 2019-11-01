@@ -414,11 +414,32 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 type Querier interface {
 	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
 	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
 }
 
 var (
-	ErrTxNotFound = errors.New("tx not found")
+	ErrTxNotFound        = errors.New("tx not found")
+	ErrReferenceNotFound = errors.New("Reference not found")
 )
+
+func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
+	return getMember(ctx, db, reference, []string{"balance"})
+}
+
+func getMember(ctx context.Context, db Querier, reference []byte, fields []string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from members where member_ref = ?0`, strings.Join(fields, ",")),
+		reference)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
 
 func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
 	tx := &models.Transaction{}
@@ -502,12 +523,12 @@ func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, whereC
 		if whereCondition {
 			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" DESC")
+		query = query.Order(columnName + " DESC")
 	case "after":
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" ASC")
+		query = query.Order(columnName + " ASC")
 	default:
 		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
 	}

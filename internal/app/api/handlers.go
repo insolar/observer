@@ -74,9 +74,9 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	}
 
 	var (
-		pulseNumber int64
+		pulseNumber    int64
 		sequenceNumber int64
-		err error
+		err            error
 	)
 	if params.Index != nil {
 		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
@@ -116,7 +116,27 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	member, err := component.GetMemberBalance(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesMemberBalanceYaml{Balance: member.Balance})
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
