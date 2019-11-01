@@ -44,10 +44,11 @@ type Deposit struct {
 	EtheriumHash    string `sql:"eth_hash"`
 	State           []byte `sql:"deposit_state"`
 	HoldReleaseDate int64  `sql:"hold_release_date"`
-	Amount          string `sql:"varchar"`
+	Amount          string `sql:"amount"`
 	Balance         string `sql:"balance"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`
+	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
 }
 
 type TransactionStatus string

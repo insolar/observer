@@ -35,6 +35,7 @@ import (
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/observability"
 )
@@ -171,6 +172,68 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			res.ID = 0
 			assert.Equal(t, &expectedTransactions[i], res)
 		}
+		return tx.Rollback()
+	})
+}
+
+func TestStoreSimpleDeposit(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make(cfg)
+
+	ref := gen.RecordReference()
+	memberRef := gen.RecordReference()
+	state := gen.RecordReference()
+	transferDate := time.Now().Unix()
+	holdDate := time.Now().Unix() + 5
+
+	expectedDeposit := []models.Deposit{
+		{
+			Reference:       ref.GetLocal().Bytes(),
+			MemberReference: memberRef.GetLocal().Bytes(),
+			EtheriumHash:    "tx_hash_0",
+			State:           state.GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "100500",
+			Balance:         "100",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+		},
+	}
+
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+
+		deposits := postgres.NewDepositStorage(obs, tx)
+
+		err := deposits.Insert(&observer.Deposit{
+			EthHash:         expectedDeposit[0].EtheriumHash,
+			Ref:             *insolar.NewIDFromBytes(expectedDeposit[0].Reference),
+			Member:          *insolar.NewIDFromBytes(expectedDeposit[0].MemberReference),
+			Timestamp:       transferDate,
+			HoldReleaseDate: holdDate,
+			Amount:          expectedDeposit[0].Amount,
+			Balance:         expectedDeposit[0].Balance,
+			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
+			Vesting:         expectedDeposit[0].Vesting,
+			VestingStep:     expectedDeposit[0].VestingStep,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Select deposit from db.
+		selected := make([]models.Deposit, 1)
+		res, err := tx.Query(&selected, `SELECT * FROM deposits`)
+		require.NoError(t, err)
+		require.Equal(t, 1, res.RowsReturned())
+
+		for i, t := range selected {
+			selected[i] = t
+		}
+
+		// Compare deposits.
+		assert.Equal(t, expectedDeposit, selected)
+
 		return tx.Rollback()
 	})
 }
