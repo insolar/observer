@@ -132,6 +132,8 @@ create table if not exists deposits
     amount varchar(256),
     balance varchar(256),
     deposit_state bytea,
+    vesting bigint,
+    vesting_Step bigint,
     constraint deposits_pk
         primary key (member_ref, eth_hash)
 );
