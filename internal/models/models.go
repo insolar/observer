@@ -44,20 +44,21 @@ type Deposit struct {
 	EtheriumHash    string `sql:"eth_hash"`
 	State           []byte `sql:"deposit_state"`
 	HoldReleaseDate int64  `sql:"hold_release_date"`
-	Amount          string `sql:"varchar"`
+	Amount          string `sql:"amount"`
 	Balance         string `sql:"balance"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`
+	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
 }
 
 type TransactionStatus string
 
 const (
-	TStatusUnknown  TransactionStatus = "unknown"
-	TStatusPending  TransactionStatus = "pending"
-	TStatusSent     TransactionStatus = "sent"
-	TStatusReceived TransactionStatus = "received"
-	TStatusFailed   TransactionStatus = "failed"
+	TStatusUnknown    TransactionStatus = "unknown"
+	TStatusRegistered TransactionStatus = "registered"
+	TStatusSent       TransactionStatus = "sent"
+	TStatusReceived   TransactionStatus = "received"
+	TStatusFailed     TransactionStatus = "failed"
 )
 
 type TransactionType string
@@ -67,6 +68,13 @@ const (
 	TTypeTransfer  TransactionType = "transfer"
 	TTypeMigration TransactionType = "migration"
 	TTypeRelease   TransactionType = "release"
+)
+
+type TxIndexType int
+
+const (
+	TxIndexTypePulseRecord       TxIndexType = 1
+	TxIndexTypeFinishPulseRecord TxIndexType = 2
 )
 
 type Transaction struct {
@@ -161,7 +169,7 @@ func (t *Transaction) Status() TransactionStatus {
 		return TStatusSent
 	}
 	if registered {
-		return TStatusPending
+		return TStatusRegistered
 	}
 
 	return TStatusUnknown
@@ -175,8 +183,15 @@ func (t *Transaction) RecordNumber() int64 {
 	return t.PulseRecord[1]
 }
 
-func (t *Transaction) Index() string {
-	return fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+func (t *Transaction) Index(indexType TxIndexType) string {
+	var result string
+	switch indexType {
+	case TxIndexTypeFinishPulseRecord:
+		result = fmt.Sprintf("%d:%d", t.FinishPulseRecord[0], t.FinishPulseRecord[1])
+	default: // TxIndexTypePulseRecord
+		result = fmt.Sprintf("%d:%d", t.PulseRecord[0], t.PulseRecord[1])
+	}
+	return result
 }
 
 func (t *Transaction) Timestamp() int64 {

@@ -19,6 +19,7 @@ package component
 import (
 	"context"
 	"fmt"
+	"github.com/go-pg/pg/orm"
 	"strings"
 	"time"
 
@@ -154,19 +155,18 @@ func makeStorer(
 					}
 				}
 
-				// Uncomment when migrations are ready.
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
 					return err
 				}
-				// err = StoreTxResult(tx, b.txResult)
-				// if err != nil {
-				// 	return err
-				// }
-				// err = StoreTxSagaResult(tx, b.txSagaResult)
-				// if err != nil {
-				// 	return err
-				// }
+				err = StoreTxResult(tx, b.txResult)
+				if err != nil {
+					return err
+				}
+				err = StoreTxSagaResult(tx, b.txSagaResult)
+				if err != nil {
+					return err
+				}
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
@@ -416,8 +416,28 @@ type Querier interface {
 }
 
 var (
-	ErrTxNotFound = errors.New("tx not found")
+	ErrTxNotFound        = errors.New("tx not found")
+	ErrReferenceNotFound = errors.New("Reference not found")
 )
+
+func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
+	return getMember(ctx, db, reference, []string{"balance"})
+}
+
+func getMember(ctx context.Context, db Querier, reference []byte, fields []string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from members where member_ref = ?0`, strings.Join(fields, ",")),
+		reference)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
 
 func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
 	tx := &models.Transaction{}
@@ -432,6 +452,85 @@ func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, e
 		return nil, errors.Wrap(err, "failed to fetch tx")
 	}
 	return tx, nil
+}
+
+func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
+	switch status {
+	case "registered":
+		query = query.Where("status_registered = true")
+	case "sent":
+		query = query.Where("status_registered = true and status_sent = true")
+	case "received":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = true")
+	case "failed":
+		query = query.Where("status_registered = true and status_finished = true and finish_success = false")
+	default:
+		return query, errors.New("Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.") // nolint
+	}
+	return query, nil
+}
+
+func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
+	if t != "transfer" && t != "migration" && t != "after" {
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+	}
+	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByValue(query *orm.Query, value string) (*orm.Query, error) {
+	pulseNumber, err := insolar.NewPulseNumberFromStr(value)
+	if err == nil {
+		query = query.Where("pulse_record[1] = ?", pulseNumber)
+	} else {
+		ref, err := insolar.NewReferenceFromString(value)
+		if err != nil {
+			return query, errors.New("Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.") // nolint
+		}
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("tx_id = ?", ref.Bytes()).
+				WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	}
+
+	return query, nil
+}
+
+func indexTypeToColumnName(indexType models.TxIndexType) string {
+	var result string
+	switch indexType {
+	case models.TxIndexTypeFinishPulseRecord:
+		result = "finish_pulse_record"
+	default: // models.TxIndexTypePulseRecord
+		result = "pulse_record"
+	}
+	return result
+}
+
+func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, whereCondition bool, indexType models.TxIndexType) (*orm.Query, error) {
+	order := "reverse"
+	if ord != nil {
+		order = *ord
+	}
+
+	columnName := indexTypeToColumnName(indexType)
+	switch order {
+	case "reverse":
+		if whereCondition {
+			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
+		}
+		query = query.Order(columnName+" DESC")
+	case "chronological":
+		if whereCondition {
+			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
+		}
+		query = query.Order(columnName + " ASC")
+	default:
+		return query, errors.New("Query parameter 'order' should be 'reverse' or 'chronological'.") // nolint
+	}
+	return query, nil
 }
 
 func valuesTemplate(columns, rows int) string {

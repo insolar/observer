@@ -18,6 +18,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -25,10 +26,11 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
-
-	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/internal/models"
+	"github.com/labstack/echo/v4"
 
 	"github.com/sirupsen/logrus"
 )
@@ -70,17 +72,29 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("limit should be in range [1, 1000]"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
 	}
 
-	// AALEKSEEV TODO: check `index` and `direction`
-
-	// If the `index` and `direction` are not specified, the method returns a list of the most recent transactions.
+	var (
+		pulseNumber    int64
+		sequenceNumber int64
+		err            error
+	)
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+		}
+	}
 
 	var result []models.Transaction
-	err := s.db.Model(&models.Transaction{}).
-		Where("status_finished = ?", true).
-		Order("finish_pulse_record desc").
+	query := s.db.Model(&models.Transaction{}).
+		Where("status_finished = ?", true)
+	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
+	}
+	err = query.
 		Limit(limit).
 		Select(&result)
 	if err != nil {
@@ -90,7 +104,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 
 	resJSON := make([]interface{}, len(result))
 	for i := 0; i < len(result); i++ {
-		resJSON[i] = TxToAPITx(result[i])
+		resJSON[i] = TxToAPITx(result[i], models.TxIndexTypeFinishPulseRecord)
 	}
 	return ctx.JSON(http.StatusOK, resJSON)
 }
@@ -104,7 +118,27 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	member, err := component.GetMemberBalance(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesMemberBalanceYaml{Balance: member.Balance})
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
@@ -136,11 +170,74 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, TxToAPITx(*tx))
+	return ctx.JSON(http.StatusOK, TxToAPITx(*tx, models.TxIndexTypePulseRecord))
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
-	panic("implement me")
+	var errorMsg ErrorMessage
+	var err error
+
+	var txs []models.Transaction
+	query := s.db.Model(&txs)
+
+	if params.Value != nil {
+		query, err = component.FilterByValue(query, *params.Value)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Status != nil {
+		query, err = component.FilterByStatus(query, *params.Status)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if params.Type != nil {
+		query, err = component.FilterByType(query, *params.Type)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	var pulseNumber int64
+	var sequenceNumber int64
+	byIndex := false
+	if params.Index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		} else {
+			byIndex = true
+		}
+	}
+
+	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(params.Limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.JSON(http.StatusNoContent, struct{}{})
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) Coins(ctx echo.Context) error {
@@ -185,4 +282,22 @@ func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, result)
+}
+
+func checkIndex(i string) (int64, int64, error) {
+	index := strings.Split(i, ":")
+	if len(index) != 2 {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	var err error
+	var pulseNumber, sequenceNumber int64
+	pulseNumber, err = strconv.ParseInt(index[0], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	sequenceNumber, err = strconv.ParseInt(index[1], 10, 64)
+	if err != nil {
+		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
+	}
+	return pulseNumber, sequenceNumber, nil
 }

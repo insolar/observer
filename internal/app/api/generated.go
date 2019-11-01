@@ -25,21 +25,6 @@ type ResponsesCoinsYaml struct {
 	TotalSupply       float32 `json:"totalSupply"`
 }
 
-// ResponsesCoinsCirculatingYaml defines model for responses-coinsCirculating-yaml.
-type ResponsesCoinsCirculatingYaml struct {
-	CirculatingSupply float32 `json:"circulatingSupply"`
-}
-
-// ResponsesCoinsMaxYaml defines model for responses-coinsMax-yaml.
-type ResponsesCoinsMaxYaml struct {
-	MaxSupply float32 `json:"maxSupply"`
-}
-
-// ResponsesCoinsTotalYaml defines model for responses-coinsTotal-yaml.
-type ResponsesCoinsTotalYaml struct {
-	TotalSupply float32 `json:"totalSupply"`
-}
-
 // ResponsesDetailsYaml defines model for responses-details-yaml.
 type ResponsesDetailsYaml struct {
 	CostCenter SchemaCostCenter `json:"costCenter"`
@@ -257,11 +242,18 @@ type MemberTransactionsParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Transaction's direction:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
+	//   * `incoming` - transactions only to member,
+	//   * `outgoing` - transactions only from member,
+	//   * `all` - both to and from.
 	Direction *string `json:"direction,omitempty"`
+
+	// Chronological `order` of the transaction list starting from a given `index`:
+	//
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
@@ -308,11 +300,11 @@ type TransactionsSearchParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
-	Direction *string `json:"direction,omitempty"`
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
@@ -343,11 +335,11 @@ type ClosedTransactionsParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
-	Direction *string `json:"direction,omitempty"`
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
@@ -356,6 +348,14 @@ type ServerInterface interface {
 	GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error
 	// addresses/count// (GET /admin/migration/addresses/count)
 	GetMigrationAddressCount(ctx echo.Context) error
+	// coins// (GET /api/coins)
+	Coins(ctx echo.Context) error
+	// coins/circulating// (GET /api/coins/circulating)
+	CoinsCirculating(ctx echo.Context) error
+	// coins/max// (GET /api/coins/max)
+	CoinsMax(ctx echo.Context) error
+	// coins/total// (GET /api/coins/total)
+	CoinsTotal(ctx echo.Context) error
 	// fee// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
 	// member// (GET /api/member/{reference})
@@ -380,14 +380,6 @@ type ServerInterface interface {
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
 	// closed transactions// (GET /api/transactions/closed)
 	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
-	// coins// (GET /coins)
-	Coins(ctx echo.Context) error
-	// coins/circulating// (GET /coins/circulating)
-	CoinsCirculating(ctx echo.Context) error
-	// coins/max// (GET /coins/max)
-	CoinsMax(ctx echo.Context) error
-	// coins/total// (GET /coins/total)
-	CoinsTotal(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -434,6 +426,42 @@ func (w *ServerInterfaceWrapper) GetMigrationAddressCount(ctx echo.Context) erro
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetMigrationAddressCount(ctx)
+	return err
+}
+
+// Coins converts echo context to params.
+func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Coins(ctx)
+	return err
+}
+
+// CoinsCirculating converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsCirculating(ctx)
+	return err
+}
+
+// CoinsMax converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsMax(ctx)
+	return err
+}
+
+// CoinsTotal converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsTotal(ctx)
 	return err
 }
 
@@ -528,6 +556,16 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+	}
+
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
 	}
 
 	// ------------- Optional query parameter "type" -------------
@@ -680,14 +718,14 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
 	}
 
-	// ------------- Optional query parameter "direction" -------------
-	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
 	}
 
 	// ------------- Optional query parameter "type" -------------
@@ -743,54 +781,18 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
 	}
 
-	// ------------- Optional query parameter "direction" -------------
-	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.ClosedTransactions(ctx, params)
-	return err
-}
-
-// Coins converts echo context to params.
-func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Coins(ctx)
-	return err
-}
-
-// CoinsCirculating converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsCirculating(ctx)
-	return err
-}
-
-// CoinsMax converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsMax(ctx)
-	return err
-}
-
-// CoinsTotal converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsTotal(ctx)
 	return err
 }
 
@@ -803,6 +805,10 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
 	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
+	router.GET("/api/coins", wrapper.Coins)
+	router.GET("/api/coins/circulating", wrapper.CoinsCirculating)
+	router.GET("/api/coins/max", wrapper.CoinsMax)
+	router.GET("/api/coins/total", wrapper.CoinsTotal)
 	router.GET("/api/fee/:amount", wrapper.Fee)
 	router.GET("/api/member/:reference", wrapper.Member)
 	router.GET("/api/member/:reference/balance", wrapper.Balance)
@@ -815,9 +821,6 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
-	router.GET("/coins", wrapper.Coins)
-	router.GET("/coins/circulating", wrapper.CoinsCirculating)
-	router.GET("/coins/max", wrapper.CoinsMax)
-	router.GET("/coins/total", wrapper.CoinsTotal)
 
 }
+

@@ -32,11 +32,54 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
+const (
+	recordNum       = 198
+	finishRecordNum = 256
+	amount          = "1020"
+	fee             = "178"
+)
+
+func requireEqualResponse(t *testing.T, resp *http.Response, received interface{}, expected interface{}) {
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(bodyBytes, received)
+	require.NoError(t, err)
+	require.Equal(t, expected, received)
+}
+
+func transactionModel(txID []byte, pulseNum int64) *models.Transaction {
+	return &models.Transaction{
+		TransactionID:     txID,
+		PulseRecord:       [2]int64{pulseNum, recordNum},
+		StatusRegistered:  true,
+		Amount:            amount,
+		Fee:               fee,
+		FinishPulseRecord: [2]int64{1, 2},
+	}
+}
+
+func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransactionAbstract {
+	return &SchemasTransactionAbstract{
+		Amount:      amount,
+		Fee:         NullableString(fee),
+		Index:       fmt.Sprintf("%d:%d", pulseNum, recordNum),
+		PulseNumber: pulseNum,
+		Status:      "registered",
+		Timestamp:   ts,
+		TxID:        txID,
+	}
+}
+
 func TestTransaction_WrongFormat(t *testing.T) {
 	txID := "123"
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"tx_id wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
 }
 
 func TestTransaction_NoContent(t *testing.T) {
@@ -67,13 +110,25 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	// if limit is > 1000, API returns `bad request`
+	// if `limit` is > 1000, API returns `bad request`
 	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `order` is not "chronological" or "reverse", API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&order=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `index` is in a wrong format, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&index=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-func TestTransaction_ClosedLimitSingle(t *testing.T) {
+func TestTransactions_ClosedLimitSingle(t *testing.T) {
+	defer truncateDB(t)
+
 	// insert a single closed transaction
 	var err error
 	txID := gen.RecordReference()
@@ -115,7 +170,7 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 		SchemasTransactionAbstract: SchemasTransactionAbstract{
 			Amount:      "10",
 			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:198", pulseNumber),
+			Index:       "1:3001", // == FinishPulseRecord
 			PulseNumber: int64(pulseNumber),
 			Status:      string(models.TStatusReceived),
 			Timestamp:   pntime.Unix(),
@@ -134,7 +189,9 @@ func TestTransaction_ClosedLimitSingle(t *testing.T) {
 	require.Equal(t, expectedTransaction, received[0])
 }
 
-func TestTransaction_ClosedLimitMultiple(t *testing.T) {
+func TestTransactions_ClosedLimitMultiple(t *testing.T) {
+	defer truncateDB(t)
+
 	var err error
 
 	// insert two finished transactions, one with finishSuccess, second with !finishSuccess
@@ -167,24 +224,96 @@ func TestTransaction_ClosedLimitMultiple(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// request two recent closed transactions using API
-	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
+	// Here is the order of two transactions in the database:
+	// Finish pulse | Status
+	// -------------+-----------
+	//       1:3003 | failed
+	//       1:3002 | received
 
-	var received []SchemaMigration
-	err = json.Unmarshal(bodyBytes, &received)
-	require.NoError(t, err)
-	require.Len(t, received, 2)
-	// the latest transaction comes first in JSON, thus it will be `failed`
-	// and the second (older) transaction in JSON will be `received`
-	require.Equal(t, string(models.TStatusFailed), received[0].Status)
-	require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	// request two recent closed transactions using API
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		// the latest transaction comes first in JSON, thus it will be `failed`
+		// and the second (older) transaction in JSON will be `received`
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request second (older) transaction using a cursor
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3003&order=reverse&limit=1")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+	}
+
+	// Request first (newer) transaction using a cursor, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3002&order=chronological&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 1)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+	}
+
+	// Request both transactions using `reverse` order
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3004&order=reverse&limit=2")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusFailed), received[0].Status)
+		require.Equal(t, string(models.TStatusReceived), received[1].Status)
+	}
+
+	// Request both transactions using `chronological` order, with a large `limit`
+	{
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3001&order=chronological&limit=1000")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var received []SchemaMigration
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Len(t, received, 2)
+		require.Equal(t, string(models.TStatusReceived), received[0].Status)
+		require.Equal(t, string(models.TStatusFailed), received[1].Status)
+	}
 }
 
 func TestTransaction_TypeMigration(t *testing.T) {
+	defer truncateDB(t)
+
 	txID := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 	pntime, err := pulseNumber.AsApproximateTime()
@@ -195,49 +324,305 @@ func TestTransaction_TypeMigration(t *testing.T) {
 	toMember := gen.Reference()
 	toDeposit := gen.Reference()
 
-	transaction := models.Transaction{
-		TransactionID:     txID.Bytes(),
-		PulseRecord:       [2]int64{int64(pulseNumber), 198},
-		StatusRegistered:  true,
-		Amount:            "10",
-		Fee:               "1",
-		FinishPulseRecord: [2]int64{1, 2},
-		Type:              models.TTypeMigration,
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeMigration
+	transaction.MemberFromReference = fromMember.Bytes()
+	transaction.MemberToReference = toMember.Bytes()
+	transaction.DepositToReference = toDeposit.Bytes()
 
-		MemberFromReference: fromMember.Bytes(),
-		MemberToReference:   toMember.Bytes(),
-		DepositToReference:  toDeposit.Bytes(),
-	}
-
-	err = db.Insert(&transaction)
+	err = db.Insert(transaction)
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
 
 	receivedTransaction := &SchemaMigration{}
 	expectedTransaction := &SchemaMigration{
-		SchemasTransactionAbstract: SchemasTransactionAbstract{
-			Amount:      "10",
-			Fee:         NullableString("1"),
-			Index:       fmt.Sprintf("%d:198", pulseNumber),
-			PulseNumber: int64(pulseNumber),
-			Status:      "pending",
-			Timestamp:   ts,
-			TxID:        txID.String(),
-		},
-		ToMemberReference:   toMember.String(),
-		FromMemberReference: fromMember.String(),
-		ToDepositReference:  toDeposit.String(),
-		Type:                string(models.TTypeMigration),
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		FromMemberReference:        fromMember.String(),
+		ToDepositReference:         toDeposit.String(),
+		Type:                       string(models.TTypeMigration),
 	}
 
-	err = json.Unmarshal(bodyBytes, receivedTransaction)
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
+}
+
+func TestTransaction_TypeTransfer(t *testing.T) {
+	defer truncateDB(t)
+
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
 	require.NoError(t, err)
-	require.Equal(t, expectedTransaction, receivedTransaction)
+	ts := pntime.Unix()
+
+	fromMember := gen.Reference()
+	toMember := gen.Reference()
+
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeTransfer
+	transaction.MemberFromReference = fromMember.Bytes()
+	transaction.MemberToReference = toMember.Bytes()
+
+	err = db.Insert(transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	receivedTransaction := &SchemaMigration{}
+	expectedTransaction := &SchemaMigration{
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		FromMemberReference:        fromMember.String(),
+		Type:                       string(models.TTypeTransfer),
+	}
+
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
+}
+
+func TestTransaction_TypeRelease(t *testing.T) {
+	defer truncateDB(t)
+
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	pntime, err := pulseNumber.AsApproximateTime()
+	require.NoError(t, err)
+	ts := pntime.Unix()
+
+	toMember := gen.Reference()
+	fromDeposit := gen.Reference()
+
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.Type = models.TTypeRelease
+	transaction.MemberToReference = toMember.Bytes()
+	transaction.DepositFromReference = fromDeposit.Bytes()
+
+	err = db.Insert(transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	receivedTransaction := &SchemaRelease{}
+	expectedTransaction := &SchemaRelease{
+		SchemasTransactionAbstract: *transactionResponse(txID.String(), int64(pulseNumber), ts),
+		ToMemberReference:          toMember.String(),
+		FromDepositReference:       fromDeposit.String(),
+		Type:                       string(models.TTypeRelease),
+	}
+
+	requireEqualResponse(t, resp, receivedTransaction, expectedTransaction)
+}
+
+func TestTransactionsSearch_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransactionsSearch_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions?limit=15&status=failed")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func insertTransaction(t *testing.T, transactionID []byte, pulse int64, finishPulse int64, sequence int64) {
+	transaction := models.Transaction{
+		TransactionID:     transactionID,
+		PulseRecord:       [2]int64{pulse, sequence},
+		StatusRegistered:  true,
+		Amount:            "10",
+		Fee:               "1",
+		FinishPulseRecord: [2]int64{finishPulse, sequence},
+		Type:              models.TTypeMigration,
+	}
+	err := db.Insert(&transaction)
+	require.NoError(t, err)
+}
+
+func insertMember(t *testing.T, reference []byte, balance string) {
+	member := models.Member{
+		Reference: reference,
+		Balance:   balance,
+	}
+	err := db.Insert(&member)
+	require.NoError(t, err)
+}
+
+func TestTransactionsSearch(t *testing.T) {
+	defer truncateDB(t)
+
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertTransaction(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234)
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+	insertTransaction(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions?" +
+			"limit=3&" +
+			"value=" + pulseNumber.String() +
+			"&status=registered&" +
+			"type=migration&" +
+			"index=" + pulseNumber.String() + "%3A1237&" +
+			"direction=before")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 3)
+	require.Equal(t, txIDThird.String(), received[0].TxID)
+	require.Equal(t, txIDSecond.String(), received[1].TxID)
+	require.Equal(t, txIDFirst.String(), received[2].TxID)
+}
+
+func TestTransactionsSearch_DirectionAfter(t *testing.T) {
+	defer truncateDB(t)
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertTransaction(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234)
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+	insertTransaction(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions?" +
+			"limit=3&" +
+			"value=" + pulseNumber.String() +
+			"&status=registered&" +
+			"type=migration&" +
+			"index=" + pulseNumber.String() + "%3A1233&" +
+			"order=chronological")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 3)
+	require.Equal(t, txIDFirst.String(), received[0].TxID)
+	require.Equal(t, txIDSecond.String(), received[1].TxID)
+	require.Equal(t, txIDThird.String(), received[2].TxID)
+}
+
+func TestTransactionsSearch_ValueTx(t *testing.T) {
+	defer truncateDB(t)
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertTransaction(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234)
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+	insertTransaction(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions?" +
+			"limit=15&" +
+			"value=" + txIDFirst.String() +
+			"&status=registered&" +
+			"type=migration&" +
+			"index=" + pulseNumber.String() + "%3A1237&" +
+			"direction=before")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, txIDFirst.String(), received[0].TxID)
+}
+
+func TestTransactionsSearch_WrongEverything(t *testing.T) {
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions?" +
+			"limit=15&" +
+			"value=some_not_valid_value&" +
+			"status=some_not_valid_status&" +
+			"type=some_not_valid_type&" +
+			"index=some_not_valid_index&" +
+			"order=some_not_valid_order")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	expected := ErrorMessage{
+		Error: []string{
+			"Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.",
+			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
+			"Query parameter 'type' should be 'transfer', 'migration' or 'after'.",
+			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",
+			"Query parameter 'order' should be 'reverse' or 'chronological'.",
+		},
+	}
+	received := ErrorMessage{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, expected, received)
+}
+
+func TestMemberBalance_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/" + "not_valid_ref" + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"reference wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
+}
+
+func TestMemberBalance_NoContent(t *testing.T) {
+	ref := gen.Reference().String()
+	resp, err := http.Get("http://" + apihost + "/api/member/" + ref + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestMemberBalance(t *testing.T) {
+	defer truncateDB(t)
+	member1 := gen.Reference()
+	balance1 := "1234567"
+	member2 := gen.Reference()
+	balance2 := "567890"
+
+	insertMember(t, member1.Bytes(), balance1)
+	insertMember(t, member2.Bytes(), balance2)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member1.String() + "/balance")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberBalanceYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, balance1, received.Balance)
 }
 
 func TestObserverServer_Coins(t *testing.T) {

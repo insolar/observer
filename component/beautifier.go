@@ -56,6 +56,7 @@ func makeBeautifier(
 	withdrawTransfers := collecting.NewWithdrawTransferCollector(log, cachedStore, treeBuilder)
 	standardTransfers := collecting.NewStandardTransferCollector(log, cachedStore, treeBuilder)
 	txRegisters := collecting.NewTxRegisterCollector()
+	txResults := collecting.NewTxResultCollector(log, cachedStore)
 	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
 
@@ -117,6 +118,10 @@ func makeBeautifier(
 			reg := txRegisters.Collect(ctx, *rec)
 			if reg != nil {
 				b.txRegister = append(b.txRegister, *reg)
+			}
+			res := txResults.Collect(ctx, *rec)
+			if reg != nil {
+				b.txResult = append(b.txResult, *res)
 			}
 
 			deposits := deposits.Collect(ctx, &obsRecord)
