@@ -20,12 +20,19 @@ type MGRSchema struct {
 	FinishRoundDate int64 `sql:"fin_date,notnull"`
 	NextPaymentDate int64 `sql:"next_payment,notnull"`
 
-	PaymentFrequency string   `sql:"period,notnull"`
-	Sequence         []string `sql:",array"`
+	PaymentFrequency string `sql:"period,notnull"`
 
 	AmountDue string `sql:"amount,notnull"`
 	Status    string `sql:",notnull"`
 	State     []byte `sql:",notnull"`
+}
+
+type MGRSequence struct {
+	tableName struct{} `sql:"mgr_sequence"`
+	Index     int
+	GroupRef  []byte
+	UserRef   []byte
+	DrawDate  int64
 }
 
 func NewMGRStorage(obs *observability.Observability, db orm.DB) *MGRStorage {
@@ -53,7 +60,7 @@ func (s *MGRStorage) Insert(model *observer.MGR) error {
 		return nil
 	}
 	row := mgrSchema(model)
-	res, err := s.db.Model(row).
+	_, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
 		Insert(row)
 
@@ -61,10 +68,14 @@ func (s *MGRStorage) Insert(model *observer.MGR) error {
 		return errors.Wrapf(err, "failed to insert mgr %v, %v", row, err.Error())
 	}
 
-	if res.RowsAffected() == 0 {
-		s.errorCounter.Inc()
-		s.log.WithField("mgr_row", row).
-			Errorf("failed to insert user")
+	for i, _ := range model.Sequence {
+		seq := mgrSequence(i, model)
+		_, err := s.db.Model(seq).
+			OnConflict("DO NOTHING").
+			Insert(seq)
+		if err != nil {
+			return errors.Wrapf(err, "failed to insert mgr sequence %v, %v", row, err.Error())
+		}
 	}
 	return nil
 }
@@ -114,8 +125,17 @@ func mgrSchema(model *observer.MGR) *MGRSchema {
 		StartRoundDate:   model.StartRoundDate,
 		FinishRoundDate:  model.FinishRoundDate,
 		NextPaymentDate:  model.NextPaymentTime,
-		Sequence:         arrRef,
 		Status:           model.Status,
 		State:            model.State.Bytes(),
+	}
+}
+
+func mgrSequence(index int, model *observer.MGR) *MGRSequence {
+	return &MGRSequence{
+		Index:    index + 1,
+		GroupRef: model.GroupReference.Bytes(),
+		UserRef:  model.Sequence[index].Bytes(),
+		// TODO: get correct draw date, wait from insolar
+		DrawDate: model.NextPaymentTime,
 	}
 }
