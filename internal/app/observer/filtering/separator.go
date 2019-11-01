@@ -41,19 +41,19 @@ func (*SeparatorFilter) Filter(
 	for _, rec := range records {
 		switch rec.Record.Virtual.Union.(type) {
 		case *record.Virtual_IncomingRequest:
-			req := observer.CastToRequest(rec)
+			req := observer.CastToRequest(rec.Record)
 			requests = append(requests, req)
 		case *record.Virtual_Result:
-			res := observer.CastToResult(rec)
+			res := observer.CastToResult(rec.Record)
 			results = append(results, res)
 		case *record.Virtual_Activate:
-			act := observer.CastToActivate(rec)
+			act := observer.CastToActivate(rec.Record)
 			activates = append(activates, act)
 		case *record.Virtual_Amend:
-			amd := observer.CastToAmend(rec)
+			amd := observer.CastToAmend(rec.Record)
 			amends = append(amends, amd)
 		case *record.Virtual_Deactivate:
-			deact := observer.CastToDeactivate(rec)
+			deact := observer.CastToDeactivate(rec.Record)
 			deactivates = append(deactivates, deact)
 		}
 	}
