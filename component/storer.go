@@ -490,26 +490,26 @@ func indexTypeToColumnName(indexType models.TxIndexType) string {
 	return result
 }
 
-func OrderByIndex(query *orm.Query, d *string, pulse int64, record int64, whereCondition bool, indexType models.TxIndexType) (*orm.Query, error) {
-	direction := "before"
-	if d != nil {
-		direction = *d
+func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, whereCondition bool, indexType models.TxIndexType) (*orm.Query, error) {
+	order := "reverse"
+	if ord != nil {
+		order = *ord
 	}
 
 	columnName := indexTypeToColumnName(indexType)
-	switch direction {
-	case "before":
+	switch order {
+	case "reverse":
 		if whereCondition {
 			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
 		query = query.Order(columnName+" DESC")
-	case "after":
+	case "chronological":
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
 		}
 		query = query.Order(columnName+" ASC")
 	default:
-		return query, errors.New("Query parameter 'direction' should be 'before' or 'after'.") // nolint
+		return query, errors.New("Query parameter 'order' should be 'reverse' or 'chronological'.") // nolint
 	}
 	return query, nil
 }
