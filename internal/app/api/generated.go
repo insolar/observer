@@ -348,6 +348,14 @@ type ServerInterface interface {
 	GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error
 	// addresses/count// (GET /admin/migration/addresses/count)
 	GetMigrationAddressCount(ctx echo.Context) error
+	// coins// (GET /api/coins)
+	Coins(ctx echo.Context) error
+	// coins/circulating// (GET /api/coins/circulating)
+	CoinsCirculating(ctx echo.Context) error
+	// coins/max// (GET /api/coins/max)
+	CoinsMax(ctx echo.Context) error
+	// coins/total// (GET /api/coins/total)
+	CoinsTotal(ctx echo.Context) error
 	// fee// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
 	// member// (GET /api/member/{reference})
@@ -372,14 +380,6 @@ type ServerInterface interface {
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
 	// closed transactions// (GET /api/transactions/closed)
 	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
-	// coins// (GET /coins)
-	Coins(ctx echo.Context) error
-	// coins/circulating// (GET /coins/circulating)
-	CoinsCirculating(ctx echo.Context) error
-	// coins/max// (GET /coins/max)
-	CoinsMax(ctx echo.Context) error
-	// coins/total// (GET /coins/total)
-	CoinsTotal(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -426,6 +426,42 @@ func (w *ServerInterfaceWrapper) GetMigrationAddressCount(ctx echo.Context) erro
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetMigrationAddressCount(ctx)
+	return err
+}
+
+// Coins converts echo context to params.
+func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.Coins(ctx)
+	return err
+}
+
+// CoinsCirculating converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsCirculating(ctx)
+	return err
+}
+
+// CoinsMax converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsMax(ctx)
+	return err
+}
+
+// CoinsTotal converts echo context to params.
+func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CoinsTotal(ctx)
 	return err
 }
 
@@ -760,42 +796,6 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 	return err
 }
 
-// Coins converts echo context to params.
-func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Coins(ctx)
-	return err
-}
-
-// CoinsCirculating converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsCirculating(ctx)
-	return err
-}
-
-// CoinsMax converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsMax(ctx)
-	return err
-}
-
-// CoinsTotal converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsTotal(ctx)
-	return err
-}
-
 // RegisterHandlers adds each server route to the EchoRouter.
 func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
@@ -805,6 +805,10 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
 	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
+	router.GET("/api/coins", wrapper.Coins)
+	router.GET("/api/coins/circulating", wrapper.CoinsCirculating)
+	router.GET("/api/coins/max", wrapper.CoinsMax)
+	router.GET("/api/coins/total", wrapper.CoinsTotal)
 	router.GET("/api/fee/:amount", wrapper.Fee)
 	router.GET("/api/member/:reference", wrapper.Member)
 	router.GET("/api/member/:reference/balance", wrapper.Balance)
@@ -817,10 +821,6 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
-	router.GET("/coins", wrapper.Coins)
-	router.GET("/coins/circulating", wrapper.CoinsCirculating)
-	router.GET("/coins/max", wrapper.CoinsMax)
-	router.GET("/coins/total", wrapper.CoinsTotal)
 
 }
 
