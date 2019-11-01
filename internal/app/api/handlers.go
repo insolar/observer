@@ -88,7 +88,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	var result []models.Transaction
 	query := s.db.Model(&models.Transaction{}).
 		Where("status_finished = ?", true)
-	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
+	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
 	}
@@ -211,7 +211,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		}
 	}
 
-	query, err = component.OrderByIndex(query, params.Direction, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
+	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}

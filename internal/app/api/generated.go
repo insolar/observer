@@ -25,21 +25,6 @@ type ResponsesCoinsYaml struct {
 	TotalSupply       float32 `json:"totalSupply"`
 }
 
-// ResponsesCoinsCirculatingYaml defines model for responses-coinsCirculating-yaml.
-type ResponsesCoinsCirculatingYaml struct {
-	CirculatingSupply float32 `json:"circulatingSupply"`
-}
-
-// ResponsesCoinsMaxYaml defines model for responses-coinsMax-yaml.
-type ResponsesCoinsMaxYaml struct {
-	MaxSupply float32 `json:"maxSupply"`
-}
-
-// ResponsesCoinsTotalYaml defines model for responses-coinsTotal-yaml.
-type ResponsesCoinsTotalYaml struct {
-	TotalSupply float32 `json:"totalSupply"`
-}
-
 // ResponsesDetailsYaml defines model for responses-details-yaml.
 type ResponsesDetailsYaml struct {
 	CostCenter SchemaCostCenter `json:"costCenter"`
@@ -257,11 +242,18 @@ type MemberTransactionsParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Transaction's direction:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
+	//   * `incoming` - transactions only to member,
+	//   * `outgoing` - transactions only from member,
+	//   * `all` - both to and from.
 	Direction *string `json:"direction,omitempty"`
+
+	// Chronological `order` of the transaction list starting from a given `index`:
+	//
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
@@ -308,11 +300,11 @@ type TransactionsSearchParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
-	Direction *string `json:"direction,omitempty"`
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
@@ -343,11 +335,11 @@ type ClosedTransactionsParams struct {
 	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Chronological `direction` of the transaction list starting from a given `index`:
+	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `before` — get transactions that chronologically preceed a transaction with a given `index`;
-	//   * `after` — get transactions that chronologically follow a transaction with a given `index`.
-	Direction *string `json:"direction,omitempty"`
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
@@ -530,6 +522,16 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
 	}
 
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
+	}
+
 	// ------------- Optional query parameter "type" -------------
 	if paramValue := ctx.QueryParam("type"); paramValue != "" {
 
@@ -680,14 +682,14 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
 	}
 
-	// ------------- Optional query parameter "direction" -------------
-	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
 	}
 
 	// ------------- Optional query parameter "type" -------------
@@ -743,14 +745,14 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
 	}
 
-	// ------------- Optional query parameter "direction" -------------
-	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
+	// ------------- Optional query parameter "order" -------------
+	if paramValue := ctx.QueryParam("order"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
+	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter direction: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter order: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
@@ -821,3 +823,4 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/coins/total", wrapper.CoinsTotal)
 
 }
+

@@ -112,8 +112,8 @@ func TestTransaction_ClosedBadRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	// if `direction` is not "before" or "after", API returns `bad request`
-	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&direction=LOL")
+	// if `order` is not "chronological" or "reverse", API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/api/transactions/closed?limit=100&order=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
@@ -247,7 +247,7 @@ func TestTransactions_ClosedLimitMultiple(t *testing.T) {
 
 	// Request second (older) transaction using a cursor
 	{
-		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3003&direction=before&limit=1")
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3003&order=reverse&limit=1")
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -262,7 +262,7 @@ func TestTransactions_ClosedLimitMultiple(t *testing.T) {
 
 	// Request first (newer) transaction using a cursor, with a large `limit`
 	{
-		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3002&direction=after&limit=1000")
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3002&order=chronological&limit=1000")
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -275,9 +275,9 @@ func TestTransactions_ClosedLimitMultiple(t *testing.T) {
 		require.Equal(t, string(models.TStatusFailed), received[0].Status)
 	}
 
-	// Request both transactions using `before` condition
+	// Request both transactions using `reverse` order
 	{
-		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3004&direction=before&limit=2")
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3004&order=reverse&limit=2")
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -291,9 +291,9 @@ func TestTransactions_ClosedLimitMultiple(t *testing.T) {
 		require.Equal(t, string(models.TStatusReceived), received[1].Status)
 	}
 
-	// Request both transactions using `after` condition, with a large `limit`
+	// Request both transactions using `chronological` order, with a large `limit`
 	{
-		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3001&direction=after&limit=1000")
+		resp, err := http.Get("http://" + apihost + "/api/transactions/closed?index=1%3A3001&order=chronological&limit=1000")
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -504,7 +504,7 @@ func TestTransactionsSearch_DirectionAfter(t *testing.T) {
 			"&status=registered&" +
 			"type=migration&" +
 			"index=" + pulseNumber.String() + "%3A1233&" +
-			"direction=after")
+			"order=chronological")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -560,7 +560,7 @@ func TestTransactionsSearch_WrongEverything(t *testing.T) {
 			"status=some_not_valid_status&" +
 			"type=some_not_valid_type&" +
 			"index=some_not_valid_index&" +
-			"direction=some_not_valid_direction")
+			"order=some_not_valid_order")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
@@ -573,7 +573,7 @@ func TestTransactionsSearch_WrongEverything(t *testing.T) {
 			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
 			"Query parameter 'type' should be 'transfer', 'migration' or 'after'.",
 			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",
-			"Query parameter 'direction' should be 'before' or 'after'.",
+			"Query parameter 'order' should be 'reverse' or 'chronological'.",
 		},
 	}
 	received := ErrorMessage{}
