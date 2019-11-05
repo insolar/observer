@@ -129,6 +129,7 @@ func TestMain(t *testing.M) {
 
 	retCode := t.Run()
 
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
 	err = pool.Purge(resource)
 	if err != nil {
 		log.Panicf("failed to purge docker pool: %s", err)

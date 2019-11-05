@@ -114,7 +114,16 @@ func TestMain(t *testing.M) {
 	// TODO: wait until API started
 	// TODO: flush db
 	time.Sleep(5 * time.Second)
-	os.Exit(t.Run())
+
+	retCode := t.Run()
+
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
+	err = pool.Purge(resource)
+	if err != nil {
+		log.Panicf("failed to purge docker pool: %s", err)
+	}
+
+	os.Exit(retCode)
 }
 
 func truncateDB(t *testing.T) {
