@@ -477,10 +477,19 @@ func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
 }
 
 func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
-	if t != "transfer" && t != "migration" && t != "after" {
-		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+	if t != "transfer" && t != "migration" && t != "release" {
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'release'.") // nolint
 	}
 	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByMemberReference(query *orm.Query, ref *insolar.Reference) (*orm.Query, error) {
+	query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+		q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
+			WhereOr("member_to_ref = ?", ref.Bytes())
+		return q, nil
+	})
 	return query, nil
 }
 

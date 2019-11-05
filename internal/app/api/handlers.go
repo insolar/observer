@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
 	"github.com/go-pg/pg"
@@ -180,7 +181,54 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	var errorMsg ErrorMessage
+
+	var txs []models.Transaction
+	query := s.db.Model(&txs)
+
+	query, err = component.FilterByMemberReference(query, ref)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.JSON(http.StatusNoContent, struct{}{})
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
@@ -212,6 +260,11 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
 	var errorMsg ErrorMessage
 	var err error
 
@@ -225,36 +278,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		}
 	}
 
-	if params.Status != nil {
-		query, err = component.FilterByStatus(query, *params.Status)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		}
-	}
-
-	if params.Type != nil {
-		query, err = component.FilterByType(query, *params.Type)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		}
-	}
-
-	var pulseNumber int64
-	var sequenceNumber int64
-	byIndex := false
-	if params.Index != nil {
-		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		} else {
-			byIndex = true
-		}
-	}
-
-	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
-	if err != nil {
-		errorMsg.Error = append(errorMsg.Error, err.Error())
-	}
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
 
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
@@ -338,4 +362,41 @@ func checkIndex(i string) (int64, int64, error) {
 		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
 	}
 	return pulseNumber, sequenceNumber, nil
+}
+
+func (s *ObserverServer) getTransactions(
+	query *orm.Query, errorMsg *ErrorMessage, status, typeParam, index, order *string,
+) *orm.Query {
+	var err error
+	if status != nil {
+		query, err = component.FilterByStatus(query, *status)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if typeParam != nil {
+		query, err = component.FilterByType(query, *typeParam)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	var pulseNumber int64
+	var sequenceNumber int64
+	byIndex := false
+	if index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*index)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		} else {
+			byIndex = true
+		}
+	}
+
+	query, err = component.OrderByIndex(query, order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+	return query
 }
