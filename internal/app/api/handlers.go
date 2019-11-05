@@ -277,11 +277,13 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		query, err = component.FilterByValue(query, *params.Value)
 		if err != nil {
 			errorMsg.Error = append(errorMsg.Error, err.Error())
-			return ctx.JSON(http.StatusBadRequest, errorMsg)
 		}
 	}
 
 	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
 	err = query.Limit(params.Limit).Select()
 
 	if err != nil {
