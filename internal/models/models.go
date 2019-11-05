@@ -159,6 +159,11 @@ func (t Transaction) QuotedFields() []string {
 	return fields
 }
 
+func (ma MigrationAddress) Fields() []string {
+	tType := reflect.TypeOf(ma)
+	return getFields(tType)
+}
+
 func getFieldList(t reflect.Type) []string {
 	var fieldList []string
 
