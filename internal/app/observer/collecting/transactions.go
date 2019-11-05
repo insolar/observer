@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/google/uuid"
 	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
@@ -12,7 +13,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
-	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -41,26 +41,36 @@ const (
 )
 
 type TxRegisterCollector struct {
+	log *logrus.Logger
 }
 
-func NewTxRegisterCollector() *TxRegisterCollector {
-	return &TxRegisterCollector{}
+func NewTxRegisterCollector(log *logrus.Logger) *TxRegisterCollector {
+	return &TxRegisterCollector{
+		log: log,
+	}
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
+	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log.Debug("received record")
+	defer log.Debug("record processed")
+
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		log.Debug("skipped (not IncomingRequest)")
 		return nil
 	}
 
+	log.Debug("parsing method ", request.Method)
 	var tx *observer.TxRegister
 	switch request.Method {
 	case methodCall:
-		tx = registerTransfer(rec)
+		tx = c.fromTransfer(log, rec)
 	case methodTransferToDeposit:
-		tx = registerMigration(rec)
+		tx = c.fromMigration(log, rec)
 	case methodTransfer:
-		tx = registerRelease(rec)
+		tx = c.fromRelease(log, rec)
 	default:
 		return nil
 	}
@@ -74,28 +84,33 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	return tx
 }
 
-func registerTransfer(rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromTransfer(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		log.Debug("skipped (not IncomingRequest)")
 		return nil
 	}
 
 	// Skip non-member objects.
 	if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+		log.Debug("skipped (not member object)")
 		return nil
 	}
 
 	if request.Method != methodCall {
+		log.Debug("skipped (not Call method)")
 		return nil
 	}
 
 	// Skip internal calls.
 	if request.APINode.IsEmpty() {
+		log.Debug("skipped (APINode is empty)")
 		return nil
 	}
 
 	// Skip saga.
 	if request.IsDetachedCall() {
+		log.Debug("skipped (saga)")
 		return nil
 	}
 
@@ -105,6 +120,7 @@ func registerTransfer(rec exporter.Record) *observer.TxRegister {
 		return nil
 	}
 	if args.Params.CallSite != callSiteTransfer {
+		log.Debug("skipped (CallSite not callSiteTransfer)")
 		return nil
 	}
 
@@ -140,23 +156,27 @@ func registerTransfer(rec exporter.Record) *observer.TxRegister {
 	}
 }
 
-func registerMigration(rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromMigration(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		log.Debug("skipped (not IncomingRequest)")
 		return nil
 	}
 
 	// Skip non-deposit objects.
 	if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		log.Debug("skipped (not deposit object)")
 		return nil
 	}
 
 	if request.Method != methodTransferToDeposit {
+		log.Debug("skipped (not TransferToDeposit method)")
 		return nil
 	}
 
 	// Skip external calls.
 	if request.Caller.IsEmpty() {
+		log.Debug("skipped (Caller is empty)")
 		return nil
 	}
 
@@ -182,23 +202,27 @@ func registerMigration(rec exporter.Record) *observer.TxRegister {
 	}
 }
 
-func registerRelease(rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromRelease(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
+		log.Debug("skipped (not IncomingRequest)")
 		return nil
 	}
 
 	// Skip non-deposit objects.
 	if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		log.Debug("skipped (not deposit object)")
 		return nil
 	}
 
 	if request.Method != methodTransfer {
+		log.Debug("skipped (not Transfer method)")
 		return nil
 	}
 
 	// Skip external calls.
 	if request.Caller.IsEmpty() {
+		log.Debug("skipped (Caller is empty)")
 		return nil
 	}
 
@@ -274,15 +298,23 @@ func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxRe
 }
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
+	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log.Debug("received record")
+	defer log.Debug("record processed")
+
 	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
 	if !ok {
+		log.Debug("skipped (not Result)")
 		return nil
 	}
 
 	txID := result.Request
+	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
+
 	requestRecord, err := c.fetcher.Request(ctx, *txID.GetLocal())
 	if err != nil {
-		c.log.Error(errors.Wrapf(
+		log.Error(errors.Wrapf(
 			err,
 			"failed to fetch request with id %s",
 			txID.GetLocal().DebugString()),
@@ -292,23 +324,27 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 
 	request, ok := record.Unwrap(&requestRecord.Virtual).(*record.IncomingRequest)
 	if !ok {
+		log.Debug("skipped (matching request is not IncomingRequest)")
 		return nil
 	}
 
 	if request.Method != methodCall {
+		log.Debug("skipped (method is not Call)")
 		return nil
 	}
 	// Skip non-API requests.
 	if request.APINode.IsEmpty() {
+		log.Debug("skipped (APINode is empty)")
 		return nil
 	}
 	// Skip saga.
 	if request.IsDetachedCall() {
+		log.Debug("skipped (request is saga)")
 		return nil
 	}
 	args, _, err := parseExternalArguments(request.Arguments)
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to parse request arguments"))
+		log.Error(errors.Wrap(err, "failed to parse request arguments"))
 		return nil
 	}
 
@@ -319,7 +355,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 			Fee:           "0",
 		}
 		if err = tx.Validate(); err != nil {
-			c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+			log.Error(errors.Wrap(err, "failed to validate transaction"))
 			return nil
 		}
 		return tx
@@ -327,6 +363,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 
 	// Processing transfer between members. Its the only transfer that has fee.
 	if args.Params.CallSite != callSiteTransfer {
+		log.Debug("skipped (callSite is not Transfer)")
 		return nil
 	}
 	response := member.TransferResponse{}
@@ -334,7 +371,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		Returns: []interface{}{&response, nil},
 	})
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		log.Error(errors.Wrap(err, "failed to deserialize method result"))
 		return nil
 	}
 
@@ -343,7 +380,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		Fee:           response.Fee,
 	}
 	if err = tx.Validate(); err != nil {
-		c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+		log.Error(errors.Wrap(err, "failed to validate transaction"))
 		return nil
 	}
 	return tx
@@ -362,14 +399,20 @@ func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *
 }
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
+	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log.Debug("received record")
+	defer log.Debug("record processed")
+
 	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
 	if !ok {
+		log.Debug("skipped (not Result)")
 		return nil
 	}
 
 	requestRecord, err := c.fetcher.Request(ctx, *result.Request.GetLocal())
 	if err != nil {
-		c.log.Error(errors.Wrapf(
+		log.Error(errors.Wrapf(
 			err,
 			"failed to fetch request with id %s",
 			result.Request.GetLocal().DebugString()),
@@ -385,13 +428,13 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 	var tx *observer.TxSagaResult
 	switch request.Method {
 	case methodAccept:
-		tx = c.fromAccept(rec, *request, *result)
+		tx = c.fromAccept(log, rec, *request, *result)
 	case methodCall:
-		tx = c.fromCall(rec, *request, *result)
+		tx = c.fromCall(log, rec, *request, *result)
 	}
 	if tx != nil {
 		if err := tx.Validate(); err != nil {
-			c.log.Error(errors.Wrap(err, "failed to validate transaction"))
+			log.Error(errors.Wrap(err, "failed to validate transaction"))
 			return nil
 		}
 	}
@@ -399,38 +442,41 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 }
 
 func (c *TxSagaResultCollector) fromAccept(
+	log *logrus.Logger,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
 	// Skip non-saga.
 	if !request.IsDetachedCall() {
+		log.Debug("skipped (request is not saga)")
 		return nil
 	}
 
 	var acceptArgs appfoundation.SagaAcceptInfo
 	err := insolar.Deserialize(request.Arguments, []interface{}{&acceptArgs})
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to deserialize method arguments"))
+		log.Error(errors.Wrap(err, "failed to deserialize method arguments"))
 		return nil
 	}
 	txID := acceptArgs.Request
+	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
 
 	response := foundation.Result{}
 	err = insolar.Deserialize(result.Payload, &response)
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		log.Error(errors.Wrap(err, "failed to deserialize method result"))
 		return nil
 	}
 
 	if len(response.Returns) < 1 {
-		c.log.Error(errors.Wrap(err, "unexpected number of Accept method returned parameters"))
+		log.Error(errors.Wrap(err, "unexpected number of Accept method returned parameters"))
 		return nil
 	}
 
 	// The first return parameter of Accept method is error, so we check if its not nil.
 	if response.Error != nil || response.Returns[0] != nil {
-		c.log.WithField("request_id", txID.GetLocal().DebugString()).Error("saga resulted with error")
+		log.Error("saga resulted with error")
 		return &observer.TxSagaResult{
 			TransactionID:      txID.Bytes(),
 			FinishSuccess:      false,
@@ -448,23 +494,27 @@ func (c *TxSagaResultCollector) fromAccept(
 }
 
 func (c *TxSagaResultCollector) fromCall(
+	log *logrus.Logger,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
 	txID := result.Request
+	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
 
 	// Skip non-API requests.
 	if request.APINode.IsEmpty() {
+		log.Debug("skipped (request APINode is empty)")
 		return nil
 	}
 	// Skip saga.
 	if request.IsDetachedCall() {
+		log.Debug("skipped (request is saga)")
 		return nil
 	}
 	args, _, err := parseExternalArguments(request.Arguments)
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to parse request arguments"))
+		log.Error(errors.Wrap(err, "failed to parse request arguments"))
 		return nil
 	}
 
@@ -472,17 +522,18 @@ func (c *TxSagaResultCollector) fromCall(
 	isMigration := args.Params.CallSite == callSiteMigration
 	isRelease := args.Params.CallSite == callSiteRelease
 	if !isTransfer && !isMigration && !isRelease {
+		log.Debug("skipped (request callSite is not parsable)")
 		return nil
 	}
 
 	var response foundation.Result
 	err = insolar.Deserialize(result.Payload, &response)
 	if err != nil {
-		c.log.Error(errors.Wrap(err, "failed to deserialize method result"))
+		log.Error(errors.Wrap(err, "failed to deserialize method result"))
 		return nil
 	}
 	if len(response.Returns) < 2 {
-		c.log.Error(errors.Wrap(err, "unexpected number of Call method returned parameters"))
+		log.Error(errors.Wrap(err, "unexpected number of Call method returned parameters"))
 		return nil
 	}
 

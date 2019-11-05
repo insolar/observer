@@ -52,7 +52,7 @@ func makeBeautifier(
 	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
-	txRegisters := collecting.NewTxRegisterCollector()
+	txRegisters := collecting.NewTxRegisterCollector(log)
 	txResults := collecting.NewTxResultCollector(log, cachedStore)
 	txSagaResults := collecting.NewTxSagaResultCollector(log, cachedStore)
 	deposits := collecting.NewDepositCollector(log, cachedStore)
