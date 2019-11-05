@@ -61,7 +61,17 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 }
 
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
-	panic("implement me")
+	count, err := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = ?", true).
+		Count()
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make(map[string]int, 1)
+	resJSON["count"] = count
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) GetStatistics(ctx echo.Context) error {

@@ -106,6 +106,13 @@ type Transaction struct {
 	FinishPulseRecord [2]int64 `sql:"finish_pulse_record" pg:",array"`
 }
 
+type MigrationAddress struct {
+	ID           	int64	`sql:"id"`
+	Addr			string	`sql:"addr"`
+	Timestamp 		int64	`sql:"timestamp"`
+	Wasted			bool	`sql:"wasted"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string
