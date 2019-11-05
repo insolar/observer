@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/gojuno/minimock"
+	"github.com/insolar/insolar/insolar/gen"
+	"github.com/labstack/gommon/random"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
@@ -85,4 +87,63 @@ func TestStatsManager_Coins(t *testing.T) {
 		require.Equal(t, "33333311112222.2244444444", res.Max)
 		require.Equal(t, "44444441111111.1199999999", res.Circulating)
 	})
+}
+
+func TestStatsManager_CLI_command(t *testing.T) {
+	t.Parallel()
+
+	log := logrus.New()
+	member := gen.Reference()
+	size := 10
+	now := time.Now().Unix()
+
+	for i := 0; i < size; i++ {
+		memberModel := &postgres.MemberSchema{
+			MemberRef:        gen.Reference().Bytes(),
+			Balance:          "100",
+			MigrationAddress: random.String(10),
+			WalletRef:        gen.Reference().Bytes(),
+			AccountState:     gen.ID().Bytes(),
+			Status:           "SUCCESS",
+			AccountRef:       gen.Reference().Bytes(),
+		}
+		err := db.Insert(memberModel)
+		require.NoError(t, err)
+	}
+
+	for i := 0; i < size; i++ {
+		depModel := &postgres.DepositSchema{
+			EthHash:         random.String(5),
+			MemberRef:       member.Bytes(),
+			DepositRef:      gen.Reference().Bytes(),
+			TransferDate:    now,
+			HoldReleaseDate: now + 10000,
+			Amount:          "10000",
+			Balance:         "10000",
+			DepositState:    gen.ID().Bytes(),
+			Vesting:         1000,
+			VestingStep:     10,
+		}
+		err := db.Insert(depModel)
+		require.NoError(t, err)
+	}
+	res, err := db.Model(&postgres.MemberSchema{}).Count()
+	require.NoError(t, err)
+	require.Equal(t, size, res)
+
+	res, err = db.Model(&postgres.DepositSchema{}).Count()
+	require.NoError(t, err)
+	require.Equal(t, size, res)
+
+	repo := postgres.NewStatsRepository(db)
+	sr := NewStatsManager(log, repo)
+
+	command := NewCalculateStatsCommand(log, db, sr)
+	err = command.Run()
+	require.NoError(t, err)
+
+	stats := &postgres.StatsModel{}
+	err = db.Model(stats).Last()
+	require.NoError(t, err)
+	// todo check formula here
 }

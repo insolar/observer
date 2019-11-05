@@ -17,6 +17,9 @@
 package main
 
 import (
+	"flag"
+	"time"
+
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -29,6 +32,9 @@ import (
 )
 
 func main() {
+	collectDT := flag.String("time", "", "Historical request, format 2006-01-02 15:04:05")
+	flag.Parse()
+
 	cfg := configuration.Load()
 	opt, err := pg.ParseURL(cfg.DB.URL)
 	if err != nil {
@@ -41,16 +47,23 @@ func main() {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	repo := postgres.NewStatsRepository(db)
-	sr := component.NewStatsManager(log, repo)
-	stats, err := sr.CountStats()
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to get stats"))
+	var dt *time.Time
+	if *collectDT != "" {
+		// layout := "2006-01-02T15:04:05.000Z"
+		layout := "2006-01-02 15:04:05"
+		tmp, err := time.Parse(layout, *collectDT)
+		if err != nil {
+			log.Error("failed to parse time ", collectDT)
+		}
+		dt = &tmp
 	}
 
-	log.Debugf("Collected stats: %+v", stats)
-	err = sr.InsertStats(stats)
+	repo := postgres.NewStatsRepository(db)
+	sr := component.NewStatsManager(log, repo)
+
+	command := component.NewCalculateStatsCommand(log, db, sr)
+	err = command.Run(dt)
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to set stats"))
+		log.Fatal(errors.Wrapf(err, "failed to run command"))
 	}
 }
