@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
@@ -37,6 +38,7 @@ const (
 	finishRecordNum = 256
 	amount          = "1020"
 	fee             = "178"
+	currentTime     = int64(1606435200)
 )
 
 func requireEqualResponse(t *testing.T, resp *http.Response, received interface{}, expected interface{}) {
@@ -445,12 +447,32 @@ func insertTransaction(t *testing.T, transactionID []byte, pulse int64, finishPu
 	require.NoError(t, err)
 }
 
-func insertMember(t *testing.T, reference []byte, balance string) {
+func insertMember(t *testing.T, reference insolar.Reference, walletReference, accountReference *insolar.Reference, balance string) {
 	member := models.Member{
-		Reference: reference,
+		Reference: reference.Bytes(),
 		Balance:   balance,
 	}
+	if walletReference != nil {
+		member.WalletReference = walletReference.Bytes()
+	}
+	if accountReference != nil {
+		member.AccountReference = accountReference.Bytes()
+	}
 	err := db.Insert(&member)
+	require.NoError(t, err)
+}
+
+func insertDeposit(
+	t *testing.T, reference insolar.Reference, memberReference insolar.Reference, amount, balance, etheriumHash string,
+) {
+	deposit := models.Deposit{
+		Reference:       reference.Bytes(),
+		MemberReference: memberReference.Bytes(),
+		Amount:          amount,
+		Balance:         balance,
+		EtheriumHash:    etheriumHash,
+	}
+	err := db.Insert(&deposit)
 	require.NoError(t, err)
 }
 
@@ -609,8 +631,8 @@ func TestMemberBalance(t *testing.T) {
 	member2 := gen.Reference()
 	balance2 := "567890"
 
-	insertMember(t, member1.Bytes(), balance1)
-	insertMember(t, member2.Bytes(), balance2)
+	insertMember(t, member1, nil, nil, balance1)
+	insertMember(t, member2, nil, nil, balance2)
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member1.String() + "/balance")
 	require.NoError(t, err)
@@ -679,4 +701,338 @@ func TestObserverServer_Coins(t *testing.T) {
 	bodyBytes, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, circr, string(bodyBytes))
+}
+
+func TestMember_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/" + "not_valid_ref")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"reference wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
+}
+
+func TestMember_NoContent(t *testing.T) {
+	ref := gen.Reference().String()
+	resp, err := http.Get("http://" + apihost + "/api/member/" + ref)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestMember(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertDeposit(t, deposite, member, "10000", "1000", "eth_hash_1")
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  0,
+				Index:            0,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        0,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_WithoutDeposit(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "989898989"
+
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_Hold(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "5000"
+	clock.nowTime = currentTime
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+
+	deposit := models.Deposit{
+		Reference:       deposite.Bytes(),
+		MemberReference: member.Bytes(),
+		Amount:          "5000",
+		Balance:         balance,
+		EtheriumHash:    "eth_hash_1",
+		HoldReleaseDate: currentTime,
+		Vesting:         1000,
+		VestingStep:     10,
+	}
+	err := db.Insert(&deposit)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "5000",
+				AvailableAmount:  "0",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime,
+				Index:            0,
+				ReleasedAmount:   "0",
+				ReleaseEndDate:   currentTime + deposit.Vesting,
+				Status:           "LOCKED",
+				Timestamp:        0,
+				NextRelease: &SchemaNextRelease{
+					Amount:    "50",
+					Timestamp: currentTime + deposit.VestingStep,
+				},
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_Vesting(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "5000"
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+
+	deposit := models.Deposit{
+		Reference:       deposite.Bytes(),
+		MemberReference: member.Bytes(),
+		Amount:          balance,
+		Balance:         balance,
+		EtheriumHash:    "eth_hash_1",
+		HoldReleaseDate: currentTime,
+		Vesting:         1000,
+		VestingStep:     10,
+	}
+	err := db.Insert(&deposit)
+	require.NoError(t, err)
+
+	clock.nowTime = currentTime + deposit.VestingStep + 1
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "4950",
+				AvailableAmount:  "50",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime,
+				Index:            0,
+				ReleasedAmount:   "50",
+				ReleaseEndDate:   currentTime + deposit.Vesting,
+				Status:           "AVAILABLE",
+				Timestamp:        0,
+				NextRelease: &SchemaNextRelease{
+					Amount:    "50",
+					Timestamp: currentTime + 2*deposit.VestingStep,
+				},
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_VestingAll(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "5000"
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+
+	deposit := models.Deposit{
+		Reference:       deposite.Bytes(),
+		MemberReference: member.Bytes(),
+		Amount:          balance,
+		Balance:         balance,
+		EtheriumHash:    "eth_hash_1",
+		HoldReleaseDate: currentTime,
+		Vesting:         1000,
+		VestingStep:     10,
+	}
+	err := db.Insert(&deposit)
+	require.NoError(t, err)
+
+	clock.nowTime = currentTime + deposit.Vesting + 1
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "5000",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime,
+				Index:            0,
+				ReleasedAmount:   "5000",
+				ReleaseEndDate:   currentTime + deposit.Vesting,
+				Status:           "AVAILABLE",
+				Timestamp:        0,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_VestingAndSpent(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	amount := "5000"
+	balance := "4500"
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+
+	deposit := models.Deposit{
+		Reference:       deposite.Bytes(),
+		MemberReference: member.Bytes(),
+		Amount:          amount,
+		Balance:         balance,
+		EtheriumHash:    "eth_hash_1",
+		HoldReleaseDate: currentTime,
+		Vesting:         1000,
+		VestingStep:     10,
+	}
+	err := db.Insert(&deposit)
+	require.NoError(t, err)
+
+	clock.nowTime = currentTime + deposit.VestingStep*11 + 1
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "4450",
+				AvailableAmount:  "50",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime,
+				Index:            0,
+				ReleasedAmount:   "550",
+				ReleaseEndDate:   currentTime + deposit.Vesting,
+				Status:           "AVAILABLE",
+				Timestamp:        0,
+				NextRelease: &SchemaNextRelease{
+					Amount:    "50",
+					Timestamp: currentTime + 12*deposit.VestingStep,
+				},
+			},
+		},
+	}
+
+	require.Equal(t, expected, received)
 }

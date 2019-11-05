@@ -413,6 +413,7 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 type Querier interface {
 	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
 	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
 }
 
 var (
@@ -422,6 +423,10 @@ var (
 
 func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
 	return getMember(ctx, db, reference, []string{"balance"})
+}
+
+func GetMember(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
+	return getMember(ctx, db, reference, models.Member{}.Fields())
 }
 
 func getMember(ctx context.Context, db Querier, reference []byte, fields []string) (*models.Member, error) {
@@ -437,6 +442,18 @@ func getMember(ctx context.Context, db Querier, reference []byte, fields []strin
 		return nil, errors.Wrap(err, "failed to fetch member")
 	}
 	return member, nil
+}
+
+func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]models.Deposit, error) {
+	deposits := &[]models.Deposit{}
+	_, err := db.QueryContext(ctx, deposits,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from deposits where member_ref = ?0`, strings.Join(models.Deposit{}.Fields(), ",")),
+		memberReference)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch deposit")
+	}
+	return deposits, nil
 }
 
 func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
