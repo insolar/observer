@@ -49,7 +49,6 @@ func main() {
 
 	var dt *time.Time
 	if *collectDT != "" {
-		// layout := "2006-01-02T15:04:05.000Z"
 		layout := "2006-01-02 15:04:05"
 		tmp, err := time.Parse(layout, *collectDT)
 		if err != nil {

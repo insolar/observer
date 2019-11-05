@@ -47,9 +47,9 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "0.0000001000", res.Total)
-		require.Equal(t, "0.0000002000", res.Max)
-		require.Equal(t, "0.0000000100", res.Circulating)
+		require.Equal(t, "1000", res.Total)
+		require.Equal(t, "2000", res.Max)
+		require.Equal(t, "100", res.Circulating)
 	})
 
 	t.Run("medium counts", func(t *testing.T) {
@@ -65,9 +65,9 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "11112.2220000000", res.Total)
-		require.Equal(t, "33333.1111222222", res.Max)
-		require.Equal(t, "44444.4111111111", res.Circulating)
+		require.Equal(t, "111122220000000", res.Total)
+		require.Equal(t, "333331111222222", res.Max)
+		require.Equal(t, "444444111111111", res.Circulating)
 	})
 
 	t.Run("big counts", func(t *testing.T) {
@@ -83,9 +83,9 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "11111222200000.0055555555", res.Total)
-		require.Equal(t, "33333311112222.2244444444", res.Max)
-		require.Equal(t, "44444441111111.1199999999", res.Circulating)
+		require.Equal(t, "111112222000000055555555", res.Total)
+		require.Equal(t, "333333111122222244444444", res.Max)
+		require.Equal(t, "444444411111111199999999", res.Circulating)
 	})
 }
 
@@ -104,7 +104,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 			MigrationAddress: random.String(10),
 			WalletRef:        gen.Reference().Bytes(),
 			AccountState:     gen.ID().Bytes(),
-			Status:           "SUCCESS",
+			Status:           "TEST",
 			AccountRef:       gen.Reference().Bytes(),
 		}
 		err := db.Insert(memberModel)
@@ -127,11 +127,11 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		err := db.Insert(depModel)
 		require.NoError(t, err)
 	}
-	res, err := db.Model(&postgres.MemberSchema{}).Count()
+	res, err := db.Model(&postgres.MemberSchema{}).Where("status=?", "TEST").Count()
 	require.NoError(t, err)
 	require.Equal(t, size, res)
 
-	res, err = db.Model(&postgres.DepositSchema{}).Count()
+	res, err = db.Model(&postgres.DepositSchema{}).Where("member_ref=?", member.Bytes()).Count()
 	require.NoError(t, err)
 	require.Equal(t, size, res)
 
@@ -139,7 +139,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	sr := NewStatsManager(log, repo)
 
 	command := NewCalculateStatsCommand(log, db, sr)
-	err = command.Run()
+	err = command.Run(nil)
 	require.NoError(t, err)
 
 	stats := &postgres.StatsModel{}
