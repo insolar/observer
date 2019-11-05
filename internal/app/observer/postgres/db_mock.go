@@ -17,6 +17,8 @@
 package postgres
 
 import (
+	"context"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/sirupsen/logrus"
 )
@@ -43,6 +45,14 @@ func (m *DBMock) QueryOne(model, query interface{}, params ...interface{}) (orm.
 
 func (m *DBMock) Query(model, query interface{}, params ...interface{}) (orm.Result, error) {
 	return m.query(model, query, params...)
+}
+
+func (m *DBMock) QueryContext(_ context.Context, model, query interface{}, params ...interface{}) (orm.Result, error) {
+	return m.Query(model, query, params...)
+}
+
+func (m *DBMock) QueryOneContext(_ context.Context, model, query interface{}, params ...interface{}) (orm.Result, error) {
+	return m.QueryOne(model, query, params...)
 }
 
 type resultMock struct {

@@ -76,7 +76,7 @@ func (s *PulseStorage) Insert(model *observer.Pulse) error {
 		s.errorCounter.Inc()
 		s.log.WithField("pulse_row", row).
 			Errorf("failed to insert pulse")
-		return errors.New("failed to insert, affected is 0")
+		return nil
 	}
 	return nil
 }

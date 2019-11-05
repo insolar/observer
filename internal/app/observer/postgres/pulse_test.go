@@ -19,7 +19,6 @@ package postgres
 
 import (
 	"errors"
-	"strconv"
 	"testing"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 )
 
 func TestPulseStorage_Insert(t *testing.T) {
-
 	t.Run("nil", func(t *testing.T) {
 		cfg := configuration.Default()
 		obs := observability.Make(cfg)
@@ -111,7 +109,9 @@ func TestPulseStorage_Last(t *testing.T) {
 		cfg.DB.AttemptInterval = time.Nanosecond
 
 		storage := NewPulseStorage(cfg, obs, db)
-		require.Nil(t, storage.Last())
+		require.Panics(t, func() {
+			storage.Last()
+		})
 	})
 
 	t.Run("no_pulses", func(t *testing.T) {
@@ -139,14 +139,12 @@ func TestPulseStorage_Last(t *testing.T) {
 		expected := &observer.Pulse{Number: insolar.GenesisPulse.PulseNumber}
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
+			model[0].(*PulseSchema).Pulse = uint32(expected.Number)
 			return orm.NewQuery(db, model...)
 		}
 		db.queryOne = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
-			m, err := orm.NewModel(model)
-			require.NoError(t, err)
-			err = m.ScanColumn(0, "pulse", []byte(strconv.Itoa(int(expected.Number))))
-			require.NoError(t, err)
-			return makeResult(obs.Log(), expected), nil
+			res := makeResult(obs.Log(), expected)
+			return res, nil
 		}
 
 		storage := NewPulseStorage(cfg, obs, db)
