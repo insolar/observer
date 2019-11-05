@@ -72,3 +72,5 @@ Uses observer config in .artifacts/observer.yaml
 ```
 ./bin/xns_stats_count
 ```
+Optional param -time is using only for tests, allows to calculate stats on specified date/time.
+Example -time="2006-01-02 15:04:05"

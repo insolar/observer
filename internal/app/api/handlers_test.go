@@ -694,9 +694,9 @@ func TestObserverServer_Coins(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &jsonResp)
 	require.NoError(t, err)
 	expected := component.XnsCoinStats{
-		Total:       totalr,
-		Max:         maxr,
-		Circulating: circr,
+		Total:       total,
+		Max:         max,
+		Circulating: circ,
 	}
 	require.Equal(t, expected, jsonResp)
 
