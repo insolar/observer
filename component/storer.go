@@ -488,7 +488,7 @@ func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
 }
 
 func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
-	if t != "transfer" && t != "migration" && t != "after" {
+	if t != "transfer" && t != "migration" && t != "release" {
 		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'release'.") // nolint
 	}
 	query = query.Where("type = ?", t)
