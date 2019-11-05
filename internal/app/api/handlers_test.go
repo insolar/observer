@@ -447,6 +447,25 @@ func insertTransaction(t *testing.T, transactionID []byte, pulse int64, finishPu
 	require.NoError(t, err)
 }
 
+func insertTransactionForMembers(
+	t *testing.T, transactionID []byte, pulse int64, finishPulse int64, sequence int64,
+	memberFromReference, memberToReference insolar.Reference,
+) {
+	transaction := models.Transaction{
+		TransactionID:       transactionID,
+		PulseRecord:         [2]int64{pulse, sequence},
+		StatusRegistered:    true,
+		Amount:              "10",
+		Fee:                 "1",
+		FinishPulseRecord:   [2]int64{finishPulse, sequence},
+		Type:                models.TTypeTransfer,
+		MemberFromReference: memberFromReference.Bytes(),
+		MemberToReference:   memberToReference.Bytes(),
+	}
+	err := db.Insert(&transaction)
+	require.NoError(t, err)
+}
+
 func insertMember(t *testing.T, reference insolar.Reference, walletReference, accountReference *insolar.Reference, balance string) {
 	member := models.Member{
 		Reference: reference.Bytes(),
@@ -495,7 +514,7 @@ func TestTransactionsSearch(t *testing.T) {
 			"&status=registered&" +
 			"type=migration&" +
 			"index=" + pulseNumber.String() + "%3A1237&" +
-			"direction=before")
+			"order=reverse")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -511,7 +530,7 @@ func TestTransactionsSearch(t *testing.T) {
 	require.Equal(t, txIDFirst.String(), received[2].TxID)
 }
 
-func TestTransactionsSearch_DirectionAfter(t *testing.T) {
+func TestTransactionsSearch_OrderChronological(t *testing.T) {
 	defer truncateDB(t)
 	txIDFirst := gen.RecordReference()
 	txIDSecond := gen.RecordReference()
@@ -563,7 +582,7 @@ func TestTransactionsSearch_ValueTx(t *testing.T) {
 			"&status=registered&" +
 			"type=migration&" +
 			"index=" + pulseNumber.String() + "%3A1237&" +
-			"direction=before")
+			"order=reverse")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -596,7 +615,7 @@ func TestTransactionsSearch_WrongEverything(t *testing.T) {
 		Error: []string{
 			"Query parameter 'value' should be txID, fromMemberReference, toMemberReference or pulseNumber.",
 			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
-			"Query parameter 'type' should be 'transfer', 'migration' or 'after'.",
+			"Query parameter 'type' should be 'transfer', 'migration' or 'release'.",
 			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",
 			"Query parameter 'order' should be 'reverse' or 'chronological'.",
 		},
@@ -1034,5 +1053,133 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		},
 	}
 
+	require.Equal(t, expected, received)
+}
+
+func TestMemberTransaction_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/not_valid_ref/transactions?limit=15")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	received := &ErrorMessage{}
+	expected := &ErrorMessage{Error: []string{"reference wrong format"}}
+	requireEqualResponse(t, resp, received, expected)
+}
+
+func TestMemberTransaction_NoContent(t *testing.T) {
+	member := gen.Reference()
+	resp, err := http.Get("http://" + apihost + fmt.Sprintf("/api/member/%s/transactions?limit=15", member.String()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestMemberTransaction_Empty(t *testing.T) {
+	member := gen.Reference()
+	insertMember(t, member, nil, nil, "10000")
+	resp, err := http.Get("http://" + apihost + fmt.Sprintf("/api/member/%s/transactions?limit=15", member.String()))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestMemberTransactions(t *testing.T) {
+	defer truncateDB(t)
+
+	member1 := gen.Reference()
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	member2 := gen.Reference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertMember(t, member1, nil, nil, "10000")
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "20000")
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/member/" + member1.String() + "/transactions?" +
+			"limit=3&" +
+			"&status=registered&" +
+			"type=transfer&" +
+			"index=" + pulseNumber.String() + "%3A1237&" +
+			"order=reverse")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
+	require.Equal(t, txIDFirst.String(), received[1].TxID)
+}
+
+func TestMemberTransactions_OrderChronological(t *testing.T) {
+	defer truncateDB(t)
+	member1 := gen.Reference()
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	member2 := gen.Reference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertMember(t, member1, nil, nil, "10000")
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "20000")
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/member/" + member1.String() + "/transactions?" +
+			"limit=3&" +
+			"value=" + pulseNumber.String() +
+			"&status=registered&" +
+			"type=transfer&" +
+			"index=" + pulseNumber.String() + "%3A1233&" +
+			"order=chronological")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDFirst.String(), received[0].TxID)
+	require.Equal(t, txIDSecond.String(), received[1].TxID)
+}
+
+func TestMemberTransactions_WrongEverything(t *testing.T) {
+	member := gen.Reference()
+	resp, err := http.Get(
+		"http://" + apihost + "/api/member/" + member.String() + "/transactions?" +
+			"limit=15&" +
+			"status=some_not_valid_status&" +
+			"type=some_not_valid_type&" +
+			"index=some_not_valid_index&" +
+			"order=some_not_valid_order")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	expected := ErrorMessage{
+		Error: []string{
+			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
+			"Query parameter 'type' should be 'transfer', 'migration' or 'release'.",
+			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",
+			"Query parameter 'order' should be 'reverse' or 'chronological'.",
+		},
+	}
+	received := ErrorMessage{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
 	require.Equal(t, expected, received)
 }

@@ -489,9 +489,18 @@ func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
 
 func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
 	if t != "transfer" && t != "migration" && t != "after" {
-		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'release'.") // nolint
 	}
 	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByMemberReference(query *orm.Query, ref *insolar.Reference) (*orm.Query, error) {
+	query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+		q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
+			WhereOr("member_to_ref = ?", ref.Bytes())
+		return q, nil
+	})
 	return query, nil
 }
 
@@ -538,7 +547,7 @@ func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, wher
 		if whereCondition {
 			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" DESC")
+		query = query.Order(columnName + " DESC")
 	case "chronological":
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)
