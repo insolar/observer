@@ -63,6 +63,7 @@ func TestMain(t *testing.M) {
 	if err != nil {
 		log.Panicf("Could not start resource: %s", err)
 	}
+	log.Printf("PostgreSQL started - store_test, container: %v\n", resource.Container.ID)
 
 	defer func() {
 		// When you're done, kill and remove the container
@@ -70,6 +71,7 @@ func TestMain(t *testing.M) {
 		if err != nil {
 			log.Panicf("failed to purge docker pool: %s", err)
 		}
+		log.Printf("PostgreSQL stopped - store_test, container: %v\n", resource.Container.ID)
 	}()
 
 	if err = pool.Retry(func() error {
@@ -102,6 +104,7 @@ func TestMain(t *testing.M) {
 
 	retCode := t.Run()
 
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
 	err = pool.Purge(resource)
 	if err != nil {
 		log.Panicf("failed to purge docker pool: %s", err)

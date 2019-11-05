@@ -64,6 +64,7 @@ func TestMain(t *testing.M) {
 	if err != nil {
 		log.Panicf("Could not start resource: %s", err)
 	}
+	log.Printf("PostgreSQL started - api_test, container: %v\n", resource.Container.ID)
 
 	defer func() {
 		// When you're done, kill and remove the container
@@ -71,6 +72,7 @@ func TestMain(t *testing.M) {
 		if err != nil {
 			log.Panicf("failed to purge docker pool: %s", err)
 		}
+		log.Printf("PostgreSQL stopped - api_test, container: %v\n", resource.Container.ID)
 	}()
 
 	if err = pool.Retry(func() error {
@@ -112,7 +114,16 @@ func TestMain(t *testing.M) {
 	// TODO: wait until API started
 	// TODO: flush db
 	time.Sleep(5 * time.Second)
-	os.Exit(t.Run())
+
+	retCode := t.Run()
+
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
+	err = pool.Purge(resource)
+	if err != nil {
+		log.Panicf("failed to purge docker pool: %s", err)
+	}
+
+	os.Exit(retCode)
 }
 
 func truncateDB(t *testing.T) {
