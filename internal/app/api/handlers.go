@@ -207,7 +207,7 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
 
-	s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
 
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
@@ -278,7 +278,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		}
 	}
 
-	s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
 
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
@@ -366,7 +366,7 @@ func checkIndex(i string) (int64, int64, error) {
 
 func (s *ObserverServer) getTransactions(
 	query *orm.Query, errorMsg *ErrorMessage, status, typeParam, index, order *string,
-) {
+) *orm.Query {
 	var err error
 	if status != nil {
 		query, err = component.FilterByStatus(query, *status)
@@ -398,4 +398,5 @@ func (s *ObserverServer) getTransactions(
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
+	return query
 }
