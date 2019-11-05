@@ -131,6 +131,7 @@ type beauty struct {
 	mgrUpdates    map[insolar.Reference]*observer.MGRUpdate
 	notifications map[insolar.Reference]*observer.Notification
 	transactions  []*observer.Transaction
+	groupBalances []*observer.BalanceUpdate
 }
 
 type state struct {

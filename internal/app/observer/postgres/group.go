@@ -82,6 +82,23 @@ func (s *GroupStorage) Insert(model *observer.Group) error {
 	return nil
 }
 
+func (s *GroupStorage) UpdateBalance(model *observer.BalanceUpdate) error {
+	if model == nil {
+		s.log.Warnf("trying to apply nil update group model")
+		return nil
+	}
+
+	_, err := s.db.Model(&GroupSchema{}).
+		Where("ref=?", model.GroupRef.Bytes()).
+		Set("balance=?", model.Balance).
+		Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update group =%v", model)
+	}
+	return nil
+}
+
 func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 	if model == nil {
 		s.log.Warnf("trying to apply nil update group model")

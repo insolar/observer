@@ -48,6 +48,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	mgrs := collecting.NewMGRCollector(log)
 	notifications := collecting.NewNotificationCollector(log)
 	transactions := collecting.NewTransactionCollector(log)
+	groupBalances := collecting.NewBalanceUpdateCollector(log)
 
 	return func(r *raw) *beauty {
 		if r == nil {
@@ -71,6 +72,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrUpdates:    make(map[insolar.Reference]*observer.MGRUpdate),
 			notifications: make(map[insolar.Reference]*observer.Notification),
 			transactions:  []*observer.Transaction{},
+			groupBalances: []*observer.BalanceUpdate{},
 		}
 		for _, rec := range r.batch {
 			// entities
@@ -129,6 +131,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrUpdate := mgrsUpdate.Collect(rec)
 			if mgrUpdate != nil {
 				b.mgrUpdates[mgrUpdate.MGRState] = mgrUpdate
+			}
+
+			balanceUpdate := groupBalances.Collect(rec)
+			if balanceUpdate != nil {
+				b.groupBalances = append(b.groupBalances, balanceUpdate)
 			}
 
 			kyc := kycs.Collect(rec)
