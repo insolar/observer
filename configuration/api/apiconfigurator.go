@@ -19,6 +19,7 @@ package api
 import (
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -42,6 +43,8 @@ func Load() *Configuration {
 
 func load() *Configuration {
 	v := viper.New()
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
 	v.AddConfigPath(".")
