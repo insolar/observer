@@ -60,18 +60,15 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 	panic("implement me")
 }
 
+// GetMigrationAddressCount returns the total number of non-assigned migration addresses
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
-	//count, err := s.db.Model(&models.MigrationAddress{}).
-	//	Where("wasted = ?", false).Count()
-
-	var count int
-	_, err := s.db.Query(&count, `SELECT count(*) FROM migration_addresses WHERE wasted = false`)
+	count, err := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = false").
+		Count()
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
-
-	//s.db.Exec(`SELECT count(*) FROM migration_addresses WHERE wasted = false`)
 
 	resJSON := make(map[string]int, 1)
 	resJSON["count"] = count

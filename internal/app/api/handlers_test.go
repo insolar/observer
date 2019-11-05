@@ -76,6 +76,9 @@ func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransact
 func TestMigrationAddressCount(t *testing.T) {
 	defer truncateDB(t)
 
+	// Make sure /admin/migration/addresses/count returns the total number
+	// of non-assigned migration addresses.
+
 	// insert migration addresses
 	var err error
 	wasted := []bool{true, false, true, false, true}

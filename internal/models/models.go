@@ -109,10 +109,10 @@ type Transaction struct {
 type MigrationAddress struct {
 	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
 
-	ID           	int64	`sql:"id"`
-	Addr			string	`sql:"addr"`
-	Timestamp 		int64	`sql:"timestamp"`
-	Wasted			bool	`sql:"wasted"`
+	ID           	int64	`sql:"id,notnull"`
+	Addr			string	`sql:"addr,notnull"`
+	Timestamp 		int64	`sql:"timestamp,notnull"`
+	Wasted			bool	`sql:"wasted,notnull"`
 }
 
 type fieldCache struct {
