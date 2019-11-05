@@ -153,7 +153,7 @@ type beauty struct {
 
 	txRegister   []observer.TxRegister
 	txResult     []observer.TxResult
-	txSagaResult []observer.TxSagaResult // nolint
+	txSagaResult []observer.TxSagaResult
 }
 
 type state struct {

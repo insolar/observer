@@ -58,3 +58,13 @@ type TxSagaResult struct {
 	FinishPulseNumber  int64
 	FinishRecordNumber int64
 }
+
+func (t *TxSagaResult) Validate() error {
+	if len(t.TransactionID) == 0 {
+		return errors.New("TransactionID should not be empty")
+	}
+	if t.FinishPulseNumber == 0 {
+		return errors.New("FinishPulseNumber should not be zero")
+	}
+	return nil
+}
