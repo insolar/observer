@@ -27,7 +27,7 @@ import (
 
 func TestTxRegisterCollector_Collect(t *testing.T) {
 	ctx := context.Background()
-	c := NewTxRegisterCollector()
+	c := NewTxRegisterCollector(logrus.New())
 
 	t.Run("transfer happy path", func(t *testing.T) {
 		txID := gen.ID()
