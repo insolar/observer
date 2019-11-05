@@ -33,31 +33,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/observability"
 )
-
-func Test_makeStorer(t *testing.T) {
-	cfg := configuration.Default()
-	obs := observability.Make(cfg)
-	conn := connectivity.Make(cfg, obs)
-	storer := makeStorer(cfg, obs, conn)
-
-	b := &beauty{
-		transfers: []*observer.Transfer{{}},
-	}
-	s := &state{}
-
-	cfg.DB.Attempts = 1
-	cfg.DB.AttemptInterval = time.Nanosecond
-
-	require.NotPanics(t, func() {
-		storer(b, s)
-	})
-}
 
 func TestStoreSimpleTransactions(t *testing.T) {
 	expectedTransactions := []models.Transaction{
