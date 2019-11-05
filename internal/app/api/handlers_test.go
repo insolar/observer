@@ -73,6 +73,42 @@ func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransact
 	}
 }
 
+func TestMigrationAddressCount(t *testing.T) {
+	defer truncateDB(t)
+
+	// insert migration addresses
+	var err error
+	wasted := []bool{true, false, true, false, true}
+	expectedCount := 0
+	for i := 0; i < len(wasted); i++ {
+		migrationAddress := models.MigrationAddress{
+			ID: 31000 + int64(i),
+			Addr: fmt.Sprintf("migration_addr_%v", i),
+			Timestamp: time.Now().Unix(),
+			Wasted: wasted[i],
+		}
+
+		if !wasted[i] {
+			expectedCount++
+		}
+
+		err = db.Insert(&migrationAddress)
+		require.NoError(t, err)
+	}
+
+	// request one recent closed transaction using API
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses/count")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received map[string]int
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, expectedCount, received["count"])
+}
+
 func TestTransaction_WrongFormat(t *testing.T) {
 	txID := "123"
 	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID)

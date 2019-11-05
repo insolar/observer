@@ -62,7 +62,7 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 	count, err := s.db.Model(&models.MigrationAddress{}).
-		Where("wasted = ?", true).
+		Where("wasted = ?", false).
 		Count()
 	if err != nil {
 		s.log.Error(err)
