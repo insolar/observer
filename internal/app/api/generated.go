@@ -5,9 +5,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 // ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
@@ -112,21 +113,18 @@ type SchemaCostCenter struct {
 
 // SchemaDeposit defines model for schema-deposit.
 type SchemaDeposit struct {
-	AmountOnHold     string  `json:"amountOnHold"`
-	AvailableAmount  string  `json:"availableAmount"`
-	DepositReference string  `json:"depositReference"`
-	EthTxHash        string  `json:"ethTxHash"`
-	HoldReleaseDate  int64   `json:"holdReleaseDate"`
-	Index            float32 `json:"index"`
-	MemberReference  *string `json:"memberReference,omitempty"`
-	NextRelease      *struct {
-		Amount    string `json:"amount"`
-		Timestamp int64  `json:"timestamp"`
-	} `json:"nextRelease,omitempty"`
-	ReleaseEndDate int64  `json:"releaseEndDate"`
-	ReleasedAmount string `json:"releasedAmount"`
-	Status         string `json:"status"`
-	Timestamp      int64  `json:"timestamp"`
+	AmountOnHold     string             `json:"amountOnHold"`
+	AvailableAmount  string             `json:"availableAmount"`
+	DepositReference string             `json:"depositReference"`
+	EthTxHash        string             `json:"ethTxHash"`
+	HoldReleaseDate  int64              `json:"holdReleaseDate"`
+	Index            float32            `json:"index"`
+	MemberReference  *string            `json:"memberReference,omitempty"`
+	NextRelease      *SchemaNextRelease `json:"nextRelease,omitempty"`
+	ReleaseEndDate   int64              `json:"releaseEndDate"`
+	ReleasedAmount   string             `json:"releasedAmount"`
+	Status           string             `json:"status"`
+	Timestamp        int64              `json:"timestamp"`
 }
 
 // SchemaFeeMember defines model for schema-fee-member.
@@ -152,6 +150,12 @@ type SchemaMigration struct {
 	ToDepositReference  string `json:"toDepositReference"`
 	ToMemberReference   string `json:"toMemberReference"`
 	Type                string `json:"type"`
+}
+
+// SchemaNextRelease defines model for schema-next-release.
+type SchemaNextRelease struct {
+	Amount    string `json:"amount"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 // SchemaRelease defines model for schema-release.
@@ -823,4 +827,3 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
-

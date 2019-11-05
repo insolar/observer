@@ -38,7 +38,7 @@ func main() {
 	}
 	db := pg.Connect(opt)
 	logger := logrus.New()
-	observerAPI := api.NewObserverServer(db, logger)
+	observerAPI := api.NewObserverServer(db, logger, &api.DefaultClock{})
 
 	api.RegisterHandlers(e, observerAPI)
 	e.Logger.Fatal(e.Start(cfg.API.Addr))

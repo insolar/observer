@@ -17,6 +17,9 @@
 package api
 
 import (
+	"math/big"
+	"strconv"
+
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/internal/models"
 )
@@ -93,4 +96,80 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	default:
 		return internalTx
 	}
+}
+
+func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64) ResponsesMemberYaml {
+	var resDeposits []SchemaDeposit
+
+	for _, d := range deposits {
+		amount, _ := strconv.ParseInt(d.Amount, 10, 64)
+		releaseAmount := d.ReleaseAmount(currentTime)
+		balance, _ := strconv.ParseInt(d.Balance, 10, 64)
+		amountOnHold := amount - releaseAmount
+		resDeposit := SchemaDeposit{
+			Index:           0,
+			AmountOnHold:    strconv.FormatInt(amountOnHold, 10),
+			AvailableAmount: strconv.FormatInt(balance-amountOnHold, 10),
+			EthTxHash:       d.EtheriumHash,
+			HoldReleaseDate: d.HoldReleaseDate,
+			NextRelease:     NextRelease(currentTime, amount, d),
+			ReleasedAmount:  strconv.FormatInt(releaseAmount, 10),
+			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
+			Status:          d.Status(currentTime),
+			Timestamp:       d.TransferDate,
+		}
+		ref := insolar.NewReferenceFromBytes(d.Reference)
+		if ref != nil {
+			resDeposit.DepositReference = ref.String()
+		}
+
+		resDeposits = append(resDeposits, resDeposit)
+	}
+
+	res := ResponsesMemberYaml{
+		Balance: member.Balance,
+	}
+	if len(resDeposits) > 0 {
+		res.Deposits = &resDeposits
+	}
+	ref := insolar.NewReferenceFromBytes(member.WalletReference)
+	if ref != nil {
+		res.WalletReference = ref.String()
+	}
+	ref = insolar.NewReferenceFromBytes(member.AccountReference)
+	if ref != nil {
+		res.AccountReference = ref.String()
+	}
+	if member.MigrationAddress != "" {
+		res.MigrationAddress = &member.MigrationAddress
+	}
+
+	return res
+}
+
+func NextRelease(currentTime int64, amount int64, deposit models.Deposit) *SchemaNextRelease {
+	var timestamp int64
+	if deposit.HoldReleaseDate == 0 {
+		return nil
+	}
+	if deposit.Vesting == 0 {
+		return nil
+	}
+	if currentTime <= deposit.HoldReleaseDate {
+		timestamp = deposit.HoldReleaseDate + deposit.VestingStep
+	} else {
+		if currentTime >= (deposit.HoldReleaseDate + deposit.Vesting) {
+			return nil
+		}
+		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
+	}
+	res := SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit)}
+	return &res
+}
+
+func nextReleaseAmount(amount int64, deposit *models.Deposit) string {
+	stepValue := float64(deposit.VestingStep) / float64(deposit.Vesting)
+	amountFloat := big.NewFloat(float64(amount))
+	releaseAmount := new(big.Float).Mul(big.NewFloat(stepValue), amountFloat)
+	return releaseAmount.String()
 }

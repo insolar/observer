@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
@@ -35,13 +36,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ObserverServer struct {
-	db  *pg.DB
-	log *logrus.Logger
+type Clock interface {
+	Now() time.Time
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
-	return &ObserverServer{db: db, log: log}
+type DefaultClock struct{}
+
+func (c *DefaultClock) Now() time.Time {
+	return time.Now()
+}
+
+type ObserverServer struct {
+	db    *pg.DB
+	log   *logrus.Logger
+	clock Clock
+}
+
+func NewObserverServer(db *pg.DB, log *logrus.Logger, clock Clock) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -114,7 +126,33 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix()))
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {

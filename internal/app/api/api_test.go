@@ -51,6 +51,8 @@ var (
 		Database:        database,
 		ApplicationName: "observer",
 	}
+
+	clock = &testClock{}
 )
 
 func TestMain(t *testing.M) {
@@ -104,7 +106,7 @@ func TestMain(t *testing.M) {
 	e := echo.New()
 
 	logger := logrus.New()
-	observerAPI := NewObserverServer(db, logger)
+	observerAPI := NewObserverServer(db, logger, clock)
 	RegisterHandlers(e, observerAPI)
 	go func() {
 		e.Logger.Fatal(e.Start(apihost))
@@ -118,4 +120,16 @@ func TestMain(t *testing.M) {
 func truncateDB(t *testing.T) {
 	_, err := db.Model(&models.Transaction{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
+	_, err = db.Model(&models.Member{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+	_, err = db.Model(&models.Deposit{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+}
+
+type testClock struct {
+	nowTime int64
+}
+
+func (c *testClock) Now() time.Time {
+	return time.Unix(c.nowTime, 0)
 }
