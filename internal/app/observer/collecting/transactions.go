@@ -52,7 +52,7 @@ func NewTxRegisterCollector(log *logrus.Logger) *TxRegisterCollector {
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
 	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log = log.WithField("collect_process_id", uuid.New()).Logger
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -299,7 +299,7 @@ func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxRe
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
 	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log = log.WithField("collect_process_id", uuid.New()).Logger
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -400,7 +400,7 @@ func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
 	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = c.log.WithField("collect_process_id", uuid.New()).Logger
+	log = log.WithField("collect_process_id", uuid.New()).Logger
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
