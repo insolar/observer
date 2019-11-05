@@ -52,9 +52,6 @@ func makeBeautifier(
 	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
-	migrationTransfers := collecting.NewMigrationTransferCollector(log, cachedStore, treeBuilder)
-	withdrawTransfers := collecting.NewWithdrawTransferCollector(log, cachedStore, treeBuilder)
-	standardTransfers := collecting.NewStandardTransferCollector(log, cachedStore, treeBuilder)
 	txRegisters := collecting.NewTxRegisterCollector()
 	txResults := collecting.NewTxResultCollector(log, cachedStore)
 	txSagaResults := collecting.NewTxSagaResultCollector(log, cachedStore)
@@ -103,19 +100,6 @@ func makeBeautifier(
 			for _, member := range members {
 				b.members[member.AccountState] = member
 			}
-
-			migrationTransfer := migrationTransfers.Collect(ctx, &obsRecord)
-			if migrationTransfer != nil {
-				b.transfers = append(b.transfers, migrationTransfer)
-			}
-
-			withdrawTransfer := withdrawTransfers.Collect(ctx, &obsRecord)
-			if withdrawTransfer != nil {
-				b.transfers = append(b.transfers, withdrawTransfer)
-			}
-
-			standardTransfers := standardTransfers.Collect(ctx, &obsRecord)
-			b.transfers = append(b.transfers, standardTransfers...)
 			reg := txRegisters.Collect(ctx, *rec)
 			if reg != nil {
 				b.txRegister = append(b.txRegister, *reg)
@@ -158,10 +142,12 @@ func makeBeautifier(
 
 		log := obs.Log()
 		log.WithFields(logrus.Fields{
-			"transfers": len(b.transfers),
-			"members":   len(b.members),
-			"deposits":  len(b.deposits),
-			"addresses": len(b.addresses),
+			"tx_registrations": len(b.txRegister),
+			"tx_results":       len(b.txResult),
+			"tx_saga_results":  len(b.txSagaResult),
+			"members":          len(b.members),
+			"deposits":         len(b.deposits),
+			"addresses":        len(b.addresses),
 		}).Infof("collected entities")
 
 		log.WithFields(logrus.Fields{
@@ -170,7 +156,7 @@ func makeBeautifier(
 			"migration_address_updates": len(b.wastings),
 		}).Infof("collected depositUpdates")
 
-		metric.Transfers.Add(float64(len(b.transfers)))
+		metric.Transfers.Add(float64(len(b.txSagaResult)))
 		metric.Members.Add(float64(len(b.members)))
 		metric.Deposits.Add(float64(len(b.deposits)))
 		metric.Addresses.Add(float64(len(b.addresses)))

@@ -144,17 +144,6 @@ func makeStorer(
 					}
 				}
 
-				transfers := postgres.NewTransferStorage(obs, tx)
-				for _, transfer := range b.transfers {
-					if transfers == nil {
-						continue
-					}
-					err := transfers.Insert(transfer)
-					if err != nil {
-						return err
-					}
-				}
-
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
 					return err
@@ -230,18 +219,18 @@ func makeStorer(
 				nodes := len(b.pulse.Nodes)
 				byMonth := 0
 				if month(s.stat.Pulse) == month(b.pulse.Number) {
-					byMonth = s.stat.LastMonthTransfers + len(b.transfers)
+					byMonth = s.stat.LastMonthTransfers + len(b.txSagaResult)
 				} else {
-					byMonth = len(b.transfers)
+					byMonth = len(b.txSagaResult)
 				}
 				statistics := postgres.NewStatisticStorage(cfg, obs, tx)
 				stat = &observer.Statistic{
 					Pulse:              b.pulse.Number,
-					Transfers:          len(b.transfers),
-					TotalTransfers:     s.stat.TotalTransfers + len(b.transfers),
+					Transfers:          len(b.txSagaResult),
+					TotalTransfers:     s.stat.TotalTransfers + len(b.txSagaResult),
 					TotalMembers:       s.stat.TotalMembers + len(b.members),
 					Nodes:              nodes,
-					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.transfers)),
+					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.txSagaResult)),
 					LastMonthTransfers: byMonth,
 				}
 				err = statistics.Insert(stat)
@@ -267,7 +256,7 @@ func makeStorer(
 			s.ms.Reset()
 		}
 
-		metric.Transfers.Add(float64(len(b.transfers)))
+		metric.Transfers.Add(float64(len(b.txSagaResult)))
 		metric.Members.Add(float64(len(b.members)))
 		metric.Deposits.Add(float64(len(b.deposits)))
 		metric.Addresses.Add(float64(len(b.addresses)))
@@ -521,7 +510,7 @@ func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, wher
 		if whereCondition {
 			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" DESC")
+		query = query.Order(columnName + " DESC")
 	case "chronological":
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)

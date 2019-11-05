@@ -47,7 +47,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 			"deactivate": len(b.deactivates),
 		}).Infof("separated records")
 
-		metric.Transfers.Add(float64(len(b.transfers)))
+		metric.Transfers.Add(float64(len(b.txSagaResult)))
 		metric.Members.Add(float64(len(b.members)))
 		metric.Deposits.Add(float64(len(b.deposits)))
 		metric.Addresses.Add(float64(len(b.addresses)))
