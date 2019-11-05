@@ -827,4 +827,3 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
-

@@ -112,7 +112,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			AvailableAmount: strconv.FormatInt(balance-amountOnHold, 10),
 			EthTxHash:       d.EtheriumHash,
 			HoldReleaseDate: d.HoldReleaseDate,
-			NextRelease:     NextRelease(currentTime, amount, &d),
+			NextRelease:     NextRelease(currentTime, amount, d),
 			ReleasedAmount:  strconv.FormatInt(releaseAmount, 10),
 			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
 			Status:          d.Status(currentTime),
@@ -147,7 +147,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 	return res
 }
 
-func NextRelease(currentTime int64, amount int64, deposit *models.Deposit) *SchemaNextRelease {
+func NextRelease(currentTime int64, amount int64, deposit models.Deposit) *SchemaNextRelease {
 	var timestamp int64
 	if deposit.HoldReleaseDate == 0 {
 		return nil
@@ -163,7 +163,7 @@ func NextRelease(currentTime int64, amount int64, deposit *models.Deposit) *Sche
 		}
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
 	}
-	res := SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, deposit)}
+	res := SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit)}
 	return &res
 }
 
