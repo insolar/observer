@@ -18,6 +18,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/go-pg/pg"
 	apiconfiguration "github.com/insolar/observer/configuration/api"
@@ -32,7 +33,7 @@ func main() {
 	e := echo.New()
 	cfg := apiconfiguration.Load()
 
-	opt, err := pg.ParseURL(cfg.DB.URL)
+	opt, err := pg.ParseURL(dbURL(cfg))
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
 	}
@@ -41,5 +42,19 @@ func main() {
 	observerAPI := api.NewObserverServer(db, logger, &api.DefaultClock{})
 
 	api.RegisterHandlers(e, observerAPI)
-	e.Logger.Fatal(e.Start(cfg.API.Addr))
+	e.Logger.Fatal(e.Start(listenAddress(cfg)))
+}
+
+func listenAddress(cfg *apiconfiguration.Configuration) string {
+	if a := os.Getenv("LISTEN_ADDRESS"); a != "" {
+		return a
+	}
+	return cfg.API.Addr
+}
+
+func dbURL(cfg *apiconfiguration.Configuration) string {
+	if u := os.Getenv("DB_URL"); u != "" {
+		return u
+	}
+	return cfg.DB.URL
 }
