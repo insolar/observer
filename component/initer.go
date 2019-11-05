@@ -124,11 +124,6 @@ func createTables(cfg *configuration.Configuration, obs *observability.Observabi
 			log.Error(errors.Wrapf(err, "failed to create deposits table"))
 		}
 
-		err = db.CreateTable(&postgres.TransferSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create transfer table"))
-		}
-
 		err = db.CreateTable(&postgres.MigrationAddressSchema{}, &orm.CreateTableOptions{IfNotExists: true})
 		if err != nil {
 			log.Error(errors.Wrapf(err, "failed to create migration_addresses table"))
