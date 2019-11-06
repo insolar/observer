@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -38,6 +39,11 @@ type StatsGetter interface {
 	Total() (string, error)
 	Max() (string, error)
 	Circulating() (string, error)
+}
+
+type StatsCollecter interface {
+	CountStats(time *time.Time) (XnsCoinStats, error)
+	InsertStats(xcs XnsCoinStats) error
 }
 
 type StatsManager struct {
@@ -59,9 +65,9 @@ func (s *StatsManager) Coins() (XnsCoinStats, error) {
 	}
 	return XnsCoinStats{
 		Created:     lastStats.Created,
-		Total:       s.convertToCMCFormat(lastStats.Total),
-		Max:         s.convertToCMCFormat(lastStats.Max),
-		Circulating: s.convertToCMCFormat(lastStats.Circulating),
+		Total:       lastStats.Total,
+		Max:         lastStats.Max,
+		Circulating: lastStats.Circulating,
 	}, nil
 }
 
@@ -70,7 +76,7 @@ func (s *StatsManager) Total() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return res.Total, nil
+	return s.convertToCMCFormat(res.Total), nil
 }
 
 func (s *StatsManager) Max() (string, error) {
@@ -78,7 +84,7 @@ func (s *StatsManager) Max() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return res.Max, nil
+	return s.convertToCMCFormat(res.Max), nil
 }
 
 func (s *StatsManager) Circulating() (string, error) {
@@ -86,11 +92,11 @@ func (s *StatsManager) Circulating() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return res.Circulating, nil
+	return s.convertToCMCFormat(res.Circulating), nil
 }
 
-func (s *StatsManager) CountStats() (XnsCoinStats, error) {
-	st, err := s.repository.CountStats()
+func (s *StatsManager) CountStats(time *time.Time) (XnsCoinStats, error) {
+	st, err := s.repository.CountStats(time)
 	if err != nil {
 		return XnsCoinStats{}, err
 	}
@@ -124,4 +130,37 @@ func (s *StatsManager) convertToCMCFormat(str string) string {
 		return fmt.Sprintf("0.%010s", str)
 	}
 	return str[:len(str)-10] + "." + str[len(str)-10:]
+}
+
+type CalculateStatsCommand struct {
+	log          *logrus.Logger
+	db           orm.DB
+	statsManager StatsCollecter
+}
+
+func NewCalculateStatsCommand(logger *logrus.Logger, db orm.DB, manager StatsCollecter) *CalculateStatsCommand {
+	return &CalculateStatsCommand{
+		log:          logger,
+		db:           db,
+		statsManager: manager,
+	}
+}
+
+func (s *CalculateStatsCommand) Run(currentDT *time.Time) error {
+	stats, err := s.statsManager.CountStats(currentDT)
+	if err != nil {
+		return err
+	}
+
+	s.log.Debugf("Collected stats: %+v", stats)
+	// don't save if it is historical request
+	if currentDT != nil {
+		return nil
+	}
+
+	err = s.statsManager.InsertStats(stats)
+	if err != nil {
+		return err
+	}
+	return nil
 }

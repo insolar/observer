@@ -17,12 +17,14 @@
 package api
 
 import (
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-pg/pg/orm"
+
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
 	"github.com/go-pg/pg"
@@ -51,18 +53,60 @@ type ObserverServer struct {
 	db    *pg.DB
 	log   *logrus.Logger
 	clock Clock
+	fee   *big.Int
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, clock Clock) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock}
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
-	panic("implement me")
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	query := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = false")
+	if params.Index != nil {
+		id, err := strconv.ParseInt(*params.Index, 10, 64)
+		if err != nil {
+			s.log.Error(err)
+			return ctx.JSON(http.StatusBadRequest, struct{}{})
+		}
+		query = query.Where("id > ?", id)
+	}
+	var result []models.MigrationAddress
+	err := query.Order("id").Limit(limit).Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		index := strconv.FormatInt(result[i].ID, 10)
+		m := make(map[string]string, 2)
+		m["address"] = result[i].Addr
+		m["index"] = index
+		resJSON[i] = m
+	}
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
+// GetMigrationAddressCount returns the total number of non-assigned migration addresses
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
-	panic("implement me")
+	count, err := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = false").
+		Count()
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make(map[string]int, 1)
+	resJSON["count"] = count
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
@@ -123,7 +167,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
@@ -202,7 +246,7 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	var txs []models.Transaction
 	query := s.db.Model(&txs)
 
-	query, err = component.FilterByMemberReference(query, ref)
+	query, err = component.FilterByMemberReferenceAndDirection(query, ref, params.Direction)
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
@@ -279,11 +323,9 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	}
 
 	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
-
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
 	}
-
 	err = query.Limit(params.Limit).Select()
 
 	if err != nil {
@@ -310,7 +352,11 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
+		TotalSupply:       result.Total,
+		MaxSupply:         result.Max,
+		CirculatingSupply: result.Circulating,
+	})
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {

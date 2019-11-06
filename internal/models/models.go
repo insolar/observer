@@ -41,6 +41,7 @@ type Member struct {
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
+	ID              int64  `sql:"id"`
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
 	EtheriumHash    string `sql:"eth_hash"`
@@ -106,6 +107,15 @@ type Transaction struct {
 	FinishPulseRecord [2]int64 `sql:"finish_pulse_record" pg:",array"`
 }
 
+type MigrationAddress struct {
+	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
+
+	ID        int64  `sql:"id,notnull"`
+	Addr      string `sql:"addr,notnull"`
+	Timestamp int64  `sql:"timestamp,notnull"`
+	Wasted    bool   `sql:"wasted,notnull"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string
@@ -148,6 +158,11 @@ func (t Transaction) QuotedFields() []string {
 		fields[i] = fmt.Sprintf("'%s'", fields[i])
 	}
 	return fields
+}
+
+func (ma MigrationAddress) Fields() []string {
+	tType := reflect.TypeOf(ma)
+	return getFields(tType)
 }
 
 func getFieldList(t reflect.Type) []string {

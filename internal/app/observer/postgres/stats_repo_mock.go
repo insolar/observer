@@ -5,6 +5,7 @@ package postgres
 import (
 	"sync"
 	mm_atomic "sync/atomic"
+	"time"
 	mm_time "time"
 
 	"github.com/gojuno/minimock"
@@ -14,8 +15,8 @@ import (
 type StatsRepoMock struct {
 	t minimock.Tester
 
-	funcCountStats          func() (s1 StatsModel, err error)
-	inspectFuncCountStats   func()
+	funcCountStats          func(time *time.Time) (s1 StatsModel, err error)
+	inspectFuncCountStats   func(time *time.Time)
 	afterCountStatsCounter  uint64
 	beforeCountStatsCounter uint64
 	CountStatsMock          mStatsRepoMockCountStats
@@ -41,6 +42,7 @@ func NewStatsRepoMock(t minimock.Tester) *StatsRepoMock {
 	}
 
 	m.CountStatsMock = mStatsRepoMockCountStats{mock: m}
+	m.CountStatsMock.callArgs = []*StatsRepoMockCountStatsParams{}
 
 	m.InsertStatsMock = mStatsRepoMockInsertStats{mock: m}
 	m.InsertStatsMock.callArgs = []*StatsRepoMockInsertStatsParams{}
@@ -54,14 +56,22 @@ type mStatsRepoMockCountStats struct {
 	mock               *StatsRepoMock
 	defaultExpectation *StatsRepoMockCountStatsExpectation
 	expectations       []*StatsRepoMockCountStatsExpectation
+
+	callArgs []*StatsRepoMockCountStatsParams
+	mutex    sync.RWMutex
 }
 
 // StatsRepoMockCountStatsExpectation specifies expectation struct of the StatsRepo.CountStats
 type StatsRepoMockCountStatsExpectation struct {
-	mock *StatsRepoMock
-
+	mock    *StatsRepoMock
+	params  *StatsRepoMockCountStatsParams
 	results *StatsRepoMockCountStatsResults
 	Counter uint64
+}
+
+// StatsRepoMockCountStatsParams contains parameters of the StatsRepo.CountStats
+type StatsRepoMockCountStatsParams struct {
+	time *time.Time
 }
 
 // StatsRepoMockCountStatsResults contains results of the StatsRepo.CountStats
@@ -71,7 +81,7 @@ type StatsRepoMockCountStatsResults struct {
 }
 
 // Expect sets up expected params for StatsRepo.CountStats
-func (mmCountStats *mStatsRepoMockCountStats) Expect() *mStatsRepoMockCountStats {
+func (mmCountStats *mStatsRepoMockCountStats) Expect(time *time.Time) *mStatsRepoMockCountStats {
 	if mmCountStats.mock.funcCountStats != nil {
 		mmCountStats.mock.t.Fatalf("StatsRepoMock.CountStats mock is already set by Set")
 	}
@@ -80,11 +90,18 @@ func (mmCountStats *mStatsRepoMockCountStats) Expect() *mStatsRepoMockCountStats
 		mmCountStats.defaultExpectation = &StatsRepoMockCountStatsExpectation{}
 	}
 
+	mmCountStats.defaultExpectation.params = &StatsRepoMockCountStatsParams{time}
+	for _, e := range mmCountStats.expectations {
+		if minimock.Equal(e.params, mmCountStats.defaultExpectation.params) {
+			mmCountStats.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCountStats.defaultExpectation.params)
+		}
+	}
+
 	return mmCountStats
 }
 
 // Inspect accepts an inspector function that has same arguments as the StatsRepo.CountStats
-func (mmCountStats *mStatsRepoMockCountStats) Inspect(f func()) *mStatsRepoMockCountStats {
+func (mmCountStats *mStatsRepoMockCountStats) Inspect(f func(time *time.Time)) *mStatsRepoMockCountStats {
 	if mmCountStats.mock.inspectFuncCountStats != nil {
 		mmCountStats.mock.t.Fatalf("Inspect function is already set for StatsRepoMock.CountStats")
 	}
@@ -108,7 +125,7 @@ func (mmCountStats *mStatsRepoMockCountStats) Return(s1 StatsModel, err error) *
 }
 
 //Set uses given function f to mock the StatsRepo.CountStats method
-func (mmCountStats *mStatsRepoMockCountStats) Set(f func() (s1 StatsModel, err error)) *StatsRepoMock {
+func (mmCountStats *mStatsRepoMockCountStats) Set(f func(time *time.Time) (s1 StatsModel, err error)) *StatsRepoMock {
 	if mmCountStats.defaultExpectation != nil {
 		mmCountStats.mock.t.Fatalf("Default expectation is already set for the StatsRepo.CountStats method")
 	}
@@ -121,17 +138,57 @@ func (mmCountStats *mStatsRepoMockCountStats) Set(f func() (s1 StatsModel, err e
 	return mmCountStats.mock
 }
 
+// When sets expectation for the StatsRepo.CountStats which will trigger the result defined by the following
+// Then helper
+func (mmCountStats *mStatsRepoMockCountStats) When(time *time.Time) *StatsRepoMockCountStatsExpectation {
+	if mmCountStats.mock.funcCountStats != nil {
+		mmCountStats.mock.t.Fatalf("StatsRepoMock.CountStats mock is already set by Set")
+	}
+
+	expectation := &StatsRepoMockCountStatsExpectation{
+		mock:   mmCountStats.mock,
+		params: &StatsRepoMockCountStatsParams{time},
+	}
+	mmCountStats.expectations = append(mmCountStats.expectations, expectation)
+	return expectation
+}
+
+// Then sets up StatsRepo.CountStats return parameters for the expectation previously defined by the When method
+func (e *StatsRepoMockCountStatsExpectation) Then(s1 StatsModel, err error) *StatsRepoMock {
+	e.results = &StatsRepoMockCountStatsResults{s1, err}
+	return e.mock
+}
+
 // CountStats implements StatsRepo
-func (mmCountStats *StatsRepoMock) CountStats() (s1 StatsModel, err error) {
+func (mmCountStats *StatsRepoMock) CountStats(time *time.Time) (s1 StatsModel, err error) {
 	mm_atomic.AddUint64(&mmCountStats.beforeCountStatsCounter, 1)
 	defer mm_atomic.AddUint64(&mmCountStats.afterCountStatsCounter, 1)
 
 	if mmCountStats.inspectFuncCountStats != nil {
-		mmCountStats.inspectFuncCountStats()
+		mmCountStats.inspectFuncCountStats(time)
+	}
+
+	mm_params := &StatsRepoMockCountStatsParams{time}
+
+	// Record call args
+	mmCountStats.CountStatsMock.mutex.Lock()
+	mmCountStats.CountStatsMock.callArgs = append(mmCountStats.CountStatsMock.callArgs, mm_params)
+	mmCountStats.CountStatsMock.mutex.Unlock()
+
+	for _, e := range mmCountStats.CountStatsMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.s1, e.results.err
+		}
 	}
 
 	if mmCountStats.CountStatsMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmCountStats.CountStatsMock.defaultExpectation.Counter, 1)
+		mm_want := mmCountStats.CountStatsMock.defaultExpectation.params
+		mm_got := StatsRepoMockCountStatsParams{time}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmCountStats.t.Errorf("StatsRepoMock.CountStats got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
 
 		mm_results := mmCountStats.CountStatsMock.defaultExpectation.results
 		if mm_results == nil {
@@ -140,9 +197,9 @@ func (mmCountStats *StatsRepoMock) CountStats() (s1 StatsModel, err error) {
 		return (*mm_results).s1, (*mm_results).err
 	}
 	if mmCountStats.funcCountStats != nil {
-		return mmCountStats.funcCountStats()
+		return mmCountStats.funcCountStats(time)
 	}
-	mmCountStats.t.Fatalf("Unexpected call to StatsRepoMock.CountStats.")
+	mmCountStats.t.Fatalf("Unexpected call to StatsRepoMock.CountStats. %v", time)
 	return
 }
 
@@ -154,6 +211,19 @@ func (mmCountStats *StatsRepoMock) CountStatsAfterCounter() uint64 {
 // CountStatsBeforeCounter returns a count of StatsRepoMock.CountStats invocations
 func (mmCountStats *StatsRepoMock) CountStatsBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmCountStats.beforeCountStatsCounter)
+}
+
+// Calls returns a list of arguments used in each call to StatsRepoMock.CountStats.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmCountStats *mStatsRepoMockCountStats) Calls() []*StatsRepoMockCountStatsParams {
+	mmCountStats.mutex.RLock()
+
+	argCopy := make([]*StatsRepoMockCountStatsParams, len(mmCountStats.callArgs))
+	copy(argCopy, mmCountStats.callArgs)
+
+	mmCountStats.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockCountStatsDone returns true if the count of the CountStats invocations corresponds
@@ -180,13 +250,17 @@ func (m *StatsRepoMock) MinimockCountStatsDone() bool {
 func (m *StatsRepoMock) MinimockCountStatsInspect() {
 	for _, e := range m.CountStatsMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to StatsRepoMock.CountStats")
+			m.t.Errorf("Expected call to StatsRepoMock.CountStats with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.CountStatsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterCountStatsCounter) < 1 {
-		m.t.Error("Expected call to StatsRepoMock.CountStats")
+		if m.CountStatsMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to StatsRepoMock.CountStats")
+		} else {
+			m.t.Errorf("Expected call to StatsRepoMock.CountStats with params: %#v", *m.CountStatsMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcCountStats != nil && mm_atomic.LoadUint64(&m.afterCountStatsCounter) < 1 {

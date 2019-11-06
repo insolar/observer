@@ -29,6 +29,7 @@ import (
 type DepositSchema struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
+	ID              int64  `sql:",pk"`
 	EthHash         string `sql:",pk"`
 	MemberRef       []byte `sql:",pk"`
 	DepositRef      []byte `sql:",notnull"`

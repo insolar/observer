@@ -17,6 +17,7 @@
 package postgres
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-pg/pg"
@@ -39,7 +40,7 @@ type StatsModel struct {
 type StatsRepo interface {
 	LastStats() (StatsModel, error)
 	InsertStats(StatsModel) error
-	CountStats() (StatsModel, error)
+	CountStats(time *time.Time) (StatsModel, error)
 }
 
 type StatsRepository struct {
@@ -62,11 +63,18 @@ func (s *StatsRepository) LastStats() (StatsModel, error) {
 	return *lastStats, nil
 }
 
-func (s *StatsRepository) CountStats() (StatsModel, error) {
-	sql := `
+func (s *StatsRepository) CountStats(collectDT *time.Time) (StatsModel, error) {
+	var dt int64
+	if collectDT != nil {
+		dt = collectDT.Unix()
+	} else {
+		dt = time.Now().Unix()
+	}
+
+	sql := fmt.Sprintf(`
 WITH stats as (SELECT d.amount::numeric(24),
                       d.hold_release_date,
-                      round(extract(epoch from now()))      as pulse_ts,
+                      round(%d)      as pulse_ts,
                       d.hold_release_date + 365 * 24 * 3600 as vesting_ends_ts
                from deposits d),
      sums as (
@@ -84,7 +92,7 @@ from sums,
      circulating,
      dep_balance
 ;
-`
+`, dt)
 	stats := StatsModel{}
 	_, err := s.db.Query(&stats, sql)
 	if err != nil {

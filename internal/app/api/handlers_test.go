@@ -28,7 +28,6 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 )
@@ -71,6 +70,122 @@ func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransact
 		Timestamp:   ts,
 		TxID:        txID,
 	}
+}
+
+func TestMigrationAddresses_WrongArguments(t *testing.T) {
+	// if `limit` is not a number, API returns `bad request`
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is zero, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=0")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is negative, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=-10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is > 1000, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `index` is not a number, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMigrationAddresses_HappyPath(t *testing.T) {
+	defer truncateDB(t)
+
+	// Make sure /admin/migration/addresses returns non-assigned migration addresses
+	// sorted by ID with provided `limit` and `index` arguments.
+
+	// insert migration addresses
+	var err error
+	wasted := []bool{false, false, true, false, true}
+	for i := 0; i < len(wasted); i++ {
+		migrationAddress := models.MigrationAddress{
+			ID: 32000 + int64(i),
+			Addr: fmt.Sprintf("migration_addr_%v", i),
+			Timestamp: time.Now().Unix(),
+			Wasted: wasted[i],
+		}
+
+		err = db.Insert(&migrationAddress)
+		require.NoError(t, err)
+	}
+
+	// request two oldest non-assigned migration addresses
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []map[string]string
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(received))
+	require.Equal(t, "32000", received[0]["index"])
+	require.Equal(t, "migration_addr_0", received[0]["address"])
+	require.Equal(t, "32001", received[1]["index"])
+	require.Equal(t, "migration_addr_1", received[1]["address"])
+
+	// request the rest of non-assigned migration addresses
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index="+received[1]["index"])
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(received))
+	require.Equal(t, "32003", received[0]["index"])
+	require.Equal(t, "migration_addr_3", received[0]["address"])
+}
+
+func TestMigrationAddressesCount(t *testing.T) {
+	defer truncateDB(t)
+
+	// Make sure /admin/migration/addresses/count returns the total number
+	// of non-assigned migration addresses.
+
+	// insert migration addresses
+	var err error
+	wasted := []bool{true, false, true, false, true}
+	expectedCount := 0
+	for i := 0; i < len(wasted); i++ {
+		migrationAddress := models.MigrationAddress{
+			ID:        31000 + int64(i),
+			Addr:      fmt.Sprintf("migration_addr_%v", i),
+			Timestamp: time.Now().Unix(),
+			Wasted:    wasted[i],
+		}
+
+		if !wasted[i] {
+			expectedCount++
+		}
+
+		err = db.Insert(&migrationAddress)
+		require.NoError(t, err)
+	}
+
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses/count")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received map[string]int
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, expectedCount, received["count"])
 }
 
 func TestTransaction_WrongFormat(t *testing.T) {
@@ -690,13 +805,13 @@ func TestObserverServer_Coins(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	jsonResp := component.XnsCoinStats{}
+	jsonResp := ResponsesCoinsYaml{}
 	err = json.Unmarshal(bodyBytes, &jsonResp)
 	require.NoError(t, err)
-	expected := component.XnsCoinStats{
-		Total:       totalr,
-		Max:         maxr,
-		Circulating: circr,
+	expected := ResponsesCoinsYaml{
+		TotalSupply:       total,
+		MaxSupply:         max,
+		CirculatingSupply: circ,
 	}
 	require.Equal(t, expected, jsonResp)
 
@@ -1118,6 +1233,43 @@ func TestMemberTransactions(t *testing.T) {
 	require.Equal(t, txIDFirst.String(), received[1].TxID)
 }
 
+func TestMemberTransactions_Direction(t *testing.T) {
+	defer truncateDB(t)
+
+	member1 := gen.Reference()
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	member2 := gen.Reference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertMember(t, member1, nil, nil, "10000")
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "20000")
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/member/" + member1.String() + "/transactions?" +
+			"limit=3&" +
+			"&status=registered&" +
+			"type=transfer&" +
+			"direction=incoming&" +
+			"index=" + pulseNumber.String() + "%3A1237&" +
+			"order=reverse")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
+}
+
 func TestMemberTransactions_OrderChronological(t *testing.T) {
 	defer truncateDB(t)
 	member1 := gen.Reference()
@@ -1163,6 +1315,7 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 			"status=some_not_valid_status&" +
 			"type=some_not_valid_type&" +
 			"index=some_not_valid_index&" +
+			"direction=some_not_valid_direction&" +
 			"order=some_not_valid_order")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
@@ -1172,6 +1325,7 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 
 	expected := ErrorMessage{
 		Error: []string{
+			"Query parameter 'direction' should be 'incoming', 'outgoing' or 'all'.",
 			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
 			"Query parameter 'type' should be 'transfer', 'migration' or 'release'.",
 			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",
@@ -1182,4 +1336,17 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, expected, received)
+}
+
+func TestFee(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/fee/123")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	received := ResponsesFeeYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, testFee.String(), received.Fee)
 }

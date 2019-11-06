@@ -17,6 +17,8 @@
 package api
 
 import (
+	"math/big"
+
 	"github.com/sirupsen/logrus"
 
 	"time"
@@ -25,9 +27,10 @@ import (
 )
 
 type Configuration struct {
-	Listen   string
-	DB       configuration.DB
-	LogLevel string
+	Listen    string
+	DB        configuration.DB
+	FeeAmount *big.Int
+	LogLevel  string
 }
 
 func Default() *Configuration {
@@ -39,6 +42,7 @@ func Default() *Configuration {
 			AttemptInterval: 3 * time.Second,
 			CreateTables:    false,
 		},
-		LogLevel: logrus.DebugLevel.String(),
+		LogLevel:  logrus.DebugLevel.String(),
+		FeeAmount: big.NewInt(1000000000),
 	}
 }
