@@ -30,10 +30,24 @@ type Transaction struct {
 	GroupRef    insolar.Reference
 	UID         string
 	Status      string
+	State       insolar.Reference
+}
+
+type TransactionUpdate struct {
+	Reference   insolar.Reference
+	Amount      uint64
+	Timestamp   int64
+	ExtTxId     string
+	TxDirection string
+	MemberRef   insolar.Reference
+	GroupRef    insolar.Reference
+	UID         string
+	Status      string
 }
 
 type TransactionStorage interface {
 	Insert(Transaction) error
+	Update(TransactionUpdate) error
 }
 
 type TransactionCollector interface {
