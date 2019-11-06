@@ -172,7 +172,7 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
-	ref, errMsg := s.checkReference(ctx, reference)
+	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
@@ -196,7 +196,7 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	ref, errMsg := s.checkReference(ctx, reference)
+	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
@@ -214,7 +214,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
-	ref, errMsg := s.checkReference(ctx, reference)
+	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
@@ -435,7 +435,7 @@ func (s *ObserverServer) getTransactions(
 	return query
 }
 
-func (s *ObserverServer) checkReference(ctx echo.Context, referenceRow string) (*insolar.Reference, *ErrorMessage) {
+func (s *ObserverServer) checkReference(referenceRow string) (*insolar.Reference, *ErrorMessage) {
 	referenceRow = strings.TrimSpace(referenceRow)
 	var errMsg ErrorMessage
 
