@@ -124,6 +124,7 @@ create table if not exists members
 
 create table if not exists deposits
 (
+    id bigserial not null,
     eth_hash varchar(256) not null,
     deposit_ref bytea,
     member_ref bytea not null,
@@ -135,7 +136,7 @@ create table if not exists deposits
     vesting bigint,
     vesting_step bigint,
     constraint deposits_pk
-        primary key (member_ref, eth_hash)
+        primary key (id, member_ref, eth_hash)
 );
 
 create table if not exists transactions
