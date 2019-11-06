@@ -137,8 +137,18 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 	require.Equal(t, "32001", received[1]["index"])
 	require.Equal(t, "migration_addr_1", received[1]["address"])
 
-	// request the rest of non-assigned migration addresses 
+	// request the rest of non-assigned migration addresses
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&migrationAddress="+received[1]["index"])
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
 
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(received))
+	require.Equal(t, "32003", received[0]["index"])
+	require.Equal(t, "migration_addr_3", received[0]["address"])
 }
 
 func TestMigrationAddressesCount(t *testing.T) {
