@@ -17,6 +17,7 @@
 package api
 
 import (
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -51,10 +52,11 @@ type ObserverServer struct {
 	db    *pg.DB
 	log   *logrus.Logger
 	clock Clock
+	fee   *big.Int
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, clock Clock) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock}
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -134,7 +136,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
@@ -290,11 +292,9 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	}
 
 	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
-
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
 	}
-
 	err = query.Limit(params.Limit).Select()
 
 	if err != nil {
