@@ -45,6 +45,7 @@ func load() *Configuration {
 	v := viper.New()
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvPrefix("observerapi")
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
 	v.AddConfigPath(".")

@@ -41,5 +41,5 @@ func main() {
 	observerAPI := api.NewObserverServer(db, logger, &api.DefaultClock{})
 
 	api.RegisterHandlers(e, observerAPI)
-	e.Logger.Fatal(e.Start(cfg.API.Addr))
+	e.Logger.Fatal(e.Start(cfg.Listen))
 }
