@@ -21,9 +21,9 @@ type ResponsesAddressesYaml []string
 
 // ResponsesCoinsYaml defines model for responses-coins-yaml.
 type ResponsesCoinsYaml struct {
-	CirculatingSupply float32 `json:"circulatingSupply"`
-	MaxSupply         float32 `json:"maxSupply"`
-	TotalSupply       float32 `json:"totalSupply"`
+	CirculatingSupply string `json:"circulatingSupply"`
+	MaxSupply         string `json:"maxSupply"`
+	TotalSupply       string `json:"totalSupply"`
 }
 
 // ResponsesDetailsYaml defines model for responses-details-yaml.

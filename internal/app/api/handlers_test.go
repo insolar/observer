@@ -28,7 +28,6 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 )
@@ -85,10 +84,10 @@ func TestMigrationAddressCount(t *testing.T) {
 	expectedCount := 0
 	for i := 0; i < len(wasted); i++ {
 		migrationAddress := models.MigrationAddress{
-			ID: 31000 + int64(i),
-			Addr: fmt.Sprintf("migration_addr_%v", i),
+			ID:        31000 + int64(i),
+			Addr:      fmt.Sprintf("migration_addr_%v", i),
 			Timestamp: time.Now().Unix(),
-			Wasted: wasted[i],
+			Wasted:    wasted[i],
 		}
 
 		if !wasted[i] {
@@ -729,13 +728,13 @@ func TestObserverServer_Coins(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	jsonResp := component.XnsCoinStats{}
+	jsonResp := ResponsesCoinsYaml{}
 	err = json.Unmarshal(bodyBytes, &jsonResp)
 	require.NoError(t, err)
-	expected := component.XnsCoinStats{
-		Total:       total,
-		Max:         max,
-		Circulating: circ,
+	expected := ResponsesCoinsYaml{
+		TotalSupply:       total,
+		MaxSupply:         max,
+		CirculatingSupply: circ,
 	}
 	require.Equal(t, expected, jsonResp)
 
