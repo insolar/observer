@@ -19,6 +19,7 @@ package api
 import (
 	"math/big"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -171,15 +172,9 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
-	reference = strings.TrimSpace(reference)
-
-	if len(reference) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
-	}
-
-	ref, err := insolar.NewReferenceFromString(reference)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	ref, errMsg := s.checkReference(reference)
+	if errMsg != nil {
+		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
 
 	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
@@ -201,15 +196,9 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
-	reference = strings.TrimSpace(reference)
-
-	if len(reference) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
-	}
-
-	ref, err := insolar.NewReferenceFromString(reference)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	ref, errMsg := s.checkReference(reference)
+	if errMsg != nil {
+		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
 
 	member, err := component.GetMemberBalance(ctx.Request().Context(), s.db, ref.Bytes())
@@ -225,15 +214,9 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
-	reference = strings.TrimSpace(reference)
-
-	if len(reference) == 0 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
-	}
-
-	ref, err := insolar.NewReferenceFromString(reference)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	ref, errMsg := s.checkReference(reference)
+	if errMsg != nil {
+		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
 
 	limit := params.Limit
@@ -246,7 +229,7 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	var txs []models.Transaction
 	query := s.db.Model(&txs)
 
-	query, err = component.FilterByMemberReferenceAndDirection(query, ref, params.Direction)
+	query, err := component.FilterByMemberReferenceAndDirection(query, ref, params.Direction)
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
@@ -284,6 +267,11 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 
 	if len(txIDStr) == 0 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx_id"))
+	}
+
+	txIDStr, err := url.QueryUnescape(txIDStr)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("error unescaping tx_id parameter"))
 	}
 
 	txID, err := insolar.NewRecordReferenceFromString(txIDStr)
@@ -445,4 +433,27 @@ func (s *ObserverServer) getTransactions(
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
 	return query
+}
+
+func (s *ObserverServer) checkReference(referenceRow string) (*insolar.Reference, *ErrorMessage) {
+	referenceRow = strings.TrimSpace(referenceRow)
+	var errMsg ErrorMessage
+
+	if len(referenceRow) == 0 {
+		errMsg = NewSingleMessageError("empty reference")
+		return nil, &errMsg
+	}
+
+	reference, err := url.QueryUnescape(referenceRow)
+	if err != nil {
+		errMsg = NewSingleMessageError("error unescaping reference parameter")
+		return nil, &errMsg
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		errMsg = NewSingleMessageError("reference wrong format")
+		return nil, &errMsg
+	}
+	return ref, nil
 }

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -110,10 +111,10 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 	wasted := []bool{false, false, true, false, true}
 	for i := 0; i < len(wasted); i++ {
 		migrationAddress := models.MigrationAddress{
-			ID: 32000 + int64(i),
-			Addr: fmt.Sprintf("migration_addr_%v", i),
+			ID:        32000 + int64(i),
+			Addr:      fmt.Sprintf("migration_addr_%v", i),
 			Timestamp: time.Now().Unix(),
-			Wasted: wasted[i],
+			Wasted:    wasted[i],
 		}
 
 		err = db.Insert(&migrationAddress)
@@ -137,7 +138,7 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 	require.Equal(t, "migration_addr_1", received[1]["address"])
 
 	// request the rest of non-assigned migration addresses
-	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index="+received[1]["index"])
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index=" + received[1]["index"])
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err = ioutil.ReadAll(resp.Body)
@@ -450,7 +451,8 @@ func TestTransaction_TypeMigration(t *testing.T) {
 	err = db.Insert(transaction)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txID.String())
+	txIDStr := url.QueryEscape(txID.String())
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txIDStr)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -768,7 +770,8 @@ func TestMemberBalance(t *testing.T) {
 	insertMember(t, member1, nil, nil, balance1)
 	insertMember(t, member2, nil, nil, balance2)
 
-	resp, err := http.Get("http://" + apihost + "/api/member/" + member1.String() + "/balance")
+	member1Str := url.QueryEscape(member1.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member1Str + "/balance")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -866,7 +869,8 @@ func TestMember(t *testing.T) {
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
 	insertDeposit(t, deposite, member, "10000", "1000", "eth_hash_1")
 
-	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	memberStr := url.QueryEscape(member.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -1212,8 +1216,9 @@ func TestMemberTransactions(t *testing.T) {
 	insertMember(t, member2, nil, nil, "20000")
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
+	member1Str := url.QueryEscape(member1.String())
 	resp, err := http.Get(
-		"http://" + apihost + "/api/member/" + member1.String() + "/transactions?" +
+		"http://" + apihost + "/api/member/" + member1Str + "/transactions?" +
 			"limit=3&" +
 			"&status=registered&" +
 			"type=transfer&" +
