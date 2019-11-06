@@ -105,7 +105,7 @@ func makeBeautifier(
 				b.txRegister = append(b.txRegister, *reg)
 			}
 			res := txResults.Collect(ctx, *rec)
-			if reg != nil {
+			if res != nil {
 				b.txResult = append(b.txResult, *res)
 			}
 			sagRes := txSagaResults.Collect(ctx, *rec)
