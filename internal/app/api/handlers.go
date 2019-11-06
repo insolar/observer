@@ -60,7 +60,14 @@ func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock)
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
-	panic("implement me")
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	resJSON := make(map[string]int, 1)
+	resJSON["fake"] = 0
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 // GetMigrationAddressCount returns the total number of non-assigned migration addresses

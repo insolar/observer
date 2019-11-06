@@ -73,7 +73,29 @@ func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransact
 	}
 }
 
-func TestMigrationAddressCount(t *testing.T) {
+func TestMigrationAddresses_WrongArguments(t *testing.T) {
+	// if `limit` is not a number, API returns `bad request`
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is zero, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=0")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is negative, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=-10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is > 1000, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMigrationAddressesCount(t *testing.T) {
 	defer truncateDB(t)
 
 	// Make sure /admin/migration/addresses/count returns the total number
