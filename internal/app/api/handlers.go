@@ -65,8 +65,31 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
 	}
 
-	resJSON := make(map[string]int, 1)
-	resJSON["fake"] = 0
+	query := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = false")
+	if params.MigrationAddress != nil { // TODO: this argument will be renamed to index
+		id, err := strconv.ParseInt(*params.MigrationAddress, 10, 64)
+		if err != nil {
+			s.log.Error(err)
+			return ctx.JSON(http.StatusBadRequest, struct{}{})
+		}
+		query = query.Where("id > ?", id)
+	}
+	var result []models.MigrationAddress
+	err := query.Order("id").Limit(limit).Select(&result)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make([]interface{}, len(result))
+	for i := 0; i < len(result); i++ {
+		index := strconv.FormatInt(result[i].ID, 10)
+		m := make(map[string]string, 2)
+		m["address"] = result[i].Addr
+		m["index"] = index
+		resJSON[i] = m
+	}
 	return ctx.JSON(http.StatusOK, resJSON)
 }
 
