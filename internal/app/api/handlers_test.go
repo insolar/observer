@@ -72,7 +72,85 @@ func transactionResponse(txID string, pulseNum int64, ts int64) *SchemasTransact
 	}
 }
 
-func TestMigrationAddressCount(t *testing.T) {
+func TestMigrationAddresses_WrongArguments(t *testing.T) {
+	// if `limit` is not a number, API returns `bad request`
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is zero, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=0")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is negative, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=-10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `limit` is > 1000, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=1001")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	// if `index` is not a number, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index=LOL")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestMigrationAddresses_HappyPath(t *testing.T) {
+	defer truncateDB(t)
+
+	// Make sure /admin/migration/addresses returns non-assigned migration addresses
+	// sorted by ID with provided `limit` and `index` arguments.
+
+	// insert migration addresses
+	var err error
+	wasted := []bool{false, false, true, false, true}
+	for i := 0; i < len(wasted); i++ {
+		migrationAddress := models.MigrationAddress{
+			ID: 32000 + int64(i),
+			Addr: fmt.Sprintf("migration_addr_%v", i),
+			Timestamp: time.Now().Unix(),
+			Wasted: wasted[i],
+		}
+
+		err = db.Insert(&migrationAddress)
+		require.NoError(t, err)
+	}
+
+	// request two oldest non-assigned migration addresses
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []map[string]string
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(received))
+	require.Equal(t, "32000", received[0]["index"])
+	require.Equal(t, "migration_addr_0", received[0]["address"])
+	require.Equal(t, "32001", received[1]["index"])
+	require.Equal(t, "migration_addr_1", received[1]["address"])
+
+	// request the rest of non-assigned migration addresses
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index="+received[1]["index"])
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(received))
+	require.Equal(t, "32003", received[0]["index"])
+	require.Equal(t, "migration_addr_3", received[0]["address"])
+}
+
+func TestMigrationAddressesCount(t *testing.T) {
 	defer truncateDB(t)
 
 	// Make sure /admin/migration/addresses/count returns the total number
@@ -98,7 +176,6 @@ func TestMigrationAddressCount(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// request one recent closed transaction using API
 	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses/count")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)

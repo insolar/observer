@@ -5,10 +5,9 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 // ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
@@ -17,7 +16,10 @@ type ResponsesAddressCountYaml struct {
 }
 
 // ResponsesAddressesYaml defines model for responses-addresses-yaml.
-type ResponsesAddressesYaml []string
+type ResponsesAddressesYaml []struct {
+	Address string `json:"address"`
+	Index   string `json:"index"`
+}
 
 // ResponsesCoinsYaml defines model for responses-coins-yaml.
 type ResponsesCoinsYaml struct {
@@ -226,10 +228,10 @@ type Transactions struct {
 // GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
 type GetMigrationAddressesParams struct {
 
-	// The `migrationAddress` to start from. To start from the first added one, do not specify.
-	MigrationAddress *string `json:"migrationAddress,omitempty"`
+	// The `index` to continue from. To start from the first added migration address, do not specify.
+	Index *string `json:"index,omitempty"`
 
-	// Number of entries per list.
+	// Number of entries per list (min 1, max 1000).
 	Limit int `json:"limit"`
 }
 
@@ -397,14 +399,14 @@ func (w *ServerInterfaceWrapper) GetMigrationAddresses(ctx echo.Context) error {
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetMigrationAddressesParams
-	// ------------- Optional query parameter "migrationAddress" -------------
-	if paramValue := ctx.QueryParam("migrationAddress"); paramValue != "" {
+	// ------------- Optional query parameter "index" -------------
+	if paramValue := ctx.QueryParam("index"); paramValue != "" {
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "migrationAddress", ctx.QueryParams(), &params.MigrationAddress)
+	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter migrationAddress: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
 	}
 
 	// ------------- Required query parameter "limit" -------------
@@ -827,3 +829,4 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
+
