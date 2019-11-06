@@ -18,7 +18,9 @@ package models
 
 import (
 	"fmt"
+	"math/big"
 	"reflect"
+	"strconv"
 	"sync"
 
 	"github.com/insolar/insolar/pulse"
@@ -39,6 +41,7 @@ type Member struct {
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
+	ID              int64  `sql:"id"`
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
 	EtheriumHash    string `sql:"eth_hash"`
@@ -104,6 +107,15 @@ type Transaction struct {
 	FinishPulseRecord [2]int64 `sql:"finish_pulse_record" pg:",array"`
 }
 
+type MigrationAddress struct {
+	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
+
+	ID        int64  `sql:"id,notnull"`
+	Addr      string `sql:"addr,notnull"`
+	Timestamp int64  `sql:"timestamp,notnull"`
+	Wasted    bool   `sql:"wasted,notnull"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string
@@ -113,11 +125,9 @@ var fieldsCache = fieldCache{
 	cache: make(map[reflect.Type][]string),
 }
 
-func (t Transaction) Fields() []string {
+func getFields(tType reflect.Type) []string {
 	fieldsCache.Lock()
 	defer fieldsCache.Unlock()
-
-	tType := reflect.TypeOf(t)
 
 	if fields, ok := fieldsCache.cache[tType]; ok {
 		return append(fields[:0:0], fields...)
@@ -127,12 +137,32 @@ func (t Transaction) Fields() []string {
 	return append(fields[:0:0], fields...)
 }
 
+func (t Transaction) Fields() []string {
+	tType := reflect.TypeOf(t)
+	return getFields(tType)
+}
+
+func (m Member) Fields() []string {
+	tType := reflect.TypeOf(m)
+	return getFields(tType)
+}
+
+func (deposit Deposit) Fields() []string {
+	tType := reflect.TypeOf(deposit)
+	return getFields(tType)
+}
+
 func (t Transaction) QuotedFields() []string {
 	fields := t.Fields()
 	for i := range fields {
 		fields[i] = fmt.Sprintf("'%s'", fields[i])
 	}
 	return fields
+}
+
+func (ma MigrationAddress) Fields() []string {
+	tType := reflect.TypeOf(ma)
+	return getFields(tType)
 }
 
 func getFieldList(t reflect.Type) []string {
@@ -201,4 +231,39 @@ func (t *Transaction) Timestamp() int64 {
 		return 0
 	}
 	return pulseTime.Unix()
+}
+
+func (deposit *Deposit) ReleaseAmount(currentTime int64) int64 {
+	amount, _ := strconv.ParseInt(deposit.Amount, 10, 64)
+
+	if deposit.HoldReleaseDate == 0 {
+		return amount
+	}
+
+	if currentTime <= deposit.HoldReleaseDate {
+		return 0
+	}
+
+	if currentTime >= (deposit.Vesting + deposit.HoldReleaseDate) {
+		return amount
+	}
+
+	currentStep := (currentTime - deposit.HoldReleaseDate) / deposit.VestingStep
+	stepValue := float64(deposit.VestingStep) / float64(deposit.Vesting)
+	releasedCoef := float64(currentStep) * stepValue
+	amountFloat := big.NewFloat(float64(amount))
+	releaseAmount := new(big.Float).Mul(big.NewFloat(releasedCoef), amountFloat)
+	res, _ := releaseAmount.Int64()
+
+	return res
+}
+
+func (deposit *Deposit) Status(currentTime int64) string {
+	if deposit.HoldReleaseDate == 0 {
+		return "AVAILABLE"
+	}
+	if currentTime <= deposit.HoldReleaseDate {
+		return "LOCKED"
+	}
+	return "AVAILABLE"
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
@@ -129,6 +128,7 @@ func TestMain(t *testing.M) {
 
 	retCode := t.Run()
 
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
 	err = pool.Purge(resource)
 	if err != nil {
 		log.Panicf("failed to purge docker pool: %s", err)
@@ -209,85 +209,6 @@ func TestBeautifier_Run(t *testing.T) {
 				Addr: address,
 			}}, res.wastings)
 	})
-
-	t.Run("transfer happy path", func(t *testing.T) {
-		cfg := &configuration.Configuration{
-			Replicator: configuration.Replicator{
-				CacheSize: 100000,
-			},
-			LogLevel: "debug",
-		}
-		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
-		ctx := context.Background()
-		tdg := NewTreeDataGenerator()
-
-		pn := insolar.GenesisPulse.PulseNumber
-		amount := "42"
-		fee := "7"
-		from := gen.IDWithPulse(pn)
-		to := gen.IDWithPulse(pn)
-		call := tdg.makeTransferCall(amount, from.String(), to.String(), pn)
-		walletTransfer := tdg.makeWalletTransferCall(pn, *insolar.NewReference(call.Record.ID))
-		walletTransferIn := tdg.makeIncomingFromOutgoing(walletTransfer.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		accountTransfer := tdg.makeAccountTransferCall(pn, *insolar.NewReference(walletTransferIn.Record.ID))
-		accountTransferIn := tdg.makeIncomingFromOutgoing(accountTransfer.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		calcFee := tdg.makeCalcFeeCall(pn, *insolar.NewReference(accountTransferIn.Record.ID))
-		calcFeeIn := tdg.makeIncomingFromOutgoing(calcFee.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		getFeeMember := tdg.makeGetFeeMemberCall(pn, *insolar.NewReference(accountTransferIn.Record.ID))
-		getFeeMemberIn := tdg.makeIncomingFromOutgoing(getFeeMember.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
-		feeMember := gen.Reference()
-
-		expected := []*observer.Transfer{
-			{
-				TxID:          call.Record.ID,
-				From:          &from,
-				To:            &to,
-				Amount:        amount,
-				Fee:           fee,
-				Status:        observer.Success,
-				Kind:          observer.Standard,
-				Direction:     observer.APICall,
-				DetachRequest: &accountTransferIn.Record.ID,
-			},
-			{
-				TxID:          call.Record.ID,
-				From:          &from,
-				To:            feeMember.GetLocal(),
-				Amount:        fee,
-				Fee:           "0",
-				Status:        observer.Success,
-				Kind:          observer.Standard,
-				Direction:     observer.APICall,
-				DetachRequest: &accountTransferIn.Record.ID,
-			},
-		}
-
-		raw := &raw{
-			batch: map[uint32]*exporter.Record{
-				0:  call,
-				1:  walletTransfer,
-				2:  tdg.makeResultWith(walletTransfer.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				3:  walletTransferIn,
-				4:  tdg.makeResultWith(walletTransferIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				5:  accountTransfer,
-				6:  tdg.makeResultWith(accountTransfer.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				7:  accountTransferIn,
-				8:  tdg.makeResultWith(accountTransferIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				9:  calcFee,
-				10: tdg.makeResultWith(calcFee.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				11: calcFeeIn,
-				12: tdg.makeResultWith(calcFeeIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				13: getFeeMember,
-				14: tdg.makeResultWith(getFeeMember.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-				15: getFeeMemberIn,
-				16: tdg.makeResultWith(getFeeMemberIn.Record.ID, &foundation.Result{Returns: []interface{}{feeMember.Bytes(), nil}}),
-				17: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{&member.TransferResponse{Fee: fee}, nil}}),
-			},
-		}
-		res := beautifier(ctx, raw)
-		assert.Equal(t, expected, res.transfers)
-	})
-
 }
 
 func TestBeautifier_Deposit(t *testing.T) {
@@ -587,46 +508,6 @@ func (t *treeDataGenerator) makeResultWith(requestID insolar.ID, result *foundat
 				Result: &record.Result{
 					Request: *ref,
 					Payload: payload,
-				},
-			},
-		},
-	}}
-	return rec
-}
-
-func (t *treeDataGenerator) makeTransferCall(amount, from, to string, pulse insolar.PulseNumber) *exporter.Record {
-	request := &requester.ContractRequest{
-		Params: requester.Params{
-			CallSite: collecting.StandardTransferMethod,
-			CallParams: collecting.TransferCallParams{
-				Amount:            amount,
-				ToMemberReference: to,
-			},
-			Reference: from,
-		},
-	}
-	requestBody, err := json.Marshal(request)
-	if err != nil {
-		panic("failed to marshal request")
-	}
-	signature := ""
-	pulseTimeStamp := 0
-	raw, err := insolar.Serialize([]interface{}{requestBody, signature, pulseTimeStamp})
-	if err != nil {
-		panic("failed to serialize raw")
-	}
-	args, err := insolar.Serialize([]interface{}{raw})
-	if err != nil {
-		panic("failed to serialize arguments")
-	}
-	rec := &exporter.Record{Record: record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &record.IncomingRequest{
-					Method:    "Call",
-					Arguments: args,
-					Nonce:     t.GetNonce(),
 				},
 			},
 		},

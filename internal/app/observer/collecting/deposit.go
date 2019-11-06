@@ -132,16 +132,6 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 }
 
 func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record) []*observer.Deposit {
-	var (
-		memberState      *member.Member
-		walletState      *wallet.Wallet
-		depositState     *deposit.Deposit
-		depositRefString string
-		depositID        insolar.ID
-		ethHash          string
-		amount           string
-		balance          string
-	)
 	activate := rec.Virtual.GetActivate()
 	shard := c.initialPKShard(activate)
 	var (
@@ -161,7 +151,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			continue
 		}
 		activate := memberActivate.Virtual.GetActivate()
-		memberState = c.initialMemberState(activate)
+		memberState := c.initialMemberState(activate)
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
 			c.log.WithField("wallet_ref", memberState.Wallet).
@@ -169,48 +159,45 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			continue
 		}
 		activate = walletActivate.Virtual.GetActivate()
-		walletState = c.initialWalletState(activate)
+		walletState := c.initialWalletState(activate)
 
-		for _, value := range walletState.Deposits {
-			depositRefString = value
-			break
-		}
-		depositRef, err := insolar.NewReferenceFromString(depositRefString)
-		if err != nil {
-			c.log.WithField("deposit_ref_str", depositRefString).
-				Warnf("failed to build reference from string")
-			continue
-		}
-		if depositRef != nil {
+		for _, depositRefString := range walletState.Deposits {
+			depositRef, err := insolar.NewReferenceFromString(depositRefString)
+			if err != nil {
+				c.log.WithField("deposit_ref_str", depositRefString).
+					Warnf("failed to build reference from string")
+				continue
+			}
+
 			depositActivate, err := c.fetcher.SideEffect(ctx, *depositRef.GetLocal())
 			if err != nil {
 				c.log.WithField("deposit_ref", depositRef).
 					Error("failed to find deposit activate record")
 				continue
 			}
-			depositID = depositActivate.ID
-			activate = depositActivate.Virtual.GetActivate()
-			depositState = c.initialDepositState(activate)
-			ethHash = strings.ToLower(depositState.TxHash)
-			amount = depositState.Amount
-			balance = depositState.Balance
-		}
 
-		timeActivate, err := rec.ID.Pulse().AsApproximateTime()
-		if err != nil {
-			c.log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
-			continue
+			timeActivate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
+			if err != nil {
+				c.log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
+				continue
+			}
+
+			activate = depositActivate.Virtual.GetActivate()
+			depositState := c.initialDepositState(activate)
+
+			deposits = append(deposits, &observer.Deposit{
+				EthHash:         strings.ToLower(depositState.TxHash),
+				Ref:             *depositRef.GetLocal(),
+				DepositState:    depositActivate.ID,
+				Member:          *memberRef.GetLocal(),
+				Timestamp:       timeActivate.Unix(),
+				Amount:          depositState.Amount,
+				Balance:         depositState.Balance,
+				HoldReleaseDate: depositState.Lockup,
+				Vesting:         depositState.Vesting,
+				VestingStep:     depositState.VestingStep,
+			})
 		}
-		deposits = append(deposits, &observer.Deposit{
-			EthHash:         ethHash,
-			Ref:             depositID,
-			Member:          *memberRef.GetLocal(),
-			Timestamp:       timeActivate.Unix(),
-			HoldReleaseDate: 0,
-			Amount:          amount,
-			Balance:         balance,
-			DepositState:    depositID,
-		})
 	}
 	return deposits
 }

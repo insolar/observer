@@ -144,17 +144,6 @@ func makeStorer(
 					}
 				}
 
-				transfers := postgres.NewTransferStorage(obs, tx)
-				for _, transfer := range b.transfers {
-					if transfers == nil {
-						continue
-					}
-					err := transfers.Insert(transfer)
-					if err != nil {
-						return err
-					}
-				}
-
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
 					return err
@@ -230,18 +219,18 @@ func makeStorer(
 				nodes := len(b.pulse.Nodes)
 				byMonth := 0
 				if month(s.stat.Pulse) == month(b.pulse.Number) {
-					byMonth = s.stat.LastMonthTransfers + len(b.transfers)
+					byMonth = s.stat.LastMonthTransfers + len(b.txSagaResult)
 				} else {
-					byMonth = len(b.transfers)
+					byMonth = len(b.txSagaResult)
 				}
 				statistics := postgres.NewStatisticStorage(cfg, obs, tx)
 				stat = &observer.Statistic{
 					Pulse:              b.pulse.Number,
-					Transfers:          len(b.transfers),
-					TotalTransfers:     s.stat.TotalTransfers + len(b.transfers),
+					Transfers:          len(b.txSagaResult),
+					TotalTransfers:     s.stat.TotalTransfers + len(b.txSagaResult),
 					TotalMembers:       s.stat.TotalMembers + len(b.members),
 					Nodes:              nodes,
-					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.transfers)),
+					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.txSagaResult)),
 					LastMonthTransfers: byMonth,
 				}
 				err = statistics.Insert(stat)
@@ -267,7 +256,7 @@ func makeStorer(
 			s.ms.Reset()
 		}
 
-		metric.Transfers.Add(float64(len(b.transfers)))
+		metric.Transfers.Add(float64(len(b.txSagaResult)))
 		metric.Members.Add(float64(len(b.members)))
 		metric.Deposits.Add(float64(len(b.deposits)))
 		metric.Addresses.Add(float64(len(b.addresses)))
@@ -413,6 +402,7 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 type Querier interface {
 	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
 	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
 }
 
 var (
@@ -422,6 +412,10 @@ var (
 
 func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
 	return getMember(ctx, db, reference, []string{"balance"})
+}
+
+func GetMember(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
+	return getMember(ctx, db, reference, models.Member{}.Fields())
 }
 
 func getMember(ctx context.Context, db Querier, reference []byte, fields []string) (*models.Member, error) {
@@ -437,6 +431,18 @@ func getMember(ctx context.Context, db Querier, reference []byte, fields []strin
 		return nil, errors.Wrap(err, "failed to fetch member")
 	}
 	return member, nil
+}
+
+func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]models.Deposit, error) {
+	deposits := &[]models.Deposit{}
+	_, err := db.QueryContext(ctx, deposits,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from deposits where member_ref = ?0`, strings.Join(models.Deposit{}.Fields(), ",")),
+		memberReference)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch deposit")
+	}
+	return deposits, nil
 }
 
 func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, error) {
@@ -471,10 +477,32 @@ func FilterByStatus(query *orm.Query, status string) (*orm.Query, error) {
 }
 
 func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
-	if t != "transfer" && t != "migration" && t != "after" {
-		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'after'.") // nolint
+	if t != "transfer" && t != "migration" && t != "release" {
+		return query, errors.New("Query parameter 'type' should be 'transfer', 'migration' or 'release'.") // nolint
 	}
 	query = query.Where("type = ?", t)
+	return query, nil
+}
+
+func FilterByMemberReferenceAndDirection(query *orm.Query, ref *insolar.Reference, d *string) (*orm.Query, error) {
+	direction := "all"
+	if d != nil {
+		direction = *d
+	}
+	switch direction {
+	case "incoming":
+		query = query.Where("member_to_ref = ?", ref.Bytes())
+	case "outgoing":
+		query = query.Where("member_from_ref = ?", ref.Bytes())
+	case "all":
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	default:
+		return query, errors.New("Query parameter 'direction' should be 'incoming', 'outgoing' or 'all'.") // nolint
+	}
 	return query, nil
 }
 
@@ -521,7 +549,7 @@ func OrderByIndex(query *orm.Query, ord *string, pulse int64, record int64, wher
 		if whereCondition {
 			query = query.Where(columnName+" < array[?0,?1]::bigint[]", pulse, record)
 		}
-		query = query.Order(columnName+" DESC")
+		query = query.Order(columnName + " DESC")
 	case "chronological":
 		if whereCondition {
 			query = query.Where(columnName+" > array[?,?]::bigint[]", pulse, record)

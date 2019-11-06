@@ -19,6 +19,7 @@ package api
 import (
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"testing"
 	"time"
@@ -51,6 +52,10 @@ var (
 		Database:        database,
 		ApplicationName: "observer",
 	}
+
+	clock = &testClock{}
+
+	testFee = big.NewInt(1000000000)
 )
 
 func TestMain(t *testing.M) {
@@ -104,7 +109,7 @@ func TestMain(t *testing.M) {
 	e := echo.New()
 
 	logger := logrus.New()
-	observerAPI := NewObserverServer(db, logger)
+	observerAPI := NewObserverServer(db, logger, testFee, clock)
 	RegisterHandlers(e, observerAPI)
 	go func() {
 		e.Logger.Fatal(e.Start(apihost))
@@ -112,10 +117,33 @@ func TestMain(t *testing.M) {
 	// TODO: wait until API started
 	// TODO: flush db
 	time.Sleep(5 * time.Second)
-	os.Exit(t.Run())
+
+	retCode := t.Run()
+
+	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
+	err = pool.Purge(resource)
+	if err != nil {
+		log.Panicf("failed to purge docker pool: %s", err)
+	}
+
+	os.Exit(retCode)
 }
 
 func truncateDB(t *testing.T) {
 	_, err := db.Model(&models.Transaction{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
+	_, err = db.Model(&models.Member{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+	_, err = db.Model(&models.Deposit{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+	_, err = db.Model(&models.MigrationAddress{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+}
+
+type testClock struct {
+	nowTime int64
+}
+
+func (c *testClock) Now() time.Time {
+	return time.Unix(c.nowTime, 0)
 }

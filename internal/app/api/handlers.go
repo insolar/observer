@@ -17,9 +17,13 @@
 package api
 
 import (
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/go-pg/pg/orm"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
@@ -35,21 +39,44 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ObserverServer struct {
-	db  *pg.DB
-	log *logrus.Logger
+type Clock interface {
+	Now() time.Time
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger) *ObserverServer {
-	return &ObserverServer{db: db, log: log}
+type DefaultClock struct{}
+
+func (c *DefaultClock) Now() time.Time {
+	return time.Now()
+}
+
+type ObserverServer struct {
+	db    *pg.DB
+	log   *logrus.Logger
+	clock Clock
+	fee   *big.Int
+}
+
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
 	panic("implement me")
 }
 
+// GetMigrationAddressCount returns the total number of non-assigned migration addresses
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
-	panic("implement me")
+	count, err := s.db.Model(&models.MigrationAddress{}).
+		Where("wasted = false").
+		Count()
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	resJSON := make(map[string]int, 1)
+	resJSON["count"] = count
+	return ctx.JSON(http.StatusOK, resJSON)
 }
 
 func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
@@ -110,11 +137,37 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix()))
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
@@ -142,7 +195,54 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
-	panic("implement me")
+	reference = strings.TrimSpace(reference)
+
+	if len(reference) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty reference"))
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("reference wrong format"))
+	}
+
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	var errorMsg ErrorMessage
+
+	var txs []models.Transaction
+	query := s.db.Model(&txs)
+
+	query, err = component.FilterByMemberReferenceAndDirection(query, ref, params.Direction)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.JSON(http.StatusNoContent, struct{}{})
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
@@ -174,6 +274,11 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
 	var errorMsg ErrorMessage
 	var err error
 
@@ -187,41 +292,10 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 		}
 	}
 
-	if params.Status != nil {
-		query, err = component.FilterByStatus(query, *params.Status)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		}
-	}
-
-	if params.Type != nil {
-		query, err = component.FilterByType(query, *params.Type)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		}
-	}
-
-	var pulseNumber int64
-	var sequenceNumber int64
-	byIndex := false
-	if params.Index != nil {
-		pulseNumber, sequenceNumber, err = checkIndex(*params.Index)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		} else {
-			byIndex = true
-		}
-	}
-
-	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
-	if err != nil {
-		errorMsg.Error = append(errorMsg.Error, err.Error())
-	}
-
+	query = s.getTransactions(query, &errorMsg, params.Status, params.Type, params.Index, params.Order)
 	if len(errorMsg.Error) > 0 {
 		return ctx.JSON(http.StatusBadRequest, errorMsg)
 	}
-
 	err = query.Limit(params.Limit).Select()
 
 	if err != nil {
@@ -248,7 +322,11 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
+		TotalSupply:       result.Total,
+		MaxSupply:         result.Max,
+		CirculatingSupply: result.Circulating,
+	})
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
@@ -300,4 +378,41 @@ func checkIndex(i string) (int64, int64, error) {
 		return 0, 0, errors.New("Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.") // nolint
 	}
 	return pulseNumber, sequenceNumber, nil
+}
+
+func (s *ObserverServer) getTransactions(
+	query *orm.Query, errorMsg *ErrorMessage, status, typeParam, index, order *string,
+) *orm.Query {
+	var err error
+	if status != nil {
+		query, err = component.FilterByStatus(query, *status)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	if typeParam != nil {
+		query, err = component.FilterByType(query, *typeParam)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	var pulseNumber int64
+	var sequenceNumber int64
+	byIndex := false
+	if index != nil {
+		pulseNumber, sequenceNumber, err = checkIndex(*index)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		} else {
+			byIndex = true
+		}
+	}
+
+	query, err = component.OrderByIndex(query, order, pulseNumber, sequenceNumber, byIndex, models.TxIndexTypePulseRecord)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+	return query
 }
