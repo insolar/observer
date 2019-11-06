@@ -100,6 +100,40 @@ func TestMigrationAddresses_WrongArguments(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
+func TestMigrationAddresses_HappyPath(t *testing.T) {
+	defer truncateDB(t)
+
+	// Make sure /admin/migration/addresses returns non-assigned migration addresses
+	// sorted by ID with provided `limit` and `migrationAddress` (TODO: rename to `index`) arguments.
+
+	// insert migration addresses
+	var err error
+	wasted := []bool{false, false, true, false, true}
+	for i := 0; i < len(wasted); i++ {
+		migrationAddress := models.MigrationAddress{
+			ID: 32000 + int64(i),
+			Addr: fmt.Sprintf("migration_addr_%v", i),
+			Timestamp: time.Now().Unix(),
+			Wasted: wasted[i],
+		}
+
+		err = db.Insert(&migrationAddress)
+		require.NoError(t, err)
+	}
+
+	// request two oldest migration addresses
+	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []interface{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(received))
+}
+
 func TestMigrationAddressesCount(t *testing.T) {
 	defer truncateDB(t)
 
@@ -126,7 +160,6 @@ func TestMigrationAddressesCount(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// request one recent closed transaction using API
 	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses/count")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
