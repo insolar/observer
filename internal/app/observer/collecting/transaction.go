@@ -282,7 +282,7 @@ func isCreateTransaction(chain interface{}) bool {
 		return false
 	}
 
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7rSyB9B9zk2FHqBzD15g7DnfVY3kbDkTRoJHiHm") // balance
+	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9") // group
 	return in.Prototype.Equal(*prototypeRef)
 }
 

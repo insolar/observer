@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -33,6 +32,7 @@ type MGRSequence struct {
 	GroupRef  []byte
 	UserRef   []byte
 	DrawDate  int64
+	Active    bool `sql:",notnull"`
 }
 
 func NewMGRStorage(obs *observability.Observability, db orm.DB) *MGRStorage {
@@ -86,15 +86,9 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 		return nil
 	}
 
-	var arrRef []string
-	for _, v := range model.Sequence {
-		arrRef = append(arrRef, v.String())
-	}
-
-	res, err := s.db.Model(&MGRSchema{}).
+	_, err := s.db.Model(&MGRSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
 		Set("period=?,amount=?", model.PaymentFrequency, model.AmountDue).
-		Set("sequence=?", pg.Array(arrRef)).
 		Set("start_date=?", model.StartRoundDate).
 		Set("fin_date=?", model.FinishRoundDate).
 		Set("next_payment=?", model.NextPaymentTime).
@@ -105,18 +99,36 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 		return errors.Wrapf(err, "failed to update mgr =%v", model)
 	}
 
-	if res.RowsAffected() == 0 {
-		s.errorCounter.Inc()
-		s.log.WithField("upd", model).Errorf("failed to update mgr")
+	for i, _ := range model.Sequence {
+		seq := mgrSequenceUpdate(i, model)
+		isInserted, err := s.db.Model(seq).
+			Where("group_ref=?", seq.GroupRef).
+			Where("user_ref=?", seq.UserRef).
+			Set("index=?", seq.Index).
+			Set("draw_date=?", seq.DrawDate).
+			Set("active=?", seq.Active).
+			SelectOrInsert()
+		if !isInserted {
+			_, err := s.db.Model(&MGRSequence{}).
+				Where("group_ref=?", seq.GroupRef).
+				Where("user_ref=?", seq.UserRef).
+				Set("index=?", seq.Index).
+				Set("draw_date=?", seq.DrawDate).
+				Set("active=?", seq.Active).
+				Update()
+			if err != nil {
+				return errors.Wrapf(err, "failed to update mgr sequence %v %v", model, err.Error())
+			}
+		}
+		if err != nil {
+			return errors.Wrapf(err, "failed to insert mgr sequence %v %v", model, err.Error())
+		}
 	}
+
 	return nil
 }
 
 func mgrSchema(model *observer.MGR) *MGRSchema {
-	var arrRef []string
-	for _, v := range model.Sequence {
-		arrRef = append(arrRef, v.String())
-	}
 	return &MGRSchema{
 		Ref:              model.Ref.Bytes(),
 		GroupReference:   model.GroupReference.Bytes(),
@@ -134,8 +146,17 @@ func mgrSequence(index int, model *observer.MGR) *MGRSequence {
 	return &MGRSequence{
 		Index:    index + 1,
 		GroupRef: model.GroupReference.Bytes(),
-		UserRef:  model.Sequence[index].Bytes(),
-		// TODO: get correct draw date, wait from insolar
-		DrawDate: model.NextPaymentTime,
+		UserRef:  model.Sequence[index].Member.Bytes(),
+		DrawDate: model.Sequence[index].DueDate,
+	}
+}
+
+func mgrSequenceUpdate(index int, model *observer.MGRUpdate) *MGRSequence {
+	return &MGRSequence{
+		Index:    index + 1,
+		GroupRef: model.GroupReference.Bytes(),
+		UserRef:  model.Sequence[index].Member.Bytes(),
+		DrawDate: model.Sequence[index].DueDate,
+		Active:   model.Sequence[index].IsActive,
 	}
 }

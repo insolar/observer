@@ -64,18 +64,12 @@ func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 		return nil
 	}
 	row := transactionSchema(model)
-	res, err := s.db.Model(row).
+	_, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
 		Insert(row)
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert transaction %v, %v", row, err.Error())
-	}
-
-	if res.RowsAffected() == 0 {
-		s.errorCounter.Inc()
-		s.log.WithField("group_row", row).
-			Errorf("failed to insert group")
 	}
 	return nil
 }

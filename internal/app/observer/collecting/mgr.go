@@ -75,13 +75,19 @@ func NewMGRCollector(log *logrus.Logger) *MGRCollector {
 type MerryGoRound struct {
 	foundation.BaseContract
 	GroupReference   insolar.Reference
-	StartRoundDate   int64               // unix timestamp
-	FinishRoundDate  int64               // unix timestamp
-	AmountDue        string              // amount of money
-	PaymentFrequency string              // daily, weekly, monthly
-	NextPaymentTime  int64               // unix timestamp, need to be calculated
-	Sequence         []insolar.Reference // array of users refs, [0] element is first in queue
-	SwapProcess      Swap                // Swap started and finished processes
+	StartRoundDate   int64      // unix timestamp
+	FinishRoundDate  int64      // unix timestamp
+	AmountDue        string     // amount of money
+	PaymentFrequency string     // daily, weekly, monthly
+	NextPaymentTime  int64      // unix timestamp, need to be calculated
+	Sequence         []Sequence // array of users refs, [0] element is first in queue
+	SwapProcess      Swap       // Swap started and finished processes
+}
+
+type Sequence struct {
+	Member   insolar.Reference
+	DueDate  int64
+	IsActive bool
 }
 
 type Swap struct {
@@ -143,6 +149,11 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 	}
 
 	logrus.Info("Insert new product ref:", insolar.NewReference(act.ObjectID).String())
+	var seq []observer.Sequence
+
+	for _, v := range mgr.Sequence {
+		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DueDate, IsActive: v.IsActive})
+	}
 	return &observer.MGR{
 		Ref:              *insolar.NewReference(act.ObjectID),
 		GroupReference:   mgr.GroupReference,
@@ -151,7 +162,7 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 		AmountDue:        mgr.AmountDue,
 		PaymentFrequency: mgr.PaymentFrequency,
 		NextPaymentTime:  mgr.NextPaymentTime,
-		Sequence:         mgr.Sequence,
+		Sequence:         seq,
 		Status:           "SUCCESS",
 		State:            *insolar.NewReference(act.ID),
 	}, nil

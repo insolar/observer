@@ -39,9 +39,8 @@ func NewBalanceUpdateCollector(log *logrus.Logger) *BalanceUpdateCollector {
 
 type Balance struct {
 	foundation.BaseContract
-	Balance     uint64
-	GroupRef    insolar.Reference
-	LatestTxRef insolar.Reference
+	Balance  uint64
+	GroupRef insolar.Reference
 }
 
 func (c *BalanceUpdateCollector) Collect(rec *observer.Record) *observer.BalanceUpdate {
