@@ -104,7 +104,7 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 	defer truncateDB(t)
 
 	// Make sure /admin/migration/addresses returns non-assigned migration addresses
-	// sorted by ID with provided `limit` and `migrationAddress` (TODO: rename to `index`) arguments.
+	// sorted by ID with provided `limit` and `index` arguments.
 
 	// insert migration addresses
 	var err error
@@ -138,7 +138,7 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 	require.Equal(t, "migration_addr_1", received[1]["address"])
 
 	// request the rest of non-assigned migration addresses
-	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&migrationAddress="+received[1]["index"])
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index="+received[1]["index"])
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err = ioutil.ReadAll(resp.Body)

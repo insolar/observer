@@ -67,8 +67,8 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 
 	query := s.db.Model(&models.MigrationAddress{}).
 		Where("wasted = false")
-	if params.MigrationAddress != nil { // TODO: this argument will be renamed to index
-		id, err := strconv.ParseInt(*params.MigrationAddress, 10, 64)
+	if params.Index != nil {
+		id, err := strconv.ParseInt(*params.Index, 10, 64)
 		if err != nil {
 			s.log.Error(err)
 			return ctx.JSON(http.StatusBadRequest, struct{}{})
