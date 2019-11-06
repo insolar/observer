@@ -168,6 +168,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
+			Id:              1,
 			Reference:       ref.GetLocal().Bytes(),
 			MemberReference: memberRef.GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_0",

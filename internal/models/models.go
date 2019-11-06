@@ -41,6 +41,7 @@ type Member struct {
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
+	Id              int64  `sql:"id"`
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
 	EtheriumHash    string `sql:"eth_hash"`
@@ -109,10 +110,10 @@ type Transaction struct {
 type MigrationAddress struct {
 	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
 
-	ID           	int64	`sql:"id,notnull"`
-	Addr			string	`sql:"addr,notnull"`
-	Timestamp 		int64	`sql:"timestamp,notnull"`
-	Wasted			bool	`sql:"wasted,notnull"`
+	ID        int64  `sql:"id,notnull"`
+	Addr      string `sql:"addr,notnull"`
+	Timestamp int64  `sql:"timestamp,notnull"`
+	Wasted    bool   `sql:"wasted,notnull"`
 }
 
 type fieldCache struct {
