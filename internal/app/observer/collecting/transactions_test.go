@@ -34,7 +34,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:        insolar.NewReference(txID).Bytes(),
+			TransactionID:        *insolar.NewReference(txID),
 			Type:                 models.TTypeTransfer,
 			PulseNumber:          int64(txID.Pulse()),
 			RecordNumber:         int64(rand.Int31()),
@@ -86,7 +86,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:        txID.Bytes(),
+			TransactionID:        txID,
 			Type:                 models.TTypeMigration,
 			PulseNumber:          int64(txID.GetLocal().Pulse()),
 			RecordNumber:         int64(rand.Int31()),
@@ -129,7 +129,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberTo := gen.Reference()
 		depositFrom := insolar.NewReference(gen.ID())
 		expectedTx := observer.TxRegister{
-			TransactionID:        txID.Bytes(),
+			TransactionID:        txID,
 			Type:                 models.TTypeRelease,
 			PulseNumber:          int64(txID.GetLocal().Pulse()),
 			RecordNumber:         int64(rand.Int31()),
@@ -222,7 +222,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef.Bytes(), Fee: "123"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "123"}, tx)
 	})
 
 	t.Run("migration happy path", func(t *testing.T) {
@@ -261,7 +261,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef.Bytes(), Fee: "0"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "0"}, tx)
 	})
 
 	t.Run("release happy path", func(t *testing.T) {
@@ -300,7 +300,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef.Bytes(), Fee: "0"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "0"}, tx)
 	})
 }
 
@@ -359,7 +359,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		expectedTx := observer.TxSagaResult{
-			TransactionID:      txID.Bytes(),
+			TransactionID:      txID,
 			FinishSuccess:      true,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),
@@ -409,7 +409,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		expectedTx := observer.TxSagaResult{
-			TransactionID:      txID.Bytes(),
+			TransactionID:      txID,
 			FinishSuccess:      false,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),
@@ -417,7 +417,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		assert.Equal(t, &expectedTx, tx)
 	})
 
-	t.Run("call success", func(t *testing.T) {
+	t.Run("call success does not produce tx", func(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
@@ -458,15 +458,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, resultRec)
-		require.NotNil(t, tx)
-		require.NoError(t, tx.Validate())
-		expectedTx := observer.TxSagaResult{
-			TransactionID:      requestRef.Bytes(),
-			FinishSuccess:      true,
-			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
-			FinishRecordNumber: int64(resultRec.RecordNumber),
-		}
-		assert.Equal(t, &expectedTx, tx)
+		require.Nil(t, tx)
 	})
 
 	t.Run("call fail", func(t *testing.T) {
@@ -513,7 +505,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		expectedTx := observer.TxSagaResult{
-			TransactionID:      requestRef.Bytes(),
+			TransactionID:      requestRef,
 			FinishSuccess:      false,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),

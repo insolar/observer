@@ -1,13 +1,14 @@
 package observer
 
 import (
+	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/models"
 )
 
 type TxRegister struct {
-	TransactionID        []byte
+	TransactionID        insolar.Reference
 	Type                 models.TransactionType
 	PulseNumber          int64
 	RecordNumber         int64
@@ -19,7 +20,7 @@ type TxRegister struct {
 }
 
 func (t *TxRegister) Validate() error {
-	if len(t.TransactionID) == 0 {
+	if t.TransactionID.IsEmpty() {
 		return errors.New("TransactionID should not be empty")
 	}
 	if len(t.Type) == 0 {
@@ -38,12 +39,12 @@ func (t *TxRegister) Validate() error {
 }
 
 type TxResult struct {
-	TransactionID []byte
+	TransactionID insolar.Reference
 	Fee           string
 }
 
 func (t *TxResult) Validate() error {
-	if len(t.TransactionID) == 0 {
+	if t.TransactionID.IsEmpty() {
 		return errors.New("TransactionID should not be empty")
 	}
 	if len(t.Fee) == 0 {
@@ -53,14 +54,14 @@ func (t *TxResult) Validate() error {
 }
 
 type TxSagaResult struct {
-	TransactionID      []byte
+	TransactionID      insolar.Reference
 	FinishSuccess      bool
 	FinishPulseNumber  int64
 	FinishRecordNumber int64
 }
 
 func (t *TxSagaResult) Validate() error {
-	if len(t.TransactionID) == 0 {
+	if t.TransactionID.IsEmpty() {
 		return errors.New("TransactionID should not be empty")
 	}
 	if t.FinishPulseNumber == 0 {

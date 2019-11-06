@@ -19,9 +19,10 @@ package component
 import (
 	"context"
 	"fmt"
-	"github.com/go-pg/pg/orm"
 	"strings"
 	"time"
+
+	"github.com/go-pg/pg/orm"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -63,7 +64,7 @@ func makeStorer(
 				pulses := postgres.NewPulseStorage(cfg, obs, tx)
 				err := pulses.Insert(b.pulse)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert pulse")
 				}
 
 				records := postgres.NewRecordStorage(cfg, obs, tx)
@@ -74,7 +75,7 @@ func makeStorer(
 					obsRec := observer.Record(rec.Record)
 					err := records.Insert(&obsRec)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert record")
 					}
 				}
 
@@ -85,7 +86,7 @@ func makeStorer(
 					}
 					err := requests.Insert(req)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert request")
 					}
 				}
 
@@ -96,7 +97,7 @@ func makeStorer(
 					}
 					err := results.Insert(res)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert result")
 					}
 				}
 
@@ -107,7 +108,7 @@ func makeStorer(
 					}
 					err := objects.Insert(act)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert activate record")
 					}
 				}
 
@@ -117,7 +118,7 @@ func makeStorer(
 					}
 					err := objects.Insert(amd)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert amend record")
 					}
 				}
 
@@ -127,7 +128,7 @@ func makeStorer(
 					}
 					err := objects.Insert(deact)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deactivate record")
 					}
 				}
 
@@ -140,21 +141,21 @@ func makeStorer(
 					}
 					err := members.Insert(member)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert member")
 					}
 				}
 
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txRegister")
 				}
 				err = StoreTxResult(tx, b.txResult)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txResult")
 				}
 				err = StoreTxSagaResult(tx, b.txSagaResult)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txSagaResult")
 				}
 
 				deposits := postgres.NewDepositStorage(obs, tx)
@@ -164,7 +165,7 @@ func makeStorer(
 					}
 					err := deposits.Insert(deposit)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deposit")
 					}
 				}
 
@@ -175,7 +176,7 @@ func makeStorer(
 					}
 					err := addresses.Insert(address)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert migration address")
 					}
 				}
 
@@ -187,7 +188,7 @@ func makeStorer(
 					}
 					err := members.Update(balance)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert balance")
 					}
 				}
 
@@ -197,7 +198,7 @@ func makeStorer(
 					}
 					err := deposits.Update(update)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deposit update")
 					}
 				}
 
@@ -207,7 +208,7 @@ func makeStorer(
 					}
 					err := addresses.Update(wasting)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert wasting")
 					}
 				}
 
@@ -235,7 +236,7 @@ func makeStorer(
 				}
 				err = statistics.Insert(stat)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert stat")
 				}
 
 				platformNodes.Set(float64(nodes))
@@ -276,6 +277,17 @@ type Execer interface {
 func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	if len(transactions) == 0 {
 		return nil
+	}
+
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
 	}
 
 	columns := []string{
@@ -323,12 +335,26 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		),
 		values...,
 	)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "failed to store TxRegister")
+	}
+	return nil
 }
 
 func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	if len(transactions) == 0 {
 		return nil
+	}
+
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
 	}
 
 	columns := []string{
@@ -364,6 +390,17 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 	if len(transactions) == 0 {
 		return nil
+	}
+
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
 	}
 
 	columns := []string{

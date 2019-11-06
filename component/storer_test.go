@@ -73,7 +73,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxRegister(tx, []observer.TxRegister{
 					{
-						TransactionID:       expectedTransactions[0].TransactionID,
+						TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						Type:                expectedTransactions[0].Type,
 						PulseNumber:         expectedTransactions[0].PulseRecord[0],
 						RecordNumber:        expectedTransactions[0].PulseRecord[1],
@@ -82,7 +82,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 						Amount:              expectedTransactions[0].Amount,
 					},
 					{
-						TransactionID:      expectedTransactions[1].TransactionID,
+						TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
 						Type:               expectedTransactions[1].Type,
 						PulseNumber:        expectedTransactions[1].PulseRecord[0],
 						RecordNumber:       expectedTransactions[1].PulseRecord[1],
@@ -94,11 +94,11 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxResult(tx, []observer.TxResult{
 					{
-						TransactionID: expectedTransactions[0].TransactionID,
+						TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						Fee:           expectedTransactions[0].Fee,
 					},
 					{
-						TransactionID: expectedTransactions[1].TransactionID,
+						TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
 						Fee:           expectedTransactions[1].Fee,
 					},
 				})
@@ -106,7 +106,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxSagaResult(tx, []observer.TxSagaResult{
 					{
-						TransactionID:      expectedTransactions[0].TransactionID,
+						TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						FinishSuccess:      expectedTransactions[0].FinishSuccess,
 						FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
 						FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
