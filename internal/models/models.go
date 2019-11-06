@@ -41,7 +41,7 @@ type Member struct {
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
-	Id              int64  `sql:"id"`
+	ID              int64  `sql:"id"`
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
 	EtheriumHash    string `sql:"eth_hash"`
