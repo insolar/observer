@@ -94,8 +94,8 @@ func TestMigrationAddresses_WrongArguments(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
-	// if `migrationAddress` is not a number, API returns `bad request`
-	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&migrationAddress=LOL")
+	// if `index` is not a number, API returns `bad request`
+	resp, err = http.Get("http://" + apihost + "/admin/migration/addresses?limit=100&index=LOL")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
