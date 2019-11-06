@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/orm"
+
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
 	"github.com/go-pg/pg"
@@ -321,7 +322,11 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
+		TotalSupply:       result.Total,
+		MaxSupply:         result.Max,
+		CirculatingSupply: result.Circulating,
+	})
 }
 
 func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
