@@ -484,12 +484,25 @@ func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
 	return query, nil
 }
 
-func FilterByMemberReference(query *orm.Query, ref *insolar.Reference) (*orm.Query, error) {
-	query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
-		q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
-			WhereOr("member_to_ref = ?", ref.Bytes())
-		return q, nil
-	})
+func FilterByMemberReferenceAndDirection(query *orm.Query, ref *insolar.Reference, d *string) (*orm.Query, error) {
+	direction := "all"
+	if d != nil {
+		direction = *d
+	}
+	switch direction {
+	case "incoming":
+		query = query.Where("member_to_ref = ?", ref.Bytes())
+	case "outgoing":
+		query = query.Where("member_from_ref = ?", ref.Bytes())
+	case "all":
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	default:
+		return query, errors.New("Query parameter 'direction' should be 'incoming', 'outgoing' or 'all'.") // nolint
+	}
 	return query, nil
 }
 

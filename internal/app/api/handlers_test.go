@@ -1157,6 +1157,43 @@ func TestMemberTransactions(t *testing.T) {
 	require.Equal(t, txIDFirst.String(), received[1].TxID)
 }
 
+func TestMemberTransactions_Direction(t *testing.T) {
+	defer truncateDB(t)
+
+	member1 := gen.Reference()
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	member2 := gen.Reference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertMember(t, member1, nil, nil, "10000")
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "20000")
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	resp, err := http.Get(
+		"http://" + apihost + "/api/member/" + member1.String() + "/transactions?" +
+			"limit=3&" +
+			"&status=registered&" +
+			"type=transfer&" +
+			"direction=incoming&" +
+			"index=" + pulseNumber.String() + "%3A1237&" +
+			"order=reverse")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
+}
+
 func TestMemberTransactions_OrderChronological(t *testing.T) {
 	defer truncateDB(t)
 	member1 := gen.Reference()
@@ -1202,6 +1239,7 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 			"status=some_not_valid_status&" +
 			"type=some_not_valid_type&" +
 			"index=some_not_valid_index&" +
+			"direction=some_not_valid_direction&" +
 			"order=some_not_valid_order")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
@@ -1211,6 +1249,7 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 
 	expected := ErrorMessage{
 		Error: []string{
+			"Query parameter 'direction' should be 'incoming', 'outgoing' or 'all'.",
 			"Query parameter 'status' should be 'registered', 'sent', 'received' or 'failed'.",
 			"Query parameter 'type' should be 'transfer', 'migration' or 'release'.",
 			"Query parameter 'index' should have the '<pulse_number>:<sequence_number>' format.",

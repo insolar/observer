@@ -215,7 +215,7 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	var txs []models.Transaction
 	query := s.db.Model(&txs)
 
-	query, err = component.FilterByMemberReference(query, ref)
+	query, err = component.FilterByMemberReferenceAndDirection(query, ref, params.Direction)
 	if err != nil {
 		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
