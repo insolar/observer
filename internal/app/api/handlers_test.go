@@ -121,17 +121,24 @@ func TestMigrationAddresses_HappyPath(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// request two oldest migration addresses
+	// request two oldest non-assigned migration addresses
 	resp, err := http.Get("http://" + apihost + "/admin/migration/addresses?limit=2")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var received []interface{}
+	var received []map[string]string
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(received))
+	require.Equal(t, "32000", received[0]["index"])
+	require.Equal(t, "migration_addr_0", received[0]["address"])
+	require.Equal(t, "32001", received[1]["index"])
+	require.Equal(t, "migration_addr_1", received[1]["address"])
+
+	// request the rest of non-assigned migration addresses 
+
 }
 
 func TestMigrationAddressesCount(t *testing.T) {
