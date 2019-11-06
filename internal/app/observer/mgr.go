@@ -12,9 +12,15 @@ type MGR struct {
 	AmountDue        string
 	PaymentFrequency string
 	NextPaymentTime  int64
-	Sequence         []insolar.Reference
+	Sequence         []Sequence
 	Status           string
 	State            insolar.Reference
+}
+
+type Sequence struct {
+	Member   insolar.Reference
+	DueDate  int64
+	IsActive bool
 }
 
 type MGRUpdate struct {
@@ -27,7 +33,7 @@ type MGRUpdate struct {
 	AmountDue        string
 	PaymentFrequency string
 	NextPaymentTime  int64
-	Sequence         []insolar.Reference
+	Sequence         []Sequence
 }
 
 type MGRStorage interface {

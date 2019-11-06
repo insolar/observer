@@ -57,8 +57,13 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 		return nil
 	}
 
+	var seq []observer.Sequence
+	for _, v := range mgr.Sequence {
+		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DueDate, IsActive: v.IsActive})
+	}
+
 	return &observer.MGRUpdate{
-		GroupReference:   *insolar.NewReference(rec.ObjectID),
+		GroupReference:   mgr.GroupReference,
 		PrevState:        *insolar.NewReference(amd.PrevState),
 		MGRState:         *insolar.NewReference(rec.ID),
 		StartRoundDate:   int64(mgr.StartRoundDate),
@@ -66,7 +71,7 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 		AmountDue:        mgr.AmountDue,
 		PaymentFrequency: mgr.PaymentFrequency,
 		NextPaymentTime:  int64(mgr.NextPaymentTime),
-		Sequence:         mgr.Sequence,
+		Sequence:         seq,
 	}
 }
 
