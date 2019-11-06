@@ -61,7 +61,7 @@ func main() {
 	sr := component.NewStatsManager(log, repo)
 
 	command := component.NewCalculateStatsCommand(log, db, sr)
-	err = command.Run(dt)
+	_, err = command.Run(dt)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to run command"))
 	}
