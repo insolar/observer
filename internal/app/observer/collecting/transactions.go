@@ -10,6 +10,7 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
+	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
@@ -51,8 +52,8 @@ func NewTxRegisterCollector(log *logrus.Logger) *TxRegisterCollector {
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = log.WithField("collect_process_id", uuid.New()).Logger
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -84,7 +85,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	return tx
 }
 
-func (c *TxRegisterCollector) fromTransfer(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -145,9 +146,12 @@ func (c *TxRegisterCollector) fromTransfer(log *logrus.Logger, rec exporter.Reco
 		return nil
 	}
 
+	txID := *insolar.NewReference(rec.Record.ID)
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
+	log.Debug("created TxRegister")
 	return &observer.TxRegister{
 		Type:                models.TTypeTransfer,
-		TransactionID:       insolar.NewReference(rec.Record.ID).Bytes(),
+		TransactionID:       txID,
 		PulseNumber:         int64(rec.Record.ID.Pulse()),
 		RecordNumber:        int64(rec.RecordNumber),
 		Amount:              amount,
@@ -156,7 +160,7 @@ func (c *TxRegisterCollector) fromTransfer(log *logrus.Logger, rec exporter.Reco
 	}
 }
 
-func (c *TxRegisterCollector) fromMigration(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromMigration(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -190,9 +194,11 @@ func (c *TxRegisterCollector) fromMigration(log *logrus.Logger, rec exporter.Rec
 		return nil
 	}
 
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
+	log.Debug("created TxRegister")
 	return &observer.TxRegister{
 		Type:                models.TTypeMigration,
-		TransactionID:       txID.Bytes(),
+		TransactionID:       txID,
 		PulseNumber:         int64(rec.Record.ID.Pulse()),
 		RecordNumber:        int64(rec.RecordNumber),
 		MemberFromReference: fromMember.Bytes(),
@@ -202,7 +208,7 @@ func (c *TxRegisterCollector) fromMigration(log *logrus.Logger, rec exporter.Rec
 	}
 }
 
-func (c *TxRegisterCollector) fromRelease(log *logrus.Logger, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromRelease(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -236,9 +242,11 @@ func (c *TxRegisterCollector) fromRelease(log *logrus.Logger, rec exporter.Recor
 		return nil
 	}
 
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
+	log.Debug("created TxRegister")
 	return &observer.TxRegister{
 		Type:                 models.TTypeRelease,
-		TransactionID:        txID.Bytes(),
+		TransactionID:        txID,
 		PulseNumber:          int64(rec.Record.ID.Pulse()),
 		RecordNumber:         int64(rec.RecordNumber),
 		MemberToReference:    toMember.Bytes(),
@@ -298,8 +306,8 @@ func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxRe
 }
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = log.WithField("collect_process_id", uuid.New()).Logger
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -310,7 +318,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	txID := result.Request
-	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	requestRecord, err := c.fetcher.Request(ctx, *txID.GetLocal())
 	if err != nil {
@@ -351,7 +359,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	// Migration and release don't have fees.
 	if args.Params.CallSite == callSiteMigration || args.Params.CallSite == callSiteRelease {
 		tx := &observer.TxResult{
-			TransactionID: txID.Bytes(),
+			TransactionID: txID,
 			Fee:           "0",
 		}
 		if err = tx.Validate(); err != nil {
@@ -375,8 +383,10 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
+	log.Debug("created TxResult")
 	tx := &observer.TxResult{
-		TransactionID: txID.Bytes(),
+		TransactionID: txID,
 		Fee:           response.Fee,
 	}
 	if err = tx.Validate(); err != nil {
@@ -399,16 +409,23 @@ func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *
 }
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString()).Logger
-	log = log.WithField("collect_process_id", uuid.New()).Logger
+	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
+
+	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
+		log.Debug("skipped (fee member object)")
+		return nil
+	}
 
 	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
 	if !ok {
 		log.Debug("skipped (not Result)")
 		return nil
 	}
+
+	log = log.WithField("request_id", result.Request.GetLocal().DebugString())
 
 	requestRecord, err := c.fetcher.Request(ctx, *result.Request.GetLocal())
 	if err != nil {
@@ -425,6 +442,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 		return nil
 	}
 
+	log.Debug("parsing method ", request.Method)
 	var tx *observer.TxSagaResult
 	switch request.Method {
 	case methodAccept:
@@ -442,7 +460,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 }
 
 func (c *TxSagaResultCollector) fromAccept(
-	log *logrus.Logger,
+	log *logrus.Entry,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,
@@ -460,7 +478,7 @@ func (c *TxSagaResultCollector) fromAccept(
 		return nil
 	}
 	txID := acceptArgs.Request
-	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	response := foundation.Result{}
 	err = insolar.Deserialize(result.Payload, &response)
@@ -477,16 +495,18 @@ func (c *TxSagaResultCollector) fromAccept(
 	// The first return parameter of Accept method is error, so we check if its not nil.
 	if response.Error != nil || response.Returns[0] != nil {
 		log.Error("saga resulted with error")
+		log.Debug("created failed TxSagaResult")
 		return &observer.TxSagaResult{
-			TransactionID:      txID.Bytes(),
+			TransactionID:      txID,
 			FinishSuccess:      false,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),
 		}
 	}
 
+	log.Debug("created success TxSagaResult")
 	return &observer.TxSagaResult{
-		TransactionID:      txID.Bytes(),
+		TransactionID:      txID,
 		FinishSuccess:      true,
 		FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 		FinishRecordNumber: int64(resultRec.RecordNumber),
@@ -494,13 +514,13 @@ func (c *TxSagaResultCollector) fromAccept(
 }
 
 func (c *TxSagaResultCollector) fromCall(
-	log *logrus.Logger,
+	log *logrus.Entry,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
 	txID := result.Request
-	log = log.WithField("tx_id", txID.GetLocal().DebugString()).Logger
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	// Skip non-API requests.
 	if request.APINode.IsEmpty() {
@@ -539,18 +559,16 @@ func (c *TxSagaResultCollector) fromCall(
 
 	// The second return parameter of Call method is error, so we check if its not nil.
 	if response.Error != nil || response.Returns[1] != nil {
+		log.Debug("created failed TxSagaResult")
 		return &observer.TxSagaResult{
-			TransactionID:      txID.Bytes(),
+			TransactionID:      txID,
 			FinishSuccess:      false,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),
 		}
 	}
 
-	return &observer.TxSagaResult{
-		TransactionID:      txID.Bytes(),
-		FinishSuccess:      true,
-		FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
-		FinishRecordNumber: int64(resultRec.RecordNumber),
-	}
+	// Successful call does not produce transactions since it will be produced by saga call. It avoids double insert
+	// on conflict.
+	return nil
 }
