@@ -92,7 +92,7 @@ func (s *TransactionStorage) Update(model *observer.TransactionUpdate) error {
 		Update()
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to update mgr =%v", model)
+		return errors.Wrapf(err, "failed to update transaction =%v", model)
 	}
 	return nil
 }
