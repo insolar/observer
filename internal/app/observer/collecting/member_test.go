@@ -296,7 +296,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 
 				pn := insolar.GenesisPulse.PulseNumber + 10
 				balance := "42"
-				memberRef := gen.IDWithPulse(pn)
+				memberRef := gen.ReferenceWithPulse(pn)
 				// Useless records that shouldn't used by collector.
 				uselessOut := makeOutgoingRequest()
 				uselessResult := makeResultWith(uselessOut.ID, &foundation.Result{Returns: []interface{}{nil, nil}})
