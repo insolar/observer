@@ -89,14 +89,12 @@ func TestStatsManager_Coins(t *testing.T) {
 	})
 }
 
-// uncomment requires
 func TestStatsManager_CLI_command(t *testing.T) {
 	t.Parallel()
 	log := logrus.New()
 	repo := postgres.NewStatsRepository(db)
 	sr := NewStatsManager(log, repo)
 
-	// member := gen.Reference()
 	size := 10
 	now := time.Now()
 
@@ -105,10 +103,6 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		stats, err := command.Run(dt)
 		require.NoError(t, err)
 
-		// todo rewrite to Run returns result
-		// stats := &postgres.StatsModel{}
-		// err = db.Model(stats).Last()
-		// require.NoError(t, err)
 		log.Infof("%+v", stats)
 		return stats
 	}
@@ -138,13 +132,13 @@ func TestStatsManager_CLI_command(t *testing.T) {
 			EthHash:         "genesis_deposit",
 			MemberRef:       gen.Reference().Bytes(),
 			DepositRef:      gen.Reference().Bytes(),
-			TransferDate:    now.Unix() - 100,
-			HoldReleaseDate: now.Unix() - 100,
+			TransferDate:    now.Unix() - 1000,
+			HoldReleaseDate: now.Unix() - 1000,
 			Amount:          "10000",
 			Balance:         "10000",
 			DepositState:    gen.ID().Bytes(),
-			Vesting:         1,
-			VestingStep:     1,
+			Vesting:         10, // seconds
+			VestingStep:     10, // seconds
 		}
 		err := db.Insert(depModel)
 		require.NoError(t, err)
@@ -152,7 +146,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 
 	stats := getStats(nil)
 	require.Equal(t, "0", stats.Circulating())
-	// require.Equal(t, "100000", stats.Total())
+	require.Equal(t, "100000", stats.Total())
 
 	// genesis, lockup date, vesting
 	for i := 0; i < size; i++ {
@@ -161,7 +155,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 			MemberRef:       gen.Reference().Bytes(),
 			DepositRef:      gen.Reference().Bytes(),
 			TransferDate:    now.Unix(),
-			HoldReleaseDate: now.Unix() + 100000,
+			HoldReleaseDate: now.Unix() + 365*24*3600,
 			Amount:          "10000",
 			Balance:         "10000",
 			DepositState:    gen.ID().Bytes(),
@@ -173,7 +167,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	}
 	stats = getStats(nil)
 	require.Equal(t, "0", stats.Circulating())
-	// require.Equal(t, "100000", stats.Total)
+	require.Equal(t, "100000", stats.Total())
 	require.Equal(t, "200000", stats.Max())
 
 	// user transfer deposit->wallet
@@ -192,8 +186,8 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	}
 	stats = getStats(nil)
 	require.Equal(t, "5000", stats.Circulating())
-	// require.Equal(t, "105000", stats.Total)
-	// require.Equal(t, "200000", stats.Max)
+	require.Equal(t, "105000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
 	// user migration deposits
 	for i := 0; i < size; i++ {
@@ -202,25 +196,27 @@ func TestStatsManager_CLI_command(t *testing.T) {
 			MemberRef:       gen.Reference().Bytes(),
 			DepositRef:      gen.Reference().Bytes(),
 			TransferDate:    now.Unix(),
-			HoldReleaseDate: now.Unix() + 365*24*3600,
+			HoldReleaseDate: now.Unix() + 30*24*3600,
 			Amount:          "5000",
 			Balance:         "5000",
 			DepositState:    gen.ID().Bytes(),
-			Vesting:         365 * 24 * 3600,
-			VestingStep:     365,
+			Vesting:         30 * 24 * 3600,
+			VestingStep:     3600,
 		}
 		err := db.Insert(depModel)
 		require.NoError(t, err)
 	}
 	stats = getStats(nil)
 	require.Equal(t, "5000", stats.Circulating())
-	// require.Equal(t, "105000", stats.Total)
-	// require.Equal(t, "200000", stats.Max)
+	require.Equal(t, "105000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
 	// after lockup date, after vesting
-	after := now.Add(1000 * time.Second)
+	after := now.Add(61 * 24 * time.Hour)
 	stats = getStats(&after)
 	require.Equal(t, "5000", stats.Circulating())
-	// require.Equal(t, "155000", stats.Total)
-	// require.Equal(t, "200000", stats.Max)
+	require.Equal(t, "155000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
+
+	// todo add partial vesting cases
 }

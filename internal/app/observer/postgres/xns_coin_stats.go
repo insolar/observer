@@ -74,23 +74,23 @@ func (s *StatsRepository) CountStats(collectDT *time.Time) (StatsModel, error) {
 	sql := fmt.Sprintf(`
 WITH stats as (SELECT d.amount::numeric(24),
                       d.hold_release_date,
-                      round(%d)      as pulse_ts,
-                      d.hold_release_date + 365 * 24 * 3600 as vesting_ends_ts
+                      %d     as pulse_ts,
+                      d.vesting
                from deposits d),
      sums as (
-         SELECT sum(floor(stats.amount * least(greatest(stats.pulse_ts - stats.hold_release_date, 0) /
-                                               (stats.vesting_ends_ts - stats.hold_release_date), 1)))      as free
-         from stats),
+         SELECT sum(floor(stats.amount * least(greatest(stats.pulse_ts - stats.hold_release_date, 0) /stats.vesting, 1))) as free
+         from stats
+         ),
      circulating as (select sum(balance::numeric(24)) as sum from members),
-     dep_balance as (select sum(balance::numeric(24)) as sum from deposits)
+     max_amount as (select sum(amount::numeric(24)) as sum from deposits where eth_hash = 'genesis_deposit')
 
 SELECT
-       circulating.sum::numeric                   as circulating,
-       (circulating.sum + free)::numeric            as total,
-       (circulating.sum + dep_balance.sum)::numeric as max
+       circulating.sum::text                   as circulating,
+       (circulating.sum + free)::numeric             as total,
+       (max_amount.sum)::text  as max
 from sums,
      circulating,
-     dep_balance
+     max_amount
 ;
 `, dt)
 	stats := StatsModel{}

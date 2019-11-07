@@ -49,6 +49,7 @@ func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.Deposit
 	amd := rec.Virtual.GetAmend()
 	d := c.depositState(amd)
 	releaseTimestamp := int64(0)
+	// todo ins-3820: use one field PulseDepositUnHold or Lockup, in deposit collector, dep update collector, dep beautifier
 	if holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
 		releaseTimestamp = holdReleasedDate.Unix()
 	}
