@@ -305,7 +305,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.Type,
 			pg.Array([2]int64{t.PulseNumber, t.RecordNumber}),
@@ -366,7 +366,7 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.Fee,
 		)
@@ -413,7 +413,7 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.FinishSuccess,
 			pg.Array([2]int64{t.FinishPulseNumber, t.FinishRecordNumber}),
