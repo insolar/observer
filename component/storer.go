@@ -182,6 +182,13 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			for _, tx := range b.transactionsUpdate {
+				err := transactions.Update(tx)
+				if err != nil {
+					return err
+				}
+			}
+
 			for _, bln := range b.groupBalances {
 				err := groups.UpdateBalance(bln)
 				if err != nil {

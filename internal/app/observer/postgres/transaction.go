@@ -74,6 +74,29 @@ func (s *TransactionStorage) Insert(model *observer.Transaction) error {
 	return nil
 }
 
+func (s *TransactionStorage) Update(model *observer.TransactionUpdate) error {
+	if model == nil {
+		s.log.Warnf("trying to update nil transaction model")
+		return nil
+	}
+
+	_, err := s.db.Model(&TransactionSchema{}).
+		Where("ref=?", model.Reference.Bytes()).
+		Set("external_transaction_id=?,timestamp=?", model.ExtTxId, model.Timestamp).
+		Set("direction=?", model.TxDirection).
+		Set("group_ref=?", model.GroupRef.Bytes()).
+		Set("amount=?", model.Amount).
+		Set("user_ref=?", model.MemberRef.Bytes()).
+		Set("uid=?", model.UID).
+		Set("status=?", model.Status).
+		Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to update transaction =%v", model)
+	}
+	return nil
+}
+
 func transactionSchema(model *observer.Transaction) *TransactionSchema {
 	return &TransactionSchema{
 		Ref:                   model.Reference.Bytes(),

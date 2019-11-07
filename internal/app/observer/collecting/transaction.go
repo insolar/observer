@@ -19,6 +19,7 @@ package collecting
 import (
 	"fmt"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/observer/internal/app/observer"
@@ -300,4 +301,30 @@ func (c *TransactionCollector) unwrapTransactionChain(chain *observer.Chain) *ob
 	}
 
 	return coupledAct.Activate
+}
+
+func transactionUpdate(act *observer.Record) (*Transaction, error) {
+	var memory []byte
+	switch v := act.Virtual.Union.(type) {
+	case *record.Virtual_Activate:
+		memory = v.Activate.Memory
+	case *record.Virtual_Amend:
+		memory = v.Amend.Memory
+	default:
+		log.Error(errors.New("invalid record to get transaction memory"))
+	}
+
+	if memory == nil {
+		log.Warn(errors.New("transaction memory is nil"))
+		return nil, errors.New("invalid record to get transaction memory")
+	}
+
+	var transaction Transaction
+
+	err := insolar.Deserialize(memory, &transaction)
+	if err != nil {
+		log.Error(errors.New("failed to deserialize transaction memory"))
+	}
+
+	return &transaction, nil
 }
