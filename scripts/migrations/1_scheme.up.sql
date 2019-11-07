@@ -136,7 +136,7 @@ create table if not exists deposits
     deposit_state bytea not null,
     deposit_number bigint not null,
     vesting bigint not null default 0,
-    vesting_step bigint not null default 0,
+    vesting_step bigint not null default 0
 );
 
 create table if not exists transactions
