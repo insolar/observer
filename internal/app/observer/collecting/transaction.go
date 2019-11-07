@@ -233,7 +233,10 @@ func isTransactionCreationCall(chain interface{}) bool {
 		return false
 	}
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "group.addTransaction"
+	if args.Params.CallSite == "group.addTransaction" || args.Params.CallSite == "group.disburse" {
+		return true
+	}
+	return false
 }
 
 func isTransactionNew(chain interface{}) bool {
@@ -275,7 +278,7 @@ func isCreateTransaction(chain interface{}) bool {
 	}
 
 	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "AddTransaction" {
+	if in.Method != "AddTransaction" && in.Method != "Disburse" {
 		return false
 	}
 
