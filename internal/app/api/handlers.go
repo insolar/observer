@@ -341,9 +341,9 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
-		TotalSupply:       result.Total,
-		MaxSupply:         result.Max,
-		CirculatingSupply: result.Circulating,
+		TotalSupply:       result.Total(),
+		MaxSupply:         result.Max(),
+		CirculatingSupply: result.Circulating(),
 	})
 }
 
