@@ -126,7 +126,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 
 	response := c.createResponse(contractResult)
 
-	memberRef, err := insolar.NewIDFromString(response.Reference)
+	memberRef, err := insolar.NewReferenceFromString(response.Reference)
 	if err != nil || memberRef == nil {
 		panic("invalid member reference")
 	}
@@ -202,7 +202,7 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		}
 
 		members = append(members, &observer.Member{
-			MemberRef:    *memberRef.GetLocal(),
+			MemberRef:    *memberRef,
 			WalletRef:    *memberState.Wallet.GetLocal(),
 			AccountRef:   *accountRef.GetLocal(),
 			Balance:      balance,
