@@ -168,7 +168,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			ID:              1,
 			Reference:       ref.GetLocal().Bytes(),
 			MemberReference: memberRef.GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_0",
@@ -304,7 +303,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 		// Reset ID field to simplify comparing.
 		for i, t := range selected {
-			t.ID = 0
 			selected[i] = t
 		}
 

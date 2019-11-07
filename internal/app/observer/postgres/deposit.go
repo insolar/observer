@@ -29,7 +29,6 @@ import (
 type DepositSchema struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
-	ID              int64  `sql:",pk"`
 	EthHash         string `sql:",pk"`
 	MemberRef       []byte `sql:",pk"`
 	DepositRef      []byte `sql:",notnull"`
@@ -130,7 +129,7 @@ func (s *DepositStorage) insertDeposit(deposit *DepositSchema) error {
 		return errors.New("failed to insert, affected is 0")
 	}
 
-	return err
+	return nil
 }
 
 func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
