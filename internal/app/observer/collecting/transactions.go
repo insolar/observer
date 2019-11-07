@@ -10,6 +10,7 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
+	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
@@ -413,11 +414,18 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
+	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
+		log.Debug("skipped (fee member object)")
+		return nil
+	}
+
 	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
 	if !ok {
 		log.Debug("skipped (not Result)")
 		return nil
 	}
+
+	log = log.WithField("request_id", result.Request.GetLocal().DebugString())
 
 	requestRecord, err := c.fetcher.Request(ctx, *result.Request.GetLocal())
 	if err != nil {
@@ -434,6 +442,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 		return nil
 	}
 
+	log.Debug("parsing method ", request.Method)
 	var tx *observer.TxSagaResult
 	switch request.Method {
 	case methodAccept:
