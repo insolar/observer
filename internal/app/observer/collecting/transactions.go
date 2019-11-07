@@ -86,6 +86,9 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 }
 
 func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
+	txID := *insolar.NewRecordReference(rec.Record.ID)
+	log = log.WithField("tx_id", txID.GetLocal().DebugString())
+
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -93,8 +96,8 @@ func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Recor
 	}
 
 	// Skip non-member objects.
-	if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
-		log.Debug("skipped (not member object)")
+	if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+		log.Debugf("skipped (not member object)")
 		return nil
 	}
 
@@ -146,8 +149,6 @@ func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Recor
 		return nil
 	}
 
-	txID := *insolar.NewReference(rec.Record.ID)
-	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
 	return &observer.TxRegister{
 		Type:                models.TTypeTransfer,
@@ -193,6 +194,9 @@ func (c *TxRegisterCollector) fromMigration(log *logrus.Entry, rec exporter.Reco
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
+
+	// Ensure txID is record reference so other collectors can match it.
+	txID = *insolar.NewRecordReference(*txID.GetLocal())
 
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
@@ -241,6 +245,9 @@ func (c *TxRegisterCollector) fromRelease(log *logrus.Entry, rec exporter.Record
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
+
+	// Ensure txID is record reference so other collectors can match it.
+	txID = *insolar.NewRecordReference(*txID.GetLocal())
 
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
@@ -317,7 +324,8 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
-	txID := result.Request
+	// Ensure txID is record reference so other collectors can match it.
+	txID := *insolar.NewRecordReference(*result.Request.GetLocal())
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	requestRecord, err := c.fetcher.Request(ctx, *txID.GetLocal())
@@ -477,7 +485,8 @@ func (c *TxSagaResultCollector) fromAccept(
 		log.Error(errors.Wrap(err, "failed to deserialize method arguments"))
 		return nil
 	}
-	txID := acceptArgs.Request
+	// Ensure txID is record reference so other collectors can match it.
+	txID := *insolar.NewRecordReference(*acceptArgs.Request.GetLocal())
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	response := foundation.Result{}
@@ -519,7 +528,9 @@ func (c *TxSagaResultCollector) fromCall(
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
-	txID := result.Request
+
+	// Ensure txID is record reference so other collectors can match it.
+	txID := *insolar.NewRecordReference(*result.Request.GetLocal())
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
 	// Skip non-API requests.
