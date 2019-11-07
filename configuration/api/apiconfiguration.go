@@ -27,7 +27,7 @@ import (
 )
 
 type Configuration struct {
-	API       configuration.API
+	Listen    string
 	DB        configuration.DB
 	FeeAmount *big.Int
 	LogLevel  string
@@ -35,9 +35,7 @@ type Configuration struct {
 
 func Default() *Configuration {
 	return &Configuration{
-		API: configuration.API{
-			Addr: ":0",
-		},
+		Listen: ":0",
 		DB: configuration.DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
