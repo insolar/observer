@@ -19,9 +19,10 @@ package component
 import (
 	"context"
 	"fmt"
-	"github.com/go-pg/pg/orm"
 	"strings"
 	"time"
+
+	"github.com/go-pg/pg/orm"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"

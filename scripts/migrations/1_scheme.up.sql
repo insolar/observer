@@ -129,13 +129,13 @@ create table if not exists deposits
     deposit_ref bytea not null,
     member_ref bytea not null,
     transfer_date bigint not null,
-    hold_release_date bigint not null,
-    amount varchar(256) not null,
-    balance varchar(256) not null,
+    hold_release_date bigint not null default 0,
+    amount varchar(256) not null default '',
+    balance varchar(256) not null default '',
     deposit_state bytea not null,
     deposit_number bigint not null,
-    vesting bigint,
-    vesting_step bigint,
+    vesting bigint not null default 0,
+    vesting_step bigint not null default 0,
     constraint deposits_pk
         primary key (id, member_ref, eth_hash)
 );

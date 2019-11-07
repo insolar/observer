@@ -233,7 +233,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			ID:              1,
 			Reference:       ref.GetLocal().Bytes(),
 			MemberReference: memberRef.GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_0",
@@ -247,7 +246,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   1,
 		},
 		{
-			ID:              2,
 			Reference:       ref.GetLocal().Bytes(),
 			MemberReference: memberRef.GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_1",
@@ -261,7 +259,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   2,
 		},
 		{
-			ID:              3,
 			Reference:       gen.RecordReference().GetLocal().Bytes(),
 			MemberReference: gen.RecordReference().GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_2",
@@ -305,7 +302,9 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 3, res.RowsReturned())
 
+		// Reset ID field to simplify comparing.
 		for i, t := range selected {
+			t.ID = 0
 			selected[i] = t
 		}
 

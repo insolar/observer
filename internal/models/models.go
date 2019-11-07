@@ -41,16 +41,16 @@ type Member struct {
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
-	ID              int64  `sql:"id,notnull"`
-	Reference       []byte `sql:"deposit_ref,notnull"`
-	MemberReference []byte `sql:"member_ref,notnull"`
-	EtheriumHash    string `sql:"eth_hash,notnull"`
-	State           []byte `sql:"deposit_state,notnull"`
-	HoldReleaseDate int64  `sql:"hold_release_date,notnull"`
-	Amount          string `sql:"amount,notnull"`
-	Balance         string `sql:"balance,notnull"`
-	TransferDate    int64  `sql:"transfer_date,notnull"` // TODO: Do we really need it?
-	DepositNumber   int64  `sql:"deposit_number,notnull"`
+	ID              int64  `sql:"id"`
+	Reference       []byte `sql:"deposit_ref"`
+	MemberReference []byte `sql:"member_ref"`
+	EtheriumHash    string `sql:"eth_hash"`
+	State           []byte `sql:"deposit_state"`
+	HoldReleaseDate int64  `sql:"hold_release_date"`
+	Amount          string `sql:"amount"`
+	Balance         string `sql:"balance"`
+	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
+	DepositNumber   int64  `sql:"deposit_number"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`
 }
