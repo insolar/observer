@@ -27,11 +27,34 @@ import (
 	"github.com/insolar/observer/internal/app/observer/postgres"
 )
 
-type XnsCoinStats struct {
-	Created     time.Time `json:"-"`
-	Total       string    `json:"total"`
-	Max         string    `json:"max"`
-	Circulating string    `json:"circulating"`
+type XnsCoinStats interface {
+	Created() time.Time
+	Total() string
+	Max() string
+	Circulating() string
+}
+
+type XnsCoinData struct {
+	created     time.Time
+	total       string
+	max         string
+	circulating string
+}
+
+func (s XnsCoinData) Created() time.Time {
+	return s.created
+}
+
+func (s XnsCoinData) Total() string {
+	return s.total
+}
+
+func (s XnsCoinData) Max() string {
+	return s.max
+}
+
+func (s XnsCoinData) Circulating() string {
+	return s.circulating
 }
 
 type StatsGetter interface {
@@ -42,8 +65,8 @@ type StatsGetter interface {
 }
 
 type StatsCollecter interface {
-	CountStats(time *time.Time) (XnsCoinStats, error)
-	InsertStats(xcs XnsCoinStats) error
+	CountStats(time *time.Time) (XnsCoinData, error)
+	InsertStats(xcs XnsCoinData) error
 }
 
 type StatsManager struct {
@@ -61,13 +84,13 @@ func NewStatsManager(log *logrus.Logger, r postgres.StatsRepo) *StatsManager {
 func (s *StatsManager) Coins() (XnsCoinStats, error) {
 	lastStats, err := s.repository.LastStats()
 	if err != nil {
-		return XnsCoinStats{}, errors.Wrap(err, "failed request get stats")
+		return XnsCoinData{}, errors.Wrap(err, "failed request get stats")
 	}
-	return XnsCoinStats{
-		Created:     lastStats.Created,
-		Total:       lastStats.Total,
-		Max:         lastStats.Max,
-		Circulating: lastStats.Circulating,
+	return &XnsCoinData{
+		created:     lastStats.Created,
+		total:       lastStats.Total,
+		max:         lastStats.Max,
+		circulating: lastStats.Circulating,
 	}, nil
 }
 
@@ -76,7 +99,7 @@ func (s *StatsManager) Total() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return s.convertToCMCFormat(res.Total), nil
+	return s.convertToCMCFormat(res.Total()), nil
 }
 
 func (s *StatsManager) Max() (string, error) {
@@ -84,7 +107,7 @@ func (s *StatsManager) Max() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return s.convertToCMCFormat(res.Max), nil
+	return s.convertToCMCFormat(res.Max()), nil
 }
 
 func (s *StatsManager) Circulating() (string, error) {
@@ -92,36 +115,36 @@ func (s *StatsManager) Circulating() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return s.convertToCMCFormat(res.Circulating), nil
+	return s.convertToCMCFormat(res.Circulating()), nil
 }
 
-func (s *StatsManager) CountStats(time *time.Time) (XnsCoinStats, error) {
+func (s *StatsManager) CountStats(time *time.Time) (XnsCoinData, error) {
 	st, err := s.repository.CountStats(time)
 	if err != nil {
-		return XnsCoinStats{}, err
+		return XnsCoinData{}, err
 	}
 	return s.toDTO(st), nil
 }
 
-func (s *StatsManager) InsertStats(xcs XnsCoinStats) error {
+func (s *StatsManager) InsertStats(xcs XnsCoinData) error {
 	return s.repository.InsertStats(s.fromDTO(xcs))
 }
 
-func (s *StatsManager) toDTO(stats postgres.StatsModel) XnsCoinStats {
-	return XnsCoinStats{
-		Created:     stats.Created,
-		Total:       stats.Total,
-		Max:         stats.Max,
-		Circulating: stats.Circulating,
+func (s *StatsManager) toDTO(stats postgres.StatsModel) XnsCoinData {
+	return XnsCoinData{
+		created:     stats.Created,
+		total:       stats.Total,
+		max:         stats.Max,
+		circulating: stats.Circulating,
 	}
 }
 
-func (s *StatsManager) fromDTO(stats XnsCoinStats) postgres.StatsModel {
+func (s *StatsManager) fromDTO(stats XnsCoinData) postgres.StatsModel {
 	return postgres.StatsModel{
-		Created:     stats.Created,
-		Total:       stats.Total,
-		Max:         stats.Max,
-		Circulating: stats.Circulating,
+		Created:     stats.Created(),
+		Total:       stats.Total(),
+		Max:         stats.Max(),
+		Circulating: stats.Circulating(),
 	}
 }
 
@@ -146,21 +169,21 @@ func NewCalculateStatsCommand(logger *logrus.Logger, db orm.DB, manager StatsCol
 	}
 }
 
-func (s *CalculateStatsCommand) Run(currentDT *time.Time) error {
+func (s *CalculateStatsCommand) Run(currentDT *time.Time) (XnsCoinStats, error) {
 	stats, err := s.statsManager.CountStats(currentDT)
 	if err != nil {
-		return err
+		return XnsCoinData{}, err
 	}
 
 	s.log.Debugf("Collected stats: %+v", stats)
 	// don't save if it is historical request
 	if currentDT != nil {
-		return nil
+		return stats, nil
 	}
 
 	err = s.statsManager.InsertStats(stats)
 	if err != nil {
-		return err
+		return stats, err
 	}
-	return nil
+	return stats, nil
 }

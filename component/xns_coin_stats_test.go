@@ -47,9 +47,9 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "1000", res.Total)
-		require.Equal(t, "2000", res.Max)
-		require.Equal(t, "100", res.Circulating)
+		require.Equal(t, "1000", res.Total())
+		require.Equal(t, "2000", res.Max())
+		require.Equal(t, "100", res.Circulating())
 	})
 
 	t.Run("medium counts", func(t *testing.T) {
@@ -65,9 +65,9 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "111122220000000", res.Total)
-		require.Equal(t, "333331111222222", res.Max)
-		require.Equal(t, "444444111111111", res.Circulating)
+		require.Equal(t, "111122220000000", res.Total())
+		require.Equal(t, "333331111222222", res.Max())
+		require.Equal(t, "444444111111111", res.Circulating())
 	})
 
 	t.Run("big counts", func(t *testing.T) {
@@ -83,24 +83,39 @@ func TestStatsManager_Coins(t *testing.T) {
 		sm := NewStatsManager(log, repo)
 		res, err := sm.Coins()
 		require.NoError(t, err)
-		require.Equal(t, "111112222000000055555555", res.Total)
-		require.Equal(t, "333333111122222244444444", res.Max)
-		require.Equal(t, "444444411111111199999999", res.Circulating)
+		require.Equal(t, "111112222000000055555555", res.Total())
+		require.Equal(t, "333333111122222244444444", res.Max())
+		require.Equal(t, "444444411111111199999999", res.Circulating())
 	})
 }
 
 func TestStatsManager_CLI_command(t *testing.T) {
 	t.Parallel()
-
 	log := logrus.New()
-	member := gen.Reference()
+	repo := postgres.NewStatsRepository(db)
+	sr := NewStatsManager(log, repo)
+
 	size := 10
-	now := time.Now().Unix()
+	now := time.Now()
+
+	getStats := func(dt *time.Time) XnsCoinStats {
+		command := NewCalculateStatsCommand(log, db, sr)
+		stats, err := command.Run(dt)
+		require.NoError(t, err)
+
+		log.Infof("%+v", stats)
+		return stats
+	}
+
+	_, err := db.Exec("truncate table members")
+	require.NoError(t, err)
+	_, err = db.Exec("truncate table deposits")
+	require.NoError(t, err)
 
 	for i := 0; i < size; i++ {
 		memberModel := &postgres.MemberSchema{
 			MemberRef:        gen.Reference().Bytes(),
-			Balance:          "100",
+			Balance:          "0",
 			MigrationAddress: random.String(10),
 			WalletRef:        gen.Reference().Bytes(),
 			AccountState:     gen.ID().Bytes(),
@@ -111,39 +126,97 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// genesis, no lockup date, no vesting
 	for i := 0; i < size; i++ {
 		depModel := &postgres.DepositSchema{
-			EthHash:         random.String(5),
-			MemberRef:       member.Bytes(),
+			EthHash:         "genesis_deposit",
+			MemberRef:       gen.Reference().Bytes(),
 			DepositRef:      gen.Reference().Bytes(),
-			TransferDate:    now,
-			HoldReleaseDate: now + 10000,
+			TransferDate:    now.Unix() - 1000,
+			HoldReleaseDate: now.Unix() - 1000,
 			Amount:          "10000",
 			Balance:         "10000",
 			DepositState:    gen.ID().Bytes(),
-			Vesting:         1000,
+			Vesting:         10, // seconds
+			VestingStep:     10, // seconds
+		}
+		err := db.Insert(depModel)
+		require.NoError(t, err)
+	}
+
+	stats := getStats(nil)
+	require.Equal(t, "0", stats.Circulating())
+	require.Equal(t, "100000", stats.Total())
+
+	// genesis, lockup date, vesting
+	for i := 0; i < size; i++ {
+		depModel := &postgres.DepositSchema{
+			EthHash:         "genesis_deposit",
+			MemberRef:       gen.Reference().Bytes(),
+			DepositRef:      gen.Reference().Bytes(),
+			TransferDate:    now.Unix(),
+			HoldReleaseDate: now.Unix() + 365*24*3600,
+			Amount:          "10000",
+			Balance:         "10000",
+			DepositState:    gen.ID().Bytes(),
+			Vesting:         100,
 			VestingStep:     10,
 		}
 		err := db.Insert(depModel)
 		require.NoError(t, err)
 	}
-	res, err := db.Model(&postgres.MemberSchema{}).Where("status=?", "TEST").Count()
-	require.NoError(t, err)
-	require.Equal(t, size, res)
+	stats = getStats(nil)
+	require.Equal(t, "0", stats.Circulating())
+	require.Equal(t, "100000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
-	res, err = db.Model(&postgres.DepositSchema{}).Where("member_ref=?", member.Bytes()).Count()
-	require.NoError(t, err)
-	require.Equal(t, size, res)
+	// user transfer deposit->wallet
+	for i := 0; i < size; i++ {
+		memberModel := &postgres.MemberSchema{
+			MemberRef:        gen.Reference().Bytes(),
+			Balance:          "500",
+			MigrationAddress: random.String(10),
+			WalletRef:        gen.Reference().Bytes(),
+			AccountState:     gen.ID().Bytes(),
+			Status:           "TEST",
+			AccountRef:       gen.Reference().Bytes(),
+		}
+		err := db.Insert(memberModel)
+		require.NoError(t, err)
+	}
+	stats = getStats(nil)
+	require.Equal(t, "5000", stats.Circulating())
+	require.Equal(t, "105000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
-	repo := postgres.NewStatsRepository(db)
-	sr := NewStatsManager(log, repo)
+	// user migration deposits
+	for i := 0; i < size; i++ {
+		depModel := &postgres.DepositSchema{
+			EthHash:         random.String(10),
+			MemberRef:       gen.Reference().Bytes(),
+			DepositRef:      gen.Reference().Bytes(),
+			TransferDate:    now.Unix(),
+			HoldReleaseDate: now.Unix() + 30*24*3600,
+			Amount:          "5000",
+			Balance:         "5000",
+			DepositState:    gen.ID().Bytes(),
+			Vesting:         30 * 24 * 3600,
+			VestingStep:     3600,
+		}
+		err := db.Insert(depModel)
+		require.NoError(t, err)
+	}
+	stats = getStats(nil)
+	require.Equal(t, "5000", stats.Circulating())
+	require.Equal(t, "105000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
-	command := NewCalculateStatsCommand(log, db, sr)
-	err = command.Run(nil)
-	require.NoError(t, err)
+	// after lockup date, after vesting
+	after := now.Add(61 * 24 * time.Hour)
+	stats = getStats(&after)
+	require.Equal(t, "5000", stats.Circulating())
+	require.Equal(t, "155000", stats.Total())
+	require.Equal(t, "200000", stats.Max())
 
-	stats := &postgres.StatsModel{}
-	err = db.Model(stats).Last()
-	require.NoError(t, err)
-	// todo check formula here
+	// todo add partial vesting cases
 }

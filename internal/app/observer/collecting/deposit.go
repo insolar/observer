@@ -23,6 +23,7 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
+	"github.com/insolar/insolar/pulse"
 
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
@@ -185,6 +186,14 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			activate = depositActivate.Virtual.GetActivate()
 			depositState := c.initialDepositState(activate)
 
+			if depositState.Lockup == 0 {
+				depositState.Lockup = pulse.MinTimePulse
+			}
+			hrd, err := pulse.Number(depositState.Lockup).AsApproximateTime()
+			if err != nil {
+				c.log.Errorf("wrong timestamp in genesis deposit Lockup: %+v", depositState)
+				continue
+			}
 			deposits = append(deposits, &observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
 				Ref:             *depositRef.GetLocal(),
@@ -193,7 +202,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				Timestamp:       timeActivate.Unix(),
 				Amount:          depositState.Amount,
 				Balance:         depositState.Balance,
-				HoldReleaseDate: depositState.Lockup,
+				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
 			})
