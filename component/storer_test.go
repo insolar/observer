@@ -168,7 +168,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			ID:              1,
 			Reference:       ref.GetLocal().Bytes(),
 			MemberReference: memberRef.GetLocal().Bytes(),
 			EtheriumHash:    "tx_hash_0",
@@ -179,6 +178,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
+			DepositNumber:   1,
 		},
 	}
 
@@ -197,6 +197,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
 			Vesting:         expectedDeposit[0].Vesting,
 			VestingStep:     expectedDeposit[0].VestingStep,
+			DepositNumber:   expectedDeposit[0].DepositNumber,
 		})
 		if err != nil {
 			return err
@@ -208,6 +209,99 @@ func TestStoreSimpleDeposit(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 1, res.RowsReturned())
 
+		for i, t := range selected {
+			selected[i] = t
+		}
+
+		// Compare deposits.
+		assert.Equal(t, expectedDeposit, selected)
+
+		return tx.Rollback()
+	})
+}
+
+func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make(cfg)
+
+	ref := gen.RecordReference()
+	memberRef := gen.RecordReference()
+	state := gen.RecordReference()
+	transferDate := time.Now().Unix()
+	holdDate := time.Now().Unix() + 5
+
+	expectedDeposit := []models.Deposit{
+		{
+			Reference:       ref.GetLocal().Bytes(),
+			MemberReference: memberRef.GetLocal().Bytes(),
+			EtheriumHash:    "tx_hash_0",
+			State:           state.GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "100500",
+			Balance:         "100",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   1,
+		},
+		{
+			Reference:       ref.GetLocal().Bytes(),
+			MemberReference: memberRef.GetLocal().Bytes(),
+			EtheriumHash:    "tx_hash_1",
+			State:           state.GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "100",
+			Balance:         "10",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   2,
+		},
+		{
+			Reference:       gen.RecordReference().GetLocal().Bytes(),
+			MemberReference: gen.RecordReference().GetLocal().Bytes(),
+			EtheriumHash:    "tx_hash_2",
+			State:           gen.RecordReference().GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "200500",
+			Balance:         "200",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   1,
+		},
+	}
+
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+
+		deposits := postgres.NewDepositStorage(obs, tx)
+
+		for _, dep := range expectedDeposit {
+			err := deposits.Insert(&observer.Deposit{
+				EthHash:         dep.EtheriumHash,
+				Ref:             *insolar.NewIDFromBytes(dep.Reference),
+				Member:          *insolar.NewIDFromBytes(dep.MemberReference),
+				Timestamp:       transferDate,
+				HoldReleaseDate: holdDate,
+				Amount:          dep.Amount,
+				Balance:         dep.Balance,
+				DepositState:    *insolar.NewIDFromBytes(dep.State),
+				Vesting:         dep.Vesting,
+				VestingStep:     dep.VestingStep,
+				DepositNumber:   dep.DepositNumber,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		// Select deposit from db.
+		selected := make([]models.Deposit, 3)
+		res, err := tx.Query(&selected, `SELECT * FROM deposits`)
+		require.NoError(t, err)
+		require.Equal(t, 3, res.RowsReturned())
+
+		// Reset ID field to simplify comparing.
 		for i, t := range selected {
 			selected[i] = t
 		}

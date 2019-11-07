@@ -607,6 +607,9 @@ func insertDeposit(
 		Amount:          amount,
 		Balance:         balance,
 		EtheriumHash:    etheriumHash,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		TransferDate:    currentTime - 10,
+		DepositNumber:   1,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -895,7 +898,7 @@ func TestMember(t *testing.T) {
 				ReleasedAmount:   "10000",
 				ReleaseEndDate:   0,
 				Status:           "AVAILABLE",
-				Timestamp:        0,
+				Timestamp:        currentTime - 10,
 			},
 		},
 	}
@@ -951,6 +954,9 @@ func TestMember_Hold(t *testing.T) {
 		HoldReleaseDate: currentTime,
 		Vesting:         1000,
 		VestingStep:     10,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		TransferDate:    currentTime - 10,
+		DepositNumber:   1,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -980,7 +986,7 @@ func TestMember_Hold(t *testing.T) {
 				ReleasedAmount:   "0",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "LOCKED",
-				Timestamp:        0,
+				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
 					Amount:    "50",
 					Timestamp: currentTime + deposit.VestingStep,
@@ -1011,6 +1017,9 @@ func TestMember_Vesting(t *testing.T) {
 		HoldReleaseDate: currentTime,
 		Vesting:         1000,
 		VestingStep:     10,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		TransferDate:    currentTime - 10,
+		DepositNumber:   1,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1042,7 +1051,7 @@ func TestMember_Vesting(t *testing.T) {
 				ReleasedAmount:   "50",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
-				Timestamp:        0,
+				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
 					Amount:    "50",
 					Timestamp: currentTime + 2*deposit.VestingStep,
@@ -1073,6 +1082,9 @@ func TestMember_VestingAll(t *testing.T) {
 		HoldReleaseDate: currentTime,
 		Vesting:         1000,
 		VestingStep:     10,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		TransferDate:    currentTime - 10,
+		DepositNumber:   1,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1104,7 +1116,7 @@ func TestMember_VestingAll(t *testing.T) {
 				ReleasedAmount:   "5000",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
-				Timestamp:        0,
+				Timestamp:        currentTime - 10,
 			},
 		},
 	}
@@ -1132,6 +1144,9 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		HoldReleaseDate: currentTime,
 		Vesting:         1000,
 		VestingStep:     10,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		TransferDate:    currentTime - 10,
+		DepositNumber:   1,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1163,7 +1178,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 				ReleasedAmount:   "550",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
-				Timestamp:        0,
+				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
 					Amount:    "50",
 					Timestamp: currentTime + 12*deposit.VestingStep,

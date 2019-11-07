@@ -29,7 +29,6 @@ import (
 type DepositSchema struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
-	ID              int64  `sql:",pk"`
 	EthHash         string `sql:",pk"`
 	MemberRef       []byte `sql:",pk"`
 	DepositRef      []byte `sql:",notnull"`
@@ -38,6 +37,7 @@ type DepositSchema struct {
 	Amount          string `sql:",notnull"`
 	Balance         string `sql:",notnull"`
 	DepositState    []byte `sql:",notnull"`
+	DepositNumber   int64  `sql:",notnull"`
 	Vesting         int64
 	VestingStep     int64
 }
@@ -66,20 +66,69 @@ func (s *DepositStorage) Insert(model *observer.Deposit) error {
 		return nil
 	}
 	row := depositSchema(model)
-	res, err := s.db.Model(row).
-		OnConflict("DO NOTHING").
-		Insert()
+
+	return s.insertDeposit(row)
+}
+
+func (s *DepositStorage) insertDeposit(deposit *DepositSchema) error {
+	res, err := s.db.Query(deposit, `
+		insert into deposits (
+			eth_hash,
+			deposit_ref,
+			member_ref,
+			transfer_date,
+			hold_release_date,
+			amount,
+			balance,
+			deposit_state,
+			vesting,
+			vesting_step,
+			deposit_number
+		) values (
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			?,
+			(select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			)
+		)`,
+		deposit.EthHash,
+		deposit.DepositRef,
+		deposit.MemberRef,
+		deposit.TransferDate,
+		deposit.HoldReleaseDate,
+		deposit.Amount,
+		deposit.Balance,
+		deposit.DepositState,
+		deposit.Vesting,
+		deposit.VestingStep,
+		deposit.MemberRef,
+		deposit.MemberRef,
+	)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert deposit %v", row)
+		return errors.Wrapf(err, "failed to insert deposit %v", deposit)
 	}
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("deposit_row", row).Errorf("failed to insert deposit")
-		// TODO: uncomment it. It's just a temporary change. Genesis deposits are conflicted because of the same eth hash
-		// return errors.New("failed to insert, affected is 0")
+		s.log.WithField("deposit_row", deposit).Errorf("failed to insert deposit")
+		return errors.New("failed to insert, affected is 0")
 	}
+
 	return nil
 }
 
