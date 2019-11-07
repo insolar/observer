@@ -30,13 +30,13 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 	c := NewTxRegisterCollector(logrus.New())
 
 	t.Run("transfer happy path", func(t *testing.T) {
-		txID := gen.ID()
+		txID := *insolar.NewRecordReference(gen.ID())
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:        *insolar.NewReference(txID),
+			TransactionID:        txID,
 			Type:                 models.TTypeTransfer,
-			PulseNumber:          int64(txID.Pulse()),
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
 			RecordNumber:         int64(rand.Int31()),
 			MemberFromReference:  memberFrom.Bytes(),
 			MemberToReference:    memberTo.Bytes(),
@@ -70,7 +70,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					Arguments:  arguments,
 					Prototype:  proxyMember.PrototypeReference,
 				}),
-				ID: txID,
+				ID: *txID.GetLocal(),
 			},
 			RecordNumber: uint32(expectedTx.RecordNumber),
 		}
@@ -81,7 +81,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 	})
 
 	t.Run("migration happy path", func(t *testing.T) {
-		txID := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
@@ -125,7 +125,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 	})
 
 	t.Run("release happy path", func(t *testing.T) {
-		txID := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		memberTo := gen.Reference()
 		depositFrom := insolar.NewReference(gen.ID())
 		expectedTx := observer.TxRegister{
@@ -199,7 +199,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				APINode:    gen.Reference(),
 			}),
 		}
-		requestRef := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		resultPayload, err := insolar.Serialize(&foundation.Result{
 			Returns: []interface{}{member.TransferResponse{
 				Fee: "123",
@@ -209,20 +209,20 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		rec := exporter.Record{
 			Record: record.Material{
 				Virtual: record.Wrap(&record.Result{
-					Request: requestRef,
+					Request: txID,
 					Payload: resultPayload,
 				}),
 			},
 		}
 
 		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
-			require.Equal(t, *requestRef.GetLocal(), reqID)
+			require.Equal(t, *txID.GetLocal(), reqID)
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "123"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "123"}, tx)
 	})
 
 	t.Run("migration happy path", func(t *testing.T) {
@@ -244,24 +244,24 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				APINode:    gen.Reference(),
 			}),
 		}
-		requestRef := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		require.NoError(t, err)
 		rec := exporter.Record{
 			Record: record.Material{
 				Virtual: record.Wrap(&record.Result{
-					Request: requestRef,
+					Request: txID,
 				}),
 			},
 		}
 
 		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
-			require.Equal(t, *requestRef.GetLocal(), reqID)
+			require.Equal(t, *txID.GetLocal(), reqID)
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "0"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
 	})
 
 	t.Run("release happy path", func(t *testing.T) {
@@ -283,24 +283,24 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				APINode:    gen.Reference(),
 			}),
 		}
-		requestRef := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		require.NoError(t, err)
 		rec := exporter.Record{
 			Record: record.Material{
 				Virtual: record.Wrap(&record.Result{
-					Request: requestRef,
+					Request: txID,
 				}),
 			},
 		}
 
 		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
-			require.Equal(t, *requestRef.GetLocal(), reqID)
+			require.Equal(t, *txID.GetLocal(), reqID)
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
-		assert.Equal(t, &observer.TxResult{TransactionID: requestRef, Fee: "0"}, tx)
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
 	})
 }
 
@@ -321,7 +321,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		txID := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		arguments, err := insolar.Serialize([]interface{}{
 			appfoundation.SagaAcceptInfo{Request: txID},
 		})
@@ -371,7 +371,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		txID := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 		arguments, err := insolar.Serialize([]interface{}{
 			appfoundation.SagaAcceptInfo{Request: txID},
 		})
@@ -436,7 +436,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				APINode:    gen.Reference(),
 			}),
 		}
-		requestRef := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 
 		resultPayload, err := insolar.Serialize(&foundation.Result{
 			Returns: []interface{}{nil, nil},
@@ -445,7 +445,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		resultRec := exporter.Record{
 			Record: record.Material{
 				Virtual: record.Wrap(&record.Result{
-					Request: requestRef,
+					Request: txID,
 					Payload: resultPayload,
 				}),
 				ID: gen.ID(),
@@ -454,7 +454,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}
 
 		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
-			require.Equal(t, *requestRef.GetLocal(), reqID)
+			require.Equal(t, *txID.GetLocal(), reqID)
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, resultRec)
@@ -480,7 +480,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				APINode:    gen.Reference(),
 			}),
 		}
-		requestRef := gen.Reference()
+		txID := *insolar.NewRecordReference(gen.ID())
 
 		resultPayload, err := insolar.Serialize(&foundation.Result{
 			Returns: []interface{}{nil, &foundation.Error{S: "test error"}},
@@ -489,7 +489,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		resultRec := exporter.Record{
 			Record: record.Material{
 				Virtual: record.Wrap(&record.Result{
-					Request: requestRef,
+					Request: txID,
 					Payload: resultPayload,
 				}),
 				ID: gen.ID(),
@@ -498,14 +498,14 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}
 
 		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
-			require.Equal(t, *requestRef.GetLocal(), reqID)
+			require.Equal(t, *txID.GetLocal(), reqID)
 		}).Return(request, nil)
 
 		tx := collector.Collect(ctx, resultRec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		expectedTx := observer.TxSagaResult{
-			TransactionID:      requestRef,
+			TransactionID:      txID,
 			FinishSuccess:      false,
 			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
 			FinishRecordNumber: int64(resultRec.RecordNumber),
