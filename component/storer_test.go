@@ -232,8 +232,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -245,8 +245,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   1,
 		},
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_1",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -258,8 +258,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   2,
 		},
 		{
-			Reference:       gen.RecordReference().GetLocal().Bytes(),
-			MemberReference: gen.RecordReference().GetLocal().Bytes(),
+			Reference:       gen.RecordReference().Bytes(),
+			MemberReference: gen.RecordReference().Bytes(),
 			EtheriumHash:    "tx_hash_2",
 			State:           gen.RecordReference().GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
