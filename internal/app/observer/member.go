@@ -29,8 +29,8 @@ type Member struct {
 	MigrationAddress string
 	AccountState     insolar.ID
 	Status           string
-	WalletRef        insolar.ID
-	AccountRef       insolar.ID
+	WalletRef        insolar.Reference
+	AccountRef       insolar.Reference
 }
 
 type Balance struct {

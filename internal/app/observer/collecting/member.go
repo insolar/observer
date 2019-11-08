@@ -133,8 +133,8 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 
 	return []*observer.Member{{
 		MemberRef:        *memberRef,
-		WalletRef:        *walletRef.GetLocal(),
-		AccountRef:       *accountRef.GetLocal(),
+		WalletRef:        walletRef,
+		AccountRef:       accountRef,
 		Balance:          balance,
 		MigrationAddress: response.MigrationAddress,
 		AccountState:     accountTree.SideEffect.ID,
@@ -203,8 +203,8 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 
 		members = append(members, &observer.Member{
 			MemberRef:    *memberRef,
-			WalletRef:    *memberState.Wallet.GetLocal(),
-			AccountRef:   *accountRef.GetLocal(),
+			WalletRef:    memberState.Wallet,
+			AccountRef:   *accountRef,
 			Balance:      balance,
 			AccountState: activateID,
 			Status:       "INTERNAL",
