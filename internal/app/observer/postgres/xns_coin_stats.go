@@ -75,10 +75,13 @@ func (s *StatsRepository) CountStats(collectDT *time.Time) (StatsModel, error) {
 WITH stats as (SELECT d.amount::numeric(24),
                       d.hold_release_date,
                       %d     as pulse_ts,
-                      d.vesting
+                      d.vesting,
+                      d.vesting_step
                from deposits d),
      sums as (
-         SELECT sum(floor(stats.amount * least(greatest(stats.pulse_ts - stats.hold_release_date, 0) /stats.vesting, 1))) as free
+         SELECT sum(floor(
+             stats.amount / ceil(stats.vesting/stats.vesting_step) * floor(least(greatest(stats.pulse_ts - stats.hold_release_date, 0), vesting) / stats.vesting_step)
+             )) as free
          from stats
          ),
      circulating as (select sum(balance::numeric(24)) as sum from members),

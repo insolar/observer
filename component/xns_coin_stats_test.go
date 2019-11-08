@@ -89,8 +89,8 @@ func TestStatsManager_Coins(t *testing.T) {
 	})
 }
 
+// THIS TESTS ARE ORDER DEPENDENT!
 func TestStatsManager_CLI_command(t *testing.T) {
-	t.Parallel()
 	log := logrus.New()
 	repo := postgres.NewStatsRepository(db)
 	sr := NewStatsManager(log, repo)
@@ -126,97 +126,151 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// genesis, no lockup date, no vesting
-	for i := 0; i < size; i++ {
-		depModel := &postgres.DepositSchema{
-			EthHash:         "genesis_deposit",
-			MemberRef:       gen.Reference().Bytes(),
-			DepositRef:      gen.Reference().Bytes(),
-			TransferDate:    now.Unix() - 1000,
-			HoldReleaseDate: now.Unix() - 1000,
-			Amount:          "10000",
-			Balance:         "10000",
-			DepositState:    gen.ID().Bytes(),
-			Vesting:         10, // seconds
-			VestingStep:     10, // seconds
+	t.Run("genesis, no lockup date, no vesting", func(t *testing.T) {
+		for i := 0; i < size; i++ {
+			depModel := &postgres.DepositSchema{
+				EthHash:         "genesis_deposit",
+				MemberRef:       gen.Reference().Bytes(),
+				DepositRef:      gen.Reference().Bytes(),
+				TransferDate:    now.Unix() - 1000,
+				HoldReleaseDate: now.Unix() - 1000,
+				Amount:          "10000",
+				Balance:         "10000",
+				DepositState:    gen.ID().Bytes(),
+				Vesting:         10, // seconds
+				VestingStep:     10, // seconds
+			}
+			err := db.Insert(depModel)
+			require.NoError(t, err)
 		}
-		err := db.Insert(depModel)
-		require.NoError(t, err)
-	}
 
-	stats := getStats(nil)
-	require.Equal(t, "0", stats.Circulating())
-	require.Equal(t, "100000", stats.Total())
+		stats := getStats(nil)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "100000", stats.Total())
+	})
 
-	// genesis, lockup date, vesting
-	for i := 0; i < size; i++ {
-		depModel := &postgres.DepositSchema{
-			EthHash:         "genesis_deposit",
-			MemberRef:       gen.Reference().Bytes(),
-			DepositRef:      gen.Reference().Bytes(),
-			TransferDate:    now.Unix(),
-			HoldReleaseDate: now.Unix() + 365*24*3600,
-			Amount:          "10000",
-			Balance:         "10000",
-			DepositState:    gen.ID().Bytes(),
-			Vesting:         100,
-			VestingStep:     10,
+	t.Run("genesis, lockup date, vesting", func(t *testing.T) {
+		//
+		for i := 0; i < size; i++ {
+			depModel := &postgres.DepositSchema{
+				EthHash:         "genesis_deposit",
+				MemberRef:       gen.Reference().Bytes(),
+				DepositRef:      gen.Reference().Bytes(),
+				TransferDate:    now.Unix(),
+				HoldReleaseDate: now.Unix() + 365*24*3600,
+				Amount:          "10000",
+				Balance:         "10000",
+				DepositState:    gen.ID().Bytes(),
+				Vesting:         1000000,
+				VestingStep:     100,
+			}
+			err := db.Insert(depModel)
+			require.NoError(t, err)
 		}
-		err := db.Insert(depModel)
-		require.NoError(t, err)
-	}
-	stats = getStats(nil)
-	require.Equal(t, "0", stats.Circulating())
-	require.Equal(t, "100000", stats.Total())
-	require.Equal(t, "200000", stats.Max())
+		stats := getStats(nil)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "100000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
 
-	// user transfer deposit->wallet
-	for i := 0; i < size; i++ {
-		memberModel := &postgres.MemberSchema{
-			MemberRef:        gen.Reference().Bytes(),
-			Balance:          "500",
-			MigrationAddress: random.String(10),
-			WalletRef:        gen.Reference().Bytes(),
-			AccountState:     gen.ID().Bytes(),
-			Status:           "TEST",
-			AccountRef:       gen.Reference().Bytes(),
+		// after lockup date, after partial vesting
+		after := now.Add(365*24*time.Hour + 400000*time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "140000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+	})
+
+	t.Run("user transfer deposit->wallet", func(t *testing.T) {
+		for i := 0; i < size; i++ {
+			memberModel := &postgres.MemberSchema{
+				MemberRef:        gen.Reference().Bytes(),
+				Balance:          "500",
+				MigrationAddress: random.String(10),
+				WalletRef:        gen.Reference().Bytes(),
+				AccountState:     gen.ID().Bytes(),
+				Status:           "TEST",
+				AccountRef:       gen.Reference().Bytes(),
+			}
+			err := db.Insert(memberModel)
+			require.NoError(t, err)
 		}
-		err := db.Insert(memberModel)
-		require.NoError(t, err)
-	}
-	stats = getStats(nil)
-	require.Equal(t, "5000", stats.Circulating())
-	require.Equal(t, "105000", stats.Total())
-	require.Equal(t, "200000", stats.Max())
+		stats := getStats(nil)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "105000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+	})
 
-	// user migration deposits
-	for i := 0; i < size; i++ {
-		depModel := &postgres.DepositSchema{
-			EthHash:         random.String(10),
-			MemberRef:       gen.Reference().Bytes(),
-			DepositRef:      gen.Reference().Bytes(),
-			TransferDate:    now.Unix(),
-			HoldReleaseDate: now.Unix() + 30*24*3600,
-			Amount:          "5000",
-			Balance:         "5000",
-			DepositState:    gen.ID().Bytes(),
-			Vesting:         30 * 24 * 3600,
-			VestingStep:     3600,
+	t.Run("user migration deposits", func(t *testing.T) {
+		for i := 0; i < size; i++ {
+			depModel := &postgres.DepositSchema{
+				EthHash:         random.String(10),
+				MemberRef:       gen.Reference().Bytes(),
+				DepositRef:      gen.Reference().Bytes(),
+				TransferDate:    now.Unix(),
+				HoldReleaseDate: now.Unix() + 30*24*3600,
+				Amount:          "5000",
+				Balance:         "5000",
+				DepositState:    gen.ID().Bytes(),
+				Vesting:         30 * 24 * 3600,
+				VestingStep:     3600,
+			}
+			err := db.Insert(depModel)
+			require.NoError(t, err)
 		}
-		err := db.Insert(depModel)
-		require.NoError(t, err)
-	}
-	stats = getStats(nil)
-	require.Equal(t, "5000", stats.Circulating())
-	require.Equal(t, "105000", stats.Total())
-	require.Equal(t, "200000", stats.Max())
+		stats := getStats(nil)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "105000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
 
-	// after lockup date, after vesting
-	after := now.Add(61 * 24 * time.Hour)
-	stats = getStats(&after)
-	require.Equal(t, "5000", stats.Circulating())
-	require.Equal(t, "155000", stats.Total())
-	require.Equal(t, "200000", stats.Max())
+		// after lockup date, after vesting
+		after := now.Add(61 * 24 * time.Hour)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "155000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+	})
 
-	// todo add partial vesting cases
+	t.Run("partial user vesting cases", func(t *testing.T) {
+		for i := 0; i < size; i++ {
+			depModel := &postgres.DepositSchema{
+				EthHash:         random.String(10),
+				MemberRef:       gen.Reference().Bytes(),
+				DepositRef:      gen.Reference().Bytes(),
+				TransferDate:    now.Unix(),
+				HoldReleaseDate: now.Unix() + 10,
+				Amount:          "5000",
+				Balance:         "5000",
+				DepositState:    gen.ID().Bytes(),
+				Vesting:         1000,
+				VestingStep:     50,
+			}
+			err := db.Insert(depModel)
+			require.NoError(t, err)
+		}
+		stats := getStats(nil)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "105000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+
+		// after lockup date, after half vesting
+		after := now.Add(10*time.Second + 1000/2*time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "130000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+
+		// after lockup date, after 0.655 of vesting
+		after = now.Add(10*time.Second + 655*time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "137500", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+
+		// after lockup date, after x2 of vesting
+		after = now.Add(10*time.Second + 1000*2*time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "155000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+	})
 }
