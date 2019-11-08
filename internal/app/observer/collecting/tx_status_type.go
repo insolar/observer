@@ -30,7 +30,7 @@ const (
 func (s *StatusTx) String() string {
 	switch *s {
 	case TxOrder:
-		return "order"
+		return "ordered"
 	case TxPending:
 		return "pending"
 	case TxExecuted:
@@ -38,7 +38,7 @@ func (s *StatusTx) String() string {
 	case TxRejected:
 		return "rejected"
 	case TxDefer:
-		return "defer"
+		return "deferred"
 	default:
 		return "unknown"
 	}
