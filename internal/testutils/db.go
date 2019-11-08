@@ -9,27 +9,28 @@ import (
 	"github.com/ory/dockertest/v3"
 )
 
-const (
-	database = "observer_test_db"
-	password = "secret"
-)
-
 var pgOptions = &pg.Options{
 	Addr:            "localhost",
+	Database:        "observer_test_db",
 	User:            "postgres",
-	Password:        password,
-	Database:        database,
+	Password:        "secret",
 	ApplicationName: "observer",
 }
 
-func SetupDB(migrationsDir string) (*pg.DB, func()) {
+func SetupDB(migrationsDir string) (*pg.DB, pg.Options, func()) {
 	var err error
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	resource, err := pool.Run("postgres", "11", []string{"POSTGRES_PASSWORD=" + password, "POSTGRES_DB=" + database})
+	resource, err := pool.Run(
+		"postgres", "11",
+		[]string{
+			"POSTGRES_DB=" + pgOptions.Database,
+			"POSTGRES_PASSWORD=" + pgOptions.Password,
+		},
+	)
 	if err != nil {
 		log.Panicf("Could not start resource: %s", err)
 	}
@@ -86,5 +87,5 @@ func SetupDB(migrationsDir string) (*pg.DB, func()) {
 		cleaner()
 		log.Panicf("Could not migrate: %s", err)
 	}
-	return db, cleaner
+	return db, options, cleaner
 }
