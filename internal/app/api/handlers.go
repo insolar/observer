@@ -114,10 +114,6 @@ func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error {
-	panic("implement me")
-}
-
 func (s *ObserverServer) TokenWeekPrice(ctx echo.Context, interval int) error {
 	panic("implement me")
 }
@@ -332,7 +328,15 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (s *ObserverServer) Coins(ctx echo.Context) error {
+func (s *ObserverServer) MarketStats(ctx echo.Context) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
 	repo := postgres.NewStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Coins()
@@ -340,14 +344,14 @@ func (s *ObserverServer) Coins(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
+	return ctx.JSON(http.StatusOK, ResponsesSupplyStatsYaml{
 		TotalSupply:       result.Total(),
 		MaxSupply:         result.Max(),
 		CirculatingSupply: result.Circulating(),
 	})
 }
 
-func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
+func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
 	repo := postgres.NewStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
@@ -358,7 +362,7 @@ func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
+func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
 	repo := postgres.NewStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
@@ -369,7 +373,7 @@ func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
+func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	repo := postgres.NewStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
