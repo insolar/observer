@@ -812,10 +812,10 @@ func TestObserverServer_Coins(t *testing.T) {
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	jsonResp := ResponsesCoinsYaml{}
+	jsonResp := ResponsesSupplyStatsYaml{}
 	err = json.Unmarshal(bodyBytes, &jsonResp)
 	require.NoError(t, err)
-	expected := ResponsesCoinsYaml{
+	expected := ResponsesSupplyStatsYaml{
 		TotalSupply:       total,
 		MaxSupply:         max,
 		CirculatingSupply: circ,
