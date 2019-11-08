@@ -23,9 +23,6 @@ out
 ### VSCode configuration
 .vscode
 
-# Go dep
-vendor
-
 # wasm tests
 vm/wasm/test/data/!simple!.wasm
 vm/wasm/test/data/*.wat
