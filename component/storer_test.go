@@ -20,6 +20,7 @@ package component
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -29,6 +30,7 @@ import (
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/reference"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -168,8 +170,8 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -186,6 +188,11 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		deposits := postgres.NewDepositStorage(obs, tx)
 
+		g := reference.Global{}
+		if err := g.Unmarshal(expectedDeposit[0].Reference); err != nil {
+			fmt.Println("loool, ", err)
+			fmt.Println(expectedDeposit[0].Reference)
+		}
 		err := deposits.Insert(&observer.Deposit{
 			EthHash:         expectedDeposit[0].EtheriumHash,
 			Ref:             *insolar.NewReferenceFromBytes(expectedDeposit[0].Reference),
