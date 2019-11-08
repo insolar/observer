@@ -5,9 +5,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 // ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
@@ -19,13 +20,6 @@ type ResponsesAddressCountYaml struct {
 type ResponsesAddressesYaml []struct {
 	Address string `json:"address"`
 	Index   string `json:"index"`
-}
-
-// ResponsesCoinsYaml defines model for responses-coins-yaml.
-type ResponsesCoinsYaml struct {
-	CirculatingSupply string `json:"circulatingSupply"`
-	MaxSupply         string `json:"maxSupply"`
-	TotalSupply       string `json:"totalSupply"`
 }
 
 // ResponsesDetailsYaml defines model for responses-details-yaml.
@@ -56,6 +50,20 @@ type ResponsesInvalidTransactionIdYaml struct {
 	Error []string `json:"error"`
 }
 
+// ResponsesMarketStatsYaml defines model for responses-marketStats-yaml.
+type ResponsesMarketStatsYaml struct {
+	CirculatingSupply *string `json:"circulatingSupply,omitempty"`
+	DailyChange       *string `json:"dailyChange,omitempty"`
+	MarketCap         *string `json:"marketCap,omitempty"`
+	Price             string  `json:"price"`
+	PriceHistory      *[]struct {
+		Price     string `json:"price"`
+		Timestamp int64  `json:"timestamp"`
+	} `json:"priceHistory,omitempty"`
+	Rank   *string `json:"rank,omitempty"`
+	Volume *string `json:"volume,omitempty"`
+}
+
 // ResponsesMemberYaml defines model for responses-member-yaml.
 type ResponsesMemberYaml struct {
 	AccountReference string           `json:"accountReference"`
@@ -70,13 +78,8 @@ type ResponsesMemberBalanceYaml struct {
 	Balance string `json:"balance"`
 }
 
-// ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.
-type ResponsesNotificationInfoYaml struct {
-	Notification string `json:"notification"`
-}
-
-// ResponsesStatisticsYaml defines model for responses-statistics-yaml.
-type ResponsesStatisticsYaml struct {
+// ResponsesNetworkStatsYaml defines model for responses-networkStats-yaml.
+type ResponsesNetworkStatsYaml struct {
 	Accounts              float32 `json:"accounts"`
 	CurrentTPS            float32 `json:"currentTPS"`
 	LastMonthTransactions float32 `json:"lastMonthTransactions"`
@@ -85,19 +88,16 @@ type ResponsesStatisticsYaml struct {
 	TotalTransactions     float32 `json:"totalTransactions"`
 }
 
-// ResponsesTokenInfoYaml defines model for responses-tokenInfo-yaml.
-type ResponsesTokenInfoYaml struct {
-	CurrentPrice string `json:"currentPrice"`
-	DailyChange  string `json:"dailyChange"`
-	MarketCap    string `json:"marketCap"`
-	Rank         string `json:"rank"`
-	Volume       string `json:"volume"`
+// ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.
+type ResponsesNotificationInfoYaml struct {
+	Notification string `json:"notification"`
 }
 
-// ResponsesWeekPricesYaml defines model for responses-weekPrices-yaml.
-type ResponsesWeekPricesYaml []struct {
-	Price     string `json:"price"`
-	Timestamp int64  `json:"timestamp"`
+// ResponsesSupplyStatsYaml defines model for responses-supplyStats-yaml.
+type ResponsesSupplyStatsYaml struct {
+	CirculatingSupply string `json:"circulatingSupply"`
+	MaxSupply         string `json:"maxSupply"`
+	TotalSupply       string `json:"totalSupply"`
 }
 
 // SchemaAcceptRefs defines model for schema-accept-refs.
@@ -227,124 +227,34 @@ type Transactions struct {
 
 // GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
 type GetMigrationAddressesParams struct {
-
-	// The `index` to continue from. To start from the first added migration address, do not specify.
 	Index *string `json:"index,omitempty"`
-
-	// Number of entries per list (min 1, max 1000).
-	Limit int `json:"limit"`
+	Limit int     `json:"limit"`
 }
 
 // MemberTransactionsParams defines parameters for MemberTransactions.
 type MemberTransactionsParams struct {
-
-	// Number of entries per list.
-	Limit int `json:"limit"`
-
-	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
-	//
-	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
-	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
-	Index *string `json:"index,omitempty"`
-
-	// Transaction's direction:
-	//
-	//   * `incoming` - transactions only to member,
-	//   * `outgoing` - transactions only from member,
-	//   * `all` - both to and from.
+	Limit     int     `json:"limit"`
+	Index     *string `json:"index,omitempty"`
 	Direction *string `json:"direction,omitempty"`
-
-	// Chronological `order` of the transaction list starting from a given `index`:
-	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
-	Order *string `json:"order,omitempty"`
-
-	// Transaction type:
-	//
-	// * `transfer` - transactions to/from to member,
-	// * `migration` - transactions only to member's deposits,
-	// * `release` - transactions only from member's deposits to member's account.
-	Type *string `json:"type,omitempty"`
-
-	// Transaction status:
-	//
-	// * `registered` — transfer request is registered;
-	// * `sent` — transfer of funds from the sender is finalized;
-	// * `received` — transfer of funds to the receiver is finalized.
-	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
-	Status *string `json:"status,omitempty"`
-}
-
-// TokenGetInfoParams defines parameters for TokenGetInfo.
-type TokenGetInfoParams struct {
-
-	// Сurrency code:
-	//
-	//   * `USD` - US dollar, default if the parameter is not specified.
-	//   * `BTC` - Bitcoin.
-	//   * `ETH` - Ethereum.
-	Currency *string `json:"currency,omitempty"`
+	Order     *string `json:"order,omitempty"`
+	Type      *string `json:"type,omitempty"`
+	Status    *string `json:"status,omitempty"`
 }
 
 // TransactionsSearchParams defines parameters for TransactionsSearch.
 type TransactionsSearchParams struct {
-
-	// Value of `txID`, `fromMemberReference`, `toMemberReference` or `pulseNumber` by which to search (filter) transactions.
-	//
-	// Note: since path parameters must be valid parts of URL, the `:` after `insolar` in references and IDs is to be replaced with `%3A` in accordance with the HTML URL encoding.
-	Value *string `json:"value,omitempty"`
-
-	// Number of entries per list.
-	Limit int `json:"limit"`
-
-	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
-	//
-	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
-	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
-	Index *string `json:"index,omitempty"`
-
-	// Chronological `order` of the transaction list starting from a given `index`:
-	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
-	Order *string `json:"order,omitempty"`
-
-	// Transaction type:
-	//
-	// * `transfer` - transactions to/from to member,
-	// * `migration` - transactions only to member's deposits,
-	// * `release` - transactions only from member's deposits to member's account.
-	Type *string `json:"type,omitempty"`
-
-	// Transaction status:
-	//
-	// * `registered` — transfer request is registered;
-	// * `sent` — transfer of funds from the sender is finalized;
-	// * `received` — transfer of funds to the receiver is finalized.
-	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	Value  *string `json:"value,omitempty"`
+	Limit  int     `json:"limit"`
+	Index  *string `json:"index,omitempty"`
+	Order  *string `json:"order,omitempty"`
+	Type   *string `json:"type,omitempty"`
 	Status *string `json:"status,omitempty"`
 }
 
 // ClosedTransactionsParams defines parameters for ClosedTransactions.
 type ClosedTransactionsParams struct {
-
-	// Number of entries per list.
-	Limit int `json:"limit"`
-
-	// Unique index of the transaction from which to start the list. Format: `<pulse_number>:<sequence_number>`.
-	//
-	// Note: since path parameters must be valid parts of URL, the `:` is to be replaced with `%3A` in accordance with the HTML URL encoding.
-	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Limit int     `json:"limit"`
 	Index *string `json:"index,omitempty"`
-
-	// Chronological `order` of the transaction list starting from a given `index`:
-	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 }
 
@@ -354,14 +264,6 @@ type ServerInterface interface {
 	GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error
 	// addresses/count// (GET /admin/migration/addresses/count)
 	GetMigrationAddressCount(ctx echo.Context) error
-	// coins// (GET /api/coins)
-	Coins(ctx echo.Context) error
-	// coins/circulating// (GET /api/coins/circulating)
-	CoinsCirculating(ctx echo.Context) error
-	// coins/max// (GET /api/coins/max)
-	CoinsMax(ctx echo.Context) error
-	// coins/total// (GET /api/coins/total)
-	CoinsTotal(ctx echo.Context) error
 	// fee// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
 	// member// (GET /api/member/{reference})
@@ -372,12 +274,18 @@ type ServerInterface interface {
 	MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error
 	// notification// (GET /api/notification)
 	Notification(ctx echo.Context) error
-	// network statistics// (GET /api/statistics)
-	GetStatistics(ctx echo.Context) error
-	// token// (GET /api/token)
-	TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error
-	// token/weekPrices// (GET /api/token/weekPrices/{interval})
-	TokenWeekPrice(ctx echo.Context, interval int) error
+	// stats/market// (GET /api/stats/market)
+	MarketStats(ctx echo.Context) error
+	// stats/network// (GET /api/stats/network)
+	NetworkStats(ctx echo.Context) error
+	// supply// (GET /api/stats/supply)
+	SupplyStats(ctx echo.Context) error
+	// supply/circulating// (GET /api/stats/supply/circulating)
+	SupplyStatsCirculating(ctx echo.Context) error
+	// supply/max// (GET /api/stats/supply/max)
+	SupplyStatsMax(ctx echo.Context) error
+	// supply/total// (GET /api/stats/supply/total)
+	SupplyStatsTotal(ctx echo.Context) error
 	// transaction// (GET /api/transaction/{txID})
 	Transaction(ctx echo.Context, txID string) error
 	// transaction details// (GET /api/transaction/{txID}/details)
@@ -432,42 +340,6 @@ func (w *ServerInterfaceWrapper) GetMigrationAddressCount(ctx echo.Context) erro
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetMigrationAddressCount(ctx)
-	return err
-}
-
-// Coins converts echo context to params.
-func (w *ServerInterfaceWrapper) Coins(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.Coins(ctx)
-	return err
-}
-
-// CoinsCirculating converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsCirculating(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsCirculating(ctx)
-	return err
-}
-
-// CoinsMax converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsMax(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsMax(ctx)
-	return err
-}
-
-// CoinsTotal converts echo context to params.
-func (w *ServerInterfaceWrapper) CoinsTotal(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CoinsTotal(ctx)
 	return err
 }
 
@@ -608,49 +480,57 @@ func (w *ServerInterfaceWrapper) Notification(ctx echo.Context) error {
 	return err
 }
 
-// GetStatistics converts echo context to params.
-func (w *ServerInterfaceWrapper) GetStatistics(ctx echo.Context) error {
+// MarketStats converts echo context to params.
+func (w *ServerInterfaceWrapper) MarketStats(ctx echo.Context) error {
 	var err error
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetStatistics(ctx)
+	err = w.Handler.MarketStats(ctx)
 	return err
 }
 
-// TokenGetInfo converts echo context to params.
-func (w *ServerInterfaceWrapper) TokenGetInfo(ctx echo.Context) error {
+// NetworkStats converts echo context to params.
+func (w *ServerInterfaceWrapper) NetworkStats(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params TokenGetInfoParams
-	// ------------- Optional query parameter "currency" -------------
-	if paramValue := ctx.QueryParam("currency"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "currency", ctx.QueryParams(), &params.Currency)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter currency: %s", err))
-	}
-
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.TokenGetInfo(ctx, params)
+	err = w.Handler.NetworkStats(ctx)
 	return err
 }
 
-// TokenWeekPrice converts echo context to params.
-func (w *ServerInterfaceWrapper) TokenWeekPrice(ctx echo.Context) error {
+// SupplyStats converts echo context to params.
+func (w *ServerInterfaceWrapper) SupplyStats(ctx echo.Context) error {
 	var err error
-	// ------------- Path parameter "interval" -------------
-	var interval int
-
-	err = runtime.BindStyledParameter("simple", false, "interval", ctx.Param("interval"), &interval)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter interval: %s", err))
-	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.TokenWeekPrice(ctx, interval)
+	err = w.Handler.SupplyStats(ctx)
+	return err
+}
+
+// SupplyStatsCirculating converts echo context to params.
+func (w *ServerInterfaceWrapper) SupplyStatsCirculating(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.SupplyStatsCirculating(ctx)
+	return err
+}
+
+// SupplyStatsMax converts echo context to params.
+func (w *ServerInterfaceWrapper) SupplyStatsMax(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.SupplyStatsMax(ctx)
+	return err
+}
+
+// SupplyStatsTotal converts echo context to params.
+func (w *ServerInterfaceWrapper) SupplyStatsTotal(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.SupplyStatsTotal(ctx)
 	return err
 }
 
@@ -811,22 +691,20 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
 	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
-	router.GET("/api/coins", wrapper.Coins)
-	router.GET("/api/coins/circulating", wrapper.CoinsCirculating)
-	router.GET("/api/coins/max", wrapper.CoinsMax)
-	router.GET("/api/coins/total", wrapper.CoinsTotal)
 	router.GET("/api/fee/:amount", wrapper.Fee)
 	router.GET("/api/member/:reference", wrapper.Member)
 	router.GET("/api/member/:reference/balance", wrapper.Balance)
 	router.GET("/api/member/:reference/transactions", wrapper.MemberTransactions)
 	router.GET("/api/notification", wrapper.Notification)
-	router.GET("/api/statistics", wrapper.GetStatistics)
-	router.GET("/api/token", wrapper.TokenGetInfo)
-	router.GET("/api/token/weekPrices/:interval", wrapper.TokenWeekPrice)
+	router.GET("/api/stats/market", wrapper.MarketStats)
+	router.GET("/api/stats/network", wrapper.NetworkStats)
+	router.GET("/api/stats/supply", wrapper.SupplyStats)
+	router.GET("/api/stats/supply/circulating", wrapper.SupplyStatsCirculating)
+	router.GET("/api/stats/supply/max", wrapper.SupplyStatsMax)
+	router.GET("/api/stats/supply/total", wrapper.SupplyStatsTotal)
 	router.GET("/api/transaction/:txID", wrapper.Transaction)
 	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
-
