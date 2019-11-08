@@ -196,7 +196,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			}
 			deposits = append(deposits, &observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
-				Ref:             *depositRef.GetLocal(),
+				Ref:             *depositRef,
 				DepositState:    depositActivate.ID,
 				Member:          *memberRef,
 				Timestamp:       timeActivate.Unix(),
@@ -242,7 +242,7 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             *activate.Request.GetLocal(),
+		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: 0,

@@ -188,7 +188,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		err := deposits.Insert(&observer.Deposit{
 			EthHash:         expectedDeposit[0].EtheriumHash,
-			Ref:             *insolar.NewIDFromBytes(expectedDeposit[0].Reference),
+			Ref:             *insolar.NewReferenceFromBytes(expectedDeposit[0].Reference),
 			Member:          *insolar.NewReferenceFromBytes(expectedDeposit[0].MemberReference),
 			Timestamp:       transferDate,
 			HoldReleaseDate: holdDate,
@@ -279,7 +279,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 		for _, dep := range expectedDeposit {
 			err := deposits.Insert(&observer.Deposit{
 				EthHash:         dep.EtheriumHash,
-				Ref:             *insolar.NewIDFromBytes(dep.Reference),
+				Ref:             *insolar.NewReferenceFromBytes(dep.Reference),
 				Member:          *insolar.NewReferenceFromBytes(dep.MemberReference),
 				Timestamp:       transferDate,
 				HoldReleaseDate: holdDate,
