@@ -352,8 +352,8 @@ func TestMemberCollector_Collect(t *testing.T) {
 					MigrationAddress: "",
 					AccountState:     accountActivate.ID,
 					Status:           "SUCCESS",
-					AccountRef:       *newAccountRef.GetLocal(),
-					WalletRef:        *newWalletRef.GetLocal(),
+					AccountRef:       newAccountRef,
+					WalletRef:        newWalletRef,
 				}
 
 				expectedContractStruct := tree.Structure{
