@@ -474,7 +474,7 @@ func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]mo
 	deposits := &[]models.Deposit{}
 	_, err := db.QueryContext(ctx, deposits,
 		fmt.Sprintf( // nolint: gosec
-			`select %s from deposits where member_ref = ?0`, strings.Join(models.Deposit{}.Fields(), ",")),
+			`select %s from deposits where member_ref = ?0 order by deposit_number`, strings.Join(models.Deposit{}.Fields(), ",")),
 		memberReference)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch deposit")

@@ -600,6 +600,7 @@ func insertMember(t *testing.T, reference insolar.Reference, walletReference, ac
 
 func insertDeposit(
 	t *testing.T, reference insolar.Reference, memberReference insolar.Reference, amount, balance, etheriumHash string,
+	depositNumber int64,
 ) {
 	deposit := models.Deposit{
 		Reference:       reference.Bytes(),
@@ -609,7 +610,7 @@ func insertDeposit(
 		EtheriumHash:    etheriumHash,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
-		DepositNumber:   1,
+		DepositNumber:   depositNumber,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -868,9 +869,11 @@ func TestMember(t *testing.T) {
 	memberAccountReference := gen.Reference()
 	balance := "1010101"
 
-	deposite := gen.Reference()
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
-	insertDeposit(t, deposite, member, "10000", "1000", "eth_hash_1")
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1)
 
 	memberStr := url.QueryEscape(member.String())
 	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
@@ -891,11 +894,23 @@ func TestMember(t *testing.T) {
 			{
 				AmountOnHold:     "0",
 				AvailableAmount:  "1000",
-				DepositReference: deposite.String(),
+				DepositReference: deposite1.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  0,
-				Index:            0,
+				Index:            1,
 				ReleasedAmount:   "10000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  0,
+				Index:            2,
+				ReleasedAmount:   "2000",
 				ReleaseEndDate:   0,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
@@ -956,7 +971,7 @@ func TestMember_Hold(t *testing.T) {
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
-		DepositNumber:   1,
+		DepositNumber:   100,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -982,7 +997,7 @@ func TestMember_Hold(t *testing.T) {
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
-				Index:            0,
+				Index:            100,
 				ReleasedAmount:   "0",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "LOCKED",
@@ -1019,7 +1034,7 @@ func TestMember_Vesting(t *testing.T) {
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
-		DepositNumber:   1,
+		DepositNumber:   200,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1047,7 +1062,7 @@ func TestMember_Vesting(t *testing.T) {
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
-				Index:            0,
+				Index:            200,
 				ReleasedAmount:   "50",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
@@ -1084,7 +1099,7 @@ func TestMember_VestingAll(t *testing.T) {
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
-		DepositNumber:   1,
+		DepositNumber:   300,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1112,7 +1127,7 @@ func TestMember_VestingAll(t *testing.T) {
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
-				Index:            0,
+				Index:            300,
 				ReleasedAmount:   "5000",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
@@ -1146,7 +1161,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
-		DepositNumber:   1,
+		DepositNumber:   500,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1174,7 +1189,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
-				Index:            0,
+				Index:            500,
 				ReleasedAmount:   "550",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",

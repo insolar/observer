@@ -107,7 +107,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		balance, _ := strconv.ParseInt(d.Balance, 10, 64)
 		amountOnHold := amount - releaseAmount
 		resDeposit := SchemaDeposit{
-			Index:           0,
+			Index:           float32(d.DepositNumber),
 			AmountOnHold:    strconv.FormatInt(amountOnHold, 10),
 			AvailableAmount: strconv.FormatInt(balance-amountOnHold, 10),
 			EthTxHash:       d.EtheriumHash,

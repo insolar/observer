@@ -168,8 +168,8 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -188,8 +188,8 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		err := deposits.Insert(&observer.Deposit{
 			EthHash:         expectedDeposit[0].EtheriumHash,
-			Ref:             *insolar.NewIDFromBytes(expectedDeposit[0].Reference),
-			Member:          *insolar.NewIDFromBytes(expectedDeposit[0].MemberReference),
+			Ref:             *insolar.NewReferenceFromBytes(expectedDeposit[0].Reference),
+			Member:          *insolar.NewReferenceFromBytes(expectedDeposit[0].MemberReference),
 			Timestamp:       transferDate,
 			HoldReleaseDate: holdDate,
 			Amount:          expectedDeposit[0].Amount,
@@ -232,8 +232,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -245,8 +245,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   1,
 		},
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_1",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -258,8 +258,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			DepositNumber:   2,
 		},
 		{
-			Reference:       gen.RecordReference().GetLocal().Bytes(),
-			MemberReference: gen.RecordReference().GetLocal().Bytes(),
+			Reference:       gen.RecordReference().Bytes(),
+			MemberReference: gen.RecordReference().Bytes(),
 			EtheriumHash:    "tx_hash_2",
 			State:           gen.RecordReference().GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -279,8 +279,8 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 		for _, dep := range expectedDeposit {
 			err := deposits.Insert(&observer.Deposit{
 				EthHash:         dep.EtheriumHash,
-				Ref:             *insolar.NewIDFromBytes(dep.Reference),
-				Member:          *insolar.NewIDFromBytes(dep.MemberReference),
+				Ref:             *insolar.NewReferenceFromBytes(dep.Reference),
+				Member:          *insolar.NewReferenceFromBytes(dep.MemberReference),
 				Timestamp:       transferDate,
 				HoldReleaseDate: holdDate,
 				Amount:          dep.Amount,

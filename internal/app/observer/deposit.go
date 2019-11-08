@@ -22,8 +22,8 @@ import (
 
 type Deposit struct {
 	EthHash         string
-	Ref             insolar.ID
-	Member          insolar.ID
+	Ref             insolar.Reference
+	Member          insolar.Reference
 	Timestamp       int64
 	HoldReleaseDate int64
 	Amount          string
