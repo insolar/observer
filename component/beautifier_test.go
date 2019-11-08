@@ -20,12 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
@@ -35,7 +33,6 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -48,21 +45,11 @@ import (
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
+	"github.com/insolar/observer/internal/testutils"
 	"github.com/insolar/observer/observability"
 )
 
-var (
-	db       *pg.DB
-	database = "test_beautifier_db"
-
-	pgOptions = &pg.Options{
-		Addr:            "localhost",
-		User:            "postgres",
-		Password:        "secret",
-		Database:        "test_beautifier_db",
-		ApplicationName: "observer",
-	}
-)
+var db *pg.DB
 
 type dbLogger struct{}
 
@@ -76,64 +63,14 @@ func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
 }
 
 func TestMain(t *testing.M) {
-	var err error
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
-
-	resource, err := pool.Run("postgres", "11", []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + database})
-	if err != nil {
-		log.Panicf("Could not start resource: %s", err)
-	}
-
-	defer func() {
-		// When you're done, kill and remove the container
-		err = pool.Purge(resource)
-		if err != nil {
-			log.Panicf("failed to purge docker pool: %s", err)
-		}
-	}()
-
-	if err = pool.Retry(func() error {
-		options := *pgOptions
-		options.Addr = fmt.Sprintf("%s:%s", options.Addr, resource.GetPort("5432/tcp"))
-		db = pg.Connect(&options)
-		_, err := db.Exec("select 1")
-		return err
-	}); err != nil {
-		log.Panicf("Could not connect to docker: %s", err)
-	}
-	defer db.Close()
+	var dbCleaner func()
+	db, _, dbCleaner = testutils.SetupDB("../scripts/migrations")
 
 	// for debug purposes print all queries
 	db.AddQueryHook(dbLogger{})
 
-	migrationCollection := migrations.NewCollection()
-
-	_, _, err = migrationCollection.Run(db, "init")
-	if err != nil {
-		log.Panicf("Could not init migrations: %s", err)
-	}
-
-	err = migrationCollection.DiscoverSQLMigrations("../scripts/migrations")
-	if err != nil {
-		log.Panicf("Failed to read migrations: %s", err)
-	}
-
-	_, _, err = migrationCollection.Run(db, "up")
-	if err != nil {
-		log.Panicf("Could not migrate: %s", err)
-	}
-
 	retCode := t.Run()
-
-	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
-	err = pool.Purge(resource)
-	if err != nil {
-		log.Panicf("failed to purge docker pool: %s", err)
-	}
-
+	dbCleaner()
 	os.Exit(retCode)
 }
 
