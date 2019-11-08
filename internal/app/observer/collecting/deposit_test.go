@@ -84,7 +84,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 	}
 	expected := []*observer.Deposit{{
 		EthHash:      txHash,
-		Ref:          *genesisrefs.ContractMigrationDeposit.GetLocal(),
+		Ref:          genesisrefs.ContractMigrationDeposit,
 		Member:       genesisrefs.ContractMigrationAdminMember,
 		Timestamp:    timestamp.Unix(),
 		Balance:      balance,

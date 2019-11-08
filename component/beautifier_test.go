@@ -283,7 +283,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 	assert.Equal(t, map[insolar.ID]*observer.Deposit{
 		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
-			Ref:             *insolar.NewGlobalReference(newDepositCallIn.Record.ID, newDepositCallIn.Record.ID),
+			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),
 			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 0,
