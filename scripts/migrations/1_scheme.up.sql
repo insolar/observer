@@ -178,17 +178,28 @@ create index if not exists idx_transactions_member_from_ref
 create index if not exists idx_transactions_member_to_ref
     on transactions (member_to_ref);
 
-create table if not exists blockchain_stats
+create table if not exists network_stats
 (
-    pulse_num bigint not null
-        constraint blockchain_stats_pkey
-            primary key,
-    total_transactions bigint,
-    total_accounts bigint,
-    nodes bigint,
-    count_transactions bigint,
-    max_transactions bigint,
-    last_month_transactions bigint
+    created timestamp not null,
+    pulse_number bigint not null,
+    total_transactions bigint not null,
+    total_accounts bigint not null,
+    nodes bigint not null,
+    current_tps bigint not null,
+    max_tps bigint not null,
+    month_transactions bigint not null
 );
 
+create index if not exists idx_network_stats_created
+    on network_stats (created);
 
+create table if not exists supply_stats
+(
+    id          serial    not null
+        constraint xns_supply_stats_pk
+            primary key,
+    created     timestamp not null,
+    total       numeric(24),
+    max         numeric(24),
+    circulating numeric(24)
+);

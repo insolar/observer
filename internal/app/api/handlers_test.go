@@ -788,7 +788,7 @@ func TestMemberBalance(t *testing.T) {
 	require.Equal(t, balance1, received.Balance)
 }
 
-func TestObserverServer_Coins(t *testing.T) {
+func TestObserverServer_SupplyStats(t *testing.T) {
 	total := "1111111111111"
 	totalr := "111.1111111111"
 	max := "2222222222222"
@@ -796,7 +796,7 @@ func TestObserverServer_Coins(t *testing.T) {
 	circ := "33333333333333"
 	circr := "3333.3333333333"
 
-	coins := postgres.StatsModel{
+	coins := postgres.SupplyStatsModel{
 		Created:     time.Time{},
 		Total:       total,
 		Max:         max,
@@ -1384,4 +1384,39 @@ func TestFee(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, testFee.String(), received.Fee)
+}
+
+func TestObserverServer_NetworkStats(t *testing.T) {
+	stats := postgres.NetworkStatsModel{
+		Created:           time.Now(),
+		PulseNumber:       123,
+		TotalTransactions: 23,
+		MonthTransactions: 10,
+		TotalAccounts:     3,
+		Nodes:             11,
+		CurrentTPS:        45,
+		MaxTPS:            1498,
+	}
+
+	err := db.Insert(&stats)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/stats/network")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	jsonResp := ResponsesNetworkStatsYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	expected := ResponsesNetworkStatsYaml{
+		Accounts:              3,
+		CurrentTPS:            45,
+		LastMonthTransactions: 10,
+		MaxTPS:                1498,
+		Nodes:                 11,
+		TotalTransactions:     23,
+	}
+	require.Equal(t, expected, jsonResp)
 }

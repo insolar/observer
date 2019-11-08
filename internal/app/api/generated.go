@@ -80,12 +80,12 @@ type ResponsesMemberBalanceYaml struct {
 
 // ResponsesNetworkStatsYaml defines model for responses-networkStats-yaml.
 type ResponsesNetworkStatsYaml struct {
-	Accounts              float32 `json:"accounts"`
-	CurrentTPS            float32 `json:"currentTPS"`
-	LastMonthTransactions float32 `json:"lastMonthTransactions"`
-	MaxTPS                float32 `json:"maxTPS"`
-	Nodes                 float32 `json:"nodes"`
-	TotalTransactions     float32 `json:"totalTransactions"`
+	Accounts              int `json:"accounts"`
+	CurrentTPS            int `json:"currentTPS"`
+	LastMonthTransactions int `json:"lastMonthTransactions"`
+	MaxTPS                int `json:"maxTPS"`
+	Nodes                 int `json:"nodes"`
+	TotalTransactions     int `json:"totalTransactions"`
 }
 
 // ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.

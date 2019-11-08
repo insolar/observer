@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-type StatsModel struct {
-	tableName struct{} `sql:"xns_coin_stats"` //nolint: unused,structcheck
+type SupplyStatsModel struct {
+	tableName struct{} `sql:"supply_stats"` //nolint: unused,structcheck
 
 	ID          uint64    `sql:"id,pk"`
 	Created     time.Time `sql:"created default:now(),notnull"`
@@ -35,35 +35,35 @@ type StatsModel struct {
 	Circulating string    `sql:"circulating"`
 }
 
-//go:generate minimock -i StatsRepo -o ./ -s _mock.go -g
+//go:generate minimock -i SupplyStatsRepo -o ./ -s _mock.go -g
 
-type StatsRepo interface {
-	LastStats() (StatsModel, error)
-	InsertStats(StatsModel) error
-	CountStats(time *time.Time) (StatsModel, error)
+type SupplyStatsRepo interface {
+	LastStats() (SupplyStatsModel, error)
+	InsertStats(SupplyStatsModel) error
+	CountStats(time *time.Time) (SupplyStatsModel, error)
 }
 
-type StatsRepository struct {
+type SupplyStatsRepository struct {
 	db orm.DB
 }
 
-func NewStatsRepository(db orm.DB) *StatsRepository {
-	return &StatsRepository{db: db}
+func NewSupplyStatsRepository(db orm.DB) *SupplyStatsRepository {
+	return &SupplyStatsRepository{db: db}
 }
 
-func (s *StatsRepository) LastStats() (StatsModel, error) {
-	lastStats := &StatsModel{}
+func (s *SupplyStatsRepository) LastStats() (SupplyStatsModel, error) {
+	lastStats := &SupplyStatsModel{}
 	err := s.db.Model(lastStats).Last()
 	if err != nil && err != pg.ErrNoRows {
-		return StatsModel{}, errors.Wrap(err, "failed request to db")
+		return SupplyStatsModel{}, errors.Wrap(err, "failed request to db")
 	}
 	if err == pg.ErrNoRows {
-		return StatsModel{}, errors.New("No data")
+		return SupplyStatsModel{}, errors.New("No data")
 	}
 	return *lastStats, nil
 }
 
-func (s *StatsRepository) CountStats(collectDT *time.Time) (StatsModel, error) {
+func (s *SupplyStatsRepository) CountStats(collectDT *time.Time) (SupplyStatsModel, error) {
 	var dt int64
 	if collectDT != nil {
 		dt = collectDT.Unix()
@@ -101,16 +101,16 @@ from sums,
      max_amount
 ;
 `, dt, dt, dt)
-	stats := StatsModel{}
+	stats := SupplyStatsModel{}
 	_, err := s.db.Query(&stats, sql)
 	if err != nil {
-		return StatsModel{}, errors.Wrap(err, "failed request to db")
+		return SupplyStatsModel{}, errors.Wrap(err, "failed request to db")
 	}
 	return stats, nil
 }
 
-func (s *StatsRepository) InsertStats(xcs StatsModel) error {
-	stats := StatsModel{
+func (s *SupplyStatsRepository) InsertStats(xcs SupplyStatsModel) error {
+	stats := SupplyStatsModel{
 		Created:     time.Now(),
 		Total:       xcs.Total,
 		Max:         xcs.Max,
