@@ -198,7 +198,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				EthHash:         strings.ToLower(depositState.TxHash),
 				Ref:             *depositRef.GetLocal(),
 				DepositState:    depositActivate.ID,
-				Member:          *memberRef.GetLocal(),
+				Member:          *memberRef,
 				Timestamp:       timeActivate.Unix(),
 				Amount:          depositState.Amount,
 				Balance:         depositState.Balance,
@@ -235,7 +235,7 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
 	}
 
-	memberRef, err := insolar.NewIDFromString(callResult.Reference)
+	memberRef, err := insolar.NewReferenceFromString(callResult.Reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}

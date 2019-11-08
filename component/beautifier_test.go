@@ -284,7 +284,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
 			Ref:             newDepositCallIn.Record.ID,
-			Member:          *memberRef.GetLocal(),
+			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 0,
 			Amount:          amount,
