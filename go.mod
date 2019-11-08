@@ -15,8 +15,6 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
-	github.com/golang/protobuf v1.3.2
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/gofuzz v0.0.0-20190920162303-b906efc57a55 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
@@ -26,7 +24,8 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/labstack/gommon v0.3.0
-	github.com/magiconair/properties v1.8.1
+	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
