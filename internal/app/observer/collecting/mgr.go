@@ -91,18 +91,18 @@ type Sequence struct {
 }
 
 type Swap struct {
-	Admin     insolar.Reference
-	Treasurer insolar.Reference
-	From      insolar.Reference // User who initialized swap process
-	To        insolar.Reference // User who will accept request
-	Status    int
-	// 0 - empty ,
-	// 1 - proposed,
-	// 2 - agreed,
-	// 3 - approved by admin,
-	// 4 - approved by treasurer,
-	// 5 - swapped
+	From   insolar.Reference // User who initialized swap process
+	To     insolar.Reference // User who will accept request
+	Status StatusSwap
 }
+
+// Status type of swap
+type StatusSwap int
+
+const (
+	SwapNotInit StatusSwap = iota
+	SwapPropose
+)
 
 func (c *MGRCollector) Collect(rec *observer.Record) *observer.MGR {
 	res := c.results.Collect(rec)

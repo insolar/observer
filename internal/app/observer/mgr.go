@@ -13,8 +13,14 @@ type MGR struct {
 	PaymentFrequency string
 	NextPaymentTime  int64
 	Sequence         []Sequence
+	SwapProcess      Swap
 	Status           string
 	State            insolar.Reference
+}
+
+type Swap struct {
+	From insolar.Reference // User who initialized swap process
+	To   insolar.Reference // User who will accept request
 }
 
 type Sequence struct {
@@ -33,7 +39,9 @@ type MGRUpdate struct {
 	AmountDue        string
 	PaymentFrequency string
 	NextPaymentTime  int64
+	Timestamp        int64
 	Sequence         []Sequence
+	SwapProcess      Swap
 }
 
 type MGRStorage interface {

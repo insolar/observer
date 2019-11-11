@@ -35,6 +35,19 @@ type MGRSequence struct {
 	Active    bool `sql:",notnull"`
 }
 
+// TODO: insert on update
+// TODO: update on new notification with type swap
+type MGRSwap struct {
+	tableName       struct{} `sql:"swap"`
+	GroupRef        []byte   `sql:",notnull"`
+	FromPosition    int      `sql:",notnull"`
+	FromRef         []byte   `sql:",notnull"`
+	ToPosition      int      `sql:",notnull"`
+	ToRef           []byte   `sql:",notnull"`
+	Timestamp       int64    `sql:",notnull"`
+	NotificationRef []byte
+}
+
 func NewMGRStorage(obs *observability.Observability, db orm.DB) *MGRStorage {
 	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_user_storage_error_counter",
@@ -125,6 +138,35 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 		}
 	}
 
+	var indexFrom, indexTo int
+
+	for i, v := range model.Sequence {
+		if v.Member == model.SwapProcess.From {
+			indexFrom = i + 1
+		}
+		if v.Member == model.SwapProcess.To {
+			indexTo = i + 1
+		}
+	}
+
+	if !model.SwapProcess.From.IsEmpty() && !model.SwapProcess.From.IsEmpty() {
+		swap := mgrSwapUpdate(indexFrom, indexTo, model)
+		_, err = s.db.Model(swap).
+			Where("group_ref=?", model.GroupReference.Bytes()).
+			Where("to_ref=?", model.SwapProcess.To.Bytes()).
+			Where("notification_ref IS NULL").
+			Set("group_ref=?", model.GroupReference.Bytes()).
+			Set("to_ref=?", model.SwapProcess.To.Bytes()).
+			Set("from_ref=?", model.SwapProcess.From.Bytes()).
+			Set("from_position=?", indexFrom).
+			Set("to_position=?", indexTo).
+			Set("timestamp=?", model.Timestamp).
+			Insert()
+		if err != nil {
+			return errors.Wrapf(err, "failed to insert mgr swap %v %v", model, err.Error())
+		}
+	}
+
 	return nil
 }
 
@@ -158,5 +200,16 @@ func mgrSequenceUpdate(index int, model *observer.MGRUpdate) *MGRSequence {
 		UserRef:  model.Sequence[index].Member.Bytes(),
 		DrawDate: model.Sequence[index].DueDate,
 		Active:   model.Sequence[index].IsActive,
+	}
+}
+
+func mgrSwapUpdate(indexFrom int, indexTo int, model *observer.MGRUpdate) *MGRSwap {
+	return &MGRSwap{
+		GroupRef:     model.GroupReference.Bytes(),
+		FromRef:      model.SwapProcess.From.Bytes(),
+		ToRef:        model.SwapProcess.To.Bytes(),
+		FromPosition: indexFrom,
+		ToPosition:   indexTo,
+		Timestamp:    model.Timestamp,
 	}
 }

@@ -62,6 +62,12 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DueDate, IsActive: v.IsActive})
 	}
 
+	date, err := rec.ID.GetPulseNumber().AsApproximateTime()
+	if err != nil {
+		logrus.Info(err.Error())
+		return nil
+	}
+
 	return &observer.MGRUpdate{
 		GroupReference:   mgr.GroupReference,
 		PrevState:        *insolar.NewReference(amd.PrevState),
@@ -72,6 +78,8 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 		PaymentFrequency: mgr.PaymentFrequency,
 		NextPaymentTime:  int64(mgr.NextPaymentTime),
 		Sequence:         seq,
+		Timestamp:        date.Unix(),
+		SwapProcess:      observer.Swap{From: mgr.SwapProcess.From, To: mgr.SwapProcess.To},
 	}
 }
 
