@@ -36,8 +36,8 @@ func TestStatsManager_Coins(t *testing.T) {
 
 	t.Run("small counts", func(t *testing.T) {
 		t.Parallel()
-		repo := postgres.NewStatsRepoMock(mc)
-		repo.LastStatsMock.Return(postgres.StatsModel{
+		repo := postgres.NewSupplyStatsRepoMock(mc)
+		repo.LastStatsMock.Return(postgres.SupplyStatsModel{
 			Created:     time.Time{},
 			Total:       "1000",
 			Max:         "2000",
@@ -45,7 +45,7 @@ func TestStatsManager_Coins(t *testing.T) {
 		}, nil)
 
 		sm := NewStatsManager(log, repo)
-		res, err := sm.Coins()
+		res, err := sm.Supply()
 		require.NoError(t, err)
 		require.Equal(t, "1000", res.Total())
 		require.Equal(t, "2000", res.Max())
@@ -54,8 +54,8 @@ func TestStatsManager_Coins(t *testing.T) {
 
 	t.Run("medium counts", func(t *testing.T) {
 		t.Parallel()
-		repo := postgres.NewStatsRepoMock(mc)
-		repo.LastStatsMock.Return(postgres.StatsModel{
+		repo := postgres.NewSupplyStatsRepoMock(mc)
+		repo.LastStatsMock.Return(postgres.SupplyStatsModel{
 			Created:     time.Time{},
 			Total:       "111122220000000",
 			Max:         "333331111222222",
@@ -63,7 +63,7 @@ func TestStatsManager_Coins(t *testing.T) {
 		}, nil)
 
 		sm := NewStatsManager(log, repo)
-		res, err := sm.Coins()
+		res, err := sm.Supply()
 		require.NoError(t, err)
 		require.Equal(t, "111122220000000", res.Total())
 		require.Equal(t, "333331111222222", res.Max())
@@ -72,8 +72,8 @@ func TestStatsManager_Coins(t *testing.T) {
 
 	t.Run("big counts", func(t *testing.T) {
 		t.Parallel()
-		repo := postgres.NewStatsRepoMock(mc)
-		repo.LastStatsMock.Return(postgres.StatsModel{
+		repo := postgres.NewSupplyStatsRepoMock(mc)
+		repo.LastStatsMock.Return(postgres.SupplyStatsModel{
 			Created:     time.Time{},
 			Total:       "111112222000000055555555",
 			Max:         "333333111122222244444444",
@@ -81,7 +81,7 @@ func TestStatsManager_Coins(t *testing.T) {
 		}, nil)
 
 		sm := NewStatsManager(log, repo)
-		res, err := sm.Coins()
+		res, err := sm.Supply()
 		require.NoError(t, err)
 		require.Equal(t, "111112222000000055555555", res.Total())
 		require.Equal(t, "333333111122222244444444", res.Max())
@@ -92,7 +92,7 @@ func TestStatsManager_Coins(t *testing.T) {
 // THIS TESTS ARE ORDER DEPENDENT!
 func TestStatsManager_CLI_command(t *testing.T) {
 	log := logrus.New()
-	repo := postgres.NewStatsRepository(db)
+	repo := postgres.NewSupplyStatsRepository(db)
 	sr := NewStatsManager(log, repo)
 
 	size := 10

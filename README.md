@@ -51,9 +51,12 @@ Currently not provided.
 
 
 #### Development
-Install deps (dep, minimock) running
+Install deps running
 
 `make install_deps`
+
+*NOTE* that this step installs exact version of tools to avoid constant
+changes back and forth from different developers.
 
 ## API Observer
 API for observer service. We use chi as router.
@@ -66,11 +69,13 @@ Generate types and API from observer API:
 ```
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
-## XNS coin stats
-Command calculates and saves stats for CMC, added to cron for 1/min execution.
+
+## Statistics collector
+
+Command calculates, gathers and saves statistics, add to cron for 1/min execution.
 Uses observer config in .artifacts/observer.yaml
 ```
-./bin/xns_stats_count
+./bin/stats-collector
 ```
-Optional param -time is using only for tests, allows to calculate stats on specified date/time.
-Example -time="2006-01-02 15:04:05"
+Optional param -time is using only for tests, allows to calculate supply stats like it's a
+specified date/time. Example -time="2006-01-02 15:04:05"

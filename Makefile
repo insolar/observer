@@ -32,7 +32,7 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: $(BIN_DIR) $(OBSERVER) $(API) xns_stats_count ## build!
+build: $(BIN_DIR) $(OBSERVER) $(API) stats_collector ## build!
 
 .PHONY: env
 env: $(CONFIG) ## gen configs + artifacts
@@ -69,9 +69,9 @@ $(OBSERVER):
 $(API):
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 
-.PHONY: xns_stats_count
-xns_stats_count:
-	go build -o $(BIN_DIR)/xns_stats_count cmd/xns-coin-stats/*.go
+.PHONY: stats_collector
+stats_collector:
+	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)

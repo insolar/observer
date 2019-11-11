@@ -80,12 +80,12 @@ type ResponsesMemberBalanceYaml struct {
 
 // ResponsesNetworkStatsYaml defines model for responses-networkStats-yaml.
 type ResponsesNetworkStatsYaml struct {
-	Accounts              float32 `json:"accounts"`
-	CurrentTPS            float32 `json:"currentTPS"`
-	LastMonthTransactions float32 `json:"lastMonthTransactions"`
-	MaxTPS                float32 `json:"maxTPS"`
-	Nodes                 float32 `json:"nodes"`
-	TotalTransactions     float32 `json:"totalTransactions"`
+	Accounts              int `json:"accounts"`
+	CurrentTPS            int `json:"currentTPS"`
+	LastMonthTransactions int `json:"lastMonthTransactions"`
+	MaxTPS                int `json:"maxTPS"`
+	Nodes                 int `json:"nodes"`
+	TotalTransactions     int `json:"totalTransactions"`
 }
 
 // ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.
@@ -227,34 +227,103 @@ type Transactions struct {
 
 // GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
 type GetMigrationAddressesParams struct {
+	// Index of the last known address to start the list from the next one. To start from the first added migration address, do not specify.
 	Index *string `json:"index,omitempty"`
-	Limit int     `json:"limit"`
+
+	// Number of entries per list.
+	Limit int `json:"limit"`
 }
 
 // MemberTransactionsParams defines parameters for MemberTransactions.
 type MemberTransactionsParams struct {
-	Limit     int     `json:"limit"`
-	Index     *string `json:"index,omitempty"`
+	// Number of entries per list.
+	Limit int `json:"limit"`
+
+	// Index of the last known transaction to start the list from the next one.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Index *string `json:"index,omitempty"`
+
+	// Transaction's direction:
+	//
+	//   * `incoming` - transactions only to member,
+	//   * `outgoing` - transactions only from member,
+	//   * `all` - both to and from.
 	Direction *string `json:"direction,omitempty"`
-	Order     *string `json:"order,omitempty"`
-	Type      *string `json:"type,omitempty"`
-	Status    *string `json:"status,omitempty"`
+
+	// Chronological `order` of the transaction list starting from a given `index`:
+	//
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
+
+	// Transaction type:
+	//
+	// * `transfer` - transactions to/from to member,
+	// * `migration` - transactions only to member's deposits,
+	// * `release` - transactions only from member's deposits to member's account.
+	Type *string `json:"type,omitempty"`
+
+	// Transaction status:
+	//
+	// * `registered` — transfer request is registered;
+	// * `sent` — transfer of funds from the sender is finalized;
+	// * `received` — transfer of funds to the receiver is finalized.
+	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	Status *string `json:"status,omitempty"`
 }
 
 // TransactionsSearchParams defines parameters for TransactionsSearch.
 type TransactionsSearchParams struct {
-	Value  *string `json:"value,omitempty"`
-	Limit  int     `json:"limit"`
-	Index  *string `json:"index,omitempty"`
-	Order  *string `json:"order,omitempty"`
-	Type   *string `json:"type,omitempty"`
+	// Value of `txID`, `fromMemberReference`, `toMemberReference` or `pulseNumber` by which to search (filter) transactions.
+	//
+	// Note: since path parameters must be valid parts of URL, the `:` after `insolar` in references and IDs is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	Value *string `json:"value,omitempty"`
+
+	// Number of entries per list.
+	Limit int `json:"limit"`
+
+	// Index of the last known transaction to start the list from the next one.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	Index *string `json:"index,omitempty"`
+
+	// Chronological `order` of the transaction list starting from a given `index`:
+	//
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	Order *string `json:"order,omitempty"`
+
+	// Transaction type:
+	//
+	// * `transfer` - transactions to/from to member,
+	// * `migration` - transactions only to member's deposits,
+	// * `release` - transactions only from member's deposits to member's account.
+	Type *string `json:"type,omitempty"`
+
+	// Transaction status:
+	//
+	// * `registered` — transfer request is registered;
+	// * `sent` — transfer of funds from the sender is finalized;
+	// * `received` — transfer of funds to the receiver is finalized.
+	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
 	Status *string `json:"status,omitempty"`
 }
 
 // ClosedTransactionsParams defines parameters for ClosedTransactions.
 type ClosedTransactionsParams struct {
-	Limit int     `json:"limit"`
+	// Number of entries per list.
+	Limit int `json:"limit"`
+
+	// Index of the last known transaction to start the list from the next one.
+	//
+	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
 	Index *string `json:"index,omitempty"`
+
+	// Chronological `order` of the transaction list starting from a given `index`:
+	//
+	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 }
 
