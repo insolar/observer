@@ -40,7 +40,6 @@ func Default() *Configuration {
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
-			CreateTables:    false,
 		},
 		LogLevel:  logrus.DebugLevel.String(),
 		FeeAmount: big.NewInt(1000000000),

@@ -1,14 +1,3 @@
-create table if not exists records
-(
-    key bytea not null
-        constraint records_id_pk
-            primary key,
-    value bytea not null,
-    pulse bigint,
-    key_debug text,
-    value_type text
-);
-
 create table if not exists raw_requests
 (
     request_id varchar(256) not null constraint raw_requests_pk

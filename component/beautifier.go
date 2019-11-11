@@ -69,7 +69,6 @@ func makeBeautifier(
 
 		b := &beauty{
 			pulse:          r.pulse,
-			records:        r.batch,
 			members:        make(map[insolar.ID]*observer.Member),
 			deposits:       make(map[insolar.ID]*observer.Deposit),
 			addresses:      make(map[string]*observer.MigrationAddress),

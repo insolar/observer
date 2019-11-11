@@ -28,11 +28,9 @@ import (
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) func() *state {
 	logger := obs.Log()
 	last := MustKnowPulse(cfg, obs, conn.PG())
-	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
 	metricState := getMetricState(cfg, obs, conn.PG())
 	st := state{
 		last: last,
-		rp:   recordPosition,
 		ms:   metricState,
 	}
 	logger.Debugf("State restored: %+v", st)
@@ -50,18 +48,6 @@ func MustKnowPulse(cfg *configuration.Configuration, obs *observability.Observab
 			" in the allotted number of attempts.")
 	}
 	return p.Number
-}
-
-func MustKnowRecordPosition(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) RecordPosition {
-	records := postgres.NewRecordStorage(cfg, obs, db)
-	rec := records.Last()
-	if rec == nil {
-		panic("Something wrong with DB. Most likely failed to connect to the DB" +
-			" in the allotted number of attempts.")
-	}
-	pulse := rec.ID.Pulse()
-	rn := records.Count(pulse)
-	return RecordPosition{Last: pulse, RN: rn}
 }
 
 type metricState struct {

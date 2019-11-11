@@ -98,10 +98,8 @@ func Test_makeFetcher(t *testing.T) {
 		}, nil)
 
 		s := state{
-			last: pn - 10,
-			rp: RecordPosition{
-				ShouldIterateFrom: nextActivePulse,
-			},
+			last:              pn - 10,
+			ShouldIterateFrom: nextActivePulse,
 		}
 		fetcher := makeFetcher(obs, pulseFetcher, recordFetcher)
 		raw := fetcher(ctx, &s)

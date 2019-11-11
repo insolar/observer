@@ -49,7 +49,6 @@ type DB struct {
 	Attempts cycle.Limit
 	// Interval between store in db failed attempts
 	AttemptInterval time.Duration
-	CreateTables    bool
 }
 
 func Default() *Configuration {
@@ -69,7 +68,6 @@ func Default() *Configuration {
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
-			CreateTables:    false,
 		},
 	}
 }
