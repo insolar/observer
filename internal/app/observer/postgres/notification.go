@@ -71,7 +71,12 @@ func notificationSchema(model *observer.Notification) *NotificationSchema {
 		notificationType = "contribute"
 	case observer.NotificationDeactivate:
 		notificationType = "deactivate"
+	case observer.NotificationFinishMGRRound:
+		notificationType = "finishMgrRound"
+	case observer.NotificationSwap:
+		notificationType = "swap"
 	}
+
 	return &NotificationSchema{
 		Ref:            model.Ref.Bytes(),
 		UserReference:  model.UserReference.Bytes(),
