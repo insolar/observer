@@ -110,17 +110,6 @@ func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resJSON)
 }
 
-func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
-	panic("implement me")
-}
-
-func (s *ObserverServer) TokenGetInfo(ctx echo.Context, params TokenGetInfoParams) error {
-	panic("implement me")
-}
-
-func (s *ObserverServer) TokenWeekPrice(ctx echo.Context, interval int) error {
-	panic("implement me")
-}
 
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
 	panic("implement me")
@@ -332,23 +321,23 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (s *ObserverServer) Coins(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Coins()
+	result, err := xr.Supply()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.JSON(http.StatusOK, ResponsesCoinsYaml{
+	return ctx.JSON(http.StatusOK, ResponsesSupplyStatsYaml{
 		TotalSupply:       result.Total(),
 		MaxSupply:         result.Max(),
 		CirculatingSupply: result.Circulating(),
 	})
 }
 
-func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
 	if err != nil {
@@ -358,8 +347,8 @@ func (s *ObserverServer) CoinsCirculating(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
 	if err != nil {
@@ -369,8 +358,8 @@ func (s *ObserverServer) CoinsMax(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
 	if err != nil {
@@ -378,6 +367,27 @@ func (s *ObserverServer) CoinsTotal(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, result)
+}
+
+func (s *ObserverServer) MarketStats(ctx echo.Context) error {
+	panic("implement me")
+}
+
+func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
+	repo := postgres.NewNetworkStatsRepository(s.db)
+	result, err := repo.LastStats()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "")
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesNetworkStatsYaml{
+		Accounts:              result.TotalAccounts,
+		CurrentTPS:            result.CurrentTPS,
+		LastMonthTransactions: result.MonthTransactions,
+		MaxTPS:                result.MaxTPS,
+		Nodes:                 result.Nodes,
+		TotalTransactions:     result.TotalTransactions,
+	})
 }
 
 func checkIndex(i string) (int64, int64, error) {

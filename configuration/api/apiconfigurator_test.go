@@ -14,22 +14,18 @@
 // limitations under the License.
 //
 
-package configuration
+package api
 
 import (
+	"math/big"
+	"testing"
 	"time"
 
-	"github.com/insolar/observer/internal/pkg/cycle"
+	"github.com/stretchr/testify/require"
 )
 
-type Replicator struct {
-	Addr            string
-	MaxTransportMsg int
-	Attempts        cycle.Limit
-	// Interval between fetching heavy
-	AttemptInterval time.Duration
-	// Using when catching up heavy on empty pulses
-	FastForwardInterval time.Duration
-	BatchSize           uint32
-	CacheSize           int
+func TestConfigLoad(t *testing.T) {
+	actual := load("./testdata")
+	require.Equal(t, big.NewInt(2000000000), actual.FeeAmount)
+	require.Equal(t, time.Second*3, actual.DB.AttemptInterval)
 }

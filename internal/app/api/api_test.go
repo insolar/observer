@@ -49,7 +49,7 @@ var (
 func TestMain(t *testing.M) {
 
 	var dbCleaner func()
-	db, dbCleaner = testutils.SetupDB(migrationsDir)
+	db, _, dbCleaner = testutils.SetupDB(migrationsDir)
 
 	e := echo.New()
 

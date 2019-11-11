@@ -57,12 +57,34 @@ func main() {
 		dt = &tmp
 	}
 
-	repo := postgres.NewStatsRepository(db)
+	calcSupply(log, db, dt)
+	calcNetwork(log, db)
+}
+
+func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
+	repo := postgres.NewSupplyStatsRepository(db)
 	sr := component.NewStatsManager(log, repo)
 
 	command := component.NewCalculateStatsCommand(log, db, sr)
-	_, err = command.Run(dt)
+	_, err := command.Run(dt)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to run command"))
 	}
 }
+
+func calcNetwork(log *logrus.Logger, db *pg.DB) {
+	repo := postgres.NewNetworkStatsRepository(db)
+
+	stats, err := repo.CountStats()
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to count network stats"))
+	}
+
+	log.Debugf("Collected stats: %+v", stats)
+
+	err = repo.InsertStats(stats)
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to save network stats"))
+	}
+}
+

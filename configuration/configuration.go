@@ -26,17 +26,35 @@ import (
 
 type Configuration struct {
 	LogLevel   string
-	API        API
 	Replicator Replicator
 	DB         DB
+}
+
+type Replicator struct {
+	Addr            string
+	MaxTransportMsg int
+	Attempts        cycle.Limit
+	// Interval between fetching heavy
+	AttemptInterval time.Duration
+	// Using when catching up heavy on empty pulses
+	FastForwardInterval time.Duration
+	BatchSize           uint32
+	CacheSize           int
+	// Replicator's metrics, health check, etc.
+	Listen string
+}
+
+type DB struct {
+	URL      string
+	Attempts cycle.Limit
+	// Interval between store in db failed attempts
+	AttemptInterval time.Duration
+	CreateTables    bool
 }
 
 func Default() *Configuration {
 	return &Configuration{
 		LogLevel: logrus.DebugLevel.String(),
-		API: API{
-			Addr: ":0",
-		},
 		Replicator: Replicator{
 			Addr:                "127.0.0.1:5678",
 			MaxTransportMsg:     1073741824,
@@ -45,6 +63,7 @@ func Default() *Configuration {
 			FastForwardInterval: time.Second / 4,
 			BatchSize:           2000,
 			CacheSize:           10000,
+			Listen:              ":0",
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
