@@ -74,3 +74,13 @@ Uses observer config in .artifacts/observer.yaml
 ```
 Optional param -time is using only for tests, allows to calculate stats on specified date/time.
 Example -time="2006-01-02 15:04:05"
+
+## Migrations
+Run migrations (with go binary):
+1. Run `make migrate`.
+
+Run migrations (without go binary):
+1. Run `make build-migrate` (requires go binary). 
+2. Copy bin/migrate binary and scripts/migrations dir 
+to the target environment.
+3. Run migrate binary and provide migrations dir with `-dir` param.
