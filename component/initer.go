@@ -19,27 +19,20 @@ package component
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
-	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
-	"github.com/insolar/observer/internal/app/observer/store/pg"
 	"github.com/insolar/observer/observability"
 )
 
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) func() *state {
 	logger := obs.Log()
-	createTables(cfg, obs, conn)
-	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
-	stat := MustKnowPreviousStatistic(cfg, obs, conn.PG())
 	metricState := getMetricState(cfg, obs, conn.PG())
 	st := state{
 		last: last,
 		rp:   recordPosition,
-		stat: stat,
 		ms:   metricState,
 	}
 	logger.Debugf("State restored: %+v", st)
@@ -71,86 +64,6 @@ func MustKnowRecordPosition(cfg *configuration.Configuration, obs *observability
 	return RecordPosition{Last: pulse, RN: rn}
 }
 
-func MustKnowPreviousStatistic(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) observer.Statistic {
-	statistics := postgres.NewStatisticStorage(cfg, obs, db)
-	s := statistics.Last()
-	if s == nil {
-		panic("Something wrong with DB. Most likely failed to connect to the DB" +
-			" in the allotted number of attempts.")
-	}
-	return *s
-}
-
-func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) {
-	log := obs.Log()
-	if cfg == nil {
-		return
-	}
-	if cfg.DB.CreateTables {
-		db := conn.PG()
-
-		err := db.CreateTable(&postgres.PulseSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create pulses table"))
-		}
-
-		err = db.CreateTable(&postgres.RecordSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create records table"))
-		}
-
-		err = db.CreateTable(&postgres.RequestSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create requests table"))
-		}
-
-		err = db.CreateTable(&postgres.ResultSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create results table"))
-		}
-
-		err = db.CreateTable(&postgres.ObjectSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create objects table"))
-		}
-
-		err = db.CreateTable(&postgres.MemberSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create members table"))
-		}
-
-		err = db.CreateTable(&postgres.DepositSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create deposits table"))
-		}
-
-		err = db.CreateTable(&postgres.MigrationAddressSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create migration_addresses table"))
-		}
-
-		err = db.CreateTable(&postgres.StatisticSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create statistics table"))
-		}
-
-		err = db.CreateTable(&pg.RawRequest{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create raw requests table"))
-		}
-
-		err = db.CreateTable(&pg.RawResult{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create raw results table"))
-		}
-
-		err = db.CreateTable(&pg.RawSideEffect{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create raw side effects table"))
-		}
-	}
-}
-
 type metricState struct {
 	totalWasting            int
 	totalMigrationAddresses int
@@ -167,18 +80,4 @@ func getMetricState(cfg *configuration.Configuration, obs *observability.Observa
 		totalWasting:            ma.Wasted(),
 		totalMigrationAddresses: ma.TotalMigrationAddresses(),
 	}
-}
-
-func initCache() {
-	// TODO:
-	//  1. If dump file exists:
-	//  - Load cache from dump file
-	//  - Remove file
-	//  2. Else if dump record exists in DB:
-	//  - Load cache from DB
-	//  - Delete record
-	//  3. Else if DB connection is alive:
-	//  - Init empty cache
-	//  4. Else:
-	//  - Panic
 }
