@@ -35,8 +35,6 @@ type MGRSequence struct {
 	Active    bool `sql:",notnull"`
 }
 
-// TODO: insert on update
-// TODO: update on new notification with type swap
 type MGRSwap struct {
 	tableName       struct{} `sql:"swap"`
 	GroupRef        []byte   `sql:",notnull"`
