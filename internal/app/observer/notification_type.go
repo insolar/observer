@@ -23,4 +23,5 @@ const (
 	NotificationInvite NotificationType = iota + 1
 	NotificationContribution
 	NotificationDeactivate
+	NotificationFinishMGRRound
 )
