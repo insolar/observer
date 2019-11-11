@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 )
 
@@ -90,18 +91,33 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 			Order("pulse DESC").
 			Limit(1).
 			Select()
-		if err != nil {
+		if err == pg.ErrNoRows {
+			pulseSchema.Pulse = uint32(insolar.GenesisPulse.PulseNumber)
+		} else if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "couldn't get last pulse data")
 		}
 		stats.PulseNumber = int(pulseSchema.Pulse)
 		stats.Nodes = int(pulseSchema.Nodes)
 	}
 
-	// MonthTransaction
+	// MonthTransactions
 	{
+		monthAgoPulse := uint32(insolar.GenesisPulse.PulseNumber)
+		pulseSchema := PulseSchema{}
+		err := s.db.Model(&pulseSchema).
+			Where("pulse_date < extract(epoch from (NOW() - INTERVAL '30 DAYS'))").
+			Order("pulse DESC").
+			Limit(1).
+			Select()
+		if err != nil && err != pg.ErrNoRows {
+			return NetworkStatsModel{}, errors.Wrap(err, "couldn't get last pulse data")
+		} else if err == nil {
+			monthAgoPulse = pulseSchema.Pulse
+		}
+
 		sqlRes := struct{ Count int }{}
-		_, err := s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions"+
-			" WHERE finish_pulse_record[0] >= NOW() - INTERVAL '30 DAYS'")
+		_, err = s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions"+
+			" WHERE finish_pulse_record[1] >= ?", monthAgoPulse)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
 		}
@@ -132,7 +148,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 	{
 		sqlRes := struct{ Count int }{}
 		sql := "SELECT MAX(t.tpp) AS Count FROM (SELECT COUNT(1) as tpp FROM" +
-			" simple_transactions GROUP BY finish_pulse_record[0]) AS t"
+			" simple_transactions WHERE finish_pulse_record IS NOT NULL GROUP BY finish_pulse_record[1]) AS t"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
@@ -144,8 +160,8 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 	{
 		sqlRes := struct{ Count int }{}
 		sql := "SELECT COUNT(1) AS Count FROM simple_transactions" +
-			" WHERE finish_pulse_record[0] = (" +
-			"   SELECT finish_pulse_record[0] FROM simple_transactions" +
+			" WHERE finish_pulse_record[1] = (" +
+			"   SELECT finish_pulse_record[1] FROM simple_transactions" +
 			"   WHERE finish_pulse_record IS NOT NULL ORDER BY id DESC LIMIT 1" +
 			" )"
 		_, err := s.db.QueryOne(&sqlRes, sql)
