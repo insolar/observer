@@ -99,6 +99,9 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	now := time.Now()
 
 	getStats := func(dt *time.Time) XnsCoinStats {
+		if dt != nil {
+			log.Infoln("dt: ", dt.String())
+		}
 		command := NewCalculateStatsCommand(log, db, sr)
 		stats, err := command.Run(dt)
 		require.NoError(t, err)
@@ -111,6 +114,11 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.Exec("truncate table deposits")
 	require.NoError(t, err)
+
+	initialStats := getStats(nil)
+	require.Equal(t, "0", initialStats.Circulating())
+	require.Equal(t, "0", initialStats.Total())
+	require.Equal(t, "0", initialStats.Max())
 
 	for i := 0; i < size; i++ {
 		memberModel := &postgres.MemberSchema{
@@ -272,5 +280,80 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		require.Equal(t, "5000", stats.Circulating())
 		require.Equal(t, "155000", stats.Total())
 		require.Equal(t, "200000", stats.Max())
+
+		// after lockup date, exact
+		after = now.Add(10 * time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "105000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+
+		// after lockup date, after vesting exact
+		after = now.Add(10*time.Second + 1000*time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "5000", stats.Circulating())
+		require.Equal(t, "155000", stats.Total())
+		require.Equal(t, "200000", stats.Max())
+	})
+
+	t.Run("partial user vesting cases, bad vesting step", func(t *testing.T) {
+		_, err := db.Exec("truncate table members")
+		require.NoError(t, err)
+		_, err = db.Exec("truncate table deposits")
+		require.NoError(t, err)
+		for i := 0; i < size; i++ {
+			depModel := &postgres.DepositSchema{
+				EthHash:         "genesis_deposit",
+				MemberRef:       gen.Reference().Bytes(),
+				DepositRef:      gen.Reference().Bytes(),
+				TransferDate:    now.Unix(),
+				HoldReleaseDate: now.Unix(),
+				Amount:          "10000",
+				Balance:         "10000",
+				DepositState:    gen.ID().Bytes(),
+				Vesting:         1000,
+				VestingStep:     13,
+			}
+			err := db.Insert(depModel)
+			require.NoError(t, err)
+		}
+		stats := getStats(nil)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "0", stats.Total())
+		require.Equal(t, "100000", stats.Max())
+
+		// after lockup date, after half vesting
+		after := now.Add(500 * time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "49350", stats.Total())
+		require.Equal(t, "100000", stats.Max())
+
+		// after lockup date, after 0.655 of vesting
+		after = now.Add(655 * time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "64930", stats.Total())
+		require.Equal(t, "100000", stats.Max())
+
+		// after lockup date, after x2 of vesting
+		after = now.Add(1000 * 2 * time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "100000", stats.Total())
+		require.Equal(t, "100000", stats.Max())
+
+		// after lockup date, exact
+		stats = getStats(&now)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "0", stats.Total())
+		require.Equal(t, "100000", stats.Max())
+
+		// after lockup date, after vesting exact
+		after = now.Add(1000 * time.Second)
+		stats = getStats(&after)
+		require.Equal(t, "0", stats.Circulating())
+		require.Equal(t, "100000", stats.Total())
+		require.Equal(t, "100000", stats.Max())
 	})
 }
