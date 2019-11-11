@@ -58,7 +58,7 @@ func main() {
 	}
 
 	calcSupply(log, db, dt)
-	calcNetwork(log, db, dt)
+	calcNetwork(log, db)
 }
 
 func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
@@ -72,7 +72,7 @@ func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
 	}
 }
 
-func calcNetwork(log *logrus.Logger, db *pg.DB, dt *time.Time) {
+func calcNetwork(log *logrus.Logger, db *pg.DB) {
 	repo := postgres.NewNetworkStatsRepository(db)
 
 	stats, err := repo.CountStats()

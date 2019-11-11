@@ -51,9 +51,12 @@ Currently not provided.
 
 
 #### Development
-Install deps (dep, minimock) running
+Install deps running
 
 `make install_deps`
+
+*NOTE* that this step installs exact version of tools to avoid constant
+changes back and forth from different developers.
 
 ## API Observer
 API for observer service. We use chi as router.
