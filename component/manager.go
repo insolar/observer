@@ -116,7 +116,7 @@ func (m *Manager) run(s *state) {
 
 	if raw != nil {
 		s.last = raw.pulse.Number
-		s.rp.ShouldIterateFrom = raw.shouldIterateFrom
+		s.ShouldIterateFrom = raw.shouldIterateFrom
 	}
 
 	sleepTime := m.sleepCounter.Count(ctx, raw, timeExecuted)
@@ -133,7 +133,6 @@ type raw struct {
 
 type beauty struct {
 	pulse       *observer.Pulse
-	records     map[uint32]*exporter.Record
 	requests    []*observer.Request
 	results     []*observer.Result
 	activates   []*observer.Activate
@@ -153,13 +152,11 @@ type beauty struct {
 }
 
 type state struct {
-	last insolar.PulseNumber
-	rp   RecordPosition
-	ms   metricState
+	last              insolar.PulseNumber
+	ShouldIterateFrom insolar.PulseNumber
+	ms                metricState
 }
 
 type RecordPosition struct {
-	Last              insolar.PulseNumber
-	RN                uint32
 	ShouldIterateFrom insolar.PulseNumber
 }

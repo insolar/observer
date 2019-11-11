@@ -65,18 +65,6 @@ func makeStorer(
 					return errors.Wrap(err, "failed to insert pulse")
 				}
 
-				records := postgres.NewRecordStorage(cfg, obs, tx)
-				for _, rec := range b.records {
-					if rec == nil {
-						continue
-					}
-					obsRec := observer.Record(rec.Record)
-					err := records.Insert(&obsRec)
-					if err != nil {
-						return errors.Wrap(err, "failed to insert record")
-					}
-				}
-
 				requests := postgres.NewRequestStorage(obs, tx)
 				for _, req := range b.requests {
 					if req == nil {
