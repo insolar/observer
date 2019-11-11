@@ -74,28 +74,33 @@ func (s *StatsRepository) CountStats(collectDT *time.Time) (StatsModel, error) {
 	sql := fmt.Sprintf(`
 WITH stats as (SELECT d.amount::numeric(24),
                       d.hold_release_date,
-                      %d     as pulse_ts,
                       d.vesting,
-                      d.vesting_step
+                      d.vesting_step,
+                      ceil(vesting / vesting_step::float) as steps,
+                      case
+                          when %d - d.hold_release_date >= vesting
+                              THEN ceil(vesting / vesting_step::float)
+                          WHEN %d - d.hold_release_date < vesting
+                              THEN greatest(%d - d.hold_release_date, 0) / least(d.vesting_step, d.vesting)
+                          END
+                       as steps_gone
                from deposits d),
      sums as (
-         SELECT sum(floor(
-             stats.amount / ceil(stats.vesting/stats.vesting_step) * floor(least(greatest(stats.pulse_ts - stats.hold_release_date, 0), vesting) / stats.vesting_step)
-             )) as free
+         SELECT coalesce(sum(floor(stats.amount * least(steps_gone / steps, 1))), 0) as free
          from stats
          ),
-     circulating as (select sum(balance::numeric(24)) as sum from members),
-     max_amount as (select sum(amount::numeric(24)) as sum from deposits where eth_hash = 'genesis_deposit')
+     circulating as (select coalesce(sum(balance::numeric(24)), 0) as sum from members),
+     max_amount as (select coalesce(sum(amount::numeric(24)), 0) as sum from deposits where eth_hash = 'genesis_deposit')
 
 SELECT
-       circulating.sum::text                   as circulating,
-       (circulating.sum + free)::numeric             as total,
-       (max_amount.sum)::text  as max
+       circulating.sum::text as circulating,
+       (circulating.sum + free)::text as total,
+       coalesce(max_amount.sum, 0)::text as max
 from sums,
      circulating,
      max_amount
 ;
-`, dt)
+`, dt, dt, dt)
 	stats := StatsModel{}
 	_, err := s.db.Query(&stats, sql)
 	if err != nil {
