@@ -83,6 +83,31 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		Created: time.Now(),
 	}
 
+	// LastPulseNumber and Nodes
+	{
+		pulseSchema := PulseSchema{}
+		err := s.db.Model(&pulseSchema).
+			Order("pulse DESC").
+			Limit(1).
+			Select()
+		if err != nil {
+			return NetworkStatsModel{}, errors.Wrap(err, "couldn't get last pulse data")
+		}
+		stats.PulseNumber = int(pulseSchema.Pulse)
+		stats.Nodes = int(pulseSchema.Nodes)
+	}
+
+	// MonthTransaction
+	{
+		sqlRes := struct{ Count int }{}
+		_, err := s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions"+
+			" WHERE finish_pulse_record[0] >= NOW() - INTERVAL '30 DAYS'")
+		if err != nil {
+			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
+		}
+		stats.MonthTransactions = sqlRes.Count
+	}
+
 	// TotalTransactions
 	{
 		sqlRes := struct{ Count int }{}

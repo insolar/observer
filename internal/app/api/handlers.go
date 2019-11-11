@@ -110,7 +110,6 @@ func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resJSON)
 }
 
-
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
 	panic("implement me")
 }
