@@ -1,81 +1,129 @@
 # Observer
-Service that replicates smart-contract records data to DB 
-and constructs some of new structures: user accounts, token transfers, deposit migrations, migration addresses.
+Service that replicates smart-contract records data to DB,
+collects various statistics and serves API.
 
-#### Networking
-Opens ports: ${api.addr}
+# Depends on
+Insolar heavy material executor node
 
-#### Depends on
-Insolar HME node: ${replicator.addr}
+PostgreSQL DB 11.4
 
-PostgreSQL DB 11.4: ${db.url}
+# Installation and deployment
 
-#### Example configuration
+## Generate default configs
+
+Run `make config`. Command generates two config files:
+`observer.yaml` and `observerapi.yaml`. Places them into
+`./.artifacts` directory.
+
+## Build binaries
+
+Run `make build`.
+
+**WARNING:** Go modules are used, you may need `GO111MODULE=on` set.
+
+## Above in one go
+
+`make all`
+
+## Replicator service
+
+To run replicator you should provide config file `observer.yaml`
+in the current working directory or in `.artifacts` directory.
+
+Run `./bin/observer`
+
+### Configuration
+
+All options in `observer.yaml` config can be overridden with environment
+variables using `OBSERVER` and `_` as delimiter, for example:
+`OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
+
+**WARNING:** overriding via ENV wouldn't work without config file with default.
+
+### Config options
+
+DB connection:
+`OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+
+Heavy node replication API:
+`OBSERVER_REPLICATOR_ADDR=127.0.0.1:5678`
+
+Log level:
+`OBSERVER_LOGLEVEL=info`
+
+### Metrics and health check
+
+`OBSERVER_REPLICATOR_LISTEN=:8888`
+
+Prometheus: `http://localhost:8888/metrics`
+
+Health check: `http://localhost:8888/healthcheck`
+
+## API service
+
+To run API you should provide config file `observerapi.yaml`
+in the current working directory or in `.artifacts` directory.
+
+Run `./bin/api`
+
+### Configuration
+
+All options in `observerapi.yaml` config can be overridden with environment
+variables using `OBSERVERAPI` prefix and `_` as delimiter, for example:
+`OBSERVERAPI_DB_URL=...`, `OBSERVERAPI_LISTEN=...`
+
+**WARNING:** overriding via ENV wouldn't work without config file with default.
+
+### Config options
+
+API's endpoint:
+`OBSERVERAPI_LISTEN=127.0.0.1:5678`
+or
+`OBSERVERAPI_LISTEN=:5678`
+
+DB connection:
+`OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+
+Log level:
+`OBSERVERAPI_LOGLEVEL=info`
+
+## Statistics collector
+
+Command calculates, gathers and saves statistics, add to cron for 1/min execution.
+Uses replicator's config (see above).
 ```
-api:
-  addr: :0
-replicator:
-  addr: 127.0.0.1:5678
-  maxtransportmsg: 1073741824
-  attempts: 2147483647
-  attemptinterval: 10s
-  batchsize: 1000
-  transactionretrydelay: 3s
-db:
-  url: postgres://postgres@localhost/postgres?sslmode=disable
-  attempts: 2147483647
-  attemptinterval: 3s
-  createtables: false
+./bin/stats-collector
 ```
 
-#### Run and build
-To run observer node you should provide config file: `observer.yaml` (like described above) at working directory.
+# Development
 
-You can generate it from 
-`configuration/configuration.go`
-like this 
+## Installing required command line tools
 
-`make env`
+Run `make install_deps`
 
-To build and run:
-
-`make all && ./bin/observer`
-
-#### Metrics
-Prometheus url: ${api.addr}/metrics
-
-Healthcheck url: ${api.addr}/healthcheck
-
-#### Alerts
-Currently not provided.
-
-
-#### Development
-Install deps running
-
-`make install_deps`
-
-*NOTE* that this step installs exact version of tools to avoid constant
+**WARNING:** this step installs exact versions of tools to avoid constant
 changes back and forth from different developers.
 
-## API Observer
-API for observer service. We use chi as router.
+## Regenerate server API implementation from OpenAPI specification
 
-To generate API implementation from open-api spec, use oapi-codegen. Get it via:
+Use oapi-codegen. Get it via:
 ```
 go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 ``` 
+
+Generate combined `api-exported.yaml` file:
+```
+cd ../insolar-observer-api/api-exported.yaml
+npm install
+npm run export
+```
+
 Generate types and API from observer API:
 ```
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
 
-## Statistics collector
+## Stats collector
 
-Command calculates, gathers and saves statistics, add to cron for 1/min execution.
-Uses observer config in .artifacts/observer.yaml
-```
-./bin/stats-collector
-```
-Optional param -time is using only for tests, allows to calculate supply stats like it's a
-specified date/time. Example -time="2006-01-02 15:04:05"
+`./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
+specified date/time. Example `-time="2006-01-02 15:04:05"`
