@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -311,4 +312,42 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 		return tx.Rollback()
 	})
+}
+
+func TestStorerOK(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make(cfg)
+
+	storer := makeStorer(cfg, obs, fakeConn{})
+
+	stats := storer(&beauty{
+		pulse: &observer.Pulse{
+			Number: insolar.GenesisPulse.PulseNumber,
+			Nodes: []insolar.Node{
+				{
+					ID:   gen.Reference(),
+					Role: insolar.StaticRoleHeavyMaterial,
+				},
+			},
+		},
+		deposits: map[insolar.ID]*observer.Deposit{
+			gen.ID(): {
+				EthHash:         strings.ToLower("0x5ca5e6417f818ba1c74d"),
+				Ref:             gen.Reference(),
+				Member:          gen.Reference(),
+				Timestamp:       time.Now().Unix(),
+				HoldReleaseDate: 0,
+				Amount:          "120",
+				Balance:         "123",
+				DepositState:    gen.ID(),
+				Vesting:         10,
+				VestingStep:     10,
+			},
+		},
+	}, &state{})
+
+	assert.Equal(t, &observer.Statistic{
+		Pulse: insolar.GenesisPulse.PulseNumber,
+		Nodes: 1,
+	}, stats)
 }

@@ -21,11 +21,7 @@ import (
 )
 
 type Statistic struct {
-	Pulse              insolar.PulseNumber
-	Transfers          int
-	TotalTransfers     int
-	TotalMembers       int
-	MaxTransfers       int
-	LastMonthTransfers int
-	Nodes              int
+	Pulse     insolar.PulseNumber
+	Transfers int
+	Nodes     int
 }
