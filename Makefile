@@ -1,8 +1,7 @@
-ARTIFACTS = .artifacts
+ARTIFACTS_DIR = .artifacts
 BIN_DIR = bin
 API = api
 OBSERVER = observer
-CONFIG = config
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
 GO111MODULE := on
@@ -33,9 +32,6 @@ osflag:
 
 .PHONY: build
 build: $(BIN_DIR) $(OBSERVER) $(API) stats_collector ## build!
-
-.PHONY: env
-env: $(CONFIG) ## gen configs + artifacts
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -73,14 +69,12 @@ $(API):
 stats_collector:
 	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
 
-$(ARTIFACTS):
-	mkdir -p $(ARTIFACTS)
-
-.PHONY: $(CONFIG)
-$(CONFIG): $(ARTIFACTS)
+.PHONY: config
+config:
+	mkdir -p $(ARTIFACTS_DIR)
 	go run ./configuration/gen/gen.go
-	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
-	mv ./observerapi.yaml $(ARTIFACTS)/observerapi.yaml
+	mv ./observer.yaml $(ARTIFACTS_DIR)/observer.yaml
+	mv ./observerapi.yaml $(ARTIFACTS_DIR)/observerapi.yaml
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
@@ -93,7 +87,7 @@ integration:
 	go test ./... -tags=integration -v
 
 .PHONY: all
-all: env build ## ensure + build + artifacts
+all: config build
 
 .PHONY: help
 help: ## Display this help screen

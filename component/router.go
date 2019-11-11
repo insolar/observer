@@ -51,7 +51,7 @@ func NewRouter(cfg *configuration.Configuration, obs *observability.Observabilit
 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
-	hs := &http.Server{Addr: cfg.API.Addr, Handler: mux}
+	hs := &http.Server{Addr: cfg.Replicator.Listen, Handler: mux}
 
 	r := &Router{
 		hs:  hs,
