@@ -128,15 +128,6 @@ oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exp
 `./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
 specified date/time. Example `-time="2006-01-02 15:04:05"`
 
-## XNS coin stats
-Command calculates and saves stats for CMC, added to cron for 1/min execution.
-Uses observer config in .artifacts/observer.yaml
-```
-./bin/xns_stats_count
-```
-Optional param -time is using only for tests, allows to calculate stats on specified date/time.
-Example -time="2006-01-02 15:04:05"
-
 ## Migrations
 Run migrations (with go binary):
 1. Run `make migrate`.
