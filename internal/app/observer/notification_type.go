@@ -24,4 +24,5 @@ const (
 	NotificationContribution
 	NotificationDeactivate
 	NotificationFinishMGRRound
+	NotificationSwap
 )

@@ -73,6 +73,8 @@ func notificationSchema(model *observer.Notification) *NotificationSchema {
 		notificationType = "deactivate"
 	case observer.NotificationFinishMGRRound:
 		notificationType = "finishMgrRound"
+	case observer.NotificationSwap:
+		notificationType = "swap"
 	}
 
 	return &NotificationSchema{
