@@ -33,9 +33,10 @@ import (
 type PulseSchema struct {
 	tableName struct{} `sql:"pulses"` //nolint: unused,structcheck
 
-	Pulse     uint32 `sql:",pk"`
-	PulseDate int64  `sql:",notnull"`
-	Entropy   []byte `sql:",notnull"`
+	Pulse     uint32
+	PulseDate int64
+	Entropy   []byte
+	Nodes     uint32
 }
 
 type PulseStorage struct {
@@ -125,5 +126,6 @@ func pulseSchema(model *observer.Pulse) *PulseSchema {
 		Pulse:     uint32(model.Number),
 		PulseDate: model.Timestamp,
 		Entropy:   model.Entropy[:],
+		Nodes:     uint32(len(model.Nodes)),
 	}
 }
