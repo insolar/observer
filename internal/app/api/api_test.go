@@ -44,6 +44,7 @@ var (
 	clock = &testClock{}
 
 	testFee = big.NewInt(1000000000)
+	testPrice = "0.05"
 )
 
 func TestMain(t *testing.M) {
@@ -54,7 +55,7 @@ func TestMain(t *testing.M) {
 	e := echo.New()
 
 	logger := logrus.New()
-	observerAPI := NewObserverServer(db, logger, testFee, clock)
+	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
 	RegisterHandlers(e, observerAPI)
 	go func() {
 		err := e.Start(apihost)

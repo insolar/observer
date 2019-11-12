@@ -20,11 +20,12 @@ import (
 	"log"
 
 	"github.com/go-pg/pg"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
-	"github.com/insolar/observer/internal/app/api"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	apiconfiguration "github.com/insolar/observer/configuration/api"
+	"github.com/insolar/observer/internal/app/api"
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 	}
 	db := pg.Connect(opt)
 	logger := logrus.New()
-	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{})
+	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{}, cfg.Price)
 
 	api.RegisterHandlers(e, observerAPI)
 	e.Logger.Fatal(e.Start(cfg.Listen))
