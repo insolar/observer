@@ -42,6 +42,8 @@ func main() {
 	}
 	db := pg.Connect(opt)
 	logger := logrus.New()
+
+	logger.SetFormatter(&logrus.JSONFormatter{})
 	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{}, cfg.Price)
 
 	api.RegisterHandlers(e, observerAPI)

@@ -43,7 +43,7 @@ var (
 
 	clock = &testClock{}
 
-	testFee = big.NewInt(1000000000)
+	testFee   = big.NewInt(1000000000)
 	testPrice = "0.05"
 )
 
@@ -57,7 +57,9 @@ func TestMain(t *testing.M) {
 	e.Use(middleware.Logger())
 
 	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
 	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
+
 	RegisterHandlers(e, observerAPI)
 	go func() {
 		err := e.Start(apihost)
