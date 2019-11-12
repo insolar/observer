@@ -248,7 +248,18 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
-	panic("implement me")
+	res, err := component.GetNotification(ctx.Request().Context(), s.db)
+	if err != nil {
+		if err == component.ErrNotificationNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesNotificationInfoYaml{
+		Notification: res.Message,
+	})
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
