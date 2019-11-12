@@ -17,10 +17,14 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -172,4 +176,20 @@ func nextReleaseAmount(amount int64, deposit *models.Deposit) string {
 	amountFloat := big.NewFloat(float64(amount))
 	releaseAmount := new(big.Float).Mul(big.NewFloat(stepValue), amountFloat)
 	return releaseAmount.String()
+}
+
+func MigrationResultToModel(input string) (postgres.MigrationResult, error) {
+	input = strings.TrimSpace(input)
+	if len(input) == 0 {
+		return "", errors.New("wrong result. Can be ok|expected_error|error")
+	}
+	switch input {
+	case "ok":
+		return postgres.MigrationResultOK, nil
+	case "expected_error":
+		return postgres.MigrationResultExpectedError, nil
+	case "error":
+		return postgres.MigrationResultError, nil
+	}
+	return "", fmt.Errorf("wrong result %v. Can be ok|expected_error|error", input)
 }

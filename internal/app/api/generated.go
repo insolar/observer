@@ -154,6 +154,23 @@ type SchemaMigration struct {
 	Type                string `json:"type"`
 }
 
+// SchemaNewXNSMigration defines model for schema-newXNSMigration.
+type SchemaNewXNSMigration struct {
+	DaemonID         string                        `json:"daemonID"`
+	InsolarReference string                        `json:"insolarReference"`
+	Records          []SchemaNewXNSMigrationRecord `json:"records"`
+}
+
+// SchemaNewXNSMigrationRecord defines model for schema-newXNSMigrationRecord.
+type SchemaNewXNSMigrationRecord struct {
+	BlockID             string  `json:"blockID"`
+	ContractRequestBody *string `json:"contractRequestBody,omitempty"`
+	Error               *string `json:"error,omitempty"`
+	Result              string  `json:"result"`
+	TxHash              string  `json:"txHash"`
+	XnsAmount           *string `json:"xnsAmount,omitempty"`
+}
+
 // SchemaNextRelease defines model for schema-next-release.
 type SchemaNextRelease struct {
 	Amount    string `json:"amount"`
@@ -218,6 +235,11 @@ type InvalidTransactionListParameters struct {
 	Error []string `json:"error"`
 }
 
+// InvalidXNSMigration defines model for invalidXNSMigration.
+type InvalidXNSMigration struct {
+	Error []string `json:"error"`
+}
+
 // Transactions defines model for transactions.
 type Transactions struct {
 	// Embedded fields due to inline allOf schema
@@ -258,6 +280,12 @@ type ClosedTransactionsParams struct {
 	Order *string `json:"order,omitempty"`
 }
 
+// newXNSMigrationStatsJSONBody defines parameters for NewXNSMigrationStats.
+type newXNSMigrationStatsJSONBody SchemaNewXNSMigration
+
+// NewXNSMigrationStatsRequestBody defines body for NewXNSMigrationStats for application/json ContentType.
+type NewXNSMigrationStatsJSONRequestBody newXNSMigrationStatsJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// addresses// (GET /admin/migration/addresses)
@@ -294,6 +322,8 @@ type ServerInterface interface {
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
 	// closed transactions// (GET /api/transactions/closed)
 	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
+	// xns/migration/stats// (POST /api/xns/migrations/stats)
+	NewXNSMigrationStats(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -682,6 +712,15 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 	return err
 }
 
+// NewXNSMigrationStats converts echo context to params.
+func (w *ServerInterfaceWrapper) NewXNSMigrationStats(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.NewXNSMigrationStats(ctx)
+	return err
+}
+
 // RegisterHandlers adds each server route to the EchoRouter.
 func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
@@ -706,5 +745,6 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
+	router.POST("/api/xns/migrations/stats", wrapper.NewXNSMigrationStats)
 
 }

@@ -384,6 +384,83 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
+func (s *ObserverServer) NewXNSTransferStats(ctx echo.Context) error {
+	input := new(SchemaNewXNSMigration)
+	if err := ctx.Bind(input); err != nil {
+		return ctx.String(http.StatusBadRequest, "failed to unmarshal request body")
+	}
+
+	if len(input.Records) == 0 {
+		return ctx.String(http.StatusBadRequest, "no records in input")
+	}
+	input.DaemonID = strings.TrimSpace(input.DaemonID)
+	if len(input.DaemonID) == 0 {
+		return ctx.String(http.StatusBadRequest, "daemonID isn't provided")
+	}
+	ref, err := s.checkReference(input.InsolarReference)
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, "wrong insolar reference")
+	}
+
+	migrationModels := []*postgres.MigrationStatsModel{}
+
+	for _, rec := range input.Records {
+		result, err := MigrationResultToModel(rec.Result)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, err.Error())
+		}
+		if len(rec.TxHash) == 0 {
+			return ctx.String(http.StatusBadRequest, "empty tx hash")
+		}
+
+		xnsAmount := uint64(0)
+		if rec.XnsAmount != nil {
+			xnsAmount, err = strconv.ParseUint(*rec.XnsAmount, 10, 64)
+			if err != nil {
+				return ctx.String(
+					http.StatusBadRequest,
+					"failed to parse xns amount from"+*rec.XnsAmount,
+				)
+			}
+		}
+
+		if len(rec.BlockID) == 0 {
+			return ctx.String(http.StatusBadRequest, "empty block id")
+		}
+		ethBlock, err := strconv.ParseUint(*rec.XnsAmount, 10, 64)
+		if err != nil {
+			return ctx.String(
+				http.StatusBadRequest,
+				"failed to parse block id from"+*rec.XnsAmount,
+			)
+		}
+
+		model := &postgres.MigrationStatsModel{
+			DaemonID:            input.DaemonID,
+			InsolarRef:          ref.Bytes(),
+			ModificationTime:    time.Time{},
+			EthBlock:            ethBlock,
+			TxHash:              rec.TxHash,
+			Amount:              xnsAmount,
+			Result:              result,
+			ContractRequestBody: rec.ContractRequestBody,
+			Error:               rec.Error,
+		}
+
+		migrationModels = append(migrationModels, model)
+	}
+
+	repo := postgres.NewMigrationStatsRepository(s.db)
+	for _, model := range migrationModels {
+		if err := repo.Insert(model); err != nil {
+			s.log.Error(err)
+			return ctx.String(http.StatusInternalServerError, "")
+		}
+	}
+
+	return ctx.String(http.StatusOK, "")
+}
+
 func checkIndex(i string) (int64, int64, error) {
 	index := strings.Split(i, ":")
 	if len(index) != 2 {
