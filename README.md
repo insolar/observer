@@ -95,6 +95,16 @@ Uses replicator's config (see above).
 ./bin/stats-collector
 ```
 
+## Migrations
+Run migrations (with go binary inside repository):
+1. Run `make migrate`.
+
+Run migrations (without go binary):
+1. Run `make build` inside repository (requires go binary). 
+2. Copy `bin/migrate` binary, `scripts/migrations` dir 
+and config files (see section "Generate default configs") to the target environment.
+3. Run migrate binary and provide migrations dir with `-dir` param. The binary will access the DB specified in the config.
+
 # Development
 
 ## Installing required command line tools
@@ -128,12 +138,3 @@ oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exp
 `./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
 specified date/time. Example `-time="2006-01-02 15:04:05"`
 
-## Migrations
-Run migrations (with go binary):
-1. Run `make migrate`.
-
-Run migrations (without go binary):
-1. Run `make build-migrate` (requires go binary). 
-2. Copy bin/migrate binary and scripts/migrations dir 
-to the target environment.
-3. Run migrate binary and provide migrations dir with `-dir` param.
