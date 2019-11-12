@@ -58,7 +58,9 @@ func main() {
 	}
 
 	calcSupply(log, db, dt)
-	calcNetwork(log, db)
+	if err := calcNetwork(log, db); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
@@ -72,24 +74,20 @@ func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
 	}
 }
 
-func calcNetwork(log *logrus.Logger, db *pg.DB) {
-	err := db.RunInTransaction(func(tx *pg.Tx) error {
-		repo := postgres.NewNetworkStatsRepository(tx)
+func calcNetwork(log *logrus.Logger, db *pg.DB) error {
+	repo := postgres.NewNetworkStatsRepository(db)
 
-		stats, err := repo.CountStats()
-		if err != nil {
-			return errors.Wrapf(err, "failed to count network stats")
-		}
-
-		log.Debugf("Collected stats: %+v", stats)
-
-		err = repo.InsertStats(stats)
-		if err != nil {
-			return errors.Wrapf(err, "failed to save network stats")
-		}
-		return nil
-	})
+	stats, err := repo.CountStats()
 	if err != nil {
-		log.Fatal(err)
+		return errors.Wrapf(err, "failed to count network stats")
 	}
+
+	log.Debugf("Collected stats: %+v", stats)
+
+	err = repo.InsertStats(stats)
+	if err != nil {
+		return errors.Wrapf(err, "failed to save network stats")
+	}
+
+	return nil
 }
