@@ -55,10 +55,11 @@ type ObserverServer struct {
 	log   *logrus.Logger
 	clock Clock
 	fee   *big.Int
+	price string
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -369,7 +370,9 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+		Price: s.price,
+	})
 }
 
 func (s *ObserverServer) NetworkStats(ctx echo.Context) error {

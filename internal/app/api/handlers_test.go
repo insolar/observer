@@ -1420,3 +1420,20 @@ func TestObserverServer_NetworkStats(t *testing.T) {
 	}
 	require.Equal(t, expected, jsonResp)
 }
+
+func TestObserverServer_MarketStats(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/stats/market")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	jsonResp := ResponsesMarketStatsYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	expected := ResponsesMarketStatsYaml{
+		Price: "0.05",
+	}
+	require.Equal(t, expected, jsonResp)
+}

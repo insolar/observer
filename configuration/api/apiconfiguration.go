@@ -18,10 +18,9 @@ package api
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/sirupsen/logrus"
-
-	"time"
 
 	"github.com/insolar/observer/configuration"
 )
@@ -30,6 +29,7 @@ type Configuration struct {
 	Listen    string
 	DB        configuration.DB
 	FeeAmount *big.Int
+	Price     string
 	LogLevel  string
 }
 
@@ -43,5 +43,6 @@ func Default() *Configuration {
 		},
 		LogLevel:  logrus.DebugLevel.String(),
 		FeeAmount: big.NewInt(1000000000),
+		Price:     "0.05",
 	}
 }
