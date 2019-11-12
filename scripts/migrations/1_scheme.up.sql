@@ -193,3 +193,13 @@ create table if not exists supply_stats
     max         numeric(24),
     circulating numeric(24)
 );
+
+create table if not exists notifications
+(
+    message     text not null,
+    start       timestamp not null,
+    stop        timestamp not null
+);
+
+create index if not exists idx_notifications_start
+    on notifications (start);

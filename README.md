@@ -95,6 +95,19 @@ Uses replicator's config (see above).
 ./bin/stats-collector
 ```
 
+# Publishing notifications
+
+To publish a message that all users will see in the UI during some period of
+time insert it directly into `notifications` table in Pg:
+
+```
+INSERT INTO notifications(message, start, stop)
+    VALUES('some message', NOW(), NOW() + interval '3 hours')
+```
+
+**WARNING:** only one notification is active, the one with older `start` value
+wins.
+
 # Development
 
 ## Installing required command line tools
@@ -109,7 +122,7 @@ changes back and forth from different developers.
 Use oapi-codegen. Get it via:
 ```
 go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-``` 
+```
 
 Generate combined `api-exported.yaml` file:
 ```

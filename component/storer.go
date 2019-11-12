@@ -414,8 +414,9 @@ type Querier interface {
 }
 
 var (
-	ErrTxNotFound        = errors.New("tx not found")
-	ErrReferenceNotFound = errors.New("Reference not found")
+	ErrTxNotFound           = errors.New("tx not found")
+	ErrReferenceNotFound    = errors.New("Reference not found")
+	ErrNotificationNotFound = errors.New("Notification not found")
 )
 
 func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
@@ -585,4 +586,19 @@ func valuesTemplate(columns, rows int) string {
 		}
 	}
 	return b.String()
+}
+
+func GetNotification(ctx context.Context, db Querier) (models.Notification, error) {
+	res := models.Notification{}
+	_, err := db.QueryOneContext(
+		ctx, &res,
+		`SELECT * FROM notifications WHERE NOW() BETWEEN start AND stop ORDER BY start DESC LIMIT 1`,
+	)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return res, ErrNotificationNotFound
+		}
+		return res, errors.Wrap(err, "failed to fetch notification")
+	}
+	return res, nil
 }

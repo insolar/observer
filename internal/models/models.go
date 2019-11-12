@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/insolar/insolar/pulse"
 )
@@ -114,6 +115,14 @@ type MigrationAddress struct {
 	Addr      string `sql:"addr,notnull"`
 	Timestamp int64  `sql:"timestamp,notnull"`
 	Wasted    bool   `sql:"wasted,notnull"`
+}
+
+type Notification struct {
+	tableName struct{} `sql:"notifications"` //nolint: unused,structcheck
+
+	Message string    `sql:"message,notnull"`
+	Start   time.Time `sql:"start,notnull"`
+	Stop    time.Time `sql:"stop,notnull"`
 }
 
 type fieldCache struct {
