@@ -14,22 +14,39 @@
 // limitations under the License.
 //
 
-package configuration
+package postgres_test
 
 import (
-	"time"
+	"fmt"
+	"os"
+	"testing"
 
-	"github.com/insolar/observer/internal/pkg/cycle"
+	"github.com/go-pg/pg"
+
+	"github.com/insolar/observer/internal/testutils"
 )
 
-type Replicator struct {
-	Addr            string
-	MaxTransportMsg int
-	Attempts        cycle.Limit
-	// Interval between fetching heavy
-	AttemptInterval time.Duration
-	// Using when catching up heavy on empty pulses
-	FastForwardInterval time.Duration
-	BatchSize           uint32
-	CacheSize           int
+var db *pg.DB
+
+type dbLogger struct{}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
+	fmt.Println(q.FormattedQuery())
+	return
+}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+	return
+}
+
+func TestMain(t *testing.M) {
+	var dbCleaner func()
+	db, _, dbCleaner = testutils.SetupDB("../../../../scripts/migrations")
+
+	// for debug purposes print all queries
+	db.AddQueryHook(dbLogger{})
+
+	retCode := t.Run()
+	dbCleaner()
+	os.Exit(retCode)
 }

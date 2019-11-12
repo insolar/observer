@@ -58,7 +58,7 @@ func (s XnsCoinData) Circulating() string {
 }
 
 type StatsGetter interface {
-	Coins() (XnsCoinStats, error)
+	Supply() (XnsCoinStats, error)
 	Total() (string, error)
 	Max() (string, error)
 	Circulating() (string, error)
@@ -71,17 +71,17 @@ type StatsCollecter interface {
 
 type StatsManager struct {
 	log        *logrus.Logger
-	repository postgres.StatsRepo
+	repository postgres.SupplyStatsRepo
 }
 
-func NewStatsManager(log *logrus.Logger, r postgres.StatsRepo) *StatsManager {
+func NewStatsManager(log *logrus.Logger, r postgres.SupplyStatsRepo) *StatsManager {
 	return &StatsManager{
 		log:        log,
 		repository: r,
 	}
 }
 
-func (s *StatsManager) Coins() (XnsCoinStats, error) {
+func (s *StatsManager) Supply() (XnsCoinStats, error) {
 	lastStats, err := s.repository.LastStats()
 	if err != nil {
 		return XnsCoinData{}, errors.Wrap(err, "failed request get stats")
@@ -95,7 +95,7 @@ func (s *StatsManager) Coins() (XnsCoinStats, error) {
 }
 
 func (s *StatsManager) Total() (string, error) {
-	res, err := s.Coins()
+	res, err := s.Supply()
 	if err != nil {
 		return "", err
 	}
@@ -103,7 +103,7 @@ func (s *StatsManager) Total() (string, error) {
 }
 
 func (s *StatsManager) Max() (string, error) {
-	res, err := s.Coins()
+	res, err := s.Supply()
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +111,7 @@ func (s *StatsManager) Max() (string, error) {
 }
 
 func (s *StatsManager) Circulating() (string, error) {
-	res, err := s.Coins()
+	res, err := s.Supply()
 	if err != nil {
 		return "", err
 	}
@@ -130,7 +130,7 @@ func (s *StatsManager) InsertStats(xcs XnsCoinData) error {
 	return s.repository.InsertStats(s.fromDTO(xcs))
 }
 
-func (s *StatsManager) toDTO(stats postgres.StatsModel) XnsCoinData {
+func (s *StatsManager) toDTO(stats postgres.SupplyStatsModel) XnsCoinData {
 	return XnsCoinData{
 		created:     stats.Created,
 		total:       stats.Total,
@@ -139,8 +139,8 @@ func (s *StatsManager) toDTO(stats postgres.StatsModel) XnsCoinData {
 	}
 }
 
-func (s *StatsManager) fromDTO(stats XnsCoinData) postgres.StatsModel {
-	return postgres.StatsModel{
+func (s *StatsManager) fromDTO(stats XnsCoinData) postgres.SupplyStatsModel {
+	return postgres.SupplyStatsModel{
 		Created:     stats.Created(),
 		Total:       stats.Total(),
 		Max:         stats.Max(),

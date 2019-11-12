@@ -18,10 +18,9 @@ package api
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/sirupsen/logrus"
-
-	"time"
 
 	"github.com/insolar/observer/configuration"
 )
@@ -30,6 +29,7 @@ type Configuration struct {
 	Listen    string
 	DB        configuration.DB
 	FeeAmount *big.Int
+	Price     string
 	LogLevel  string
 }
 
@@ -40,9 +40,9 @@ func Default() *Configuration {
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
-			CreateTables:    false,
 		},
 		LogLevel:  logrus.DebugLevel.String(),
 		FeeAmount: big.NewInt(1000000000),
+		Price:     "0.05",
 	}
 }

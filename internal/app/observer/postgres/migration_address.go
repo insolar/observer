@@ -34,7 +34,7 @@ type MigrationAddressSchema struct {
 
 	Addr      string `sql:",pk"`
 	Timestamp int64  `sql:",notnull"`
-	Wasted    bool
+	Wasted    bool   `sql:"wasted,notnull"`
 }
 
 type MigrationAddressStorage struct {

@@ -1,14 +1,3 @@
-create table if not exists records
-(
-    key bytea not null
-        constraint records_id_pk
-            primary key,
-    value bytea not null,
-    pulse bigint,
-    key_debug text,
-    value_type text
-);
-
 create table if not exists raw_requests
 (
     request_id varchar(256) not null constraint raw_requests_pk
@@ -93,7 +82,8 @@ create table if not exists pulses
             primary key,
     pulse_date bigint,
     entropy varchar(256),
-    requests_count integer
+    requests_count integer,
+    nodes bigint
 );
 
 create table if not exists migration_addresses
@@ -178,18 +168,41 @@ create index if not exists idx_transactions_member_from_ref
 create index if not exists idx_transactions_member_to_ref
     on transactions (member_to_ref);
 
-create table if not exists blockchain_stats
+create table if not exists network_stats
 (
-    pulse_num bigint not null
-        constraint blockchain_stats_pkey
-            primary key,
-    total_transactions bigint,
-    total_accounts bigint,
-    nodes bigint,
-    count_transactions bigint,
-    max_transactions bigint,
-    last_month_transactions bigint
+    created timestamp not null,
+    pulse_number bigint not null,
+    total_transactions bigint not null,
+    total_accounts bigint not null,
+    nodes bigint not null,
+    current_tps bigint not null,
+    max_tps bigint not null,
+    month_transactions bigint not null
 );
+
+create index if not exists idx_network_stats_created
+    on network_stats (created);
+
+create table if not exists supply_stats
+(
+    id          serial    not null
+        constraint xns_supply_stats_pk
+            primary key,
+    created     timestamp not null,
+    total       numeric(24),
+    max         numeric(24),
+    circulating numeric(24)
+);
+
+create table if not exists notifications
+(
+    message     text not null,
+    start       timestamp not null,
+    stop        timestamp not null
+);
+
+create index if not exists idx_notifications_start
+    on notifications (start);
 
 create type xns_migrations_status as enum('ok', 'expected_error', 'error');
 create table if not exists xns_migration_stats
@@ -209,5 +222,4 @@ create table if not exists xns_migration_stats
 
     unique (daemon_id, eth_block, tx_hash, amount)
 );
-
 

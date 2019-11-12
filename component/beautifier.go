@@ -22,6 +22,7 @@ import (
 	gopg "github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
@@ -47,7 +48,7 @@ func makeBeautifier(
 
 	cachedStore, err := store.NewCacheRecordStore(pg.NewPgStore(conn.PG()), cfg.Replicator.CacheSize)
 	if err != nil {
-		panic("failed to init cached record store")
+		panic(errors.Wrap(err, "failed to init cached record store"))
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
@@ -69,7 +70,6 @@ func makeBeautifier(
 
 		b := &beauty{
 			pulse:          r.pulse,
-			records:        r.batch,
 			members:        make(map[insolar.ID]*observer.Member),
 			deposits:       make(map[insolar.ID]*observer.Deposit),
 			addresses:      make(map[string]*observer.MigrationAddress),
@@ -88,7 +88,7 @@ func makeBeautifier(
 				err = cachedStore.SetResult(ctx, rec.Record)
 			}
 			if err != nil {
-				panic(err)
+				panic(errors.Wrap(err, "failed to insert record to storage"))
 			}
 		}
 

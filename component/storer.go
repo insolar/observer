@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/go-pg/pg/orm"
 
@@ -34,7 +33,6 @@ import (
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/pkg/cycle"
-	"github.com/insolar/observer/internal/pkg/math"
 	"github.com/insolar/observer/observability"
 )
 
@@ -65,18 +63,6 @@ func makeStorer(
 				err := pulses.Insert(b.pulse)
 				if err != nil {
 					return errors.Wrap(err, "failed to insert pulse")
-				}
-
-				records := postgres.NewRecordStorage(cfg, obs, tx)
-				for _, rec := range b.records {
-					if rec == nil {
-						continue
-					}
-					obsRec := observer.Record(rec.Record)
-					err := records.Insert(&obsRec)
-					if err != nil {
-						return errors.Wrap(err, "failed to insert record")
-					}
 				}
 
 				requests := postgres.NewRequestStorage(obs, tx)
@@ -218,25 +204,10 @@ func makeStorer(
 				}
 
 				nodes := len(b.pulse.Nodes)
-				byMonth := 0
-				if month(s.stat.Pulse) == month(b.pulse.Number) {
-					byMonth = s.stat.LastMonthTransfers + len(b.txSagaResult)
-				} else {
-					byMonth = len(b.txSagaResult)
-				}
-				statistics := postgres.NewStatisticStorage(cfg, obs, tx)
 				stat = &observer.Statistic{
-					Pulse:              b.pulse.Number,
-					Transfers:          len(b.txSagaResult),
-					TotalTransfers:     s.stat.TotalTransfers + len(b.txSagaResult),
-					TotalMembers:       s.stat.TotalMembers + len(b.members),
-					Nodes:              nodes,
-					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.txSagaResult)),
-					LastMonthTransfers: byMonth,
-				}
-				err = statistics.Insert(stat)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert stat")
+					Pulse:     b.pulse.Number,
+					Transfers: len(b.txSagaResult),
+					Nodes:     nodes,
 				}
 
 				platformNodes.Set(float64(nodes))
@@ -443,8 +414,9 @@ type Querier interface {
 }
 
 var (
-	ErrTxNotFound        = errors.New("tx not found")
-	ErrReferenceNotFound = errors.New("Reference not found")
+	ErrTxNotFound           = errors.New("tx not found")
+	ErrReferenceNotFound    = errors.New("Reference not found")
+	ErrNotificationNotFound = errors.New("Notification not found")
 )
 
 func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
@@ -616,12 +588,17 @@ func valuesTemplate(columns, rows int) string {
 	return b.String()
 }
 
-func month(pn insolar.PulseNumber) int64 {
-	t, err := pn.AsApproximateTime()
+func GetNotification(ctx context.Context, db Querier) (models.Notification, error) {
+	res := models.Notification{}
+	_, err := db.QueryOneContext(
+		ctx, &res,
+		`SELECT * FROM notifications WHERE NOW() BETWEEN start AND stop ORDER BY start DESC LIMIT 1`,
+	)
 	if err != nil {
-		return 0
+		if err == pg.ErrNoRows {
+			return res, ErrNotificationNotFound
+		}
+		return res, errors.Wrap(err, "failed to fetch notification")
 	}
-	rounded := time.Date(t.Year(), t.Month(), 0, 0, 0, 0, 0, t.Location())
-	month := rounded.Unix()
-	return month
+	return res, nil
 }

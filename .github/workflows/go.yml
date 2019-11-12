@@ -14,8 +14,8 @@ jobs:
       uses: actions/checkout@v1
       with:
         fetch-depth: 1
-    - name: Env
-      run: make env
+    - name: Generate config
+      run: make config
     - name: Build
       run: make build
   test:

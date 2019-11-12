@@ -55,10 +55,11 @@ type ObserverServer struct {
 	log   *logrus.Logger
 	clock Clock
 	fee   *big.Int
+	price string
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -108,14 +109,6 @@ func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 	resJSON := make(map[string]int, 1)
 	resJSON["count"] = count
 	return ctx.JSON(http.StatusOK, resJSON)
-}
-
-func (s *ObserverServer) GetStatistics(ctx echo.Context) error {
-	panic("implement me")
-}
-
-func (s *ObserverServer) TokenWeekPrice(ctx echo.Context, interval int) error {
-	panic("implement me")
 }
 
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
@@ -255,7 +248,18 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
-	panic("implement me")
+	res, err := component.GetNotification(ctx.Request().Context(), s.db)
+	if err != nil {
+		if err == component.ErrNotificationNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesNotificationInfoYaml{
+		Notification: res.Message,
+	})
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
@@ -328,18 +332,10 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (s *ObserverServer) MarketStats(ctx echo.Context) error {
-	panic("implement me")
-}
-
-func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
-	panic("implement me")
-}
-
 func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Coins()
+	result, err := xr.Supply()
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "")
 	}
@@ -352,7 +348,7 @@ func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
 	if err != nil {
@@ -363,7 +359,7 @@ func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
 	if err != nil {
@@ -374,7 +370,7 @@ func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
-	repo := postgres.NewStatsRepository(s.db)
+	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
 	if err != nil {
@@ -382,6 +378,29 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, result)
+}
+
+func (s *ObserverServer) MarketStats(ctx echo.Context) error {
+	return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+		Price: s.price,
+	})
+}
+
+func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
+	repo := postgres.NewNetworkStatsRepository(s.db)
+	result, err := repo.LastStats()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "")
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesNetworkStatsYaml{
+		Accounts:              result.TotalAccounts,
+		CurrentTPS:            result.CurrentTPS,
+		LastMonthTransactions: result.MonthTransactions,
+		MaxTPS:                result.MaxTPS,
+		Nodes:                 result.Nodes,
+		TotalTransactions:     result.TotalTransactions,
+	})
 }
 
 func (s *ObserverServer) NewXNSMigrationStats(ctx echo.Context) error {

@@ -47,10 +47,10 @@ func makeFetcher(
 			Debug("fetched pulse record")
 
 		// Early return of empty pulses
-		if pulse.Number < s.rp.ShouldIterateFrom {
-			log.WithField("should_iterate_from", s.rp.ShouldIterateFrom).
+		if pulse.Number < s.ShouldIterateFrom {
+			log.WithField("should_iterate_from", s.ShouldIterateFrom).
 				Debug("skipped record fetching")
-			return &raw{pulse: pulse, shouldIterateFrom: s.rp.ShouldIterateFrom, currentHeavyPN: s.rp.ShouldIterateFrom}
+			return &raw{pulse: pulse, shouldIterateFrom: s.ShouldIterateFrom, currentHeavyPN: s.ShouldIterateFrom}
 		}
 
 		// Get records

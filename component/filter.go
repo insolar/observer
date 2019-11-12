@@ -17,8 +17,6 @@
 package component
 
 import (
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/app/observer/filtering"
 	"github.com/insolar/observer/observability"
 )
@@ -35,17 +33,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		filtering.NewDepositUpdateFilter().Filter(b.depositUpdates, b.deposits)
 		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
 
-		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering.NewSeparatorFilter().
-			Filter(b.records)
-
 		log.Info("items successfully filtered")
-		log.WithFields(logrus.Fields{
-			"requests":   len(b.requests),
-			"results":    len(b.results),
-			"activates":  len(b.activates),
-			"amends":     len(b.amends),
-			"deactivate": len(b.deactivates),
-		}).Infof("separated records")
 
 		metric.Transfers.Add(float64(len(b.txSagaResult)))
 		metric.Members.Add(float64(len(b.members)))
