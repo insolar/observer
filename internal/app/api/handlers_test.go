@@ -1699,12 +1699,12 @@ func TestXNSMigrationStats_HappyPath(t *testing.T) {
 
 func TestXNSMigrationStats_DuplicateRecords(t *testing.T) {
 	postBody := &SchemaNewXNSMigration{
-		DaemonID:         "111",
+		DaemonID:         "222",
 		InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
 		Records: []SchemaNewXNSMigrationRecord{
 			{
 				Result:    "ok",
-				TxHash:    "1",
+				TxHash:    "123",
 				XnsAmount: NullableString("100"),
 				BlockID:   "1234",
 			},
