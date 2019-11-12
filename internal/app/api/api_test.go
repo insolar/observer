@@ -22,14 +22,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-pg/pg"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/testutils"
-
-	"github.com/go-pg/pg"
-	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,7 +43,7 @@ var (
 
 	clock = &testClock{}
 
-	testFee = big.NewInt(1000000000)
+	testFee   = big.NewInt(1000000000)
 	testPrice = "0.05"
 )
 
@@ -54,8 +54,12 @@ func TestMain(t *testing.M) {
 
 	e := echo.New()
 
+	e.Use(middleware.Logger())
+
 	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
 	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
+
 	RegisterHandlers(e, observerAPI)
 	go func() {
 		err := e.Start(apihost)

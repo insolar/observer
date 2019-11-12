@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -33,12 +34,16 @@ func main() {
 	e := echo.New()
 	cfg := apiconfiguration.Load()
 
+	e.Use(middleware.Logger())
+
 	opt, err := pg.ParseURL(cfg.DB.URL)
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
 	}
 	db := pg.Connect(opt)
 	logger := logrus.New()
+
+	logger.SetFormatter(&logrus.JSONFormatter{})
 	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{}, cfg.Price)
 
 	api.RegisterHandlers(e, observerAPI)
