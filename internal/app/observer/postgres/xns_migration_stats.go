@@ -58,8 +58,8 @@ type MigrationStatsRepository struct {
 	log *logrus.Logger
 }
 
-func NewMigrationStatsRepository(db orm.DB) *MigrationStatsRepository {
-	return &MigrationStatsRepository{db: db}
+func NewMigrationStatsRepository(db orm.DB, log *logrus.Logger) *MigrationStatsRepository {
+	return &MigrationStatsRepository{db: db, log: log}
 }
 
 func (m *MigrationStatsRepository) Insert(model *MigrationStatsModel) error {

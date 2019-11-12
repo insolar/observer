@@ -384,7 +384,7 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result)
 }
 
-func (s *ObserverServer) NewXNSTransferStats(ctx echo.Context) error {
+func (s *ObserverServer) NewXNSMigrationStats(ctx echo.Context) error {
 	input := new(SchemaNewXNSMigration)
 	if err := ctx.Bind(input); err != nil {
 		return ctx.String(http.StatusBadRequest, "failed to unmarshal request body")
@@ -402,7 +402,7 @@ func (s *ObserverServer) NewXNSTransferStats(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, "wrong insolar reference")
 	}
 
-	migrationModels := []*postgres.MigrationStatsModel{}
+	var migrationModels []*postgres.MigrationStatsModel
 
 	for _, rec := range input.Records {
 		result, err := MigrationResultToModel(rec.Result)
@@ -450,7 +450,7 @@ func (s *ObserverServer) NewXNSTransferStats(ctx echo.Context) error {
 		migrationModels = append(migrationModels, model)
 	}
 
-	repo := postgres.NewMigrationStatsRepository(s.db)
+	repo := postgres.NewMigrationStatsRepository(s.db, s.log)
 	for _, model := range migrationModels {
 		if err := repo.Insert(model); err != nil {
 			s.log.Error(err)
