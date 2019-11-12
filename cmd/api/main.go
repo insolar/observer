@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -32,6 +33,8 @@ func main() {
 
 	e := echo.New()
 	cfg := apiconfiguration.Load()
+
+	e.Use(middleware.Logger())
 
 	opt, err := pg.ParseURL(cfg.DB.URL)
 	if err != nil {
