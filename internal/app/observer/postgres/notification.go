@@ -46,7 +46,7 @@ func (s *NotificationStorage) Insert(model *observer.Notification) error {
 	}
 	row := notificationSchema(model)
 
-	res, err := s.db.Model(row).
+	_, err := s.db.Model(row).
 		OnConflict("DO NOTHING").
 		Insert(row)
 
@@ -54,11 +54,16 @@ func (s *NotificationStorage) Insert(model *observer.Notification) error {
 		return errors.Wrapf(err, "failed to insert notification %v, %v", row, err.Error())
 	}
 
-	if res.RowsAffected() == 0 {
-		s.errorCounter.Inc()
-		s.log.WithField("notification_row", row).
-			Errorf("failed to insert notification")
+	_, err = s.db.Model(&MGRSwap{}).
+		Where("group_ref=?", model.GroupReference.Bytes()).
+		Where("to_ref=?", model.UserReference.Bytes()).
+		Where("notification_ref IS NULL").
+		Set("notification_ref=?", model.Ref.Bytes()).
+		Update()
+	if err != nil {
+		return errors.Wrapf(err, "failed to update swap %v, %v", row, err.Error())
 	}
+
 	return nil
 }
 

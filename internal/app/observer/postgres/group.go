@@ -94,7 +94,7 @@ func (s *GroupStorage) UpdateBalance(model *observer.BalanceUpdate) error {
 		Update()
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to update group =%v", model)
+		return errors.Wrapf(err, "failed to update group balance =%v", model)
 	}
 	return nil
 }
