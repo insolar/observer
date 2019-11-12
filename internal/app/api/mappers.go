@@ -181,9 +181,9 @@ func nextReleaseAmount(amount int64, deposit *models.Deposit) string {
 func MigrationResultToModel(input string) (postgres.MigrationResult, error) {
 	input = strings.TrimSpace(input)
 	if len(input) == 0 {
-		return "", errors.New("wrong result. Can be ok|expected_error|error")
+		return "", errors.New("empty result. Can be ok|expected_error|error")
 	}
-	switch input {
+	switch strings.ToLower(input) {
 	case "ok":
 		return postgres.MigrationResultOK, nil
 	case "expected_error":

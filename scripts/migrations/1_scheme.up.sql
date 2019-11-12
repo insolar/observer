@@ -202,10 +202,12 @@ create table if not exists xns_migration_stats
     modification_time timestamp not null,
     eth_block bigint not null,
     tx_hash text not null,
-    amount bigint CONSTRAINT positive_amount CHECK (amount >= 0) not null,
+    amount bigint CONSTRAINT positive_amount CHECK (amount >= 0),
     result xns_migrations_status not null,
     contract_request_body text,
     error text,
-)
+
+    unique (daemon_id, eth_block, tx_hash, amount)
+);
 
 

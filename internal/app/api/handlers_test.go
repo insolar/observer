@@ -17,11 +17,13 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -1384,4 +1386,239 @@ func TestFee(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, testFee.String(), received.Fee)
+}
+
+func TestXNSMigrationStats_WrongInputs(t *testing.T) {
+	t.Run("daemonID is empty", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID: "",
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		expectedBody, _ := json.Marshal(NewSingleMessageError("daemonID isn't provided"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("InsolarReference is wrong", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "daemonID",
+			InsolarReference: "WRONG",
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		expectedBody, _ := json.Marshal(NewSingleMessageError("wrong insolar reference"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("empty records", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records:          nil,
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		expectedBody, _ := json.Marshal(NewSingleMessageError("no records in input"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("wrong result in record", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records: []SchemaNewXNSMigrationRecord{
+				{
+					Result: "",
+				},
+			},
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		expectedBody, _ := json.Marshal(NewSingleMessageError("empty result. Can be ok|expected_error|error"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+
+		requestBody, _ = json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records: []SchemaNewXNSMigrationRecord{
+				{
+					Result: "test",
+				},
+			},
+		})
+		resp, err = http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ = ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		expectedBody, _ = json.Marshal(NewSingleMessageError("wrong result test. Can be ok|expected_error|error"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("empty tx hash", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records: []SchemaNewXNSMigrationRecord{
+				{
+					Result: "ok",
+					TxHash: "",
+				},
+			},
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		expectedBody, _ := json.Marshal(NewSingleMessageError("empty tx hash"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("wrong amount", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records: []SchemaNewXNSMigrationRecord{
+				{
+					Result:    "ok",
+					TxHash:    "sdfdsfdsfsdfsdfsdfsdf",
+					XnsAmount: NullableString("wrong_amount"),
+				},
+			},
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		expectedBody, _ := json.Marshal(NewSingleMessageError("failed to parse xns amount from wrong_amount"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+
+	t.Run("wrong blockID", func(t *testing.T) {
+		requestBody, _ := json.Marshal(&SchemaNewXNSMigration{
+			DaemonID:         "111",
+			InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+			Records: []SchemaNewXNSMigrationRecord{
+				{
+					Result:    "ok",
+					TxHash:    "sdfdsfdsfsdfsdfsdfsdf",
+					XnsAmount: NullableString("100"),
+					BlockID:   "ssss",
+				},
+			},
+		})
+		resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		expectedBody, _ := json.Marshal(NewSingleMessageError("failed to parse block id from ssss"))
+		require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
+	})
+}
+
+func TestXNSMigrationStats_HappyPath(t *testing.T) {
+	postBody := &SchemaNewXNSMigration{
+		DaemonID:         "111",
+		InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+		Records: []SchemaNewXNSMigrationRecord{
+			{
+				Result:    "ok",
+				TxHash:    "1",
+				XnsAmount: NullableString("100"),
+				BlockID:   "1234",
+			},
+			{
+				Result:  "error",
+				TxHash:  "2",
+				BlockID: "4567",
+				Error:   NullableString("wrong error"),
+			},
+		},
+	}
+	requestBody, _ := json.Marshal(postBody)
+	resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	savedModels := []*postgres.MigrationStatsModel{}
+	err = db.Model(&postgres.MigrationStatsModel{}).Order("id ASC").Select(&savedModels)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(savedModels))
+	ref, _ := insolar.NewReferenceFromString("insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record")
+	require.Equal(t, &postgres.MigrationStatsModel{
+		ID:               1,
+		DaemonID:         "111",
+		InsolarRef:       ref.Bytes(),
+		ModificationTime: savedModels[0].ModificationTime,
+		EthBlock:         1234,
+		TxHash:           "1",
+		Amount:           100,
+		Result:           "ok",
+	}, savedModels[0])
+
+	require.Equal(t, &postgres.MigrationStatsModel{
+		ID:               2,
+		DaemonID:         "111",
+		InsolarRef:       ref.Bytes(),
+		ModificationTime: savedModels[1].ModificationTime,
+		EthBlock:         4567,
+		TxHash:           "2",
+		Result:           "error",
+		Error:            NullableString("wrong error"),
+	}, savedModels[1])
+}
+
+func TestXNSMigrationStats_DuplicateRecords(t *testing.T) {
+	postBody := &SchemaNewXNSMigration{
+		DaemonID:         "111",
+		InsolarReference: "insolar:1AfNjPWh7Ut-P7Ky7Mj7HLCte3gjGXi4RpXNxTvrhlww.record",
+		Records: []SchemaNewXNSMigrationRecord{
+			{
+				Result:    "ok",
+				TxHash:    "1",
+				XnsAmount: NullableString("100"),
+				BlockID:   "1234",
+			},
+		},
+	}
+	requestBody, _ := json.Marshal(postBody)
+	resp, err := http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, err = http.Post("http://"+apihost+"/api/xns/migrations/stats", "application/json", bytes.NewBuffer(requestBody))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusConflict, resp.StatusCode)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	expectedBody, _ := json.Marshal(NewSingleMessageError(postgres.DuplicatedMigration.Error()))
+	require.Equal(t, string(expectedBody), strings.TrimSpace(string(body)))
 }

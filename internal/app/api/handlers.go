@@ -387,19 +387,19 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 func (s *ObserverServer) NewXNSMigrationStats(ctx echo.Context) error {
 	input := new(SchemaNewXNSMigration)
 	if err := ctx.Bind(input); err != nil {
-		return ctx.String(http.StatusBadRequest, "failed to unmarshal request body")
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("failed to unmarshal request body"))
 	}
 
-	if len(input.Records) == 0 {
-		return ctx.String(http.StatusBadRequest, "no records in input")
-	}
 	input.DaemonID = strings.TrimSpace(input.DaemonID)
 	if len(input.DaemonID) == 0 {
-		return ctx.String(http.StatusBadRequest, "daemonID isn't provided")
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("daemonID isn't provided"))
 	}
 	ref, err := s.checkReference(input.InsolarReference)
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, "wrong insolar reference")
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("wrong insolar reference"))
+	}
+	if len(input.Records) == 0 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("no records in input"))
 	}
 
 	var migrationModels []*postgres.MigrationStatsModel
@@ -407,31 +407,31 @@ func (s *ObserverServer) NewXNSMigrationStats(ctx echo.Context) error {
 	for _, rec := range input.Records {
 		result, err := MigrationResultToModel(rec.Result)
 		if err != nil {
-			return ctx.String(http.StatusBadRequest, err.Error())
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
 		}
 		if len(rec.TxHash) == 0 {
-			return ctx.String(http.StatusBadRequest, "empty tx hash")
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty tx hash"))
 		}
 
 		xnsAmount := uint64(0)
 		if rec.XnsAmount != nil {
 			xnsAmount, err = strconv.ParseUint(*rec.XnsAmount, 10, 64)
 			if err != nil {
-				return ctx.String(
+				return ctx.JSON(
 					http.StatusBadRequest,
-					"failed to parse xns amount from"+*rec.XnsAmount,
+					NewSingleMessageError("failed to parse xns amount from "+*rec.XnsAmount),
 				)
 			}
 		}
 
 		if len(rec.BlockID) == 0 {
-			return ctx.String(http.StatusBadRequest, "empty block id")
+			return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("empty block id"))
 		}
-		ethBlock, err := strconv.ParseUint(*rec.XnsAmount, 10, 64)
+		ethBlock, err := strconv.ParseUint(rec.BlockID, 10, 64)
 		if err != nil {
-			return ctx.String(
+			return ctx.JSON(
 				http.StatusBadRequest,
-				"failed to parse block id from"+*rec.XnsAmount,
+				NewSingleMessageError("failed to parse block id from "+rec.BlockID),
 			)
 		}
 
@@ -454,6 +454,9 @@ func (s *ObserverServer) NewXNSMigrationStats(ctx echo.Context) error {
 	for _, model := range migrationModels {
 		if err := repo.Insert(model); err != nil {
 			s.log.Error(err)
+			if err == postgres.DuplicatedMigration {
+				return ctx.JSON(http.StatusConflict, NewSingleMessageError(err.Error()))
+			}
 			return ctx.String(http.StatusInternalServerError, "")
 		}
 	}

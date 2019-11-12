@@ -17,6 +17,7 @@
 package postgres
 
 import (
+	"strings"
 	"time"
 
 	"github.com/go-pg/pg/orm"
@@ -62,6 +63,8 @@ func NewMigrationStatsRepository(db orm.DB, log *logrus.Logger) *MigrationStatsR
 	return &MigrationStatsRepository{db: db, log: log}
 }
 
+var DuplicatedMigration = errors.New("it's impossible to save duplicate of the migration")
+
 func (m *MigrationStatsRepository) Insert(model *MigrationStatsModel) error {
 	if model == nil {
 		err := errors.New("trying to insert nil migration stats model")
@@ -71,6 +74,9 @@ func (m *MigrationStatsRepository) Insert(model *MigrationStatsModel) error {
 	model.ModificationTime = time.Now()
 	err := m.db.Insert(model)
 	if err != nil {
+		if strings.Contains(err.Error(), `duplicate key value violates unique constraint "xns_migration_stats_daemon_id_eth_block_tx_hash_amount_key"`) {
+			return DuplicatedMigration
+		}
 		return errors.Wrap(err, "failed to insert stats")
 	}
 
