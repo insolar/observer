@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/application/appfoundation"
@@ -154,7 +155,23 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	return ctx.JSON(http.StatusOK, resJSON)
 }
 
+func isInt(s string) bool {
+	if strings.HasPrefix(s, "-") {
+		s = s[1:]
+	}
+	for _, c := range s {
+		if !unicode.IsDigit(c) {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
+	if !isInt(amount) {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid amount"))
+	}
+
 	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})
 }
 

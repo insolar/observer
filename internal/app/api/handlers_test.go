@@ -1452,16 +1452,57 @@ func TestMemberTransactions_WrongEverything(t *testing.T) {
 }
 
 func TestFee(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/fee/123")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	t.Run("ok", func(t *testing.T) {
+		resp, err := http.Get("http://" + apihost + "/api/fee/123")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	received := ResponsesFeeYaml{}
-	err = json.Unmarshal(bodyBytes, &received)
-	require.NoError(t, err)
-	require.Equal(t, testFee.String(), received.Fee)
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		received := ResponsesFeeYaml{}
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Equal(t, testFee.String(), received.Fee)
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		resp, err := http.Get("http://" + apihost + "/api/fee/-1")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		received := ResponsesFeeYaml{}
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Equal(t, testFee.String(), received.Fee)
+	})
+
+	t.Run("uuid", func(t *testing.T) {
+		resp, err := http.Get("http://" + apihost + "/api/fee/31f277c7-67f8-45b5-ae26-ff127d62a9ba")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		received := ResponsesInvalidAmountYaml{}
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Equal(t, []string{"invalid amount"}, received.Error)
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		resp, err := http.Get("http://" + apihost + "/api/fee/-1")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		received := ResponsesInvalidAmountYaml{}
+		err = json.Unmarshal(bodyBytes, &received)
+		require.NoError(t, err)
+		require.Equal(t, []string{"invalid amount"}, received.Error)
+	})
 }
 
 func TestObserverServer_NetworkStats(t *testing.T) {
