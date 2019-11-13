@@ -115,15 +115,11 @@ func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef
 	}
 	rec := &record.Material{
 		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &record.Activate{
-					Request: requestRef,
-					Memory:  memory,
-					Image:   proxyPKShard.GetPrototype(),
-				},
-			},
-		},
+		Virtual: record.Wrap(&record.Activate{
+			Request: requestRef,
+			Memory:  memory,
+			Image:   proxyPKShard.GetPrototype(),
+		}),
 	}
 	return (*observer.Record)(rec)
 }
@@ -150,12 +146,8 @@ func makeGenesisWalletActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -167,16 +159,11 @@ func makePKShardActivate(pn insolar.PulseNumber, pks pkshard.PKShard, requestRef
 	}
 	rec := &record.Material{
 		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			// ??
-			Union: &record.Virtual_Activate{
-				Activate: &record.Activate{
-					Request: requestRef,
-					Memory:  memory,
-					Image:   proxyPKShard.GetPrototype(),
-				},
-			},
-		},
+		Virtual: record.Wrap(&record.Activate{
+			Request: requestRef,
+			Memory:  memory,
+			Image:   proxyPKShard.GetPrototype(),
+		}),
 	}
 	return (*observer.Record)(rec)
 }

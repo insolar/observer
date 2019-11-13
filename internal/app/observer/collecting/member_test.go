@@ -61,12 +61,8 @@ func makeAccountActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -91,12 +87,8 @@ func makeMemberActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -121,12 +113,8 @@ func makeWalletActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -154,12 +142,8 @@ func makeNewAccountRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &accountRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&accountRequest),
 	}
 	return (*observer.Record)(rec), &accountRequest
 }
@@ -187,12 +171,8 @@ func makeNewWalletRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &walletRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&walletRequest),
 	}
 	return (*observer.Record)(rec), &walletRequest
 }
@@ -220,12 +200,8 @@ func makeNewMemberRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &memberRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&memberRequest),
 	}
 	return (*observer.Record)(rec), &memberRequest
 }
@@ -258,12 +234,8 @@ func makeMemberCreateCall(pulse insolar.PulseNumber) (*observer.Record, *record.
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &callRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&callRecord),
 	}
 	return (*observer.Record)(rec), &callRecord
 }
