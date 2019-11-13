@@ -151,4 +151,3 @@ oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exp
 
 `./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
 specified date/time. Example `-time="2006-01-02 15:04:05"`
-
