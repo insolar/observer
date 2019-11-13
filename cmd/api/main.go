@@ -23,7 +23,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+
+	echoPrometheus "github.com/globocom/echo-prometheus"
 
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
@@ -35,6 +38,8 @@ func main() {
 	cfg := apiconfiguration.Load()
 
 	e.Use(middleware.Logger())
+	e.Use(echoPrometheus.MetricsMiddleware())
+	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	opt, err := pg.ParseURL(cfg.DB.URL)
 	if err != nil {
