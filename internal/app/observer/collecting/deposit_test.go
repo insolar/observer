@@ -18,20 +18,95 @@ package collecting
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	"github.com/insolar/insolar/application/builtin/contract/pkshard"
+	"github.com/insolar/insolar/application/builtin/contract/wallet"
+	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
+	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
 )
+
+func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
+	log := logrus.New()
+	fetcher := store.NewRecordFetcherMock(t)
+	collector := NewDepositCollector(log, fetcher)
+	ctx := context.Background()
+	cache := make(map[insolar.ID]*observer.Record)
+
+	pn := insolar.GenesisPulse.PulseNumber
+	amount := "42"
+	balance := "0"
+	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+	lockup := int64(120)
+	vPeriod := int64(3 * 24 * 60 * 60)
+	vStep := int64(24 * 60 * 60)
+	dep := deposit.Deposit{
+		Balance:            balance,
+		Amount:             amount,
+		TxHash:             txHash,
+		PulseDepositUnHold: pn + insolar.PulseNumber(lockup),
+		Vesting:            vPeriod,
+		VestingStep:        vStep,
+		Lockup:             lockup,
+	}
+
+	depositRef := genesisrefs.ContractMigrationDeposit
+	memberRef := genesisrefs.ContractMigrationAdminMember
+	walletRef1 := gen.ReferenceWithPulse(pn)
+	accountRef1 := gen.ReferenceWithPulse(pn)
+
+	pks := pkshard.PKShard{
+		Map: foundation.StableMap{
+			"pk1": memberRef.String(),
+		},
+	}
+	pkshardActivate := makePKShardActivate(pn, pks, gen.ReferenceWithPulse(pn))
+
+	cache[*depositRef.GetLocal()] = makeDepositActivate(pn, dep, depositRef)
+	cache[*walletRef1.GetLocal()], _ = makeGenesisWalletActivate(pn, accountRef1, walletRef1, depositRef)
+	cache[*memberRef.GetLocal()], _ = makeMemberActivate(pn, walletRef1, memberRef)
+
+	fetcher.SideEffectMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		if rec, ok := cache[reqID]; ok == true {
+			return *(*record.Material)(rec), nil
+		}
+		return record.Material{}, errors.New("record not found in cache")
+	})
+
+	actual := collector.Collect(ctx, pkshardActivate)
+
+	timestamp, err := pn.AsApproximateTime()
+	if err != nil {
+		panic("invalid pulse")
+	}
+	expected := []*observer.Deposit{{
+		EthHash:         txHash,
+		Ref:             genesisrefs.ContractMigrationDeposit,
+		Member:          genesisrefs.ContractMigrationAdminMember,
+		Timestamp:       timestamp.Unix(),
+		Balance:         balance,
+		Amount:          amount,
+		DepositState:    cache[*depositRef.GetLocal()].ID,
+		Vesting:         vPeriod,
+		VestingStep:     vStep,
+		HoldReleaseDate: 1546300920,
+	}}
+
+	require.Len(t, actual, 1)
+	require.Equal(t, expected, actual)
+}
 
 func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef insolar.Reference) *observer.Record {
 	memory, err := insolar.Serialize(&dep)
@@ -45,7 +120,7 @@ func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef
 				Activate: &record.Activate{
 					Request: requestRef,
 					Memory:  memory,
-					Image:   *proxyDaemon.PrototypeReference,
+					Image:   proxyPKShard.GetPrototype(),
 				},
 			},
 		},
@@ -53,57 +128,55 @@ func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef
 	return (*observer.Record)(rec)
 }
 
-func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
-	t.Skip("should create pkshard with members with wallets with deposits")
-	log := logrus.New()
-	fetcher := store.NewRecordFetcherMock(t)
-	collector := NewDepositCollector(log, fetcher)
-
-	pn := insolar.GenesisPulse.PulseNumber
-	amount := "42"
-	balance := "0"
-	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-	vPeriod := int64(3 * 24 * 60 * 60)
-	vStep := int64(24 * 60 * 60)
-	dep := deposit.Deposit{
-		Balance:            balance,
-		Amount:             amount,
-		TxHash:             txHash,
-		PulseDepositUnHold: pn + 3,
-		Vesting:            vPeriod,
-		VestingStep:        vStep,
+func makeGenesisWalletActivate(
+	pulse insolar.PulseNumber,
+	accountRef insolar.Reference,
+	requestRef insolar.Reference,
+	depositRef insolar.Reference,
+) (*observer.Record, *record.Activate) {
+	wlt := &wallet.Wallet{
+		Accounts: foundation.StableMap{"XNS": accountRef.String()},
+		Deposits: foundation.StableMap{"dep1": depositRef.String()},
 	}
-
-	depositActivate := makeDepositActivate(pn, dep, gen.ReferenceWithPulse(pn))
-	records := []*observer.Record{
-		depositActivate,
-	}
-	timestamp, err := pn.AsApproximateTime()
+	memory, err := insolar.Serialize(wlt)
 	if err != nil {
-		panic("invalid pulse")
-	}
-	expected := []*observer.Deposit{{
-		EthHash:      txHash,
-		Ref:          genesisrefs.ContractMigrationDeposit,
-		Member:       genesisrefs.ContractMigrationAdminMember,
-		Timestamp:    timestamp.Unix(),
-		Balance:      balance,
-		Amount:       amount,
-		DepositState: depositActivate.ID,
-		Vesting:      vPeriod,
-		VestingStep:  vStep,
-	}}
-
-	ctx := context.Background()
-
-	var actual []*observer.Deposit
-	for _, r := range records {
-		deposit := collector.Collect(ctx, r)
-		if deposit != nil {
-			actual = append(actual, deposit...)
-		}
+		panic("failed to serialize arguments")
 	}
 
-	require.Len(t, actual, 1)
-	require.Equal(t, expected, actual)
+	activateRecord := record.Activate{
+		Request: requestRef,
+		Memory:  memory,
+		Image:   *proxyWallet.PrototypeReference,
+	}
+
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pulse),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_Activate{
+				Activate: &activateRecord,
+			},
+		},
+	}
+	return (*observer.Record)(rec), &activateRecord
+}
+
+func makePKShardActivate(pn insolar.PulseNumber, pks pkshard.PKShard, requestRef insolar.Reference) *observer.Record {
+	memory, err := insolar.Serialize(&pks)
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			// ??
+			Union: &record.Virtual_Activate{
+				Activate: &record.Activate{
+					Request: requestRef,
+					Memory:  memory,
+					Image:   proxyPKShard.GetPrototype(),
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
 }

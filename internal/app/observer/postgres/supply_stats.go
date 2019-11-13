@@ -94,7 +94,7 @@ WITH stats as (SELECT d.amount::numeric(24),
 
 SELECT
        circulating.sum::text as circulating,
-       (circulating.sum + free)::text as total,
+       (circulating.sum::numeric + free::numeric)::text as total,
        coalesce(max_amount.sum, 0)::text as max
 from sums,
      circulating,

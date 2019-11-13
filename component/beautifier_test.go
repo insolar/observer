@@ -178,7 +178,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Balance:            balance,
 		Amount:             amount,
 		TxHash:             txHash,
-		PulseDepositUnHold: pn + 3,
+		PulseDepositUnHold: pn + 10,
 		Vesting:            10,
 		VestingStep:        10,
 	}
@@ -223,7 +223,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),
 			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
-			HoldReleaseDate: 0,
+			HoldReleaseDate: 1546300810,
 			Amount:          amount,
 			Balance:         balance,
 			DepositState:    act.Record.ID,
