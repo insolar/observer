@@ -1,14 +1,3 @@
-create table if not exists records
-(
-    key bytea not null
-        constraint records_id_pk
-            primary key,
-    value bytea not null,
-    pulse bigint,
-    key_debug text,
-    value_type text
-);
-
 create table if not exists raw_requests
 (
     request_id varchar(256) not null constraint raw_requests_pk
@@ -93,7 +82,8 @@ create table if not exists pulses
             primary key,
     pulse_date bigint,
     entropy varchar(256),
-    requests_count integer
+    requests_count integer,
+    nodes bigint
 );
 
 create table if not exists migration_addresses
@@ -203,3 +193,13 @@ create table if not exists supply_stats
     max         numeric(24),
     circulating numeric(24)
 );
+
+create table if not exists notifications
+(
+    message     text not null,
+    start       timestamp not null,
+    stop        timestamp not null
+);
+
+create index if not exists idx_notifications_start
+    on notifications (start);

@@ -55,10 +55,11 @@ type ObserverServer struct {
 	log   *logrus.Logger
 	clock Clock
 	fee   *big.Int
+	price string
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock, fee: fee}
+func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
+	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -109,7 +110,6 @@ func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 	resJSON["count"] = count
 	return ctx.JSON(http.StatusOK, resJSON)
 }
-
 
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
 	panic("implement me")
@@ -248,7 +248,18 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
-	panic("implement me")
+	res, err := component.GetNotification(ctx.Request().Context(), s.db)
+	if err != nil {
+		if err == component.ErrNotificationNotFound {
+			return ctx.JSON(http.StatusNoContent, struct{}{})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesNotificationInfoYaml{
+		Notification: res.Message,
+	})
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
@@ -370,7 +381,9 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+		Price: s.price,
+	})
 }
 
 func (s *ObserverServer) NetworkStats(ctx echo.Context) error {

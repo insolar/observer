@@ -1398,7 +1398,8 @@ func TestObserverServer_NetworkStats(t *testing.T) {
 		MaxTPS:            1498,
 	}
 
-	err := db.Insert(&stats)
+	repo := postgres.NewNetworkStatsRepository(db)
+	err := repo.InsertStats(stats)
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/stats/network")
@@ -1417,6 +1418,73 @@ func TestObserverServer_NetworkStats(t *testing.T) {
 		MaxTPS:                1498,
 		Nodes:                 11,
 		TotalTransactions:     23,
+	}
+	require.Equal(t, expected, jsonResp)
+}
+
+func TestObserverServer_MarketStats(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/stats/market")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	jsonResp := ResponsesMarketStatsYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	expected := ResponsesMarketStatsYaml{
+		Price: "0.05",
+	}
+	require.Equal(t, expected, jsonResp)
+}
+
+func TestObserverServer_Notifications(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/notification")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	err = db.Insert(&models.Notification{
+		Message: "old",
+		Start:   time.Now().Add(-10 * time.Hour),
+		Stop:    time.Now().Add(-9 * time.Hour),
+	})
+	require.NoError(t, err)
+
+	resp, err = http.Get("http://" + apihost + "/api/notification")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	err = db.Insert(&models.Notification{
+		Message: "in the future",
+		Start:   time.Now().Add(20 * time.Hour),
+		Stop:    time.Now().Add(24 * time.Hour),
+	})
+	require.NoError(t, err)
+
+	resp, err = http.Get("http://" + apihost + "/api/notification")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	err = db.Insert(&models.Notification{
+		Message: "show now",
+		Start:   time.Now().Add(-3 * time.Hour),
+		Stop:    time.Now().Add(3 * time.Hour),
+	})
+	require.NoError(t, err)
+
+	resp, err = http.Get("http://" + apihost + "/api/notification")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	jsonResp := ResponsesNotificationInfoYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	expected := ResponsesNotificationInfoYaml{
+		Notification: "show now",
 	}
 	require.Equal(t, expected, jsonResp)
 }

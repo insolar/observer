@@ -22,6 +22,7 @@ require (
 	github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799 // indirect
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/labstack/gommon v0.3.0
 	github.com/magiconair/properties v1.8.1 // indirect

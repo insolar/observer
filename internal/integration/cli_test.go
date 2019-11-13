@@ -18,7 +18,7 @@ func TestStatsCollector(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		output, err := runCommand("stats-collector")
 		require.NotContains(t, output, "error")
-		require.NoError(t, err)
+		require.NoError(t, err, "error with output: %s", output)
 	})
 }
 

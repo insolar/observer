@@ -14,35 +14,39 @@
 // limitations under the License.
 //
 
-package api
+package postgres_test
 
 import (
-	"math/big"
-	"time"
+	"fmt"
+	"os"
+	"testing"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-pg/pg"
 
-	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/testutils"
 )
 
-type Configuration struct {
-	Listen    string
-	DB        configuration.DB
-	FeeAmount *big.Int
-	Price     string
-	LogLevel  string
+var db *pg.DB
+
+type dbLogger struct{}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
+	fmt.Println(q.FormattedQuery())
+	return
 }
 
-func Default() *Configuration {
-	return &Configuration{
-		Listen: ":0",
-		DB: configuration.DB{
-			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
-			Attempts:        5,
-			AttemptInterval: 3 * time.Second,
-		},
-		LogLevel:  logrus.DebugLevel.String(),
-		FeeAmount: big.NewInt(1000000000),
-		Price:     "0.05",
-	}
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+	return
+}
+
+func TestMain(t *testing.M) {
+	var dbCleaner func()
+	db, _, dbCleaner = testutils.SetupDB("../../../../scripts/migrations")
+
+	// for debug purposes print all queries
+	db.AddQueryHook(dbLogger{})
+
+	retCode := t.Run()
+	dbCleaner()
+	os.Exit(retCode)
 }
