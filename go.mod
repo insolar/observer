@@ -6,16 +6,15 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/ThreeDotsLabs/watermill v1.0.0 // indirect
-	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/deepmap/oapi-codegen v1.3.0
 	github.com/dgraph-io/badger v1.6.0 // indirect
+	github.com/globocom/echo-prometheus v0.1.2
 	github.com/go-pg/migrations v6.7.3+incompatible
 	github.com/go-pg/pg v8.0.6+incompatible
 	github.com/gogo/protobuf v1.3.1
 	github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
-	github.com/google/gofuzz v0.0.0-20190920162303-b906efc57a55 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insolar v0.9.14-0.20191029164809-4ca85f1d6242
@@ -27,13 +26,15 @@ require (
 	github.com/labstack/gommon v0.3.0
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/ory/dockertest/v3 v3.5.1
 	github.com/pelletier/go-toml v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/client_golang v1.0.0
+	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
