@@ -59,6 +59,10 @@ Prometheus: `http://localhost:8888/metrics`
 
 Health check: `http://localhost:8888/healthcheck`
 
+Replicator dashboard: `./dashboard.json`
+
+API dashboard: `./dashboard_api.json`
+
 ## API service
 
 To run API you should provide config file `observerapi.yaml`
