@@ -17,7 +17,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": 23,
-  "iteration": 1573660021929,
+  "iteration": 1573660340647,
   "links": [],
   "panels": [
     {
@@ -38,7 +38,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -103,7 +103,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -180,7 +180,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -219,7 +219,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job, method, handler)",
+          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job, method, handler)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -309,7 +309,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -348,7 +348,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job)/sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -427,7 +427,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -466,7 +466,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job, method, handler)/sum(rate(echo_http_requests_total{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job, method, handler)",
+          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job, method, handler)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job, method, handler)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -558,7 +558,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -597,7 +597,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -630,14 +630,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - p99",
@@ -690,7 +690,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -729,7 +729,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -762,14 +762,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p99",
@@ -822,7 +822,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "$datasource",
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -861,7 +861,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -894,14 +894,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ instance }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ instance }} - p99",
@@ -982,30 +982,13 @@
         "useTags": false
       },
       {
-        "current": {
-          "text": "prometheus",
-          "value": "prometheus"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "DataSource",
-        "multi": false,
-        "name": "datasource",
-        "options": [],
-        "query": "prometheus",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "type": "datasource"
-      },
-      {
         "allValue": null,
         "current": {
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "$datasource",
-        "definition": "",
+        "datasource": "prometheus",
+        "definition": "label_values(echo_http_requests_total, job)",
         "hide": 0,
         "includeAll": true,
         "label": "Job",
@@ -1029,15 +1012,15 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "$datasource",
-        "definition": "",
+        "datasource": "prometheus",
+        "definition": "label_values(echo_http_requests_total, instance)",
         "hide": 0,
         "includeAll": true,
         "label": "Instance",
         "multi": false,
         "name": "instance",
         "options": [],
-        "query": "label_values(echo_http_requests_total, instance)",
+        "query": "",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1054,15 +1037,15 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "$datasource",
-        "definition": "",
+        "datasource": "prometheus",
+        "definition": "label_values(echo_http_requests_total, handler)",
         "hide": 0,
         "includeAll": true,
         "label": "Handler",
         "multi": false,
         "name": "handler",
         "options": [],
-        "query": "label_values(echo_http_requests_total, handler)",
+        "query": "",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1106,6 +1089,6 @@
   },
   "timezone": "browser",
   "title": "Observer API",
-  "uid": "KzznqEpZz",
-  "version": 6
+  "uid": "KzznqEpZze",
+  "version": 7
 }
