@@ -13,7 +13,7 @@ import (
 )
 
 var migrationDir = flag.String("dir", "", "directory with migrations")
-var doInit = flag.Bool("init", false, "directory with migrations")
+var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
 	flag.Parse()
