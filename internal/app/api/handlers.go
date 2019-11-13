@@ -85,13 +85,10 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	resJSON := make([]interface{}, len(result))
+	resJSON := make(ResponsesAddressesYaml, len(result))
 	for i := 0; i < len(result); i++ {
-		index := strconv.FormatInt(result[i].ID, 10)
-		m := make(map[string]string, 2)
-		m["address"] = result[i].Addr
-		m["index"] = index
-		resJSON[i] = m
+		resJSON[i].Address = result[i].Addr
+		resJSON[i].Index = strconv.FormatInt(result[i].ID, 10)
 	}
 	return ctx.JSON(http.StatusOK, resJSON)
 }
@@ -106,9 +103,9 @@ func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	resJSON := make(map[string]int, 1)
-	resJSON["count"] = count
-	return ctx.JSON(http.StatusOK, resJSON)
+	return ctx.JSON(http.StatusOK, ResponsesAddressCountYaml{
+		Count: count,
+	})
 }
 
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
