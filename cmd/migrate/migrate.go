@@ -13,6 +13,7 @@ import (
 )
 
 var migrationDir = flag.String("dir", "", "directory with migrations")
+var doInit = flag.Bool("init", false, "directory with migrations")
 
 func main() {
 	flag.Parse()
@@ -26,9 +27,11 @@ func main() {
 	defer db.Close()
 
 	migrationCollection := migrations.NewCollection()
-	_, _, err = migrationCollection.Run(db, "init")
-	if err != nil {
-		log.Panicf("Could not init migrations: %s", err)
+	if *doInit {
+		_, _, err = migrationCollection.Run(db, "init")
+		if err != nil {
+			log.Panicf("Could not init migrations: %s", err)
+		}
 	}
 
 	err = migrationCollection.DiscoverSQLMigrations(*migrationDir)

@@ -106,6 +106,8 @@ and config files (see section "Generate default configs") to the target environm
 3. Run migrate binary and provide migrations dir with `-dir` param. The binary will access the DB specified in the 
 `observer.yaml` config.
 
+If migrations are being run for the first time (on empty DB), provide `-init` param for migration command.
+
 # Publishing notifications
 
 To publish a message that all users will see in the UI during some period of

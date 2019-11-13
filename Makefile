@@ -91,4 +91,4 @@ build-docker:
 
 .PHONY: migrate
 migrate:
-	go run ./cmd/migrate/migrate.go -dir scripts/migrations
+	go run ./cmd/migrate/migrate.go -dir scripts/migrations -init
