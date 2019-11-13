@@ -186,13 +186,10 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			activate = depositActivate.Virtual.GetActivate()
 			depositState := c.initialDepositState(activate)
 
-			if depositState.Lockup == 0 {
-				depositState.Lockup = pulse.MinTimePulse
-			}
-			hrd, err := pulse.Number(depositState.Lockup).AsApproximateTime()
+			hrd, err := depositState.PulseDepositUnHold.AsApproximateTime()
 			if err != nil {
-				c.log.Errorf("wrong timestamp in genesis deposit Lockup: %+v", depositState)
-				continue
+				c.log.Errorf("wrong timestamp in genesis deposit PulseDepositUnHold: %+v", depositState)
+				hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 			}
 			deposits = append(deposits, &observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
@@ -240,12 +237,17 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
+	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
+	if err != nil {
+		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
+		hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
+	}
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
 		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
-		HoldReleaseDate: 0,
+		HoldReleaseDate: hrd.Unix(),
 		Amount:          state.Amount,
 		Balance:         state.Balance,
 		DepositState:    id,

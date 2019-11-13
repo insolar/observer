@@ -21,6 +21,7 @@ import (
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/pulse"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -48,15 +49,14 @@ func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.Deposit
 
 	amd := rec.Virtual.GetAmend()
 	d := c.depositState(amd)
-	releaseTimestamp := int64(0)
-	// todo ins-3820: use one field PulseDepositUnHold or Lockup, in deposit collector, dep update collector, dep beautifier
-	if holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime(); err == nil {
-		releaseTimestamp = holdReleasedDate.Unix()
+	holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime()
+	if err != nil {
+		holdReleasedDate, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 	}
 
 	return &observer.DepositUpdate{
 		ID:              rec.ID,
-		HoldReleaseDate: releaseTimestamp,
+		HoldReleaseDate: holdReleasedDate.Unix(),
 		Amount:          d.Amount,
 		Balance:         d.Balance,
 		PrevState:       amd.PrevState,
