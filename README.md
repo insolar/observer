@@ -95,7 +95,7 @@ Uses replicator's config (see above).
 ./bin/stats-collector
 ```
 
-## Migrations
+## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.
 
@@ -103,7 +103,8 @@ Run migrations (without go binary):
 1. Run `make build` inside repository (requires go binary). 
 2. Copy `bin/migrate` binary, `scripts/migrations` dir 
 and config files (see section "Generate default configs") to the target environment.
-3. Run migrate binary and provide migrations dir with `-dir` param. The binary will access the DB specified in the config.
+3. Run migrate binary and provide migrations dir with `-dir` param. The binary will access the DB specified in the 
+`observer.yaml` config.
 
 # Development
 
