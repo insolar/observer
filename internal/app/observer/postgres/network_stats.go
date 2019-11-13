@@ -67,11 +67,7 @@ func (s *NetworkStatsRepository) LastStats() (NetworkStatsModel, error) {
 }
 
 func (s *NetworkStatsRepository) InsertStats(xcs NetworkStatsModel) error {
-	stats := NetworkStatsModel{
-		Created: time.Now(),
-	}
-
-	err := s.db.Insert(&stats)
+	err := s.db.Insert(&xcs)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert stats")
 	}

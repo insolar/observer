@@ -1398,7 +1398,8 @@ func TestObserverServer_NetworkStats(t *testing.T) {
 		MaxTPS:            1498,
 	}
 
-	err := db.Insert(&stats)
+	repo := postgres.NewNetworkStatsRepository(db)
+	err := repo.InsertStats(stats)
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/stats/network")
