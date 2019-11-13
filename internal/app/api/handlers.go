@@ -169,7 +169,7 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
-			return ctx.JSON(http.StatusNoContent, struct{}{})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
@@ -193,7 +193,7 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 	member, err := component.GetMemberBalance(ctx.Request().Context(), s.db, ref.Bytes())
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
-			return ctx.JSON(http.StatusNoContent, struct{}{})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
@@ -237,7 +237,7 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	}
 
 	if len(txs) == 0 {
-		return ctx.JSON(http.StatusNoContent, struct{}{})
+		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	res := SchemasTransactions{}
@@ -251,7 +251,7 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 	res, err := component.GetNotification(ctx.Request().Context(), s.db)
 	if err != nil {
 		if err == component.ErrNotificationNotFound {
-			return ctx.JSON(http.StatusNoContent, struct{}{})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
@@ -282,7 +282,7 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 	tx, err := component.GetTx(ctx.Request().Context(), s.db, txID.Bytes())
 	if err != nil {
 		if err == component.ErrTxNotFound {
-			return ctx.JSON(http.StatusNoContent, struct{}{})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
@@ -322,7 +322,7 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	}
 
 	if len(txs) == 0 {
-		return ctx.JSON(http.StatusNoContent, struct{}{})
+		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	res := SchemasTransactions{}
