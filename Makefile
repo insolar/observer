@@ -31,7 +31,11 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: $(BIN_DIR) $(OBSERVER) $(API) stats_collector ## build!
+build:
+	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
+	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
+	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -56,18 +60,6 @@ lint: golangci
 
 $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
-
-.PHONY: $(OBSERVER)
-$(OBSERVER):
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
-
-.PHONY: $(API)
-$(API):
-	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
-
-.PHONY: stats_collector
-stats_collector:
-	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
 
 .PHONY: config
 config:
@@ -96,10 +88,6 @@ help: ## Display this help screen
 .PHONY: build-docker
 build-docker:
 	docker build -t insolar/observer -f scripts/docker/Dockerfile .
-
-.PHONY: build-migrate
-build-migrate:
-	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 
 .PHONY: migrate
 migrate:
