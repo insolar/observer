@@ -208,6 +208,39 @@ func TestTransaction_NoContent(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
+func TestTransaction_NotRegistered(t *testing.T) {
+	defer truncateDB(t)
+
+	txID := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	transaction := transactionModel(txID.Bytes(), int64(pulseNumber))
+	transaction.StatusRegistered = false
+
+	err := db.Insert(transaction)
+	require.NoError(t, err)
+
+	txIDStr := url.QueryEscape(txID.String())
+	resp, err := http.Get("http://" + apihost + "/api/transaction/" + txIDStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestTransaction_ClosedNotRegistered(t *testing.T) {
+	defer truncateDB(t)
+
+	transaction := transactionModel(gen.RecordReference().Bytes(), int64(gen.PulseNumber()))
+	transaction.StatusRegistered = false
+	transaction.StatusFinished = true
+
+	err := db.Insert(transaction)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/transactions/closed?limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
 func TestTransaction_ClosedBadRequest(t *testing.T) {
 	// if `limit` is not specified, API returns `bad request`
 	resp, err := http.Get("http://" + apihost + "/api/transactions/closed")
@@ -746,6 +779,34 @@ func TestTransactionsSearch_WrongEverything(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, expected, received)
+}
+
+func TestTransactionsSearch_NotRegistered(t *testing.T) {
+	defer truncateDB(t)
+
+	pulseNumber := gen.PulseNumber()
+
+	txIDFirst := gen.RecordReference()
+	transaction := transactionModel(txIDFirst.Bytes(), int64(pulseNumber))
+	transaction.StatusRegistered = false
+	err := db.Insert(transaction)
+	require.NoError(t, err)
+
+	txIDSecond := gen.RecordReference()
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+
+	resp, err := http.Get("http://" + apihost + "/api/transactions?" + "limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
 }
 
 func TestMemberBalance_WrongFormat(t *testing.T) {
@@ -1344,6 +1405,39 @@ func TestMemberTransactions(t *testing.T) {
 	require.Len(t, received, 2)
 	require.Equal(t, txIDSecond.String(), received[0].TxID)
 	require.Equal(t, txIDFirst.String(), received[1].TxID)
+}
+
+func TestMemberTransactions_NotRegistered(t *testing.T) {
+	defer truncateDB(t)
+
+	member1 := gen.Reference()
+	pulseNumber := gen.PulseNumber()
+
+	txIDFirst := gen.RecordReference()
+	transaction := transactionModel(txIDFirst.Bytes(), int64(pulseNumber))
+	transaction.StatusRegistered = false
+	transaction.MemberToReference = member1.Bytes()
+	err := db.Insert(transaction)
+	require.NoError(t, err)
+
+	txIDSecond := gen.RecordReference()
+
+	insertMember(t, member1, nil, nil, "10000")
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, gen.Reference(), member1)
+
+	member1Str := url.QueryEscape(member1.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member1Str + "/transactions?" + "limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
 }
 
 func TestMemberTransactions_Direction(t *testing.T) {

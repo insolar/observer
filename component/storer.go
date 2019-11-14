@@ -473,7 +473,7 @@ func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, e
 	tx := &models.Transaction{}
 	_, err := db.QueryOneContext(ctx, tx,
 		fmt.Sprintf( // nolint: gosec
-			`select %s from simple_transactions where tx_id = ?0`, strings.Join(tx.Fields(), ",")),
+			`select %s from simple_transactions where tx_id = ?0 and status_registered = true`, strings.Join(tx.Fields(), ",")),
 		txID)
 	if err != nil {
 		if err == pg.ErrNoRows {
