@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/application/appfoundation"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
@@ -158,12 +159,30 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
+	var migrationAddress string
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
-		return ctx.JSON(http.StatusBadRequest, *errMsg)
+		if appfoundation.IsEthereumAddress(reference) {
+			migrationAddress = reference
+		} else {
+			return ctx.JSON(http.StatusBadRequest, *errMsg)
+		}
 	}
+	byMigrationAddress := migrationAddress != ""
 
-	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	var member *models.Member
+	var err error
+	var memberReference []byte
+
+	if byMigrationAddress {
+		member, err = component.GetMemberByMigrationAddress(ctx.Request().Context(), s.db, migrationAddress)
+		if member != nil {
+			memberReference = member.Reference
+		}
+	} else {
+		memberReference = ref.Bytes()
+		member, err = component.GetMember(ctx.Request().Context(), s.db, memberReference)
+	}
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
 			return ctx.NoContent(http.StatusNoContent)
@@ -172,13 +191,13 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, ref.Bytes())
+	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix()))
+	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix(), byMigrationAddress))
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {

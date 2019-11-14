@@ -34,11 +34,12 @@ import (
 )
 
 const (
-	recordNum       = 198
-	finishRecordNum = 256
-	amount          = "1020"
-	fee             = "178"
-	currentTime     = int64(1606435200)
+	recordNum                  = 198
+	finishRecordNum            = 256
+	amount                     = "1020"
+	fee                        = "178"
+	currentTime                = int64(1606435200)
+	notExistedMigrationAddress = "0x35567Abc4Fa54fe30d200F76A4868A70383e7938"
 )
 
 func requireEqualResponse(t *testing.T, resp *http.Response, received interface{}, expected interface{}) {
@@ -861,6 +862,12 @@ func TestMember_NoContent(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
+func TestMember_NoContent_MigrationAddress(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/" + notExistedMigrationAddress)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
 func TestMember(t *testing.T) {
 	defer truncateDB(t)
 
@@ -916,6 +923,77 @@ func TestMember(t *testing.T) {
 				Timestamp:        currentTime - 10,
 			},
 		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_MigrationAddress(t *testing.T) {
+	defer truncateDB(t)
+
+	memberRef := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+	migrationAddress := "0xF4e1507486dFE411785B00d7D00A1f1a484f00E6"
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	member := models.Member{
+		Reference:        memberRef.Bytes(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.Bytes(),
+		AccountReference: memberAccountReference.Bytes(),
+		MigrationAddress: migrationAddress,
+	}
+	err := db.Insert(&member)
+	require.NoError(t, err)
+
+	insertDeposit(t, deposite2, memberRef, "2000", "2000", "eth_hash_2", 2)
+	insertDeposit(t, deposite1, memberRef, "10000", "1000", "eth_hash_1", 1)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + migrationAddress)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite1.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  0,
+				Index:            1,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+				MemberReference:  NullableString(memberRef.String()),
+			},
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  0,
+				Index:            2,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+				MemberReference:  NullableString(memberRef.String()),
+			},
+		},
+		MigrationAddress: NullableString(migrationAddress),
 	}
 	require.Equal(t, expected, received)
 }
