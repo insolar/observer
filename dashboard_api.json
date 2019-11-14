@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "iteration": 1573736534821,
+  "iteration": 1573745438234,
   "links": [],
   "panels": [
     {
@@ -76,7 +76,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[2m])) by (job)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -192,7 +192,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job, method, handler)",
+          "expr": "rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[2m])",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -205,7 +205,7 @@
           "item": {
             "filter": ""
           },
-          "legendFormat": "{{ job }} - {{ method }} {{handler}}",
+          "legendFormat": "{{ method }} {{handler}}",
           "mode": 0,
           "options": {
             "showDisabledItems": false,
@@ -321,7 +321,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job)/sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\", status=\"5xx\"}[5m]))/sum(rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m]))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -439,7 +439,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job, method, handler)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job, method, handler)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\", status=\"5xx\"}[5m])) by (method, handler)/sum(rate(echo_http_requests_total{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])) by (method, handler)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -454,7 +454,7 @@
           "item": {
             "filter": ""
           },
-          "legendFormat": "{{ job }} - {{ method }} {{handler}}",
+          "legendFormat": "{{ method }} {{handler}}",
           "mode": 0,
           "options": {
             "showDisabledItems": false,
@@ -570,7 +570,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -585,7 +585,7 @@
           "item": {
             "filter": ""
           },
-          "legendFormat": "{{ job }} - p50",
+          "legendFormat": "p50",
           "mode": 0,
           "options": {
             "showDisabledItems": false,
@@ -603,17 +603,17 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ job }} - p95",
+          "legendFormat": "p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ job }} - p99",
+          "legendFormat": "p99",
           "refId": "C"
         }
       ],
@@ -674,10 +674,12 @@
       },
       "id": 38,
       "legend": {
+        "alignAsTable": true,
         "avg": false,
         "current": false,
         "max": false,
         "min": false,
+        "rightSide": true,
         "show": true,
         "total": false,
         "values": false
@@ -702,7 +704,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -717,7 +719,7 @@
           "item": {
             "filter": ""
           },
-          "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p50",
+          "legendFormat": "{{ method }} {{ handler }} - p50",
           "mode": 0,
           "options": {
             "showDisabledItems": false,
@@ -735,17 +737,18 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p95",
+          "legendFormat": "{{ method }} {{ handler }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\", handler=~\"$handler\", handler!=\"/metrics\"}[5m])))",
           "format": "time_series",
+          "instant": false,
           "intervalFactor": 1,
-          "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p99",
+          "legendFormat": "{{ method }} {{ handler }} - p99",
           "refId": "C"
         }
       ],
@@ -754,138 +757,6 @@
       "timeRegions": [],
       "timeShift": null,
       "title": "Latency by handler",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "prometheus",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 57
-      },
-      "id": 39,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "application": {
-            "filter": ""
-          },
-          "expr": "histogram_quantile(0.5, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
-          "format": "time_series",
-          "functions": [],
-          "group": {
-            "filter": ""
-          },
-          "host": {
-            "filter": ""
-          },
-          "instant": false,
-          "interval": "",
-          "intervalFactor": 1,
-          "item": {
-            "filter": ""
-          },
-          "legendFormat": "{{ job }} - {{ instance }} - p50",
-          "mode": 0,
-          "options": {
-            "showDisabledItems": false,
-            "skipEmptyValues": false
-          },
-          "refId": "A",
-          "resultFormat": "time_series",
-          "table": {
-            "skipEmptyValues": false
-          },
-          "triggers": {
-            "acknowledged": 2,
-            "count": true,
-            "minSeverity": 3
-          }
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "{{ job }} - {{ instance }} - p95",
-          "refId": "B"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "{{ job }} - {{ instance }} - p99",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Latency by instance",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -932,7 +803,6 @@
       {
         "allValue": null,
         "current": {
-          "tags": [],
           "text": "dev-wallet-3",
           "value": "dev-wallet-3"
         },
@@ -956,58 +826,9 @@
         "useTags": false
       },
       {
-        "allValue": null,
+        "allValue": "",
         "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": "prometheus",
-        "definition": "label_values(echo_http_requests_total, job)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Job",
-        "multi": false,
-        "name": "job",
-        "options": [],
-        "query": "label_values(echo_http_requests_total, job)",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": null,
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": "prometheus",
-        "definition": "label_values(echo_http_requests_total, instance)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Instance",
-        "multi": false,
-        "name": "instance",
-        "options": [],
-        "query": "",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": null,
-        "current": {
+          "tags": [],
           "text": "All",
           "value": "$__all"
         },
@@ -1019,7 +840,7 @@
         "multi": false,
         "name": "handler",
         "options": [],
-        "query": "",
+        "query": "label_values(echo_http_requests_total, handler)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
