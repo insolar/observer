@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 18,
+  "iteration": 1573736713031,
   "links": [],
   "panels": [
     {
@@ -55,16 +55,17 @@
         },
         "orientation": "horizontal"
       },
-      "pluginVersion": "6.3.3",
+      "pluginVersion": "6.3.6",
       "targets": [
         {
-          "expr": "observer_addresses_stored_total - observer_wastings_stored_total",
+          "expr": "observer_addresses_stored_total{namespace=\"$namespace\"} - observer_wastings_stored_total{namespace=\"$namespace\"}",
           "format": "time_series",
           "intervalFactor": 1,
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "timeFrom": null,
+      "timeFrom": "1m",
       "timeShift": null,
       "title": "Migration addresses available",
       "type": "bargauge"
@@ -134,8 +135,9 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "observer_last_fetched_pulse",
+          "expr": "observer_last_fetched_pulse{namespace=\"$namespace\"}",
           "format": "time_series",
+          "instant": true,
           "intervalFactor": 1,
           "refId": "A"
         }
@@ -160,6 +162,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": "prometheus",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -174,7 +177,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -194,7 +197,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_transfers_stored_total[1m]))",
+          "expr": "rate(observer_transfers_stored_total{namespace=\"$namespace\"}[2m])",
+          "instant": false,
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -258,7 +263,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -278,7 +283,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_members_stored_total[1m]))",
+          "expr": "rate(observer_members_stored_total{namespace=\"$namespace\"}[2m])",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
@@ -342,7 +348,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -362,7 +368,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_activates_stored_total[1m]))",
+          "expr": "rate(observer_activates_stored_total{namespace=\"$namespace\"}[2m])",
           "refId": "A"
         }
       ],
@@ -426,7 +432,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -446,7 +452,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_balances_stored_total[1m]))",
+          "expr": "rate(observer_balances_stored_total{namespace=\"$namespace\"}[2m])",
           "refId": "A"
         }
       ],
@@ -510,7 +516,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -530,7 +536,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_deactivates_stored_total[1m]))",
+          "expr": "rate(observer_deactivates_stored_total{namespace=\"$namespace\"}[2m])",
           "refId": "A"
         }
       ],
@@ -594,7 +600,7 @@
         "current": false,
         "max": false,
         "min": false,
-        "show": true,
+        "show": false,
         "total": false,
         "values": false
       },
@@ -614,7 +620,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(observer_deposits_stored_total[1m]))",
+          "expr": "rate(observer_deposits_stored_total{namespace=\"$namespace\"}[2m])",
           "refId": "A"
         }
       ],
@@ -660,14 +666,42 @@
       }
     }
   ],
+  "refresh": "5s",
   "schemaVersion": 19,
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "tags": [],
+          "text": "dev-wallet-3",
+          "value": "dev-wallet-3"
+        },
+        "datasource": "prometheus",
+        "definition": "label_values(observer_last_fetched_pulse, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": "label_values(observer_last_fetched_pulse, namespace)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
