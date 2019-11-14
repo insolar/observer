@@ -156,9 +156,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 }
 
 func isInt(s string) bool {
-	if strings.HasPrefix(s, "-") {
-		s = s[1:]
-	}
+	s = strings.TrimPrefix(s, "-")
 	for _, c := range s {
 		if !unicode.IsDigit(c) {
 			return false
@@ -170,6 +168,9 @@ func isInt(s string) bool {
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 	if !isInt(amount) {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid amount"))
+	}
+	if strings.HasPrefix(amount, "-") {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("negative amount"))
 	}
 
 	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})

@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
@@ -53,8 +52,6 @@ func TestMain(t *testing.M) {
 	db, _, dbCleaner = testutils.SetupDB(migrationsDir)
 
 	e := echo.New()
-
-	e.Use(middleware.Logger())
 
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.JSONFormatter{})
