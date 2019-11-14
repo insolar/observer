@@ -16,8 +16,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": 23,
-  "iteration": 1573660340647,
+  "iteration": 1573736534821,
   "links": [],
   "panels": [
     {
@@ -74,36 +73,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "allValue": null,
-          "current": {
-            "text": "local",
-            "value": "local"
-          },
-          "datasource": "prometheus",
-          "definition": "label_values(insolar_api_incoming, installation)",
-          "hide": 0,
-          "includeAll": false,
-          "label": null,
-          "multi": false,
-          "name": "installation",
-          "options": [],
-          "query": "label_values(insolar_api_incoming, installation)",
-          "refId": "A",
-          "refresh": 1,
-          "regex": "",
-          "skipUrlSync": false,
-          "sort": 1,
-          "tagValuesQuery": "",
-          "tags": [],
-          "tagsQuery": "",
-          "type": "query",
-          "useTags": false
-        },
-        {
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -219,7 +192,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job, method, handler)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[2m])) by (job, method, handler)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -348,7 +321,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job)/sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -466,7 +439,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job, method, handler)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job, method, handler)",
+          "expr": "sum(rate(echo_http_requests_total{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\", status=\"5xx\"}[5m])) by (job, method, handler)/sum(rate(echo_http_requests_total{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])) by (job, method, handler)",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -597,7 +570,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -630,14 +603,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - p99",
@@ -729,7 +702,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -762,14 +735,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, method, handler, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ method }} {{ handler }} - p99",
@@ -861,7 +834,7 @@
           "application": {
             "filter": ""
           },
-          "expr": "histogram_quantile(0.5, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "functions": [],
           "group": {
@@ -894,14 +867,14 @@
           }
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ instance }} - p95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{installation=\"$installation\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (job, instance, le) (rate(echo_http_request_duration_seconds_bucket{namespace=\"$namespace\",job=~\"$job\",instance=~\"$instance\", handler=~\"$handler\"}[5m])))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{ job }} - {{ instance }} - p99",
@@ -959,18 +932,19 @@
       {
         "allValue": null,
         "current": {
-          "text": "dev-alpha",
-          "value": "dev-alpha"
+          "tags": [],
+          "text": "dev-wallet-3",
+          "value": "dev-wallet-3"
         },
         "datasource": "prometheus",
-        "definition": "label_values(insolar_api_incoming, installation)",
+        "definition": "label_values(observer_last_fetched_pulse, namespace)",
         "hide": 0,
         "includeAll": false,
         "label": null,
         "multi": false,
-        "name": "installation",
+        "name": "namespace",
         "options": [],
-        "query": "label_values(insolar_api_incoming, installation)",
+        "query": "label_values(observer_last_fetched_pulse, namespace)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1090,5 +1064,5 @@
   "timezone": "browser",
   "title": "Observer API",
   "uid": "KzznqEpZze",
-  "version": 7
+  "version": 1
 }
