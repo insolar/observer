@@ -442,6 +442,21 @@ func getMember(ctx context.Context, db Querier, reference []byte, fields []strin
 	return member, nil
 }
 
+func GetMemberByMigrationAddress(ctx context.Context, db Querier, ma string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from members where migration_address = ?0`, strings.Join(models.Member{}.Fields(), ",")),
+		ma)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
+
 func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]models.Deposit, error) {
 	deposits := &[]models.Deposit{}
 	_, err := db.QueryContext(ctx, deposits,

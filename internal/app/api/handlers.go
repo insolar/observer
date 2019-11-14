@@ -17,6 +17,7 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/application/appfoundation"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 
@@ -158,12 +160,23 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
+	var migrationAddress string
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
-		return ctx.JSON(http.StatusBadRequest, *errMsg)
+		if appfoundation.IsEthereumAddress(reference) {
+			migrationAddress = reference
+		} else {
+			return ctx.JSON(http.StatusBadRequest, *errMsg)
+		}
 	}
 
-	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	var member *models.Member
+	var err error
+	if migrationAddress != "" {
+		member, err = component.GetMemberByMigrationAddress(ctx.Request().Context(), s.db, migrationAddress)
+	} else {
+		member, err = component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	}
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
 			return ctx.NoContent(http.StatusNoContent)
@@ -172,13 +185,22 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
+	if migrationAddress != "" {
+		ref = insolar.NewReferenceFromBytes(member.Reference)
+		if ref == nil {
+			s.log.Error(fmt.Errorf("error while convert member reference from bytes for mirgation address %s", migrationAddress))
+			return ctx.JSON(http.StatusInternalServerError, struct{}{})
+		}
+	}
+
 	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, ref.Bytes())
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix()))
+	withMemberRef := migrationAddress != ""
+	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix(), withMemberRef))
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {

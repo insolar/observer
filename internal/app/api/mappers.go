@@ -98,7 +98,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 }
 
-func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64) ResponsesMemberYaml {
+func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64, withMemberRef bool) ResponsesMemberYaml {
 	var resDeposits []SchemaDeposit
 
 	for _, d := range deposits {
@@ -121,6 +121,12 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		ref := insolar.NewReferenceFromBytes(d.Reference)
 		if ref != nil {
 			resDeposit.DepositReference = ref.String()
+		}
+		if withMemberRef {
+			ref := insolar.NewReferenceFromBytes(member.Reference)
+			if ref != nil {
+				resDeposit.MemberReference = NullableString(ref.String())
+			}
 		}
 
 		resDeposits = append(resDeposits, resDeposit)
