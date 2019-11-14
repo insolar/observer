@@ -135,7 +135,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 
 	var result []models.Transaction
 	query := s.db.Model(&models.Transaction{}).
-		Where("status_finished = ?", true)
+		Where("status_finished = ?0 and status_registered = ?0", true)
 	query, err = component.OrderByIndex(query, params.Order, pulseNumber, sequenceNumber, params.Index != nil, models.TxIndexTypeFinishPulseRecord)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError(err.Error()))
@@ -146,6 +146,10 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(result) == 0 {
+		return ctx.NoContent(http.StatusNoContent)
 	}
 
 	resJSON := make([]interface{}, len(result))
@@ -459,11 +463,13 @@ func (s *ObserverServer) getTransactions(
 	query *orm.Query, errorMsg *ErrorMessage, status, typeParam, index, order *string,
 ) *orm.Query {
 	var err error
+	st := "registered"
 	if status != nil {
-		query, err = component.FilterByStatus(query, *status)
-		if err != nil {
-			errorMsg.Error = append(errorMsg.Error, err.Error())
-		}
+		st = *status
+	}
+	query, err = component.FilterByStatus(query, st)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
 	}
 
 	if typeParam != nil {
