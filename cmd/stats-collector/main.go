@@ -22,13 +22,12 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/dbconn"
 )
 
 func main() {
@@ -36,13 +35,10 @@ func main() {
 	flag.Parse()
 
 	cfg := configuration.Load()
-	opt, err := pg.ParseURL(cfg.DB.URL)
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
-	}
-	db := pg.Connect(opt)
+	db := dbconn.Connect(cfg.DB)
+
 	log := logrus.New()
-	err = log.Level.UnmarshalText([]byte(cfg.LogLevel))
+	err := log.Level.UnmarshalText([]byte(cfg.LogLevel))
 	if err != nil {
 		log.SetLevel(logrus.InfoLevel)
 	}
@@ -58,9 +54,7 @@ func main() {
 	}
 
 	calcSupply(log, db, dt)
-	if err := calcNetwork(log, db); err != nil {
-		log.Fatal(err)
-	}
+	calcNetwork(log, db)
 }
 
 func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
@@ -74,20 +68,18 @@ func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
 	}
 }
 
-func calcNetwork(log *logrus.Logger, db *pg.DB) error {
+func calcNetwork(log *logrus.Logger, db *pg.DB) {
 	repo := postgres.NewNetworkStatsRepository(db)
 
 	stats, err := repo.CountStats()
 	if err != nil {
-		return errors.Wrapf(err, "failed to count network stats")
+		log.Fatal(errors.Wrapf(err, "failed to count network stats"))
 	}
 
 	log.Debugf("Collected stats: %+v", stats)
 
 	err = repo.InsertStats(stats)
 	if err != nil {
-		return errors.Wrapf(err, "failed to save network stats")
+		log.Fatal(errors.Wrapf(err, "failed to save network stats"))
 	}
-
-	return nil
 }

@@ -17,12 +17,8 @@
 package main
 
 import (
-	"log"
-
-	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 
@@ -30,27 +26,24 @@ import (
 
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
+	"github.com/insolar/observer/internal/dbconn"
 )
 
 func main() {
-
-	e := echo.New()
 	cfg := apiconfiguration.Load()
 
+	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
+
+	db := dbconn.Connect(cfg.DB)
+
+	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(echoPrometheus.MetricsMiddleware())
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
-	opt, err := pg.ParseURL(cfg.DB.URL)
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
-	}
-	db := pg.Connect(opt)
-	logger := logrus.New()
-
-	logger.SetFormatter(&logrus.JSONFormatter{})
 	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{}, cfg.Price)
-
 	api.RegisterHandlers(e, observerAPI)
+
 	e.Logger.Fatal(e.Start(cfg.Listen))
 }

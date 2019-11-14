@@ -88,6 +88,9 @@ or
 DB connection:
 `OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
+Max number of connections to DB:
+`OBSERVERAPI_DB_POOLSIZE=20`
+
 Log level:
 `OBSERVERAPI_LOGLEVEL=info`
 
