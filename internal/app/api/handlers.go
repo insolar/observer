@@ -17,7 +17,6 @@
 package api
 
 import (
-	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -169,13 +168,20 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 			return ctx.JSON(http.StatusBadRequest, *errMsg)
 		}
 	}
+	byMigrationAddress := migrationAddress != ""
 
 	var member *models.Member
 	var err error
-	if migrationAddress != "" {
+	var memberReference []byte
+
+	if byMigrationAddress {
 		member, err = component.GetMemberByMigrationAddress(ctx.Request().Context(), s.db, migrationAddress)
+		if member != nil {
+			memberReference = member.Reference
+		}
 	} else {
-		member, err = component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+		memberReference = ref.Bytes()
+		member, err = component.GetMember(ctx.Request().Context(), s.db, memberReference)
 	}
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
@@ -185,22 +191,13 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	if migrationAddress != "" {
-		ref = insolar.NewReferenceFromBytes(member.Reference)
-		if ref == nil {
-			s.log.Error(fmt.Errorf("error while convert member reference from bytes for mirgation address %s", migrationAddress))
-			return ctx.JSON(http.StatusInternalServerError, struct{}{})
-		}
-	}
-
-	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, ref.Bytes())
+	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	withMemberRef := migrationAddress != ""
-	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix(), withMemberRef))
+	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix(), byMigrationAddress))
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
