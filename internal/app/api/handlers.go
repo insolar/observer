@@ -17,6 +17,7 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -97,6 +98,8 @@ func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigra
 
 // GetMigrationAddressCount returns the total number of non-assigned migration addresses
 func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	count, err := s.db.Model(&models.MigrationAddress{}).
 		Where("wasted = false").
 		Count()
@@ -116,6 +119,8 @@ func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) erro
 
 // CloseTransactions returns a list of closed transactions (only with statuses `received` and `failed`).
 func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error {
+	s.setExpire(ctx, 1*time.Minute)
+
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
@@ -145,6 +150,7 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 		Select(&result)
 	if err != nil {
 		s.log.Error(err)
+		s.setExpire(ctx, 1*time.Second)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
@@ -166,6 +172,8 @@ func isInt(s string) bool {
 }
 
 func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
+	s.setExpire(ctx, 1*time.Minute)
+
 	if !isInt(amount) {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid amount"))
 	}
@@ -177,7 +185,10 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
+	s.setExpire(ctx, 1*time.Second)
+	
 	var migrationAddress string
+
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		if appfoundation.IsEthereumAddress(reference) {
@@ -219,6 +230,8 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
+	s.setExpire(ctx, 1*time.Second)
+
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		return ctx.JSON(http.StatusBadRequest, *errMsg)
@@ -237,6 +250,8 @@ func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		return ctx.JSON(http.StatusBadRequest, *errMsg)
@@ -282,12 +297,15 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 }
 
 func (s *ObserverServer) Notification(ctx echo.Context) error {
+	s.setExpire(ctx, 1*time.Minute)
+
 	res, err := component.GetNotification(ctx.Request().Context(), s.db)
 	if err != nil {
 		if err == component.ErrNotificationNotFound {
 			return ctx.NoContent(http.StatusNoContent)
 		}
 		s.log.Error(err)
+		s.setExpire(ctx, 1*time.Second)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
@@ -297,6 +315,8 @@ func (s *ObserverServer) Notification(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	txIDStr = strings.TrimSpace(txIDStr)
 
 	if len(txIDStr) == 0 {
@@ -326,6 +346,8 @@ func (s *ObserverServer) Transaction(ctx echo.Context, txIDStr string) error {
 }
 
 func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
@@ -367,6 +389,8 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 }
 
 func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Supply()
@@ -382,6 +406,8 @@ func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Circulating()
@@ -393,6 +419,8 @@ func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Max()
@@ -404,6 +432,8 @@ func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	repo := postgres.NewSupplyStatsRepository(s.db)
 	xr := component.NewStatsManager(s.log, repo)
 	result, err := xr.Total()
@@ -415,12 +445,15 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 }
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
+	s.setExpire(ctx, 1*time.Hour)
 	return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
 		Price: s.price,
 	})
 }
 
 func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
+	s.setExpire(ctx, 10*time.Second)
+
 	repo := postgres.NewNetworkStatsRepository(s.db)
 	result, err := repo.LastStats()
 	if err != nil {
@@ -513,4 +546,15 @@ func (s *ObserverServer) checkReference(referenceRow string) (*insolar.Reference
 		return nil, &errMsg
 	}
 	return ref, nil
+}
+
+func (s *ObserverServer) setExpire(ctx echo.Context, duration time.Duration) {
+	ctx.Response().Header().Set(
+		"Cache-Control",
+		fmt.Sprintf("max-age=%d", int(duration.Seconds())),
+	)
+	ctx.Response().Header().Set(
+		"Expires",
+		time.Now().UTC().Add(duration).Format(http.TimeFormat),
+	)
 }
