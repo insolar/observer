@@ -1465,19 +1465,6 @@ func TestFee(t *testing.T) {
 		require.Equal(t, testFee.String(), received.Fee)
 	})
 
-	t.Run("negative", func(t *testing.T) {
-		resp, err := http.Get("http://" + apihost + "/api/fee/-1")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-		received := ResponsesFeeYaml{}
-		err = json.Unmarshal(bodyBytes, &received)
-		require.NoError(t, err)
-		require.Equal(t, testFee.String(), received.Fee)
-	})
-
 	t.Run("uuid", func(t *testing.T) {
 		resp, err := http.Get("http://" + apihost + "/api/fee/31f277c7-67f8-45b5-ae26-ff127d62a9ba")
 		require.NoError(t, err)
@@ -1501,7 +1488,7 @@ func TestFee(t *testing.T) {
 		received := ResponsesInvalidAmountYaml{}
 		err = json.Unmarshal(bodyBytes, &received)
 		require.NoError(t, err)
-		require.Equal(t, []string{"invalid amount"}, received.Error)
+		require.Equal(t, []string{"negative amount"}, received.Error)
 	})
 }
 
