@@ -29,11 +29,11 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/application/appfoundation"
 
-	"github.com/insolar/observer/internal/app/observer/postgres"
-
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/internal/app/observer/postgres"
 
 	"github.com/labstack/echo/v4"
 

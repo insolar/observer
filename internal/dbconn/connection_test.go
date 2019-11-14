@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package postgres
+package dbconn
 
 import (
 	"testing"
@@ -24,27 +24,8 @@ import (
 	"github.com/insolar/observer/configuration"
 )
 
-func TestNewConnectionHolder(t *testing.T) {
-	cfg := &configuration.Configuration{}
-	cfg.DB.URL = "invalid url"
-	require.Nil(t, NewConnectionHolder(cfg))
-}
-
 func TestConnectionHolder_DB(t *testing.T) {
 	cfg := configuration.Default()
-	holder := NewConnectionHolder(cfg)
-
-	db := holder.DB()
+	db := Connect(cfg.DB)
 	require.NotNil(t, db)
-}
-
-func TestConnectionHolder_Close(t *testing.T) {
-	cfg := configuration.Default()
-	holder := NewConnectionHolder(cfg)
-
-	err := holder.Close()
-	require.NoError(t, err)
-
-	err = holder.Close()
-	require.NoError(t, err)
 }

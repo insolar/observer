@@ -46,6 +46,7 @@ type Replicator struct {
 
 type DB struct {
 	URL      string
+	PoolSize int
 	Attempts cycle.Limit
 	// Interval between store in db failed attempts
 	AttemptInterval time.Duration
@@ -66,6 +67,7 @@ func Default() *Configuration {
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
+			PoolSize:        100,
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 		},

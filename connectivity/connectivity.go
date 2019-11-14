@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/dbconn"
 	"github.com/insolar/observer/observability"
 )
 
@@ -29,12 +30,7 @@ func Make(cfg *configuration.Configuration, obs *observability.Observability) *C
 	log := obs.Log()
 	return &Connectivity{
 		pg: func() *pg.DB {
-			opt, err := pg.ParseURL(cfg.DB.URL)
-			if err != nil {
-				log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
-			}
-			db := pg.Connect(opt)
-			return db
+			return dbconn.Connect(cfg.DB)
 		}(),
 		grpc: func() *grpc.ClientConn {
 			limits := grpc.WithDefaultCallOptions(

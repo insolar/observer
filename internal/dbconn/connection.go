@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package postgres
+package dbconn
 
 import (
 	"github.com/go-pg/pg"
@@ -24,29 +24,12 @@ import (
 	"github.com/insolar/observer/configuration"
 )
 
-type ConnectionHolder struct {
-	db *pg.DB
-}
-
-func NewConnectionHolder(cfg *configuration.Configuration) *ConnectionHolder {
-	opt, err := pg.ParseURL(cfg.DB.URL)
+func Connect(cfg configuration.DB) *pg.DB {
+	opt, err := pg.ParseURL(cfg.URL)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
+		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
 		return nil
 	}
-	db := pg.Connect(opt)
-	return &ConnectionHolder{
-		db: db,
-	}
-}
-
-func (h *ConnectionHolder) DB() *pg.DB {
-	return h.db
-}
-
-func (h *ConnectionHolder) Close() error {
-	if err := h.db.Close(); err != nil {
-		log.Error(errors.Wrapf(err, "failed to close db"))
-	}
-	return nil
+	opt.PoolSize = cfg.PoolSize
+	return pg.Connect(opt)
 }
