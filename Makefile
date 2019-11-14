@@ -85,10 +85,6 @@ all: config build
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build-docker
-build-docker:
-	docker build -t insolar/observer -f scripts/docker/Dockerfile .
-
 .PHONY: migrate
 migrate:
 	go run ./cmd/migrate/migrate.go -dir scripts/migrations -init
