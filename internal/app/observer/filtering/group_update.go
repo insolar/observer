@@ -28,25 +28,25 @@ func NewGroupUpdateFilter() *GroupUpdateFilter {
 	return &GroupUpdateFilter{}
 }
 
-func (*GroupUpdateFilter) Filter(groupUpdates map[insolar.Reference]*observer.GroupUpdate, groups map[insolar.Reference]*observer.Group) {
+func (*GroupUpdateFilter) Filter(groupUpdates map[insolar.ID]*observer.GroupUpdate, groups map[insolar.ID]*observer.Group) {
 	// This code block collapses the group update sequence.
 	for _, update := range groupUpdates {
-		upd, ok := groupUpdates[update.GroupReference]
+		upd, ok := groupUpdates[update.PrevState]
 		for ok {
-			delete(groupUpdates, update.GroupReference)
+			delete(groupUpdates, update.PrevState)
 
 			update.PrevState = upd.PrevState
-			upd, ok = groupUpdates[update.GroupReference]
+			upd, ok = groupUpdates[update.PrevState]
 		}
 	}
 
-	// We try to apply deposit update in memory.
+	// We try to apply group update in memory.
 	for id, update := range groupUpdates {
-		d, ok := groups[update.GroupReference]
+		d, ok := groups[update.PrevState]
 		if !ok {
 			continue
 		}
-		delete(groups, update.GroupReference)
+		delete(groups, update.PrevState)
 		d.ProductType = update.ProductType
 		d.Goal = update.Goal
 		d.Image = update.Image
@@ -58,7 +58,7 @@ func (*GroupUpdateFilter) Filter(groupUpdates map[insolar.Reference]*observer.Gr
 		d.Goal = update.Goal
 		d.Membership = update.Membership
 		d.ChairMan = update.ChairMan
-		groups[update.GroupReference] = d
+		groups[update.GroupState] = d
 		delete(groupUpdates, id)
 	}
 
