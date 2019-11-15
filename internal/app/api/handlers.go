@@ -190,7 +190,6 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 	s.setExpire(ctx, 1*time.Second)
-	
 	var migrationAddress string
 
 	ref, errMsg := s.checkReference(reference)
@@ -230,7 +229,12 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	return ctx.JSON(http.StatusOK, MemberToAPIMember(*member, *deposits, s.clock.Now().Unix(), byMigrationAddress))
+	response, err := MemberToAPIMember(*member, deposits, s.clock.Now().Unix(), byMigrationAddress)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 func (s *ObserverServer) Balance(ctx echo.Context, reference string) error {
