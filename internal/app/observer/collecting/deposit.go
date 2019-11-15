@@ -76,55 +76,54 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		if errors.Cause(err) == store.ErrNotFound {
-			c.log.Error(errors.Wrap(err, "result without request"))
-			return nil
-		}
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	_, ok := c.isDepositCall(&req)
+	incReq := req.Virtual.GetIncomingRequest()
+	if incReq == nil {
+		return nil
+	}
+
+	ok := c.isDepositMigrationCall(incReq)
 	if !ok {
 		return nil
 	}
 
-	callTree, err := c.builder.Build(ctx, req.ID)
+	migrationTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
-		if errors.Cause(err) == store.ErrNotFound {
-			c.log.Error(errors.Wrap(err, "couldn't build tree"))
-			return nil
-		}
 		panic(errors.Wrap(err, "failed to build tree"))
 	}
 
-	var (
-		activate   *record.Activate
-		activateID insolar.ID
-	)
-
-	daemonCall, err := c.find(callTree.Outgoings, c.isDepositMigrationCall)
+	confirmCall, err := c.find(migrationTree.Outgoings, c.isConfirmCall)
 	if err != nil {
-		// TODO: maybe should create failed deposit
+		// no confirm, construction probably
 		return nil
 	}
 
-	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
+	_, err = c.find(confirmCall.Outgoings, c.isTransferToDepositCall)
 	if err != nil {
-		// TODO: maybe should create failed deposit
+		// no transfer, not enough confirms yet
 		return nil
 	}
 
-	if newCall != nil {
-		activateID = newCall.SideEffect.ID
-		activate = newCall.SideEffect.Activation
-	}
-
-	if activate == nil {
-		c.log.Warn("failed to find activation")
+	if confirmCall.SideEffect == nil {
 		return nil
 	}
+	if confirmCall.SideEffect.Amend == nil {
+		panic(errors.Wrap(err, "confirm call has side effect, but it's not amend"))
+	}
 
-	d, err := c.build(activateID, activate, res)
+	depositStateID := confirmCall.SideEffect.ID
+
+	depositState := deposit.Deposit{}
+	err = insolar.Deserialize(confirmCall.SideEffect.Amend.Memory, &depositState)
+	if err != nil {
+		panic(errors.New("failed to deserialize deposit contract state"))
+	}
+
+	depositID := confirmCall.Request.Object.GetLocal()
+
+	d, err := c.build(*depositID, depositStateID, &depositState, res)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -208,25 +207,12 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 	return deposits
 }
 
-func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
-
-	request := observer.CastToRequest((*observer.Record)(rec))
-
-	if !request.IsIncoming() || !request.IsMemberCall() {
-		return nil, false
-	}
-
-	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == CallSite
-}
-
-func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
-	callResult := &migrationdaemon.DepositMigrationResult{}
-	res.ParseFirstPayloadValue(callResult)
+func (c *DepositCollector) build(id insolar.ID, stateID insolar.ID, state *deposit.Deposit, res *observer.Result) (*observer.Deposit, error) {
+	callResult := migrationdaemon.DepositMigrationResult{}
+	res.ParseFirstPayloadValue(&callResult)
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-
 	transferDate, err := id.Pulse().AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
@@ -237,7 +223,6 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
-	state := c.initialDepositState(activate)
 	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
 		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
@@ -245,13 +230,13 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 	}
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
+		Ref:             *insolar.NewReference(id),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: hrd.Unix(),
 		Amount:          state.Amount,
 		Balance:         state.Balance,
-		DepositState:    id,
+		DepositState:    stateID,
 		Vesting:         state.Vesting,
 		VestingStep:     state.VestingStep,
 	}, nil
@@ -282,8 +267,20 @@ func (c *DepositCollector) isDepositMigrationCall(req *record.IncomingRequest) b
 	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
 }
 
-func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
-	if req.Method != "New" {
+func (c *DepositCollector) isConfirmCall(req *record.IncomingRequest) bool {
+	if req.Method != "Confirm" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
+}
+
+func (c *DepositCollector) isTransferToDepositCall(req *record.IncomingRequest) bool {
+	if req.Method != "TransferToDeposit" {
 		return false
 	}
 
