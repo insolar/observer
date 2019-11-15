@@ -1,7 +1,5 @@
 FROM golang:1.12-buster as builder
 WORKDIR /observer
-COPY ./go.mod ./go.sum /observer/
-RUN go mod download
 
 COPY ./ /observer
 RUN make build
