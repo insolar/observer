@@ -1,10 +1,12 @@
+export GO111MODULE ?= on
+export GOFLAGS ?= -mod=vendor
+
 ARTIFACTS_DIR = .artifacts
 BIN_DIR = bin
 API = api
 OBSERVER = observer
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
-GO111MODULE := on
 
 VERSION	:=
 ifeq ($(OS),Windows_NT)
