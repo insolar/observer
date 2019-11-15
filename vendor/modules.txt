@@ -64,6 +64,8 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 github.com/gojuno/minimock
+# github.com/gojuno/minimock/v3 v3.0.5
+github.com/gojuno/minimock/v3
 # github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.3.2
@@ -90,13 +92,12 @@ github.com/hashicorp/hcl/hcl/scanner
 github.com/hashicorp/hcl/hcl/strconv
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/insolar/insolar v0.9.14-0.20191029164809-4ca85f1d6242
+# github.com/insolar/insolar v0.9.18
 github.com/insolar/insolar/insolar
 github.com/insolar/insolar/insolar/record
 github.com/insolar/insolar/ledger/heavy/exporter
 github.com/insolar/insolar/application/appfoundation
 github.com/insolar/insolar/application/builtin/contract/member
-github.com/insolar/insolar/application/builtin/contract/member/signer
 github.com/insolar/insolar/log
 github.com/insolar/insolar/logicrunner/builtin/foundation
 github.com/insolar/insolar/application/builtin/contract/account
@@ -114,6 +115,7 @@ github.com/insolar/insolar/application/builtin/proxy/wallet
 github.com/insolar/insolar/application/genesisrefs
 github.com/insolar/insolar/pulse
 github.com/insolar/insolar/insolar/bits
+github.com/insolar/insolar/insolar/defaults
 github.com/insolar/insolar/longbits
 github.com/insolar/insolar/reference
 github.com/insolar/insolar/insolar/node
@@ -157,7 +159,7 @@ github.com/insolar/insolar/insolar/flow
 github.com/insolar/insolar/logicrunner/metrics
 github.com/insolar/insolar/insolar/reply
 github.com/insolar/insolar/insolar/flow/internal/pulse
-# github.com/insolar/x-crypto v0.0.0-20190527100132-f1d1a11a8799
+# github.com/insolar/x-crypto v0.0.0-20191031140942-75fab8a325f6
 github.com/insolar/x-crypto/ecdsa
 github.com/insolar/x-crypto/sha256
 github.com/insolar/x-crypto/x509
@@ -189,7 +191,7 @@ github.com/labstack/gommon/bytes
 github.com/labstack/gommon/random
 # github.com/magiconair/properties v1.8.1
 github.com/magiconair/properties
-# github.com/mattn/go-colorable v0.1.2
+# github.com/mattn/go-colorable v0.1.4
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.9
 github.com/mattn/go-isatty
@@ -263,7 +265,7 @@ github.com/renstrom/shortuuid
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
-# github.com/satori/go.uuid v0.0.0-20181028125025-b2ce2384e17b
+# github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
 github.com/satori/go.uuid
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
@@ -276,7 +278,7 @@ github.com/spf13/cast
 github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/spf13/viper v1.3.2
+# github.com/spf13/viper v1.4.0
 github.com/spf13/viper
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
@@ -303,7 +305,7 @@ github.com/uber/jaeger-client-go/thrift-gen/agent
 github.com/uber/jaeger-client-go/thrift-gen/baggage
 # github.com/uber/jaeger-lib v2.2.0+incompatible
 github.com/uber/jaeger-lib/metrics
-# github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8
+# github.com/ugorji/go v1.1.4
 github.com/ugorji/go/codec
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool

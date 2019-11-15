@@ -24,7 +24,6 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
-	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
@@ -349,7 +348,7 @@ func (c *MemberCollector) ParseMemberCallArguments(rawArguments []byte) member.R
 				signature      string
 				raw            []byte
 			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
 			if err != nil {
 				c.log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
 				return member.Request{}
