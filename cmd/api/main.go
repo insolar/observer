@@ -32,7 +32,13 @@ import (
 func main() {
 	cfg := apiconfiguration.Load()
 
+	level, err := logrus.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		level = logrus.InfoLevel
+	}
+
 	logger := logrus.New()
+	logger.SetLevel(level)
 	logger.SetFormatter(&logrus.JSONFormatter{})
 
 	db := dbconn.Connect(cfg.DB)
