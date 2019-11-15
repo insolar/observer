@@ -125,8 +125,8 @@ type beauty struct {
 	wastings           map[string]*observer.Wasting
 	users              map[insolar.Reference]*observer.User
 	kycs               map[insolar.ID]*observer.UserKYC
-	groups             map[insolar.Reference]*observer.Group
-	groupUpdates       map[insolar.Reference]*observer.GroupUpdate
+	groups             map[insolar.ID]*observer.Group
+	groupUpdates       map[insolar.ID]*observer.GroupUpdate
 	mgrs               map[insolar.Reference]*observer.MGR
 	mgrUpdates         map[insolar.Reference]*observer.MGRUpdate
 	notifications      map[insolar.Reference]*observer.Notification

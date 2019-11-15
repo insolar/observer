@@ -32,13 +32,13 @@ type Group struct {
 	Membership  foundation.StableMap
 	Members     []insolar.Reference
 	Status      string
-	State       insolar.Reference
+	State       insolar.ID
 	Timestamp   int64
 }
 
 type GroupUpdate struct {
-	PrevState      insolar.Reference
-	GroupState     insolar.Reference
+	PrevState      insolar.ID
+	GroupState     insolar.ID
 	GroupReference insolar.Reference
 	Image          string
 	Goal           string

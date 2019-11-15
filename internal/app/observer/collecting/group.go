@@ -169,7 +169,7 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 		Membership: state.Membership,
 		Members:    members.Members,
 		Status:     "SUCCESS",
-		State:      *insolar.NewReference(act.ID),
+		State:      act.ID,
 		Timestamp:  date.Unix(),
 	}, nil
 }
