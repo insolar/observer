@@ -120,7 +120,7 @@ type SchemaDeposit struct {
 	DepositReference string             `json:"depositReference"`
 	EthTxHash        string             `json:"ethTxHash"`
 	HoldReleaseDate  int64              `json:"holdReleaseDate"`
-	Index            float32            `json:"index"`
+	Index            int                `json:"index"`
 	MemberReference  *string            `json:"memberReference,omitempty"`
 	NextRelease      *SchemaNextRelease `json:"nextRelease,omitempty"`
 	ReleaseEndDate   int64              `json:"releaseEndDate"`

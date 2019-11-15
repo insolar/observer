@@ -226,7 +226,7 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-	state := c.initialDepositState(activate)
+
 	transferDate, err := id.Pulse().AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
@@ -237,6 +237,7 @@ func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
+	state := c.initialDepositState(activate)
 	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
 		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)

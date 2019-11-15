@@ -457,9 +457,9 @@ func GetMemberByMigrationAddress(ctx context.Context, db Querier, ma string) (*m
 	return member, nil
 }
 
-func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]models.Deposit, error) {
-	deposits := &[]models.Deposit{}
-	_, err := db.QueryContext(ctx, deposits,
+func GetDeposits(ctx context.Context, db Querier, memberReference []byte) ([]models.Deposit, error) {
+	deposits := make([]models.Deposit, 0)
+	_, err := db.QueryContext(ctx, &deposits,
 		fmt.Sprintf( // nolint: gosec
 			`select %s from deposits where member_ref = ?0 order by deposit_number`, strings.Join(models.Deposit{}.Fields(), ",")),
 		memberReference)
