@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/application/builtin/contract/member"
-	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/application/genesisrefs"
@@ -279,7 +278,7 @@ func parseExternalArguments(in []byte) (member.Request, map[string]interface{}, 
 	{
 		var encodedRequest []byte
 		// IMPORTANT: argument number should match serialization. This is why we use nil as second and third values.
-		err = signer.UnmarshalParams(signedRequest, []interface{}{&encodedRequest, nil, nil}...)
+		err = insolar.Deserialize(signedRequest, []interface{}{&encodedRequest, nil, nil})
 		if err != nil {
 			return member.Request{}, nil, errors.Wrapf(err, "failed to unmarshal params")
 		}
