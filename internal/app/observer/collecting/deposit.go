@@ -141,7 +141,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
 		if err != nil {
 			c.log.WithField("member_ref_str", memberRefStr).
-				Errorf("failed to build reference from string")
+				Error("failed to build reference from string")
 			continue
 		}
 		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
@@ -152,10 +152,15 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 		}
 		activate := memberActivate.Virtual.GetActivate()
 		memberState := c.initialMemberState(activate)
+		// Deposit migration members has no wallet
+		if memberState.Wallet.IsEmpty() {
+			c.log.Debug("Member has no wallet. ", memberRef)
+			continue
+		}
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
 			c.log.WithField("wallet_ref", memberState.Wallet).
-				Warnf("failed to find wallet activate record")
+				Warn("failed to find wallet activate record")
 			continue
 		}
 		activate = walletActivate.Virtual.GetActivate()
@@ -165,7 +170,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			depositRef, err := insolar.NewReferenceFromString(depositRefString)
 			if err != nil {
 				c.log.WithField("deposit_ref_str", depositRefString).
-					Warnf("failed to build reference from string")
+					Warn("failed to build reference from string")
 				continue
 			}
 
