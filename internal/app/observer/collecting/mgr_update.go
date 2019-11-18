@@ -59,7 +59,7 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 
 	var seq []observer.Sequence
 	for _, v := range mgr.Sequence {
-		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DrawDate, IsActive: v.IsActive})
+		seq = append(seq, observer.Sequence{Member: v.Member, DrawDate: v.DrawDate, IsActive: v.IsActive})
 	}
 
 	date, err := rec.ID.GetPulseNumber().AsApproximateTime()

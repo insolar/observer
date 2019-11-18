@@ -152,7 +152,7 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 	var seq []observer.Sequence
 
 	for _, v := range mgr.Sequence {
-		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DrawDate, IsActive: v.IsActive})
+		seq = append(seq, observer.Sequence{Member: v.Member, DrawDate: v.DrawDate, IsActive: v.IsActive})
 	}
 	return &observer.MGR{
 		Ref:              *insolar.NewReference(act.ObjectID),

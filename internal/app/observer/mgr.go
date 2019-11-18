@@ -25,7 +25,7 @@ type Swap struct {
 
 type Sequence struct {
 	Member   insolar.Reference
-	DueDate  int64
+	DrawDate int64
 	IsActive bool
 }
 

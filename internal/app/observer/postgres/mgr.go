@@ -187,7 +187,7 @@ func mgrSequence(index int, model *observer.MGR) *MGRSequence {
 		Index:    index + 1,
 		GroupRef: model.GroupReference.Bytes(),
 		UserRef:  model.Sequence[index].Member.Bytes(),
-		DrawDate: model.Sequence[index].DueDate,
+		DrawDate: model.Sequence[index].DrawDate,
 	}
 }
 
@@ -196,7 +196,7 @@ func mgrSequenceUpdate(index int, model *observer.MGRUpdate) *MGRSequence {
 		Index:    index + 1,
 		GroupRef: model.GroupReference.Bytes(),
 		UserRef:  model.Sequence[index].Member.Bytes(),
-		DrawDate: model.Sequence[index].DueDate,
+		DrawDate: model.Sequence[index].DrawDate,
 		Active:   model.Sequence[index].IsActive,
 	}
 }
