@@ -119,7 +119,11 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 			Set("draw_date=?", seq.DrawDate).
 			Set("active=?", seq.Active).
 			SelectOrInsert()
+		if err != nil {
+			return errors.Wrapf(err, "failed to select or insert mgr sequence %v %v", model, err.Error())
+		}
 		if !isInserted {
+			seq := mgrSequenceUpdate(i, model)
 			_, err := s.db.Model(&MGRSequence{}).
 				Where("group_ref=?", seq.GroupRef).
 				Where("user_ref=?", seq.UserRef).
@@ -130,9 +134,6 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 			if err != nil {
 				return errors.Wrapf(err, "failed to update mgr sequence %v %v", model, err.Error())
 			}
-		}
-		if err != nil {
-			return errors.Wrapf(err, "failed to insert mgr sequence %v %v", model, err.Error())
 		}
 	}
 
@@ -187,7 +188,8 @@ func mgrSequence(index int, model *observer.MGR) *MGRSequence {
 		Index:    index + 1,
 		GroupRef: model.GroupReference.Bytes(),
 		UserRef:  model.Sequence[index].Member.Bytes(),
-		DrawDate: model.Sequence[index].DueDate,
+		DrawDate: model.Sequence[index].DrawDate,
+		Active:   model.Sequence[index].IsActive,
 	}
 }
 
@@ -196,7 +198,7 @@ func mgrSequenceUpdate(index int, model *observer.MGRUpdate) *MGRSequence {
 		Index:    index + 1,
 		GroupRef: model.GroupReference.Bytes(),
 		UserRef:  model.Sequence[index].Member.Bytes(),
-		DrawDate: model.Sequence[index].DueDate,
+		DrawDate: model.Sequence[index].DrawDate,
 		Active:   model.Sequence[index].IsActive,
 	}
 }

@@ -35,6 +35,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		filtering.NewDepositUpdateFilter().Filter(b.updates, b.deposits)
 		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
 		filtering.NewGroupUpdateFilter().Filter(b.groupUpdates, b.groups)
+		filtering.NewMGRUpdateFilter().Filter(b.mgrUpdates, b.mgrs)
 
 		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering.NewSeparatorFilter().
 			Filter(b.records)

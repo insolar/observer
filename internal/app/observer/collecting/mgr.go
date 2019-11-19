@@ -86,7 +86,7 @@ type MerryGoRound struct {
 
 type Sequence struct {
 	Member   insolar.Reference
-	DueDate  int64
+	DrawDate int64
 	IsActive bool
 }
 
@@ -152,7 +152,7 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 	var seq []observer.Sequence
 
 	for _, v := range mgr.Sequence {
-		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DueDate, IsActive: v.IsActive})
+		seq = append(seq, observer.Sequence{Member: v.Member, DrawDate: v.DrawDate, IsActive: v.IsActive})
 	}
 	return &observer.MGR{
 		Ref:              *insolar.NewReference(act.ObjectID),
@@ -164,7 +164,7 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 		NextPaymentTime:  mgr.NextPaymentTime,
 		Sequence:         seq,
 		Status:           "SUCCESS",
-		State:            *insolar.NewReference(act.ID),
+		State:            act.ID,
 	}, nil
 }
 

@@ -15,7 +15,7 @@ type MGR struct {
 	Sequence         []Sequence
 	SwapProcess      Swap
 	Status           string
-	State            insolar.Reference
+	State            insolar.ID
 }
 
 type Swap struct {
@@ -25,13 +25,13 @@ type Swap struct {
 
 type Sequence struct {
 	Member   insolar.Reference
-	DueDate  int64
+	DrawDate int64
 	IsActive bool
 }
 
 type MGRUpdate struct {
-	PrevState        insolar.Reference
-	MGRState         insolar.Reference
+	PrevState        insolar.ID
+	MGRState         insolar.ID
 	GroupReference   insolar.Reference
 	MGRReference     insolar.Reference
 	StartRoundDate   int64

@@ -59,7 +59,7 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 
 	var seq []observer.Sequence
 	for _, v := range mgr.Sequence {
-		seq = append(seq, observer.Sequence{Member: v.Member, DueDate: v.DueDate, IsActive: v.IsActive})
+		seq = append(seq, observer.Sequence{Member: v.Member, DrawDate: v.DrawDate, IsActive: v.IsActive})
 	}
 
 	date, err := rec.ID.GetPulseNumber().AsApproximateTime()
@@ -70,8 +70,8 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 
 	return &observer.MGRUpdate{
 		GroupReference:   mgr.GroupReference,
-		PrevState:        *insolar.NewReference(amd.PrevState),
-		MGRState:         *insolar.NewReference(rec.ID),
+		PrevState:        amd.PrevState,
+		MGRState:         rec.ID,
 		StartRoundDate:   int64(mgr.StartRoundDate),
 		FinishRoundDate:  int64(mgr.FinishRoundDate),
 		AmountDue:        mgr.AmountDue,
