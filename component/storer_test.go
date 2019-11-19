@@ -180,7 +180,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			VestingStep:     5,
 			TransferDate:    transferDate,
 			DepositNumber:   0,
-			InnerStatus:     models.Created,
+			InnerStatus:     models.DepositStatusCreated,
 		},
 	}
 

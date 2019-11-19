@@ -148,7 +148,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				State:           gen.ID().Bytes(),
 				Vesting:         10, // seconds
 				VestingStep:     10, // seconds
-				InnerStatus:     models.Confirmed,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				State:           gen.ID().Bytes(),
 				Vesting:         1000000,
 				VestingStep:     100,
-				InnerStatus:     models.Confirmed,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -224,7 +224,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				State:           gen.ID().Bytes(),
 				Vesting:         30 * 24 * 3600,
 				VestingStep:     3600,
-				InnerStatus:     models.Confirmed,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -255,7 +255,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				State:           gen.ID().Bytes(),
 				Vesting:         1000,
 				VestingStep:     50,
-				InnerStatus:     models.Confirmed,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				State:           gen.ID().Bytes(),
 				Vesting:         1000,
 				VestingStep:     13,
-				InnerStatus:     models.Confirmed,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)

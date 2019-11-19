@@ -41,8 +41,8 @@ type Member struct {
 type DepositStatus string
 
 const (
-	Created   DepositStatus = "created"
-	Confirmed DepositStatus = "confirmed"
+	DepositStatusCreated   DepositStatus = "created"
+	DepositStatusConfirmed DepositStatus = "confirmed"
 )
 
 type Deposit struct {
@@ -56,7 +56,7 @@ type Deposit struct {
 	Amount          string `sql:"amount"`
 	Balance         string `sql:"balance"`
 	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
-	DepositNumber   int64  `sql:"deposit_number"`
+	DepositNumber   *int64 `sql:"deposit_number"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`
 

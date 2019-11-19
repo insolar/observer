@@ -114,7 +114,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		}
 		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
 		resDeposit := SchemaDeposit{
-			Index:           int(d.DepositNumber),
+			Index:           int(*d.DepositNumber),
 			AmountOnHold:    amountOnHold.Text(10),
 			AvailableAmount: big.NewInt(0).Sub(balance, amountOnHold).Text(10),
 			EthTxHash:       d.EtheriumHash,
@@ -190,4 +190,8 @@ func nextReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	}
 	releaseAmount := new(big.Int).Quo(amount, big.NewInt(stepValue))
 	return releaseAmount.Text(10)
+}
+
+func newInt(val int64) *int64 {
+	return &val
 }

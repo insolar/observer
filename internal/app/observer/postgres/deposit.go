@@ -92,7 +92,7 @@ func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
 		deposit.State,
 		deposit.Vesting,
 		deposit.VestingStep,
-		models.Created,
+		models.DepositStatusCreated,
 	)
 
 	if err != nil {
@@ -120,15 +120,16 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 		return errors.Wrapf(err, "failed to find deposit for update upd=%#v", model)
 	}
 
-	status := models.Created
-	if model.IsConfirmed {
-		status = models.Confirmed
-	}
-
-	res, err := s.db.Model(&models.Deposit{}).
+	query := s.db.Model(&models.Deposit{}).
 		Where("deposit_ref=?", deposit.Reference).
-		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?,
-deposit_number = (select
+		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate)
+
+	if model.IsConfirmed {
+		if deposit.InnerStatus == models.DepositStatusCreated {
+			query.Set("status=?", models.DepositStatusConfirmed)
+		}
+		if deposit.DepositNumber == nil {
+			query.Set(`deposit_number = (select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
 						then 1
@@ -136,9 +137,11 @@ deposit_number = (select
 						(select (max(deposit_number) + 1) from deposits where member_ref=?)
 					end
 				)
-			), status=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate, deposit.MemberReference,
-			deposit.MemberReference, status).
-		Update()
+			)`, deposit.MemberReference, deposit.MemberReference)
+		}
+	}
+
+	res, err := query.Update()
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to update deposit upd=%v", model)
@@ -150,6 +153,15 @@ deposit_number = (select
 		return errors.New("failed to update, affected is 0")
 	}
 	return nil
+}
+
+func (s *DepositStorage) GetDeposit(ref []byte) (*models.Deposit, error) {
+	deposit := new(models.Deposit)
+	err := s.db.Model(deposit).Where("deposit_ref=?", ref).Select()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find deposit with ref = %q", ref)
+	}
+	return deposit, nil
 }
 
 func depositSchema(model *observer.Deposit) *models.Deposit {
