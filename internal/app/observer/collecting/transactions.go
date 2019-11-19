@@ -363,6 +363,21 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
+	switch args.Params.CallSite {
+	case callSiteTransfer:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+			return nil
+		}
+	case callSiteMigration:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+			return nil
+		}
+	case callSiteRelease:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+			return nil
+		}
+	}
+
 	// Migration and release don't have fees.
 	if args.Params.CallSite == callSiteMigration || args.Params.CallSite == callSiteRelease {
 		tx := &observer.TxResult{
@@ -554,6 +569,21 @@ func (c *TxSagaResultCollector) fromCall(
 	if !isTransfer && !isMigration && !isRelease {
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
+	}
+
+	switch args.Params.CallSite {
+	case callSiteTransfer:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+			return nil
+		}
+	case callSiteMigration:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+			return nil
+		}
+	case callSiteRelease:
+		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+			return nil
+		}
 	}
 
 	var response foundation.Result

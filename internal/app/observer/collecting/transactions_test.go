@@ -197,6 +197,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -242,6 +243,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -281,6 +283,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -434,6 +437,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -478,6 +482,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
