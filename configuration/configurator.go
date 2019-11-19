@@ -19,6 +19,7 @@ package configuration
 import (
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -42,6 +43,11 @@ func Load() *Configuration {
 
 func load() *Configuration {
 	v := viper.New()
+
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvPrefix("observer")
+
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
 	v.AddConfigPath(".")
@@ -54,12 +60,14 @@ func load() *Configuration {
 		}
 		return Default()
 	}
+
 	actual := &Configuration{}
 	err := v.Unmarshal(actual)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to unmarshal readed from file config into configuration structure. Default configuration is used"))
 		return Default()
 	}
+
 	return actual
 }
 

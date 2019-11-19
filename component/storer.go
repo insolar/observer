@@ -19,9 +19,9 @@ package component
 import (
 	"context"
 	"fmt"
-	"github.com/go-pg/pg/orm"
 	"strings"
-	"time"
+
+	"github.com/go-pg/pg/orm"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -33,7 +33,6 @@ import (
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/pkg/cycle"
-	"github.com/insolar/observer/internal/pkg/math"
 	"github.com/insolar/observer/observability"
 )
 
@@ -63,19 +62,7 @@ func makeStorer(
 				pulses := postgres.NewPulseStorage(cfg, obs, tx)
 				err := pulses.Insert(b.pulse)
 				if err != nil {
-					return err
-				}
-
-				records := postgres.NewRecordStorage(cfg, obs, tx)
-				for _, rec := range b.records {
-					if rec == nil {
-						continue
-					}
-					obsRec := observer.Record(rec.Record)
-					err := records.Insert(&obsRec)
-					if err != nil {
-						return err
-					}
+					return errors.Wrap(err, "failed to insert pulse")
 				}
 
 				requests := postgres.NewRequestStorage(obs, tx)
@@ -85,7 +72,7 @@ func makeStorer(
 					}
 					err := requests.Insert(req)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert request")
 					}
 				}
 
@@ -96,7 +83,7 @@ func makeStorer(
 					}
 					err := results.Insert(res)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert result")
 					}
 				}
 
@@ -107,7 +94,7 @@ func makeStorer(
 					}
 					err := objects.Insert(act)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert activate record")
 					}
 				}
 
@@ -117,7 +104,7 @@ func makeStorer(
 					}
 					err := objects.Insert(amd)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert amend record")
 					}
 				}
 
@@ -127,7 +114,7 @@ func makeStorer(
 					}
 					err := objects.Insert(deact)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deactivate record")
 					}
 				}
 
@@ -140,21 +127,21 @@ func makeStorer(
 					}
 					err := members.Insert(member)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert member")
 					}
 				}
 
 				err = StoreTxRegister(tx, b.txRegister)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txRegister")
 				}
 				err = StoreTxResult(tx, b.txResult)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txResult")
 				}
 				err = StoreTxSagaResult(tx, b.txSagaResult)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "failed to insert txSagaResult")
 				}
 
 				deposits := postgres.NewDepositStorage(obs, tx)
@@ -164,7 +151,7 @@ func makeStorer(
 					}
 					err := deposits.Insert(deposit)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deposit")
 					}
 				}
 
@@ -175,7 +162,7 @@ func makeStorer(
 					}
 					err := addresses.Insert(address)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert migration address")
 					}
 				}
 
@@ -187,7 +174,7 @@ func makeStorer(
 					}
 					err := members.Update(balance)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert balance")
 					}
 				}
 
@@ -197,7 +184,7 @@ func makeStorer(
 					}
 					err := deposits.Update(update)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert deposit update")
 					}
 				}
 
@@ -207,7 +194,7 @@ func makeStorer(
 					}
 					err := addresses.Update(wasting)
 					if err != nil {
-						return err
+						return errors.Wrap(err, "failed to insert wasting")
 					}
 				}
 
@@ -217,25 +204,10 @@ func makeStorer(
 				}
 
 				nodes := len(b.pulse.Nodes)
-				byMonth := 0
-				if month(s.stat.Pulse) == month(b.pulse.Number) {
-					byMonth = s.stat.LastMonthTransfers + len(b.txSagaResult)
-				} else {
-					byMonth = len(b.txSagaResult)
-				}
-				statistics := postgres.NewStatisticStorage(cfg, obs, tx)
 				stat = &observer.Statistic{
-					Pulse:              b.pulse.Number,
-					Transfers:          len(b.txSagaResult),
-					TotalTransfers:     s.stat.TotalTransfers + len(b.txSagaResult),
-					TotalMembers:       s.stat.TotalMembers + len(b.members),
-					Nodes:              nodes,
-					MaxTransfers:       math.Max(s.stat.MaxTransfers, len(b.txSagaResult)),
-					LastMonthTransfers: byMonth,
-				}
-				err = statistics.Insert(stat)
-				if err != nil {
-					return err
+					Pulse:     b.pulse.Number,
+					Transfers: len(b.txSagaResult),
+					Nodes:     nodes,
 				}
 
 				platformNodes.Set(float64(nodes))
@@ -278,6 +250,17 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		return nil
 	}
 
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
+	}
+
 	columns := []string{
 		"tx_id",
 		"status_registered",
@@ -293,7 +276,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.Type,
 			pg.Array([2]int64{t.PulseNumber, t.RecordNumber}),
@@ -323,12 +306,26 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		),
 		values...,
 	)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "failed to store TxRegister")
+	}
+	return nil
 }
 
 func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	if len(transactions) == 0 {
 		return nil
+	}
+
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
 	}
 
 	columns := []string{
@@ -340,7 +337,7 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.Fee,
 		)
@@ -366,6 +363,17 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 		return nil
 	}
 
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
+	}
+
 	columns := []string{
 		"tx_id",
 		"status_finished",
@@ -376,7 +384,7 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 	for _, t := range transactions {
 		values = append(
 			values,
-			t.TransactionID,
+			t.TransactionID.Bytes(),
 			true,
 			t.FinishSuccess,
 			pg.Array([2]int64{t.FinishPulseNumber, t.FinishRecordNumber}),
@@ -406,8 +414,9 @@ type Querier interface {
 }
 
 var (
-	ErrTxNotFound        = errors.New("tx not found")
-	ErrReferenceNotFound = errors.New("Reference not found")
+	ErrTxNotFound           = errors.New("tx not found")
+	ErrReferenceNotFound    = errors.New("Reference not found")
+	ErrNotificationNotFound = errors.New("Notification not found")
 )
 
 func GetMemberBalance(ctx context.Context, db Querier, reference []byte) (*models.Member, error) {
@@ -433,11 +442,26 @@ func getMember(ctx context.Context, db Querier, reference []byte, fields []strin
 	return member, nil
 }
 
-func GetDeposits(ctx context.Context, db Querier, memberReference []byte) (*[]models.Deposit, error) {
-	deposits := &[]models.Deposit{}
-	_, err := db.QueryContext(ctx, deposits,
+func GetMemberByMigrationAddress(ctx context.Context, db Querier, ma string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
 		fmt.Sprintf( // nolint: gosec
-			`select %s from deposits where member_ref = ?0`, strings.Join(models.Deposit{}.Fields(), ",")),
+			`select %s from members where migration_address = ?0`, strings.Join(models.Member{}.Fields(), ",")),
+		ma)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
+
+func GetDeposits(ctx context.Context, db Querier, memberReference []byte) ([]models.Deposit, error) {
+	deposits := make([]models.Deposit, 0)
+	_, err := db.QueryContext(ctx, &deposits,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from deposits where member_ref = ?0 order by deposit_number`, strings.Join(models.Deposit{}.Fields(), ",")),
 		memberReference)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch deposit")
@@ -449,7 +473,7 @@ func GetTx(ctx context.Context, db Querier, txID []byte) (*models.Transaction, e
 	tx := &models.Transaction{}
 	_, err := db.QueryOneContext(ctx, tx,
 		fmt.Sprintf( // nolint: gosec
-			`select %s from simple_transactions where tx_id = ?0`, strings.Join(tx.Fields(), ",")),
+			`select %s from simple_transactions where tx_id = ?0 and status_registered = true`, strings.Join(tx.Fields(), ",")),
 		txID)
 	if err != nil {
 		if err == pg.ErrNoRows {
@@ -484,12 +508,25 @@ func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
 	return query, nil
 }
 
-func FilterByMemberReference(query *orm.Query, ref *insolar.Reference) (*orm.Query, error) {
-	query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
-		q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
-			WhereOr("member_to_ref = ?", ref.Bytes())
-		return q, nil
-	})
+func FilterByMemberReferenceAndDirection(query *orm.Query, ref *insolar.Reference, d *string) (*orm.Query, error) {
+	direction := "all"
+	if d != nil {
+		direction = *d
+	}
+	switch direction {
+	case "incoming":
+		query = query.Where("member_to_ref = ?", ref.Bytes())
+	case "outgoing":
+		query = query.Where("member_from_ref = ?", ref.Bytes())
+	case "all":
+		query = query.WhereGroup(func(q *orm.Query) (*orm.Query, error) {
+			q = q.WhereOr("member_from_ref = ?", ref.Bytes()).
+				WhereOr("member_to_ref = ?", ref.Bytes())
+			return q, nil
+		})
+	default:
+		return query, errors.New("Query parameter 'direction' should be 'incoming', 'outgoing' or 'all'.") // nolint
+	}
 	return query, nil
 }
 
@@ -566,12 +603,17 @@ func valuesTemplate(columns, rows int) string {
 	return b.String()
 }
 
-func month(pn insolar.PulseNumber) int64 {
-	t, err := pn.AsApproximateTime()
+func GetNotification(ctx context.Context, db Querier) (models.Notification, error) {
+	res := models.Notification{}
+	_, err := db.QueryOneContext(
+		ctx, &res,
+		`SELECT * FROM notifications WHERE NOW() BETWEEN start AND stop ORDER BY start DESC LIMIT 1`,
+	)
 	if err != nil {
-		return 0
+		if err == pg.ErrNoRows {
+			return res, ErrNotificationNotFound
+		}
+		return res, errors.Wrap(err, "failed to fetch notification")
 	}
-	rounded := time.Date(t.Year(), t.Month(), 0, 0, 0, 0, 0, t.Location())
-	month := rounded.Unix()
-	return month
+	return res, nil
 }

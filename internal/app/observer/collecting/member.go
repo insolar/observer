@@ -24,7 +24,6 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
-	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
 	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
@@ -126,15 +125,15 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 
 	response := c.createResponse(contractResult)
 
-	memberRef, err := insolar.NewIDFromString(response.Reference)
+	memberRef, err := insolar.NewReferenceFromString(response.Reference)
 	if err != nil || memberRef == nil {
 		panic("invalid member reference")
 	}
 
 	return []*observer.Member{{
 		MemberRef:        *memberRef,
-		WalletRef:        *walletRef.GetLocal(),
-		AccountRef:       *accountRef.GetLocal(),
+		WalletRef:        walletRef,
+		AccountRef:       accountRef,
 		Balance:          balance,
 		MigrationAddress: response.MigrationAddress,
 		AccountState:     accountTree.SideEffect.ID,
@@ -159,7 +158,7 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
 		if err != nil {
 			c.log.WithField("member_ref_str", memberRefStr).
-				Errorf("failed to build reference from string")
+				Error("failed to build reference from string")
 			continue
 		}
 		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
@@ -170,10 +169,22 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		}
 		activate := memberActivate.Virtual.GetActivate()
 		memberState = c.initialMemberState(activate)
+
+		// Deposit migration members has no wallet
+		if memberState.Wallet.IsEmpty() {
+			c.log.Debug("Deposit migration member collected. ", memberRef)
+			members = append(members, &observer.Member{
+				MemberRef: *memberRef,
+				Balance:   "0",
+				Status:    "INTERNAL",
+			})
+			continue
+		}
+
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
 			c.log.WithField("wallet_ref", memberState.Wallet).
-				Warnf("failed to find wallet activate record")
+				Warn("failed to find wallet activate record")
 			continue
 		}
 		activate = walletActivate.Virtual.GetActivate()
@@ -186,7 +197,7 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		accountRef, err := insolar.NewReferenceFromString(accountRefString)
 		if err != nil {
 			c.log.WithField("account_ref_str", accountRefString).
-				Warnf("failed to build reference from string")
+				Warn("failed to build reference from string")
 			continue
 		}
 		if accountRef != nil {
@@ -202,9 +213,9 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		}
 
 		members = append(members, &observer.Member{
-			MemberRef:    *memberRef.GetLocal(),
-			WalletRef:    *memberState.Wallet.GetLocal(),
-			AccountRef:   *accountRef.GetLocal(),
+			MemberRef:    *memberRef,
+			WalletRef:    memberState.Wallet,
+			AccountRef:   *accountRef,
 			Balance:      balance,
 			AccountState: activateID,
 			Status:       "INTERNAL",
@@ -349,7 +360,7 @@ func (c *MemberCollector) ParseMemberCallArguments(rawArguments []byte) member.R
 				signature      string
 				raw            []byte
 			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
 			if err != nil {
 				c.log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
 				return member.Request{}

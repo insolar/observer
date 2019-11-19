@@ -26,7 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
-	"github.com/insolar/insolar/application/builtin/contract/member/signer"
 	"github.com/pkg/errors"
 )
 
@@ -134,7 +133,7 @@ func (r *Request) ParseMemberCallArguments() member.Request {
 				signature      string
 				raw            []byte
 			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
 			if err != nil {
 				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
 				return member.Request{}
@@ -206,7 +205,7 @@ func ParseMemberCallArguments(req *record.IncomingRequest) (member.Request, erro
 				signature      string
 				raw            []byte
 			)
-			err = signer.UnmarshalParams(rawRequest, &raw, &signature, &pulseTimeStamp)
+			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
 			if err != nil {
 				return member.Request{}, errors.Wrapf(err, "failed to unmarshal params")
 			}

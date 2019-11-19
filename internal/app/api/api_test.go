@@ -17,26 +17,22 @@
 package api
 
 import (
-	"fmt"
-	"log"
+	"math/big"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/insolar/observer/internal/models"
-	"github.com/stretchr/testify/require"
-
-	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
-	"github.com/ory/dockertest/v3"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/internal/models"
+	"github.com/insolar/observer/internal/testutils"
 )
 
 const (
-	database      = "test_api_db"
 	migrationsDir = "../../../scripts/migrations"
-	password      = "secret"
 
 	apihost = ":14800"
 )
@@ -44,85 +40,35 @@ const (
 var (
 	db *pg.DB
 
-	pgOptions = &pg.Options{
-		Addr:            "localhost",
-		User:            "postgres",
-		Password:        password,
-		Database:        database,
-		ApplicationName: "observer",
-	}
-
 	clock = &testClock{}
+
+	testFee   = big.NewInt(1000000000)
+	testPrice = "0.05"
 )
 
 func TestMain(t *testing.M) {
-	var err error
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
-	}
 
-	resource, err := pool.Run("postgres", "11", []string{"POSTGRES_PASSWORD=" + password, "POSTGRES_DB=" + database})
-	if err != nil {
-		log.Panicf("Could not start resource: %s", err)
-	}
-
-	defer func() {
-		// When you're done, kill and remove the container
-		err = pool.Purge(resource)
-		if err != nil {
-			log.Panicf("failed to purge docker pool: %s", err)
-		}
-	}()
-
-	if err = pool.Retry(func() error {
-		options := *pgOptions
-		options.Addr = fmt.Sprintf("%s:%s", options.Addr, resource.GetPort("5432/tcp"))
-		db = pg.Connect(&options)
-		_, err := db.Exec("select 1")
-		return err
-	}); err != nil {
-		log.Panicf("Could not connect to docker: %s", err)
-	}
-	defer db.Close()
-
-	migrationCollection := migrations.NewCollection()
-
-	_, _, err = migrationCollection.Run(db, "init")
-	if err != nil {
-		log.Panicf("Could not init migrations: %s", err)
-	}
-
-	err = migrationCollection.DiscoverSQLMigrations(migrationsDir)
-	if err != nil {
-		log.Panicf("Failed to read migrations: %s", err)
-	}
-
-	_, _, err = migrationCollection.Run(db, "up")
-	if err != nil {
-		log.Panicf("Could not migrate: %s", err)
-	}
+	var dbCleaner func()
+	db, _, dbCleaner = testutils.SetupDB(migrationsDir)
 
 	e := echo.New()
 
 	logger := logrus.New()
-	observerAPI := NewObserverServer(db, logger, clock)
+	logger.SetFormatter(&logrus.JSONFormatter{})
+	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
+
 	RegisterHandlers(e, observerAPI)
 	go func() {
-		e.Logger.Fatal(e.Start(apihost))
+		err := e.Start(apihost)
+		dbCleaner()
+		e.Logger.Fatal(err)
 	}()
 	// TODO: wait until API started
-	// TODO: flush db
 	time.Sleep(5 * time.Second)
 
 	retCode := t.Run()
 
-	// defer will not be called after os.Exit(), thus we call pool.Purge() manually
-	err = pool.Purge(resource)
-	if err != nil {
-		log.Panicf("failed to purge docker pool: %s", err)
-	}
-
+	dbCleaner()
 	os.Exit(retCode)
 }
 
@@ -132,6 +78,8 @@ func truncateDB(t *testing.T) {
 	_, err = db.Model(&models.Member{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
 	_, err = db.Model(&models.Deposit{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
+	_, err = db.Model(&models.MigrationAddress{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
 }
 

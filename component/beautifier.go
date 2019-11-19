@@ -22,6 +22,7 @@ import (
 	gopg "github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
@@ -47,12 +48,12 @@ func makeBeautifier(
 
 	cachedStore, err := store.NewCacheRecordStore(pg.NewPgStore(conn.PG()), cfg.Replicator.CacheSize)
 	if err != nil {
-		panic("failed to init cached record store")
+		panic(errors.Wrap(err, "failed to init cached record store"))
 	}
 	treeBuilder := tree.NewBuilder(cachedStore)
 
 	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
-	txRegisters := collecting.NewTxRegisterCollector()
+	txRegisters := collecting.NewTxRegisterCollector(log)
 	txResults := collecting.NewTxResultCollector(log, cachedStore)
 	txSagaResults := collecting.NewTxSagaResultCollector(log, cachedStore)
 	deposits := collecting.NewDepositCollector(log, cachedStore)
@@ -69,7 +70,6 @@ func makeBeautifier(
 
 		b := &beauty{
 			pulse:          r.pulse,
-			records:        r.batch,
 			members:        make(map[insolar.ID]*observer.Member),
 			deposits:       make(map[insolar.ID]*observer.Deposit),
 			addresses:      make(map[string]*observer.MigrationAddress),
@@ -88,7 +88,7 @@ func makeBeautifier(
 				err = cachedStore.SetResult(ctx, rec.Record)
 			}
 			if err != nil {
-				panic(err)
+				panic(errors.Wrap(err, "failed to insert record to storage"))
 			}
 		}
 
@@ -105,7 +105,7 @@ func makeBeautifier(
 				b.txRegister = append(b.txRegister, *reg)
 			}
 			res := txResults.Collect(ctx, *rec)
-			if reg != nil {
+			if res != nil {
 				b.txResult = append(b.txResult, *res)
 			}
 			sagRes := txSagaResults.Collect(ctx, *rec)

@@ -1,11 +1,12 @@
-ARTIFACTS = .artifacts
+export GO111MODULE ?= on
+export GOFLAGS ?= -mod=vendor
+
+ARTIFACTS_DIR = .artifacts
 BIN_DIR = bin
 API = api
 OBSERVER = observer
-CONFIG = config
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
-GO111MODULE := on
 
 VERSION	:=
 ifeq ($(OS),Windows_NT)
@@ -32,10 +33,11 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: $(BIN_DIR) $(OBSERVER) $(API) xns_stats_count ## build!
-
-.PHONY: env
-env: $(CONFIG) ## gen configs + artifacts
+build:
+	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
+	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
+	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -61,26 +63,12 @@ lint: golangci
 $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
 
-.PHONY: $(OBSERVER)
-$(OBSERVER):
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
-
-.PHONY: $(API)
-$(API):
-	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
-
-.PHONY: xns_stats_count
-xns_stats_count:
-	go build -o $(BIN_DIR)/xns_stats_count cmd/xns-coin-stats/*.go
-
-$(ARTIFACTS):
-	mkdir -p $(ARTIFACTS)
-
-.PHONY: $(CONFIG)
-$(CONFIG): $(ARTIFACTS)
+.PHONY: config
+config:
+	mkdir -p $(ARTIFACTS_DIR)
 	go run ./configuration/gen/gen.go
-	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
-	mv ./observerapi.yaml $(ARTIFACTS)/observerapi.yaml
+	mv ./observer.yaml $(ARTIFACTS_DIR)/observer.yaml
+	mv ./observerapi.yaml $(ARTIFACTS_DIR)/observerapi.yaml
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
@@ -93,20 +81,12 @@ integration:
 	go test ./... -tags=integration -v
 
 .PHONY: all
-all: env build ## ensure + build + artifacts
+all: config build
 
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: build-docker
-build-docker:
-	docker build -t insolar/observer -f scripts/docker/Dockerfile .
-
-.PHONY: build-migrate
-build-migrate:
-	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
-
 .PHONY: migrate
 migrate:
-	go run ./cmd/migrate/migrate.go -dir scripts/migrations
+	go run ./cmd/migrate/migrate.go -dir scripts/migrations -init

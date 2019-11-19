@@ -18,14 +18,14 @@ package collecting
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"testing"
 
-	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
-	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
-	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	"github.com/insolar/insolar/application/builtin/contract/pkshard"
+	"github.com/insolar/insolar/application/builtin/contract/wallet"
+	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
+	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 	"github.com/insolar/insolar/application/genesisrefs"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
@@ -38,223 +38,132 @@ import (
 	"github.com/insolar/observer/internal/app/observer/store"
 )
 
-func makeDepositMigrationCall(pn insolar.PulseNumber) *observer.Record {
-	request := &requester.ContractRequest{
-		Params: requester.Params{
-			CallSite:   "deposit.migration",
-			CallParams: nil,
-		},
-	}
-	requestBody, err := json.Marshal(request)
-	if err != nil {
-		panic("failed to marshal request")
-	}
-	signature := ""
-	pulseTimeStamp := 0
-	raw, err := insolar.Serialize([]interface{}{requestBody, signature, pulseTimeStamp})
-	if err != nil {
-		panic("failed to serialize raw")
-	}
-	args, err := insolar.Serialize([]interface{}{raw})
-	if err != nil {
-		panic("failed to serialize arguments")
-	}
-	rec := &record.Material{
-		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &record.IncomingRequest{
-					Method:    "Call",
-					Arguments: args,
-				},
-			},
-		},
-	}
-	return (*observer.Record)(rec)
-}
-
-func makeMigrationDaemonCall(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
-	signature := ""
-	pulseTimeStamp := 0
-	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
-	if err != nil {
-		panic("failed to serialize raw")
-	}
-	args, err := insolar.Serialize([]interface{}{raw})
-	if err != nil {
-		panic("failed to serialize arguments")
-	}
-	rec := &record.Material{
-		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &record.IncomingRequest{
-					Method:    "DepositMigrationCall",
-					Arguments: args,
-					Prototype: proxyDaemon.PrototypeReference,
-					Reason:    reason,
-				},
-			},
-		},
-	}
-	return (*observer.Record)(rec)
-}
-
-func makeNewDepositRequest(pn insolar.PulseNumber, reason insolar.Reference) *observer.Record {
-	signature := ""
-	pulseTimeStamp := 0
-	raw, err := insolar.Serialize([]interface{}{nil, signature, pulseTimeStamp})
-	if err != nil {
-		panic("failed to serialize raw")
-	}
-	args, err := insolar.Serialize([]interface{}{raw})
-	if err != nil {
-		panic("failed to serialize arguments")
-	}
-	rec := &record.Material{
-		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &record.IncomingRequest{
-					Method:    "New",
-					Arguments: args,
-					Prototype: proxyDeposit.PrototypeReference,
-					Reason:    reason,
-				},
-			},
-		},
-	}
-	return (*observer.Record)(rec)
-}
-
-func makeDepositActivate(pn insolar.PulseNumber, balance, amount, txHash string, requestRef insolar.Reference) *observer.Record {
-	dep := &deposit.Deposit{
-		Balance:            balance,
-		Amount:             amount,
-		TxHash:             txHash,
-		PulseDepositUnHold: pn + 3,
-	}
-	memory, err := insolar.Serialize(dep)
-	if err != nil {
-		panic("failed to serialize arguments")
-	}
-	rec := &record.Material{
-		ID: gen.IDWithPulse(pn),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &record.Activate{
-					Request: requestRef,
-					Memory:  memory,
-					Image:   *proxyDaemon.PrototypeReference,
-				},
-			},
-		},
-	}
-	return (*observer.Record)(rec)
-}
-
-func makeDeposit() ([]*observer.Deposit, []*observer.Record) {
-	pn := insolar.GenesisPulse.PulseNumber + 100
-	amount := "42"
-	balance := "0"
-	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-	memberRef := gen.IDWithPulse(pn)
-	out := makeOutgoingRequest()
-	call := makeDepositMigrationCall(pn)
-	callRef := *insolar.NewReference(call.ID)
-	daemonCall := makeMigrationDaemonCall(pn, callRef)
-	daemonCallRef := *insolar.NewReference(daemonCall.ID)
-	newDeposit := makeNewDepositRequest(pn, daemonCallRef)
-	depositRef := *insolar.NewRecordReference(newDeposit.ID)
-	depositActivate := makeDepositActivate(pn, balance, amount, txHash, depositRef)
-	records := []*observer.Record{
-		out,
-		makeResultWith(out.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		call,
-		makeResultWith(call.ID, &foundation.Result{Returns: []interface{}{&migrationdaemon.DepositMigrationResult{
-			Reference: memberRef.String(),
-		}, nil}}),
-		daemonCall,
-		makeResultWith(daemonCall.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		newDeposit,
-		makeResultWith(newDeposit.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-		depositActivate,
-	}
-	timestamp, err := pn.AsApproximateTime()
-	if err != nil {
-		panic("invalid pulse")
-	}
-	deposit := &observer.Deposit{
-		EthHash:      txHash,
-		Ref:          *depositRef.GetLocal(),
-		Member:       memberRef,
-		Timestamp:    timestamp.Unix(),
-		Balance:      balance,
-		Amount:       amount,
-		DepositState: depositActivate.ID,
-	}
-	return []*observer.Deposit{deposit}, records
-}
-
-// TODO: need unit tests
-func TestDepositCollector_Collect(t *testing.T) {
-	t.Skip("TestBeautifier_Run->deposit cover happy path")
-	//log := logrus.New()
-	//fetcher := store.NewRecordFetcherMock(t)
-	//collector := NewDepositCollector(log, fetcher)
-	//ctx := context.Background()
-	//
-	//expected, records := makeDeposit()
-	//var actual []*observer.Deposit
-	//for _, r := range records {
-	//	collectedDeposit := collector.Collect(ctx, r)
-	//	if collectedDeposit != nil {
-	//		actual = append(actual, collectedDeposit)
-	//	}
-	//}
-	//
-	//require.Len(t, actual, 1)
-	//require.Equal(t, expected, actual)
-}
-
 func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
-	t.Skip("should create pkshard with members with wallets with deposits")
 	log := logrus.New()
 	fetcher := store.NewRecordFetcherMock(t)
 	collector := NewDepositCollector(log, fetcher)
+	ctx := context.Background()
+	cache := make(map[insolar.ID]*observer.Record)
 
 	pn := insolar.GenesisPulse.PulseNumber
 	amount := "42"
 	balance := "0"
 	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
-	depositActivate := makeDepositActivate(pn, balance, amount, txHash, gen.ReferenceWithPulse(pn))
-	records := []*observer.Record{
-		depositActivate,
+	lockup := int64(120)
+	vPeriod := int64(3 * 24 * 60 * 60)
+	vStep := int64(24 * 60 * 60)
+	dep := deposit.Deposit{
+		Balance:            balance,
+		Amount:             amount,
+		TxHash:             txHash,
+		PulseDepositUnHold: pn + insolar.PulseNumber(lockup),
+		Vesting:            vPeriod,
+		VestingStep:        vStep,
+		Lockup:             lockup,
 	}
+
+	depositRef := genesisrefs.ContractMigrationDeposit
+	memberRef := genesisrefs.ContractMigrationAdminMember
+	walletRef1 := gen.ReferenceWithPulse(pn)
+	accountRef1 := gen.ReferenceWithPulse(pn)
+
+	pks := pkshard.PKShard{
+		Map: foundation.StableMap{
+			"pk1": memberRef.String(),
+		},
+	}
+	pkshardActivate := makePKShardActivate(pn, pks, gen.ReferenceWithPulse(pn))
+
+	cache[*depositRef.GetLocal()] = makeDepositActivate(pn, dep, depositRef)
+	cache[*walletRef1.GetLocal()], _ = makeGenesisWalletActivate(pn, accountRef1, walletRef1, depositRef)
+	cache[*memberRef.GetLocal()], _ = makeMemberActivate(pn, walletRef1, memberRef)
+
+	fetcher.SideEffectMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		if rec, ok := cache[reqID]; ok == true {
+			return *(*record.Material)(rec), nil
+		}
+		return record.Material{}, errors.New("record not found in cache")
+	})
+
+	actual := collector.Collect(ctx, pkshardActivate)
+
 	timestamp, err := pn.AsApproximateTime()
 	if err != nil {
 		panic("invalid pulse")
 	}
 	expected := []*observer.Deposit{{
-		EthHash:      txHash,
-		Ref:          *genesisrefs.ContractMigrationDeposit.GetLocal(),
-		Member:       *genesisrefs.ContractMigrationAdminMember.GetLocal(),
-		Timestamp:    timestamp.Unix(),
-		Balance:      balance,
-		Amount:       amount,
-		DepositState: depositActivate.ID,
+		EthHash:         txHash,
+		Ref:             genesisrefs.ContractMigrationDeposit,
+		Member:          genesisrefs.ContractMigrationAdminMember,
+		Timestamp:       timestamp.Unix(),
+		Balance:         balance,
+		Amount:          amount,
+		DepositState:    cache[*depositRef.GetLocal()].ID,
+		Vesting:         vPeriod,
+		VestingStep:     vStep,
+		HoldReleaseDate: 1546300920,
 	}}
-
-	ctx := context.Background()
-
-	var actual []*observer.Deposit
-	for _, r := range records {
-		deposit := collector.Collect(ctx, r)
-		if deposit != nil {
-			actual = append(actual, deposit...)
-		}
-	}
 
 	require.Len(t, actual, 1)
 	require.Equal(t, expected, actual)
+}
+
+func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef insolar.Reference) *observer.Record {
+	memory, err := insolar.Serialize(&dep)
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Wrap(&record.Activate{
+			Request: requestRef,
+			Memory:  memory,
+			Image:   proxyPKShard.GetPrototype(),
+		}),
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeGenesisWalletActivate(
+	pulse insolar.PulseNumber,
+	accountRef insolar.Reference,
+	requestRef insolar.Reference,
+	depositRef insolar.Reference,
+) (*observer.Record, *record.Activate) {
+	wlt := &wallet.Wallet{
+		Accounts: foundation.StableMap{"XNS": accountRef.String()},
+		Deposits: foundation.StableMap{"dep1": depositRef.String()},
+	}
+	memory, err := insolar.Serialize(wlt)
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+
+	activateRecord := record.Activate{
+		Request: requestRef,
+		Memory:  memory,
+		Image:   *proxyWallet.PrototypeReference,
+	}
+
+	rec := &record.Material{
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
+	}
+	return (*observer.Record)(rec), &activateRecord
+}
+
+func makePKShardActivate(pn insolar.PulseNumber, pks pkshard.PKShard, requestRef insolar.Reference) *observer.Record {
+	memory, err := insolar.Serialize(&pks)
+	if err != nil {
+		panic("failed to serialize arguments")
+	}
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Wrap(&record.Activate{
+			Request: requestRef,
+			Memory:  memory,
+			Image:   proxyPKShard.GetPrototype(),
+		}),
+	}
+	return (*observer.Record)(rec)
 }

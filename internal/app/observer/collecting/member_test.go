@@ -61,12 +61,8 @@ func makeAccountActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -91,12 +87,8 @@ func makeMemberActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -121,12 +113,8 @@ func makeWalletActivate(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_Activate{
-				Activate: &activateRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&activateRecord),
 	}
 	return (*observer.Record)(rec), &activateRecord
 }
@@ -154,12 +142,8 @@ func makeNewAccountRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &accountRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&accountRequest),
 	}
 	return (*observer.Record)(rec), &accountRequest
 }
@@ -187,12 +171,8 @@ func makeNewWalletRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &walletRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&walletRequest),
 	}
 	return (*observer.Record)(rec), &walletRequest
 }
@@ -220,12 +200,8 @@ func makeNewMemberRequest(
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &memberRequest,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&memberRequest),
 	}
 	return (*observer.Record)(rec), &memberRequest
 }
@@ -258,12 +234,8 @@ func makeMemberCreateCall(pulse insolar.PulseNumber) (*observer.Record, *record.
 	}
 
 	rec := &record.Material{
-		ID: gen.IDWithPulse(pulse),
-		Virtual: record.Virtual{
-			Union: &record.Virtual_IncomingRequest{
-				IncomingRequest: &callRecord,
-			},
-		},
+		ID:      gen.IDWithPulse(pulse),
+		Virtual: record.Wrap(&callRecord),
 	}
 	return (*observer.Record)(rec), &callRecord
 }
@@ -296,7 +268,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 
 				pn := insolar.GenesisPulse.PulseNumber + 10
 				balance := "42"
-				memberRef := gen.IDWithPulse(pn)
+				memberRef := gen.ReferenceWithPulse(pn)
 				// Useless records that shouldn't used by collector.
 				uselessOut := makeOutgoingRequest()
 				uselessResult := makeResultWith(uselessOut.ID, &foundation.Result{Returns: []interface{}{nil, nil}})
@@ -352,8 +324,8 @@ func TestMemberCollector_Collect(t *testing.T) {
 					MigrationAddress: "",
 					AccountState:     accountActivate.ID,
 					Status:           "SUCCESS",
-					AccountRef:       *newAccountRef.GetLocal(),
-					WalletRef:        *newWalletRef.GetLocal(),
+					AccountRef:       newAccountRef,
+					WalletRef:        newWalletRef,
 				}
 
 				expectedContractStruct := tree.Structure{

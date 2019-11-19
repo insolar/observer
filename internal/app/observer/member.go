@@ -24,13 +24,13 @@ import (
 
 // Member describes insolar member.
 type Member struct {
-	MemberRef        insolar.ID
+	MemberRef        insolar.Reference
 	Balance          string
 	MigrationAddress string
 	AccountState     insolar.ID
 	Status           string
-	WalletRef        insolar.ID
-	AccountRef       insolar.ID
+	WalletRef        insolar.Reference
+	AccountRef       insolar.Reference
 }
 
 type Balance struct {

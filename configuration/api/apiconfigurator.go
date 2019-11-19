@@ -17,10 +17,15 @@
 package api
 
 import (
+	"fmt"
+	"math/big"
 	"os"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -35,17 +40,45 @@ const (
 
 func Load() *Configuration {
 	printWorkingDir()
-	actual := load()
+	actual := load(".", ".artifacts")
 	printConfig(actual)
 	return actual
 }
 
-func load() *Configuration {
+func toBigIntHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+
+		if t != reflect.TypeOf(big.NewInt(0)) {
+			return data, nil
+		}
+
+		switch f {
+		case reflect.TypeOf(""):
+			res := new(big.Int)
+			if _, err := fmt.Sscan(data.(string), res); err != nil {
+				return data, errors.Wrapf(err, "failed to parse big.Int, input %v", data)
+			}
+			return res, nil
+		case reflect.TypeOf(0):
+			return big.NewInt(int64(data.(int))), nil
+		}
+		return data, nil
+	}
+}
+
+func load(configPathList ...string) *Configuration {
 	v := viper.New()
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvPrefix("observerapi")
 	v.SetConfigName(ConfigName)
 	v.SetConfigType(ConfigType)
-	v.AddConfigPath(".")
-	v.AddConfigPath(".artifacts")
+	for _, path := range configPathList {
+		v.AddConfigPath(path)
+	}
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Warnf("config file not found (file=%v). Default configuration is used", ConfigFilePath)
@@ -55,9 +88,14 @@ func load() *Configuration {
 		return Default()
 	}
 	actual := &Configuration{}
-	err := v.Unmarshal(actual)
+	// Need to copy default viper hooks, because DecodeHook rewrites
+	err := v.Unmarshal(actual, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToTimeDurationHookFunc(),
+		mapstructure.StringToSliceHookFunc(","),
+		toBigIntHookFunc(),
+	)))
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to unmarshal readed from file config into configuration structure. Default configuration is used"))
+		log.Error(errors.Wrapf(err, "failed to unmarshal config into configuration structure. Default configuration is used"))
 		return Default()
 	}
 	return actual

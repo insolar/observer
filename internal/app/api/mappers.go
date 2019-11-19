@@ -17,10 +17,12 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
+
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -98,22 +100,27 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 }
 
-func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64) ResponsesMemberYaml {
+func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64, withMemberRef bool) (ResponsesMemberYaml, error) {
 	var resDeposits []SchemaDeposit
 
 	for _, d := range deposits {
-		amount, _ := strconv.ParseInt(d.Amount, 10, 64)
-		releaseAmount := d.ReleaseAmount(currentTime)
-		balance, _ := strconv.ParseInt(d.Balance, 10, 64)
-		amountOnHold := amount - releaseAmount
+		amount := new(big.Int)
+		if _, err := fmt.Sscan(d.Amount, amount); err != nil {
+			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit amount")
+		}
+		amountOnHold, releaseAmount := d.ReleaseAmount(amount, currentTime)
+		balance := new(big.Int)
+		if _, err := fmt.Sscan(d.Balance, balance); err != nil {
+			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
+		}
 		resDeposit := SchemaDeposit{
-			Index:           0,
-			AmountOnHold:    strconv.FormatInt(amountOnHold, 10),
-			AvailableAmount: strconv.FormatInt(balance-amountOnHold, 10),
+			Index:           int(d.DepositNumber),
+			AmountOnHold:    amountOnHold.Text(10),
+			AvailableAmount: big.NewInt(0).Sub(balance, amountOnHold).Text(10),
 			EthTxHash:       d.EtheriumHash,
 			HoldReleaseDate: d.HoldReleaseDate,
 			NextRelease:     NextRelease(currentTime, amount, d),
-			ReleasedAmount:  strconv.FormatInt(releaseAmount, 10),
+			ReleasedAmount:  releaseAmount.Text(10),
 			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
 			Status:          d.Status(currentTime),
 			Timestamp:       d.TransferDate,
@@ -121,6 +128,12 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		ref := insolar.NewReferenceFromBytes(d.Reference)
 		if ref != nil {
 			resDeposit.DepositReference = ref.String()
+		}
+		if withMemberRef {
+			ref := insolar.NewReferenceFromBytes(member.Reference)
+			if ref != nil {
+				resDeposit.MemberReference = NullableString(ref.String())
+			}
 		}
 
 		resDeposits = append(resDeposits, resDeposit)
@@ -144,32 +157,37 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		res.MigrationAddress = &member.MigrationAddress
 	}
 
-	return res
+	return res, nil
 }
 
-func NextRelease(currentTime int64, amount int64, deposit models.Deposit) *SchemaNextRelease {
-	var timestamp int64
+func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *SchemaNextRelease {
 	if deposit.HoldReleaseDate == 0 {
 		return nil
 	}
+
 	if deposit.Vesting == 0 {
 		return nil
 	}
+
+	if currentTime >= (deposit.HoldReleaseDate + deposit.Vesting) {
+		return nil
+	}
+
+	var timestamp int64
 	if currentTime <= deposit.HoldReleaseDate {
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep
 	} else {
-		if currentTime >= (deposit.HoldReleaseDate + deposit.Vesting) {
-			return nil
-		}
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
 	}
 	res := SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit)}
 	return &res
 }
 
-func nextReleaseAmount(amount int64, deposit *models.Deposit) string {
-	stepValue := float64(deposit.VestingStep) / float64(deposit.Vesting)
-	amountFloat := big.NewFloat(float64(amount))
-	releaseAmount := new(big.Float).Mul(big.NewFloat(stepValue), amountFloat)
-	return releaseAmount.String()
+func nextReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
+	stepValue := deposit.Vesting / deposit.VestingStep
+	if stepValue == 0 {
+		return amount.Text(10)
+	}
+	releaseAmount := new(big.Int).Quo(amount, big.NewInt(stepValue))
+	return releaseAmount.Text(10)
 }

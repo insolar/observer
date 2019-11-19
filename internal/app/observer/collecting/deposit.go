@@ -23,6 +23,7 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
+	"github.com/insolar/insolar/pulse"
 
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
@@ -75,55 +76,54 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 
 	req, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
-		if errors.Cause(err) == store.ErrNotFound {
-			c.log.Error(errors.Wrap(err, "result without request"))
-			return nil
-		}
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	_, ok := c.isDepositCall(&req)
+	incReq := req.Virtual.GetIncomingRequest()
+	if incReq == nil {
+		return nil
+	}
+
+	ok := c.isDepositMigrationCall(incReq)
 	if !ok {
 		return nil
 	}
 
-	callTree, err := c.builder.Build(ctx, req.ID)
+	migrationTree, err := c.builder.Build(ctx, req.ID)
 	if err != nil {
-		if errors.Cause(err) == store.ErrNotFound {
-			c.log.Error(errors.Wrap(err, "couldn't build tree"))
-			return nil
-		}
 		panic(errors.Wrap(err, "failed to build tree"))
 	}
 
-	var (
-		activate   *record.Activate
-		activateID insolar.ID
-	)
-
-	daemonCall, err := c.find(callTree.Outgoings, c.isDepositMigrationCall)
+	confirmCall, err := c.find(migrationTree.Outgoings, c.isConfirmCall)
 	if err != nil {
-		// TODO: maybe should create failed deposit
+		// no confirm, construction probably
 		return nil
 	}
 
-	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
+	_, err = c.find(confirmCall.Outgoings, c.isTransferToDepositCall)
 	if err != nil {
-		// TODO: maybe should create failed deposit
+		// no transfer, not enough confirms yet
 		return nil
 	}
 
-	if newCall != nil {
-		activateID = newCall.SideEffect.ID
-		activate = newCall.SideEffect.Activation
-	}
-
-	if activate == nil {
-		c.log.Warn("failed to find activation")
+	if confirmCall.SideEffect == nil {
 		return nil
 	}
+	if confirmCall.SideEffect.Amend == nil {
+		panic(errors.Wrap(err, "confirm call has side effect, but it's not amend"))
+	}
 
-	d, err := c.build(activateID, activate, res)
+	depositStateID := confirmCall.SideEffect.ID
+
+	depositState := deposit.Deposit{}
+	err = insolar.Deserialize(confirmCall.SideEffect.Amend.Memory, &depositState)
+	if err != nil {
+		panic(errors.New("failed to deserialize deposit contract state"))
+	}
+
+	depositID := confirmCall.Request.Object.GetLocal()
+
+	d, err := c.build(*depositID, depositStateID, &depositState, res)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -132,16 +132,6 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 }
 
 func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record) []*observer.Deposit {
-	var (
-		memberState      *member.Member
-		walletState      *wallet.Wallet
-		depositState     *deposit.Deposit
-		depositRefString string
-		depositID        insolar.ID
-		ethHash          string
-		amount           string
-		balance          string
-	)
 	activate := rec.Virtual.GetActivate()
 	shard := c.initialPKShard(activate)
 	var (
@@ -151,7 +141,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
 		if err != nil {
 			c.log.WithField("member_ref_str", memberRefStr).
-				Errorf("failed to build reference from string")
+				Error("failed to build reference from string")
 			continue
 		}
 		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
@@ -161,98 +151,97 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 			continue
 		}
 		activate := memberActivate.Virtual.GetActivate()
-		memberState = c.initialMemberState(activate)
+		memberState := c.initialMemberState(activate)
+		// Deposit migration members has no wallet
+		if memberState.Wallet.IsEmpty() {
+			c.log.Debug("Member has no wallet. ", memberRef)
+			continue
+		}
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
 			c.log.WithField("wallet_ref", memberState.Wallet).
-				Warnf("failed to find wallet activate record")
+				Warn("failed to find wallet activate record")
 			continue
 		}
 		activate = walletActivate.Virtual.GetActivate()
-		walletState = c.initialWalletState(activate)
+		walletState := c.initialWalletState(activate)
 
-		for _, value := range walletState.Deposits {
-			depositRefString = value
-			break
-		}
-		depositRef, err := insolar.NewReferenceFromString(depositRefString)
-		if err != nil {
-			c.log.WithField("deposit_ref_str", depositRefString).
-				Warnf("failed to build reference from string")
-			continue
-		}
-		if depositRef != nil {
+		for _, depositRefString := range walletState.Deposits {
+			depositRef, err := insolar.NewReferenceFromString(depositRefString)
+			if err != nil {
+				c.log.WithField("deposit_ref_str", depositRefString).
+					Warn("failed to build reference from string")
+				continue
+			}
+
 			depositActivate, err := c.fetcher.SideEffect(ctx, *depositRef.GetLocal())
 			if err != nil {
 				c.log.WithField("deposit_ref", depositRef).
 					Error("failed to find deposit activate record")
 				continue
 			}
-			depositID = depositActivate.ID
-			activate = depositActivate.Virtual.GetActivate()
-			depositState = c.initialDepositState(activate)
-			ethHash = strings.ToLower(depositState.TxHash)
-			amount = depositState.Amount
-			balance = depositState.Balance
-		}
 
-		timeActivate, err := rec.ID.Pulse().AsApproximateTime()
-		if err != nil {
-			c.log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
-			continue
+			timeActivate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
+			if err != nil {
+				c.log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
+				continue
+			}
+
+			activate = depositActivate.Virtual.GetActivate()
+			depositState := c.initialDepositState(activate)
+
+			hrd, err := depositState.PulseDepositUnHold.AsApproximateTime()
+			if err != nil {
+				c.log.Errorf("wrong timestamp in genesis deposit PulseDepositUnHold: %+v", depositState)
+				hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
+			}
+			deposits = append(deposits, &observer.Deposit{
+				EthHash:         strings.ToLower(depositState.TxHash),
+				Ref:             *depositRef,
+				DepositState:    depositActivate.ID,
+				Member:          *memberRef,
+				Timestamp:       timeActivate.Unix(),
+				Amount:          depositState.Amount,
+				Balance:         depositState.Balance,
+				HoldReleaseDate: hrd.Unix(),
+				Vesting:         depositState.Vesting,
+				VestingStep:     depositState.VestingStep,
+			})
 		}
-		deposits = append(deposits, &observer.Deposit{
-			EthHash:         ethHash,
-			Ref:             depositID,
-			Member:          *memberRef.GetLocal(),
-			Timestamp:       timeActivate.Unix(),
-			HoldReleaseDate: 0,
-			Amount:          amount,
-			Balance:         balance,
-			DepositState:    depositID,
-		})
 	}
 	return deposits
 }
 
-func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
-
-	request := observer.CastToRequest((*observer.Record)(rec))
-
-	if !request.IsIncoming() || !request.IsMemberCall() {
-		return nil, false
-	}
-
-	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == CallSite
-}
-
-func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
-	callResult := &migrationdaemon.DepositMigrationResult{}
-	res.ParseFirstPayloadValue(callResult)
+func (c *DepositCollector) build(id insolar.ID, stateID insolar.ID, state *deposit.Deposit, res *observer.Result) (*observer.Deposit, error) {
+	callResult := migrationdaemon.DepositMigrationResult{}
+	res.ParseFirstPayloadValue(&callResult)
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-	state := c.initialDepositState(activate)
 	transferDate, err := id.Pulse().AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
 	}
 
-	memberRef, err := insolar.NewIDFromString(callResult.Reference)
+	memberRef, err := insolar.NewReferenceFromString(callResult.Reference)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
+	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
+	if err != nil {
+		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
+		hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
+	}
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             *activate.Request.GetLocal(),
+		Ref:             *insolar.NewReference(id),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
-		HoldReleaseDate: 0,
+		HoldReleaseDate: hrd.Unix(),
 		Amount:          state.Amount,
 		Balance:         state.Balance,
-		DepositState:    id,
+		DepositState:    stateID,
 		Vesting:         state.Vesting,
 		VestingStep:     state.VestingStep,
 	}, nil
@@ -283,8 +272,20 @@ func (c *DepositCollector) isDepositMigrationCall(req *record.IncomingRequest) b
 	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
 }
 
-func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
-	if req.Method != "New" {
+func (c *DepositCollector) isConfirmCall(req *record.IncomingRequest) bool {
+	if req.Method != "Confirm" {
+		return false
+	}
+
+	if req.Prototype == nil {
+		return false
+	}
+
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
+}
+
+func (c *DepositCollector) isTransferToDepositCall(req *record.IncomingRequest) bool {
+	if req.Method != "TransferToDeposit" {
 		return false
 	}
 

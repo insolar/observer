@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -73,7 +74,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxRegister(tx, []observer.TxRegister{
 					{
-						TransactionID:       expectedTransactions[0].TransactionID,
+						TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						Type:                expectedTransactions[0].Type,
 						PulseNumber:         expectedTransactions[0].PulseRecord[0],
 						RecordNumber:        expectedTransactions[0].PulseRecord[1],
@@ -82,7 +83,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 						Amount:              expectedTransactions[0].Amount,
 					},
 					{
-						TransactionID:      expectedTransactions[1].TransactionID,
+						TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
 						Type:               expectedTransactions[1].Type,
 						PulseNumber:        expectedTransactions[1].PulseRecord[0],
 						RecordNumber:       expectedTransactions[1].PulseRecord[1],
@@ -94,11 +95,11 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxResult(tx, []observer.TxResult{
 					{
-						TransactionID: expectedTransactions[0].TransactionID,
+						TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						Fee:           expectedTransactions[0].Fee,
 					},
 					{
-						TransactionID: expectedTransactions[1].TransactionID,
+						TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
 						Fee:           expectedTransactions[1].Fee,
 					},
 				})
@@ -106,7 +107,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			func() error {
 				return StoreTxSagaResult(tx, []observer.TxSagaResult{
 					{
-						TransactionID:      expectedTransactions[0].TransactionID,
+						TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
 						FinishSuccess:      expectedTransactions[0].FinishSuccess,
 						FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
 						FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
@@ -168,8 +169,8 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 	expectedDeposit := []models.Deposit{
 		{
-			Reference:       ref.GetLocal().Bytes(),
-			MemberReference: memberRef.GetLocal().Bytes(),
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
 			HoldReleaseDate: holdDate,
@@ -178,6 +179,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
+			DepositNumber:   1,
 		},
 	}
 
@@ -187,8 +189,8 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		err := deposits.Insert(&observer.Deposit{
 			EthHash:         expectedDeposit[0].EtheriumHash,
-			Ref:             *insolar.NewIDFromBytes(expectedDeposit[0].Reference),
-			Member:          *insolar.NewIDFromBytes(expectedDeposit[0].MemberReference),
+			Ref:             *insolar.NewReferenceFromBytes(expectedDeposit[0].Reference),
+			Member:          *insolar.NewReferenceFromBytes(expectedDeposit[0].MemberReference),
 			Timestamp:       transferDate,
 			HoldReleaseDate: holdDate,
 			Amount:          expectedDeposit[0].Amount,
@@ -196,6 +198,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
 			Vesting:         expectedDeposit[0].Vesting,
 			VestingStep:     expectedDeposit[0].VestingStep,
+			DepositNumber:   expectedDeposit[0].DepositNumber,
 		})
 		if err != nil {
 			return err
@@ -216,4 +219,135 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		return tx.Rollback()
 	})
+}
+
+func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make(cfg)
+
+	ref := gen.RecordReference()
+	memberRef := gen.RecordReference()
+	state := gen.RecordReference()
+	transferDate := time.Now().Unix()
+	holdDate := time.Now().Unix() + 5
+
+	expectedDeposit := []models.Deposit{
+		{
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    "tx_hash_0",
+			State:           state.GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "100500",
+			Balance:         "100",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   1,
+		},
+		{
+			Reference:       ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    "tx_hash_1",
+			State:           state.GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "100",
+			Balance:         "10",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   2,
+		},
+		{
+			Reference:       gen.RecordReference().Bytes(),
+			MemberReference: gen.RecordReference().Bytes(),
+			EtheriumHash:    "tx_hash_2",
+			State:           gen.RecordReference().GetLocal().Bytes(),
+			HoldReleaseDate: holdDate,
+			Amount:          "200500",
+			Balance:         "200",
+			Vesting:         10,
+			VestingStep:     5,
+			TransferDate:    transferDate,
+			DepositNumber:   1,
+		},
+	}
+
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+
+		deposits := postgres.NewDepositStorage(obs, tx)
+
+		for _, dep := range expectedDeposit {
+			err := deposits.Insert(&observer.Deposit{
+				EthHash:         dep.EtheriumHash,
+				Ref:             *insolar.NewReferenceFromBytes(dep.Reference),
+				Member:          *insolar.NewReferenceFromBytes(dep.MemberReference),
+				Timestamp:       transferDate,
+				HoldReleaseDate: holdDate,
+				Amount:          dep.Amount,
+				Balance:         dep.Balance,
+				DepositState:    *insolar.NewIDFromBytes(dep.State),
+				Vesting:         dep.Vesting,
+				VestingStep:     dep.VestingStep,
+				DepositNumber:   dep.DepositNumber,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		// Select deposit from db.
+		selected := make([]models.Deposit, 3)
+		res, err := tx.Query(&selected, `SELECT * FROM deposits`)
+		require.NoError(t, err)
+		require.Equal(t, 3, res.RowsReturned())
+
+		// Reset ID field to simplify comparing.
+		for i, t := range selected {
+			selected[i] = t
+		}
+
+		// Compare deposits.
+		assert.Equal(t, expectedDeposit, selected)
+
+		return tx.Rollback()
+	})
+}
+
+func TestStorerOK(t *testing.T) {
+	cfg := configuration.Default()
+	obs := observability.Make(cfg)
+
+	storer := makeStorer(cfg, obs, fakeConn{})
+
+	stats := storer(&beauty{
+		pulse: &observer.Pulse{
+			Number: insolar.GenesisPulse.PulseNumber,
+			Nodes: []insolar.Node{
+				{
+					ID:   gen.Reference(),
+					Role: insolar.StaticRoleHeavyMaterial,
+				},
+			},
+		},
+		deposits: map[insolar.ID]*observer.Deposit{
+			gen.ID(): {
+				EthHash:         strings.ToLower("0x5ca5e6417f818ba1c74d"),
+				Ref:             gen.Reference(),
+				Member:          gen.Reference(),
+				Timestamp:       time.Now().Unix(),
+				HoldReleaseDate: 0,
+				Amount:          "120",
+				Balance:         "123",
+				DepositState:    gen.ID(),
+				Vesting:         10,
+				VestingStep:     10,
+			},
+		},
+	}, &state{})
+
+	assert.Equal(t, &observer.Statistic{
+		Pulse: insolar.GenesisPulse.PulseNumber,
+		Nodes: 1,
+	}, stats)
 }

@@ -17,30 +17,32 @@
 package api
 
 import (
-	"github.com/sirupsen/logrus"
-
+	"math/big"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 )
 
 type Configuration struct {
-	API      configuration.API
-	DB       configuration.DB
-	LogLevel string
+	Listen    string
+	DB        configuration.DB
+	FeeAmount *big.Int
+	Price     string
+	LogLevel  string
 }
 
 func Default() *Configuration {
 	return &Configuration{
-		API: configuration.API{
-			Addr: ":0",
-		},
+		Listen: ":0",
 		DB: configuration.DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
-			CreateTables:    false,
 		},
-		LogLevel: logrus.DebugLevel.String(),
+		LogLevel:  logrus.DebugLevel.String(),
+		FeeAmount: big.NewInt(1000000000),
+		Price:     "0.05",
 	}
 }
