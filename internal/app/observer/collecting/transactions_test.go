@@ -197,6 +197,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		requestRef := gen.Reference()
@@ -242,6 +243,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
 		requestRef := gen.Reference()
@@ -281,6 +283,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
 		requestRef := gen.Reference()
@@ -434,6 +437,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		requestRef := gen.Reference()
@@ -486,6 +490,7 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
+				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		requestRef := gen.Reference()
