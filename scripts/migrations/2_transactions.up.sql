@@ -12,7 +12,7 @@ create table simple_transactions
     member_to_ref bytea,
     deposit_to_ref bytea,
     deposit_from_ref bytea,
-    amount varchar(256),
+    amount text,
 
     status_sent bool,
 
