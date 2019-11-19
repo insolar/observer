@@ -17,7 +17,7 @@ jobs:
     - name: Env
       run: make env
     - name: Check vendor
-      run: rm -rf vendor && go mod vendor
+      run: go mod vendor
     - name: Build
       run: make build
   test:
@@ -34,7 +34,7 @@ jobs:
       with:
         fetch-depth: 1
     - name: Check vendor
-      run: rm -rf vendor && go mod vendor
+      run: go mod vendor
     - name: Test
       run: make test
   mocks:
