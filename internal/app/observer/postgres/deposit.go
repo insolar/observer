@@ -23,24 +23,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/observability"
 )
-
-type DepositSchema struct {
-	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
-
-	EthHash         string `sql:",pk"`
-	MemberRef       []byte `sql:",pk"`
-	DepositRef      []byte `sql:",notnull"`
-	TransferDate    int64  `sql:",notnull"`
-	HoldReleaseDate int64  `sql:",notnull"`
-	Amount          string `sql:",notnull"`
-	Balance         string `sql:",notnull"`
-	DepositState    []byte `sql:",notnull"`
-	DepositNumber   int64  `sql:",notnull"`
-	Vesting         int64
-	VestingStep     int64
-}
 
 type DepositStorage struct {
 	log          *logrus.Logger
@@ -70,7 +55,7 @@ func (s *DepositStorage) Insert(model *observer.Deposit) error {
 	return s.insertDeposit(row)
 }
 
-func (s *DepositStorage) insertDeposit(deposit *DepositSchema) error {
+func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
 	res, err := s.db.Query(deposit, `
 		insert into deposits (
 			eth_hash,
@@ -83,7 +68,7 @@ func (s *DepositStorage) insertDeposit(deposit *DepositSchema) error {
 			deposit_state,
 			vesting,
 			vesting_step,
-			deposit_number
+			status
 		) values (
 			?,
 			?,
@@ -95,28 +80,19 @@ func (s *DepositStorage) insertDeposit(deposit *DepositSchema) error {
 			?,
 			?,
 			?,
-			(select
-				(case
-					when (select max(deposit_number) from deposits where member_ref=?) isnull
-						then 1
-					else
-						(select (max(deposit_number) + 1) from deposits where member_ref=?)
-					end
-				)
-			)
+			?
 		)`,
-		deposit.EthHash,
-		deposit.DepositRef,
-		deposit.MemberRef,
+		deposit.EtheriumHash,
+		deposit.Reference,
+		deposit.MemberReference,
 		deposit.TransferDate,
 		deposit.HoldReleaseDate,
 		deposit.Amount,
 		deposit.Balance,
-		deposit.DepositState,
+		deposit.State,
 		deposit.Vesting,
 		deposit.VestingStep,
-		deposit.MemberRef,
-		deposit.MemberRef,
+		models.Created,
 	)
 
 	if err != nil {
@@ -138,9 +114,30 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 		return nil
 	}
 
-	res, err := s.db.Model(&DepositSchema{}).
-		Where("deposit_state=?", model.PrevState.Bytes()).
-		Set("amount=?,deposit_state=?,balance=?,hold_release_date=?", model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate).
+	deposit := new(models.Deposit)
+	err := s.db.Model(deposit).Where("deposit_state=?", model.PrevState.Bytes()).Select()
+	if err != nil {
+		return errors.Wrapf(err, "failed to find deposit for update upd=%#v", model)
+	}
+
+	status := models.Created
+	if model.IsConfirmed {
+		status = models.Confirmed
+	}
+
+	res, err := s.db.Model(&models.Deposit{}).
+		Where("deposit_ref=?", deposit.Reference).
+		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?,
+deposit_number = (select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			), status=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate, deposit.MemberReference,
+			deposit.MemberReference, status).
 		Update()
 
 	if err != nil {
@@ -149,23 +146,22 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("upd", model).Errorf("failed to update deposit")
-		// TODO: uncomment it. It's just a temporary change. Genesis deposits are conflicted because of the same eth hash
-		// return errors.New("failed to update, affected is 0")
+		s.log.WithField("upd", model).WithField("TxHash", model.TxHash).Errorf("failed to update deposit")
+		return errors.New("failed to update, affected is 0")
 	}
 	return nil
 }
 
-func depositSchema(model *observer.Deposit) *DepositSchema {
-	return &DepositSchema{
-		EthHash:         model.EthHash,
-		DepositRef:      model.Ref.Bytes(),
-		MemberRef:       model.Member.Bytes(),
+func depositSchema(model *observer.Deposit) *models.Deposit {
+	return &models.Deposit{
+		EtheriumHash:    model.EthHash,
+		Reference:       model.Ref.Bytes(),
+		MemberReference: model.Member.Bytes(),
 		TransferDate:    model.Timestamp,
 		HoldReleaseDate: model.HoldReleaseDate,
 		Amount:          model.Amount,
 		Balance:         model.Balance,
-		DepositState:    model.DepositState.Bytes(),
+		State:           model.DepositState.Bytes(),
 		Vesting:         model.Vesting,
 		VestingStep:     model.VestingStep,
 	}

@@ -44,7 +44,9 @@ type DepositUpdate struct {
 	Amount          string
 	Balance         string
 	// Prev state record ID
-	PrevState insolar.ID
+	PrevState   insolar.ID
+	TxHash      string // for debug purposes
+	IsConfirmed bool
 }
 
 type DepositUpdateCollector interface {

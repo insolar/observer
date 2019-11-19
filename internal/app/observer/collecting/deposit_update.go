@@ -17,12 +17,13 @@
 package collecting
 
 import (
+	"context"
+
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/pulse"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -38,19 +39,26 @@ func NewDepositUpdateCollector(log *logrus.Logger) *DepositUpdateCollector {
 	}
 }
 
-func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.DepositUpdate {
+func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Record) *observer.DepositUpdate {
 	if rec == nil {
 		return nil
 	}
+
+	log := c.log.WithField("collector", "DepositUpdateCollector")
 
 	if !isDepositAmend(rec) {
 		return nil
 	}
 
 	amd := rec.Virtual.GetAmend()
+
 	d := c.depositState(amd)
+
+	log.Debugf("%s: amount %s, balance %s", rec.ID.String(), d.Amount, d.Balance)
+
 	holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
+		log.Warnf("bad PulseDepositUnHold: %v", err)
 		holdReleasedDate, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 	}
 
@@ -60,24 +68,25 @@ func (c *DepositUpdateCollector) Collect(rec *observer.Record) *observer.Deposit
 		Amount:          d.Amount,
 		Balance:         d.Balance,
 		PrevState:       amd.PrevState,
+		TxHash:          d.TxHash,
+		IsConfirmed:     d.IsConfirmed,
 	}
 }
 
 func isDepositAmend(rec *observer.Record) bool {
-	v, ok := rec.Virtual.Union.(*record.Virtual_Amend)
-	if !ok {
+	amd := rec.Virtual.GetAmend()
+	if amd == nil {
 		return false
 	}
 
-	return v.Amend.Image.Equal(*proxyDeposit.PrototypeReference)
+	return amd.Image.Equal(*proxyDeposit.PrototypeReference)
 }
 
 func (c *DepositUpdateCollector) depositState(amd *record.Amend) *deposit.Deposit {
-	log := c.log
 	d := deposit.Deposit{}
 	err := insolar.Deserialize(amd.Memory, &d)
 	if err != nil {
-		log.Error(errors.New("failed to deserialize deposit contract state"))
+		panic("failed to deserialize deposit contract state")
 	}
 	return &d
 }

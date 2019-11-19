@@ -125,7 +125,7 @@ func TestNextRelease(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res := NextRelease(tc.currentTime, tc.amount, tc.deposit)
-			assert.Equal(t, res, tc.expectation)
+			assert.Equal(t, tc.expectation, res)
 		})
 	}
 }

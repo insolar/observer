@@ -165,19 +165,8 @@ func TestBeautifier_Deposit(t *testing.T) {
 	daemonCall := tdg.makeMigrationDaemonCall(pn, *insolar.NewReference(call.Record.ID))
 	daemonCallIn := tdg.makeIncomingFromOutgoing(daemonCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
-	confirmDepositCall := tdg.makeConfirmDepositCall(pn, *insolar.NewReference(daemonCallIn.Record.ID))
-	confirmDepositCallIn := tdg.makeIncomingFromOutgoing(
-		confirmDepositCall.Record.Virtual.GetOutgoingRequest(),
-	)
-
-	depositRef := confirmDepositCall.Record.Virtual.GetOutgoingRequest().Object
-
-	transferToDepositCall := tdg.makeTransferToDepositCall(
-		pn, *insolar.NewReference(confirmDepositCallIn.Record.ID),
-	)
-	transferToDepositCallIn := tdg.makeIncomingFromOutgoing(
-		transferToDepositCall.Record.Virtual.GetOutgoingRequest(),
-	)
+	newDepositCall := tdg.makeNewDepositRequest(pn, *insolar.NewReference(daemonCallIn.Record.ID))
+	newDepositCallIn := tdg.makeIncomingFromOutgoing(newDepositCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
 
 	balance := "123"
 	amount := "456"
@@ -196,16 +185,11 @@ func TestBeautifier_Deposit(t *testing.T) {
 		panic("fail serialize memory")
 	}
 
-	sideEffect := tdg.makeAmend(
-		*insolar.NewReference(confirmDepositCallIn.GetRecord().ID),
+	act := tdg.makeActivation(
+		*insolar.NewReference(newDepositCallIn.Record.ID),
+		*migrationdaemon.PrototypeReference,
 		memory,
 	)
-
-	result := &foundation.Result{
-		Returns: []interface{}{
-			migrationdaemon.DepositMigrationResult{Reference: memberRef.String()}, nil,
-		},
-	}
 
 	raw := &raw{
 		batch: map[uint32]*exporter.Record{
@@ -213,37 +197,35 @@ func TestBeautifier_Deposit(t *testing.T) {
 			1: daemonCall,
 			2: tdg.makeResultWith(daemonCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			3: daemonCallIn,
-			4: tdg.makeResultWith(daemonCallIn.Record.ID, result),
-			5: confirmDepositCall,
-			6: tdg.makeResultWith(confirmDepositCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			7: confirmDepositCallIn,
+			4: tdg.makeResultWith(daemonCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			5: newDepositCall,
+			6: tdg.makeResultWith(newDepositCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			7: newDepositCallIn,
 
-			8:  transferToDepositCall,
-			9:  tdg.makeResultWith(transferToDepositCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			10: transferToDepositCallIn,
-			11: tdg.makeResultWith(transferToDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-
-			12: tdg.makeResultWith(confirmDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			13: sideEffect,
-			14: tdg.makeResultWith(call.Record.ID, result),
+			8: tdg.makeResultWith(newDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			9: act,
+			10: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{
+				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
+				nil,
+			}}),
 		},
 	}
-	transferDate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
+	transferDate, err := act.Record.ID.Pulse().AsApproximateTime()
 	require.NoError(t, err)
 
 	res := beautifier(ctx, raw)
 
 	assert.Equal(t, 1, len(res.deposits))
 	assert.Equal(t, map[insolar.ID]*observer.Deposit{
-		sideEffect.Record.ID: {
+		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
-			Ref:             *depositRef,
+			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),
 			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 1546300810,
 			Amount:          amount,
 			Balance:         balance,
-			DepositState:    sideEffect.Record.ID,
+			DepositState:    act.Record.ID,
 			Vesting:         10,
 			VestingStep:     10,
 		},

@@ -457,11 +457,15 @@ func GetMemberByMigrationAddress(ctx context.Context, db Querier, ma string) (*m
 	return member, nil
 }
 
-func GetDeposits(ctx context.Context, db Querier, memberReference []byte) ([]models.Deposit, error) {
+func GetDeposits(ctx context.Context, db Querier, memberReference []byte, onlyConfirmed bool) ([]models.Deposit, error) {
 	deposits := make([]models.Deposit, 0)
+	whereCond := []string{"member_ref = ?0"}
+	if onlyConfirmed {
+		whereCond = append(whereCond, "status = 'confirmed'")
+	}
 	_, err := db.QueryContext(ctx, &deposits,
 		fmt.Sprintf( // nolint: gosec
-			`select %s from deposits where member_ref = ?0 order by deposit_number`, strings.Join(models.Deposit{}.Fields(), ",")),
+			`select %s from deposits where %s order by deposit_number`, strings.Join(models.Deposit{}.Fields(), ","), strings.Join(whereCond, " AND ")),
 		memberReference)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch deposit")

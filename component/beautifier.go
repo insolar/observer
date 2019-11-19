@@ -129,7 +129,7 @@ func makeBeautifier(
 				b.balances[balance.AccountState] = balance
 			}
 
-			update := depositUpdates.Collect(&obsRecord)
+			update := depositUpdates.Collect(ctx, &obsRecord)
 			if update != nil {
 				b.depositUpdates[update.ID] = update
 			}

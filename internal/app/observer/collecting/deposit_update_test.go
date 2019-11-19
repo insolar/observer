@@ -17,8 +17,10 @@
 package collecting
 
 import (
+	"context"
 	"testing"
 
+	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
@@ -78,16 +80,31 @@ func makeDepositUpdate() (*observer.DepositUpdate, *observer.Record) {
 }
 
 func TestDepositUpdateCollector_Collect(t *testing.T) {
-	log := logrus.New()
-	collector := NewDepositUpdateCollector(log)
 
 	t.Run("nil", func(t *testing.T) {
-		require.Nil(t, collector.Collect(nil))
+		log := logrus.New()
+		mc := minimock.NewController(t)
+
+		collector := NewDepositUpdateCollector(log)
+
+		ctx := context.Background()
+		require.Nil(t, collector.Collect(ctx, nil))
+
+		mc.Finish()
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
+		log := logrus.New()
+		mc := minimock.NewController(t)
+
+		collector := NewDepositUpdateCollector(log)
+
+		ctx := context.Background()
 		upd, rec := makeDepositUpdate()
-		actual := collector.Collect(rec)
+
+		actual := collector.Collect(ctx, rec)
 		require.Equal(t, upd, actual)
+
+		mc.Finish()
 	})
 }

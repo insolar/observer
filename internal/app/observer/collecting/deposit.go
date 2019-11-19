@@ -79,12 +79,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	incReq := req.Virtual.GetIncomingRequest()
-	if incReq == nil {
-		return nil
-	}
-
-	ok := c.isDepositMigrationCall(incReq)
+	_, ok := c.isDepositCall(&req)
 	if !ok {
 		return nil
 	}
@@ -94,36 +89,34 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		panic(errors.Wrap(err, "failed to build tree"))
 	}
 
-	confirmCall, err := c.find(migrationTree.Outgoings, c.isConfirmCall)
+	var (
+		activate   *record.Activate
+		activateID insolar.ID
+	)
+
+	daemonCall, err := c.find(migrationTree.Outgoings, c.isDepositMigrationCall)
 	if err != nil {
-		// no confirm, construction probably
+		// TODO: maybe should create failed deposit
 		return nil
 	}
 
-	_, err = c.find(confirmCall.Outgoings, c.isTransferToDepositCall)
+	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
 	if err != nil {
-		// no transfer, not enough confirms yet
+		// TODO: maybe should create failed deposit
 		return nil
 	}
 
-	if confirmCall.SideEffect == nil {
+	if newCall != nil {
+		activateID = newCall.SideEffect.ID
+		activate = newCall.SideEffect.Activation
+	}
+
+	if activate == nil {
+		c.log.Warn("failed to find activation")
 		return nil
 	}
-	if confirmCall.SideEffect.Amend == nil {
-		panic(errors.Wrap(err, "confirm call has side effect, but it's not amend"))
-	}
 
-	depositStateID := confirmCall.SideEffect.ID
-
-	depositState := deposit.Deposit{}
-	err = insolar.Deserialize(confirmCall.SideEffect.Amend.Memory, &depositState)
-	if err != nil {
-		panic(errors.New("failed to deserialize deposit contract state"))
-	}
-
-	depositID := confirmCall.Request.Object.GetLocal()
-
-	d, err := c.build(*depositID, depositStateID, &depositState, res)
+	d, err := c.build(activateID, activate, res)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -212,7 +205,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 	return deposits
 }
 
-func (c *DepositCollector) build(id insolar.ID, stateID insolar.ID, state *deposit.Deposit, res *observer.Result) (*observer.Deposit, error) {
+func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
 	callResult := migrationdaemon.DepositMigrationResult{}
 	res.ParseFirstPayloadValue(&callResult)
 	if !res.IsSuccess() {
@@ -228,6 +221,7 @@ func (c *DepositCollector) build(id insolar.ID, stateID insolar.ID, state *depos
 		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
+	state := c.initialDepositState(activate)
 	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
 		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
@@ -235,13 +229,13 @@ func (c *DepositCollector) build(id insolar.ID, stateID insolar.ID, state *depos
 	}
 	return &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             *insolar.NewReference(id),
+		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
 		HoldReleaseDate: hrd.Unix(),
 		Amount:          state.Amount,
 		Balance:         state.Balance,
-		DepositState:    stateID,
+		DepositState:    id,
 		Vesting:         state.Vesting,
 		VestingStep:     state.VestingStep,
 	}, nil
@@ -272,20 +266,8 @@ func (c *DepositCollector) isDepositMigrationCall(req *record.IncomingRequest) b
 	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
 }
 
-func (c *DepositCollector) isConfirmCall(req *record.IncomingRequest) bool {
-	if req.Method != "Confirm" {
-		return false
-	}
-
-	if req.Prototype == nil {
-		return false
-	}
-
-	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
-}
-
-func (c *DepositCollector) isTransferToDepositCall(req *record.IncomingRequest) bool {
-	if req.Method != "TransferToDeposit" {
+func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
+	if req.Method != "New" {
 		return false
 	}
 
@@ -339,4 +321,15 @@ func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.De
 		c.log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
+}
+
+func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
+	request := observer.CastToRequest((*observer.Record)(rec))
+
+	if !request.IsIncoming() || !request.IsMemberCall() {
+		return nil, false
+	}
+
+	args := request.ParseMemberCallArguments()
+	return request, args.Params.CallSite == CallSite
 }

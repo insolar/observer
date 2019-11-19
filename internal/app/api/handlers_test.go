@@ -634,7 +634,7 @@ func insertMember(t *testing.T, reference insolar.Reference, walletReference, ac
 
 func insertDeposit(
 	t *testing.T, reference insolar.Reference, memberReference insolar.Reference, amount, balance, etheriumHash string,
-	depositNumber int64,
+	depositNumber int64, status models.DepositStatus,
 ) {
 	deposit := models.Deposit{
 		Reference:       reference.Bytes(),
@@ -645,6 +645,7 @@ func insertDeposit(
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
 		DepositNumber:   depositNumber,
+		InnerStatus:     status,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -940,8 +941,8 @@ func TestMember(t *testing.T) {
 	deposite1 := gen.Reference()
 	deposite2 := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
-	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2)
-	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1)
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.Confirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.Confirmed)
 
 	memberStr := url.QueryEscape(member.String())
 	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
@@ -988,6 +989,53 @@ func TestMember(t *testing.T) {
 	require.Equal(t, expected, received)
 }
 
+func TestMember_UnconfirmedDeposit(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 1, models.Confirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 2, models.Created)
+
+	memberStr := url.QueryEscape(member.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  0,
+				Index:            1,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
 func TestMember_MigrationAddress(t *testing.T) {
 	defer truncateDB(t)
 
@@ -1009,8 +1057,8 @@ func TestMember_MigrationAddress(t *testing.T) {
 	err := db.Insert(&member)
 	require.NoError(t, err)
 
-	insertDeposit(t, deposite2, memberRef, "2000", "2000", "eth_hash_2", 2)
-	insertDeposit(t, deposite1, memberRef, "10000", "1000", "eth_hash_1", 1)
+	insertDeposit(t, deposite2, memberRef, "2000", "2000", "eth_hash_2", 2, models.Confirmed)
+	insertDeposit(t, deposite1, memberRef, "10000", "1000", "eth_hash_1", 1, models.Confirmed)
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + migrationAddress)
 	require.NoError(t, err)
@@ -1111,6 +1159,7 @@ func TestMember_Hold(t *testing.T) {
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
 		DepositNumber:   100,
+		InnerStatus:     models.Confirmed,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1174,6 +1223,7 @@ func TestMember_Vesting(t *testing.T) {
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
 		DepositNumber:   200,
+		InnerStatus:     models.Confirmed,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1239,6 +1289,7 @@ func TestMember_VestingAll(t *testing.T) {
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
 		DepositNumber:   300,
+		InnerStatus:     models.Confirmed,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
@@ -1301,6 +1352,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		TransferDate:    currentTime - 10,
 		DepositNumber:   500,
+		InnerStatus:     models.Confirmed,
 	}
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
