@@ -223,7 +223,7 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference)
+	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference, true)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})

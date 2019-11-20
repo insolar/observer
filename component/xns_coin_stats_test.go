@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/models"
 )
 
 func TestStatsManager_Coins(t *testing.T) {
@@ -136,17 +137,18 @@ func TestStatsManager_CLI_command(t *testing.T) {
 
 	t.Run("genesis, no lockup date, no vesting", func(t *testing.T) {
 		for i := 0; i < size; i++ {
-			depModel := &postgres.DepositSchema{
-				EthHash:         "genesis_deposit",
-				MemberRef:       gen.Reference().Bytes(),
-				DepositRef:      gen.Reference().Bytes(),
+			depModel := &models.Deposit{
+				EtheriumHash:    "genesis_deposit",
+				MemberReference: gen.Reference().Bytes(),
+				Reference:       gen.Reference().Bytes(),
 				TransferDate:    now.Unix() - 1000,
 				HoldReleaseDate: now.Unix() - 1000,
 				Amount:          "10000",
 				Balance:         "10000",
-				DepositState:    gen.ID().Bytes(),
+				State:           gen.ID().Bytes(),
 				Vesting:         10, // seconds
 				VestingStep:     10, // seconds
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -160,17 +162,18 @@ func TestStatsManager_CLI_command(t *testing.T) {
 	t.Run("genesis, lockup date, vesting", func(t *testing.T) {
 		//
 		for i := 0; i < size; i++ {
-			depModel := &postgres.DepositSchema{
-				EthHash:         "genesis_deposit",
-				MemberRef:       gen.Reference().Bytes(),
-				DepositRef:      gen.Reference().Bytes(),
+			depModel := &models.Deposit{
+				EtheriumHash:    "genesis_deposit",
+				MemberReference: gen.Reference().Bytes(),
+				Reference:       gen.Reference().Bytes(),
 				TransferDate:    now.Unix(),
 				HoldReleaseDate: now.Unix() + 365*24*3600,
 				Amount:          "10000",
 				Balance:         "10000",
-				DepositState:    gen.ID().Bytes(),
+				State:           gen.ID().Bytes(),
 				Vesting:         1000000,
 				VestingStep:     100,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -210,17 +213,18 @@ func TestStatsManager_CLI_command(t *testing.T) {
 
 	t.Run("user migration deposits", func(t *testing.T) {
 		for i := 0; i < size; i++ {
-			depModel := &postgres.DepositSchema{
-				EthHash:         random.String(10),
-				MemberRef:       gen.Reference().Bytes(),
-				DepositRef:      gen.Reference().Bytes(),
+			depModel := &models.Deposit{
+				EtheriumHash:    random.String(10),
+				MemberReference: gen.Reference().Bytes(),
+				Reference:       gen.Reference().Bytes(),
 				TransferDate:    now.Unix(),
 				HoldReleaseDate: now.Unix() + 30*24*3600,
 				Amount:          "5000",
 				Balance:         "5000",
-				DepositState:    gen.ID().Bytes(),
+				State:           gen.ID().Bytes(),
 				Vesting:         30 * 24 * 3600,
 				VestingStep:     3600,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -240,17 +244,18 @@ func TestStatsManager_CLI_command(t *testing.T) {
 
 	t.Run("partial user vesting cases", func(t *testing.T) {
 		for i := 0; i < size; i++ {
-			depModel := &postgres.DepositSchema{
-				EthHash:         random.String(10),
-				MemberRef:       gen.Reference().Bytes(),
-				DepositRef:      gen.Reference().Bytes(),
+			depModel := &models.Deposit{
+				EtheriumHash:    random.String(10),
+				MemberReference: gen.Reference().Bytes(),
+				Reference:       gen.Reference().Bytes(),
 				TransferDate:    now.Unix(),
 				HoldReleaseDate: now.Unix() + 10,
 				Amount:          "5000",
 				Balance:         "5000",
-				DepositState:    gen.ID().Bytes(),
+				State:           gen.ID().Bytes(),
 				Vesting:         1000,
 				VestingStep:     50,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)
@@ -302,17 +307,18 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		_, err = db.Exec("truncate table deposits")
 		require.NoError(t, err)
 		for i := 0; i < size; i++ {
-			depModel := &postgres.DepositSchema{
-				EthHash:         "genesis_deposit",
-				MemberRef:       gen.Reference().Bytes(),
-				DepositRef:      gen.Reference().Bytes(),
+			depModel := &models.Deposit{
+				EtheriumHash:    "genesis_deposit",
+				MemberReference: gen.Reference().Bytes(),
+				Reference:       gen.Reference().Bytes(),
 				TransferDate:    now.Unix(),
 				HoldReleaseDate: now.Unix(),
 				Amount:          "10000",
 				Balance:         "10000",
-				DepositState:    gen.ID().Bytes(),
+				State:           gen.ID().Bytes(),
 				Vesting:         1000,
 				VestingStep:     13,
+				InnerStatus:     models.DepositStatusConfirmed,
 			}
 			err := db.Insert(depModel)
 			require.NoError(t, err)

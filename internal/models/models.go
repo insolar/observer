@@ -38,6 +38,13 @@ type Member struct {
 	Status           string `sql:"status"`
 }
 
+type DepositStatus string
+
+const (
+	DepositStatusCreated   DepositStatus = "created"
+	DepositStatusConfirmed DepositStatus = "confirmed"
+)
+
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
 
@@ -49,9 +56,11 @@ type Deposit struct {
 	Amount          string `sql:"amount"`
 	Balance         string `sql:"balance"`
 	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
-	DepositNumber   int64  `sql:"deposit_number"`
+	DepositNumber   *int64 `sql:"deposit_number"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`
+
+	InnerStatus DepositStatus `sql:"status"`
 }
 
 type TransactionStatus string
@@ -241,7 +250,7 @@ func (t *Transaction) Timestamp() int64 {
 	return pulseTime.Unix()
 }
 
-func (d *Deposit) ReleaseAmount(amount *big.Int, currentTime int64) (amountOnHold *big.Int, releaseAmount *big.Int) {
+func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (amountOnHold *big.Int, releaseAmount *big.Int) {
 	if d.HoldReleaseDate == 0 {
 		return big.NewInt(0), amount
 	}
@@ -262,7 +271,21 @@ func (d *Deposit) ReleaseAmount(amount *big.Int, currentTime int64) (amountOnHol
 	releaseAmount = big.NewInt(0)
 	res.Int(releaseAmount)
 
-	return big.NewInt(0).Sub(amount, releaseAmount), releaseAmount
+	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
+
+	// if amountOnHold greater then balance,
+	// then it should be balance
+	if amountOnHold.Cmp(balance) == 1 {
+		amountOnHold = balance
+	}
+
+	// if releaseAmount greater then balance,
+	// then it should be balance
+	if releaseAmount.Cmp(balance) == 1 {
+		releaseAmount = balance
+	}
+
+	return amountOnHold, releaseAmount
 }
 
 func (d *Deposit) Status(currentTime int64) string {

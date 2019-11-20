@@ -51,7 +51,7 @@ func NewTxRegisterCollector(log *logrus.Logger) *TxRegisterCollector {
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log := c.log.WithField("collector", "TxRegisterCollector").WithField("record_id", rec.Record.ID.DebugString())
 	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
@@ -312,7 +312,7 @@ func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxRe
 }
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log := c.log.WithField("collector", "TxResultCollector").WithField("record_id", rec.Record.ID.DebugString())
 	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
@@ -431,19 +431,18 @@ func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *
 }
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
-	log := c.log.WithField("record_id", rec.Record.ID.DebugString())
+	log := c.log.WithField("collector", "TxSagaResultCollector").WithField("record_id", rec.Record.ID.DebugString())
 	log = log.WithField("collect_process_id", uuid.New())
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
-	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
-		log.Debug("skipped (fee member object)")
+	result := rec.Record.Virtual.GetResult()
+	if result == nil {
 		return nil
 	}
 
-	result, ok := record.Unwrap(&rec.Record.Virtual).(*record.Result)
-	if !ok {
-		log.Debug("skipped (not Result)")
+	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
+		log.Debug("skipped (fee member object)")
 		return nil
 	}
 
@@ -456,7 +455,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 			"failed to fetch request with id %s",
 			result.Request.GetLocal().DebugString()),
 		)
-		return nil
+		panic("failed to find request")
 	}
 
 	request, ok := record.Unwrap(&requestRecord.Virtual).(*record.IncomingRequest)

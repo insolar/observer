@@ -108,13 +108,13 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		if _, err := fmt.Sscan(d.Amount, amount); err != nil {
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit amount")
 		}
-		amountOnHold, releaseAmount := d.ReleaseAmount(amount, currentTime)
 		balance := new(big.Int)
 		if _, err := fmt.Sscan(d.Balance, balance); err != nil {
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
 		}
+		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
 		resDeposit := SchemaDeposit{
-			Index:           int(d.DepositNumber),
+			Index:           int(*d.DepositNumber),
 			AmountOnHold:    amountOnHold.Text(10),
 			AvailableAmount: big.NewInt(0).Sub(balance, amountOnHold).Text(10),
 			EthTxHash:       d.EtheriumHash,

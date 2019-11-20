@@ -112,11 +112,14 @@ create table if not exists members
     account_ref bytea
 );
 
+create type deposit_status as enum ('created', 'confirmed');
+
 create table if not exists deposits
 (
     deposit_ref bytea not null
         constraint deposits_pkey
             primary key,
+    status deposit_status not null,
     eth_hash varchar(256) not null,
     member_ref bytea not null,
     transfer_date bigint not null,
@@ -124,7 +127,7 @@ create table if not exists deposits
     amount varchar(256) not null,
     balance varchar(256) not null,
     deposit_state bytea not null,
-    deposit_number bigint not null,
+    deposit_number bigint,
     vesting bigint not null default 0,
     vesting_step bigint not null default 0
 );
