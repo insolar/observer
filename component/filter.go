@@ -30,10 +30,6 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		if b == nil {
 			return nil
 		}
-
-		filtering.NewBalanceFilter().Filter(b.balances, b.members)
-		filtering.NewDepositUpdateFilter().Filter(b.updates, b.deposits)
-		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
 		filtering.NewGroupUpdateFilter().Filter(b.groupUpdates, b.groups)
 		filtering.NewMGRUpdateFilter().Filter(b.mgrUpdates, b.mgrs)
 
@@ -49,14 +45,17 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 			"deactivate": len(b.deactivates),
 		}).Infof("separated records")
 
-		metric.Transfers.Add(float64(len(b.transfers)))
-		metric.Members.Add(float64(len(b.members)))
-		metric.Deposits.Add(float64(len(b.deposits)))
-		metric.Addresses.Add(float64(len(b.addresses)))
+		metric.Users.Add(float64(len(b.users)))
+		metric.Groups.Add(float64(len(b.groups)))
+		metric.Transactions.Add(float64(len(b.transactions)))
+		metric.Notifications.Add(float64(len(b.notifications)))
+		metric.MGRs.Add(float64(len(b.mgrs)))
 
-		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.UserUpdates.Add(float64(len(b.kycs)))
+		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
+		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
+		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
+		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
 		return b
 	}
 }

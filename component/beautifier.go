@@ -29,17 +29,6 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
 
-	members := collecting.NewMemberCollector()
-	transfers := collecting.NewTransferCollector(log)
-	deposits := collecting.NewDepositCollector(log)
-	addresses := collecting.NewMigrationAddressesCollector()
-
-	balances := collecting.NewBalanceCollector(log)
-	updates := collecting.NewDepositUpdateCollector(log)
-	wastings := collecting.NewWastingCollector()
-
-	// SAIV
-
 	mgrsUpdate := collecting.NewMGRUpdateCollector(log)
 	groupUpdate := collecting.NewGroupUpdateCollector(log)
 	transactionsUpdate := collecting.NewTransactionUpdateCollector(log)
@@ -59,14 +48,8 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 		b := &beauty{
 			pulse:              r.pulse,
 			records:            r.batch,
-			members:            make(map[insolar.ID]*observer.Member),
-			deposits:           make(map[insolar.ID]*observer.Deposit),
-			addresses:          make(map[string]*observer.MigrationAddress),
-			balances:           make(map[insolar.ID]*observer.Balance),
 			kycs:               make(map[insolar.ID]*observer.UserKYC),
 			groupUpdates:       make(map[insolar.ID]*observer.GroupUpdate),
-			updates:            make(map[insolar.ID]*observer.DepositUpdate),
-			wastings:           make(map[string]*observer.Wasting),
 			users:              make(map[insolar.Reference]*observer.User),
 			groups:             make(map[insolar.ID]*observer.Group),
 			mgrs:               make(map[insolar.ID]*observer.MGR),
@@ -78,26 +61,6 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 		}
 		for _, rec := range r.batch {
 			// entities
-
-			member := members.Collect(rec)
-			if member != nil {
-				b.members[member.AccountState] = member
-			}
-
-			transfer := transfers.Collect(rec)
-			if transfer != nil {
-				b.transfers = append(b.transfers, transfer)
-			}
-
-			deposit := deposits.Collect(rec)
-			if deposit != nil {
-				b.deposits[deposit.DepositState] = deposit
-			}
-
-			for _, address := range addresses.Collect(rec) {
-				b.addresses[address.Addr] = address
-			}
-
 			user := users.Collect(rec)
 			if user != nil {
 				b.users[user.UserRef] = user
@@ -149,45 +112,36 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			if kyc != nil {
 				b.kycs[kyc.UserState] = kyc
 			}
-
-			balance := balances.Collect(rec)
-			if balance != nil {
-				b.balances[balance.AccountState] = balance
-			}
-
-			update := updates.Collect(rec)
-			if update != nil {
-				b.updates[update.ID] = update
-			}
-
-			wasting := wastings.Collect(rec)
-			if wasting != nil {
-				b.wastings[wasting.Addr] = wasting
-			}
 		}
 
 		log := obs.Log()
 		log.WithFields(logrus.Fields{
-			"transfers": len(b.transfers),
-			"members":   len(b.members),
-			"deposits":  len(b.deposits),
-			"addresses": len(b.addresses),
+			"users":         len(b.users),
+			"groups":        len(b.groups),
+			"transactions":  len(b.transactions),
+			"notifications": len(b.notifications),
+			"MGR":           len(b.mgrs),
 		}).Infof("collected entities")
 
 		log.WithFields(logrus.Fields{
-			"balances":                  len(b.balances),
-			"deposit_updates":           len(b.updates),
-			"migration_address_updates": len(b.wastings),
+			"user_update":        len(b.kycs),
+			"group_update":       len(b.groupUpdates),
+			"balance_update":     len(b.groupBalances),
+			"MGR_update":         len(b.mgrUpdates),
+			"transaction_update": len(b.transactionsUpdate),
 		}).Infof("collected updates")
 
-		metric.Transfers.Add(float64(len(b.transfers)))
-		metric.Members.Add(float64(len(b.members)))
-		metric.Deposits.Add(float64(len(b.deposits)))
-		metric.Addresses.Add(float64(len(b.addresses)))
+		metric.Users.Add(float64(len(b.users)))
+		metric.Groups.Add(float64(len(b.groups)))
+		metric.Transactions.Add(float64(len(b.transactions)))
+		metric.Notifications.Add(float64(len(b.notifications)))
+		metric.MGRs.Add(float64(len(b.mgrs)))
 
-		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.UserUpdates.Add(float64(len(b.kycs)))
+		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
+		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
+		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
+		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
 
 		return b
 	}
