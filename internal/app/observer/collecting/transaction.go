@@ -93,9 +93,9 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		return nil, errors.Wrapf(err, "failed to convert transaction create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	fmt.Println("Collect new transaction ref:", act.ID.String())
+	fmt.Println("Collect new transaction ref:", insolar.NewReference(act.ObjectID).String())
 	return &observer.Transaction{
-		Reference:   *insolar.NewReference(act.ID),
+		Reference:   *insolar.NewReference(act.ObjectID),
 		Amount:      strconv.FormatUint(tx.Amount, 10),
 		Timestamp:   date.Unix(),
 		ExtTxId:     tx.ExtTxId,

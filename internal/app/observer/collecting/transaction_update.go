@@ -49,7 +49,6 @@ func (c *TransactionUpdateCollector) Collect(rec *observer.Record) *observer.Tra
 		return nil
 	}
 
-	amd := rec.Virtual.GetAmend()
 	transaction, err := transactionUpdate(rec)
 
 	if err != nil {
@@ -64,7 +63,7 @@ func (c *TransactionUpdateCollector) Collect(rec *observer.Record) *observer.Tra
 	}
 
 	return &observer.TransactionUpdate{
-		Reference:   *insolar.NewReference(amd.PrevState),
+		Reference:   *insolar.NewReference(rec.ObjectID),
 		Amount:      transaction.Amount,
 		Timestamp:   date.Unix(),
 		ExtTxId:     transaction.ExtTxId,
