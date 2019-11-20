@@ -164,7 +164,7 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 		NextPaymentTime:  mgr.NextPaymentTime,
 		Sequence:         seq,
 		Status:           "SUCCESS",
-		State:            *insolar.NewReference(act.ID),
+		State:            act.ID,
 	}, nil
 }
 

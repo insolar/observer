@@ -69,8 +69,8 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			wastings:           make(map[string]*observer.Wasting),
 			users:              make(map[insolar.Reference]*observer.User),
 			groups:             make(map[insolar.ID]*observer.Group),
-			mgrs:               make(map[insolar.Reference]*observer.MGR),
-			mgrUpdates:         make(map[insolar.Reference]*observer.MGRUpdate),
+			mgrs:               make(map[insolar.ID]*observer.MGR),
+			mgrUpdates:         make(map[insolar.ID]*observer.MGRUpdate),
 			notifications:      make(map[insolar.Reference]*observer.Notification),
 			transactions:       []*observer.Transaction{},
 			transactionsUpdate: []*observer.TransactionUpdate{},
@@ -110,7 +110,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 			mgr := mgrs.Collect(rec)
 			if mgr != nil {
-				b.mgrs[mgr.Ref] = mgr
+				b.mgrs[mgr.State] = mgr
 			}
 
 			notification := notifications.Collect(rec)

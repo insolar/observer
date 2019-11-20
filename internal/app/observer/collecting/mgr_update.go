@@ -70,8 +70,8 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 
 	return &observer.MGRUpdate{
 		GroupReference:   mgr.GroupReference,
-		PrevState:        *insolar.NewReference(amd.PrevState),
-		MGRState:         *insolar.NewReference(rec.ID),
+		PrevState:        amd.PrevState,
+		MGRState:         rec.ID,
 		StartRoundDate:   int64(mgr.StartRoundDate),
 		FinishRoundDate:  int64(mgr.FinishRoundDate),
 		AmountDue:        mgr.AmountDue,
