@@ -365,15 +365,15 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 
 	switch args.Params.CallSite {
 	case callSiteTransfer:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
 			return nil
 		}
 	case callSiteMigration:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 			return nil
 		}
 	case callSiteRelease:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 			return nil
 		}
 	}
@@ -572,15 +572,15 @@ func (c *TxSagaResultCollector) fromCall(
 
 	switch args.Params.CallSite {
 	case callSiteTransfer:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyMember.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
 			return nil
 		}
 	case callSiteMigration:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 			return nil
 		}
 	case callSiteRelease:
-		if request.Prototype == nil || !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
 			return nil
 		}
 	}
