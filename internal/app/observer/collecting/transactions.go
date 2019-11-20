@@ -352,6 +352,11 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		log.Debug("skipped (APINode is empty)")
 		return nil
 	}
+	// API calls never have prototype.
+	if request.Prototype != nil {
+		return nil
+	}
+
 	// Skip saga.
 	if request.IsDetachedCall() {
 		log.Debug("skipped (request is saga)")
@@ -361,21 +366,6 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse request arguments"))
 		return nil
-	}
-
-	switch args.Params.CallSite {
-	case callSiteTransfer:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
-			return nil
-		}
-	case callSiteMigration:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
-	case callSiteRelease:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
 	}
 
 	// Migration and release don't have fees.
@@ -571,19 +561,9 @@ func (c *TxSagaResultCollector) fromCall(
 		return nil
 	}
 
-	switch args.Params.CallSite {
-	case callSiteTransfer:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
-			return nil
-		}
-	case callSiteMigration:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
-	case callSiteRelease:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
+	// API calls never have prototype.
+	if request.Prototype != nil {
+		return nil
 	}
 
 	var response foundation.Result
