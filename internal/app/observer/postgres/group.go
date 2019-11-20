@@ -127,16 +127,6 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		return errors.Wrapf(err, "failed to update group =%v", model)
 	}
 
-	if !model.Treasurer.IsEmpty() {
-		_, err := s.db.Model(&UserGroupSchema{}).
-			Where("user_ref=?", model.Treasurer.Bytes()).
-			Set("role=?", "treasurer").
-			Update()
-
-		if err != nil {
-			return errors.Wrapf(err, "failed to update user_group =%v", model)
-		}
-	}
 	if model.Membership != nil {
 		for _, membershipStr := range model.Membership {
 			byt := []byte(membershipStr)
