@@ -92,39 +92,6 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 			}
 
 			// new entities
-
-			members := postgres.NewMemberStorage(obs, tx)
-			for _, member := range b.members {
-				err := members.Insert(member)
-				if err != nil {
-					return err
-				}
-			}
-
-			transfers := postgres.NewTransferStorage(obs, tx)
-			for _, transfer := range b.transfers {
-				err := transfers.Insert(transfer)
-				if err != nil {
-					return err
-				}
-			}
-
-			deposits := postgres.NewDepositStorage(obs, tx)
-			for _, deposit := range b.deposits {
-				err := deposits.Insert(deposit)
-				if err != nil {
-					return err
-				}
-			}
-
-			addresses := postgres.NewMigrationAddressStorage(obs, tx)
-			for _, address := range b.addresses {
-				err := addresses.Insert(address)
-				if err != nil {
-					return err
-				}
-			}
-
 			users := postgres.NewUserStorage(obs, tx)
 			for _, user := range b.users {
 				err := users.Insert(user)
@@ -174,7 +141,6 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 			}
 
 			// updates
-
 			for _, mgr := range b.mgrUpdates {
 				err := mgrs.Update(mgr)
 				if err != nil {
@@ -209,27 +175,6 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 					return err
 				}
 			}
-
-			for _, balance := range b.balances {
-				err := members.Update(balance)
-				if err != nil {
-					return err
-				}
-			}
-
-			for _, update := range b.updates {
-				err := deposits.Update(update)
-				if err != nil {
-					return err
-				}
-			}
-
-			for _, wasting := range b.wastings {
-				err := addresses.Update(wasting)
-				if err != nil {
-					return err
-				}
-			}
 			return nil
 		})
 		if err != nil {
@@ -239,13 +184,16 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 
 		log.Info("items successfully stored")
 
-		metric.Transfers.Add(float64(len(b.transfers)))
-		metric.Members.Add(float64(len(b.members)))
-		metric.Deposits.Add(float64(len(b.deposits)))
-		metric.Addresses.Add(float64(len(b.addresses)))
+		metric.Users.Add(float64(len(b.users)))
+		metric.Groups.Add(float64(len(b.groups)))
+		metric.Transactions.Add(float64(len(b.transactions)))
+		metric.Notifications.Add(float64(len(b.notifications)))
+		metric.MGRs.Add(float64(len(b.mgrs)))
 
-		metric.Balances.Add(float64(len(b.balances)))
-		metric.Updates.Add(float64(len(b.updates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.UserUpdates.Add(float64(len(b.kycs)))
+		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
+		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
+		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
+		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
 	}
 }

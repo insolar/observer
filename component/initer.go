@@ -19,8 +19,6 @@ package component
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
-	"github.com/pkg/errors"
-
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -28,8 +26,6 @@ import (
 )
 
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) func() *state {
-	createTables(cfg, obs, conn)
-	initCache()
 	last := MustKnowPulse(cfg, obs, conn.PG())
 	DBSchemaMustBeSupported(cfg, obs, conn.PG())
 	recordPosition := MustKnowRecordPosition(cfg, obs, conn.PG())
@@ -69,73 +65,4 @@ func MustKnowRecordPosition(cfg *configuration.Configuration, obs *observability
 	pulse := rec.ID.Pulse()
 	rn := records.Count(pulse)
 	return RecordPosition{Last: pulse, RN: rn}
-}
-
-func createTables(cfg *configuration.Configuration, obs *observability.Observability, conn *connectivity.Connectivity) {
-	log := obs.Log()
-	if cfg == nil {
-		return
-	}
-	if cfg.DB.CreateTables {
-		db := conn.PG()
-
-		err := db.CreateTable(&postgres.PulseSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create pulses table"))
-		}
-
-		err = db.CreateTable(&postgres.RecordSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create records table"))
-		}
-
-		err = db.CreateTable(&postgres.RequestSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create requests table"))
-		}
-
-		err = db.CreateTable(&postgres.ResultSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create results table"))
-		}
-
-		err = db.CreateTable(&postgres.ObjectSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create objects table"))
-		}
-
-		err = db.CreateTable(&postgres.MemberSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create members table"))
-		}
-
-		err = db.CreateTable(&postgres.DepositSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create deposits table"))
-		}
-
-		err = db.CreateTable(&postgres.TransferSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create transfer table"))
-		}
-
-		err = db.CreateTable(&postgres.MigrationAddressSchema{}, &orm.CreateTableOptions{IfNotExists: true})
-		if err != nil {
-			log.Error(errors.Wrapf(err, "failed to create migration_addresses table"))
-		}
-	}
-}
-
-func initCache() {
-	// TODO:
-	//  1. If dump file exists:
-	//  - Load cache from dump file
-	//  - Remove file
-	//  2. Else if dump record exists in DB:
-	//  - Load cache from DB
-	//  - Delete record
-	//  3. Else if DB connection is alive:
-	//  - Init empty cache
-	//  4. Else:
-	//  - Panic
 }

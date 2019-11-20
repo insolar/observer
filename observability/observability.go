@@ -108,11 +108,15 @@ type beautyMetrics struct {
 	Amends      prometheus.Counter
 	Deactivates prometheus.Counter
 
-	Transfers prometheus.Counter
-	Members   prometheus.Counter
-	Balances  prometheus.Counter
-	Deposits  prometheus.Counter
-	Updates   prometheus.Counter
-	Addresses prometheus.Counter
-	Wastings  prometheus.Counter
+	Users         prometheus.Counter
+	Groups        prometheus.Counter
+	MGRs          prometheus.Counter
+	Transactions  prometheus.Counter
+	Notifications prometheus.Counter
+
+	UserUpdates        prometheus.Counter
+	GroupUpdates       prometheus.Counter
+	BalanceUpdates     prometheus.Counter
+	MGRUpdates         prometheus.Counter
+	TransactionUpdates prometheus.Counter
 }

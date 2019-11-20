@@ -132,6 +132,11 @@ func isUserNew(chain interface{}) bool {
 	return in.Prototype.Equal(*prototypeRef)
 }
 
+func successResult(chain interface{}) bool {
+	result := observer.CastToResult(chain)
+	return result.IsSuccess()
+}
+
 func userKYC(act *observer.Record) (bool, int64, string, error) {
 	var memory []byte
 	switch v := act.Virtual.Union.(type) {
