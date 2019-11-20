@@ -179,7 +179,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
-			DepositNumber:   0,
 			InnerStatus:     models.DepositStatusCreated,
 		},
 	}
@@ -199,7 +198,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
 			Vesting:         expectedDeposit[0].Vesting,
 			VestingStep:     expectedDeposit[0].VestingStep,
-			DepositNumber:   expectedDeposit[0].DepositNumber,
+			DepositNumber:   100,
 		})
 		if err != nil {
 			return err
@@ -244,7 +243,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
-			DepositNumber:   1,
+			DepositNumber:   newInt(1),
 		},
 		{
 			Reference:       ref.Bytes(),
@@ -257,7 +256,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
-			DepositNumber:   2,
+			DepositNumber:   newInt(2),
 		},
 		{
 			Reference:       gen.RecordReference().Bytes(),
@@ -270,7 +269,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			TransferDate:    transferDate,
-			DepositNumber:   1,
+			DepositNumber:   newInt(1),
 		},
 	}
 
@@ -290,7 +289,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 				DepositState:    *insolar.NewIDFromBytes(dep.State),
 				Vesting:         dep.Vesting,
 				VestingStep:     dep.VestingStep,
-				DepositNumber:   dep.DepositNumber,
+				DepositNumber:   *dep.DepositNumber,
 			})
 			if err != nil {
 				return err
@@ -351,4 +350,8 @@ func TestStorerOK(t *testing.T) {
 		Pulse: insolar.GenesisPulse.PulseNumber,
 		Nodes: 1,
 	}, stats)
+}
+
+func newInt(val int64) *int64 {
+	return &val
 }

@@ -191,7 +191,3 @@ func nextReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	releaseAmount := new(big.Int).Quo(amount, big.NewInt(stepValue))
 	return releaseAmount.Text(10)
 }
-
-func newInt(val int64) *int64 {
-	return &val
-}

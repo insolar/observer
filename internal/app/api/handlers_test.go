@@ -1740,3 +1740,7 @@ func TestObserverServer_Notifications(t *testing.T) {
 	}
 	require.Equal(t, expected, jsonResp)
 }
+
+func newInt(val int64) *int64 {
+	return &val
+}
