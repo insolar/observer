@@ -18,6 +18,7 @@ package postgres
 
 import (
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -56,6 +57,8 @@ func (s *DepositStorage) Insert(model *observer.Deposit) error {
 }
 
 func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
+	log := s.log.WithField("deposit", insolar.NewReferenceFromBytes(deposit.Reference).String())
+
 	res, err := s.db.Query(deposit, `
 		insert into deposits (
 			eth_hash,
@@ -101,9 +104,11 @@ func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("deposit_row", deposit).Errorf("failed to insert deposit")
+		log.WithField("deposit_row", deposit).Errorf("failed to insert deposit")
 		return errors.New("failed to insert, affected is 0")
 	}
+
+	log.Debug("insert")
 
 	return nil
 }
@@ -119,6 +124,8 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to find deposit for update upd=%#v", model)
 	}
+
+	log := s.log.WithField("deposit", insolar.NewReferenceFromBytes(deposit.Reference).String()).WithField("upd", model)
 
 	query := s.db.Model(&models.Deposit{}).
 		Where("deposit_ref=?", deposit.Reference).
@@ -149,9 +156,12 @@ func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		s.log.WithField("upd", model).WithField("TxHash", model.TxHash).Errorf("failed to update deposit")
+		log.Errorf("failed to update deposit")
 		return errors.New("failed to update, affected is 0")
 	}
+
+	log.Debug("updated")
+
 	return nil
 }
 

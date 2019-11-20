@@ -54,7 +54,7 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 
 	d := c.depositState(amd)
 
-	log.Debugf("%s: amount %s, balance %s", rec.ID.String(), d.Amount, d.Balance)
+	log.Debugf("%s: amount %s, balance %s, txHash %s", rec.ID.String(), d.Amount, d.Balance, d.TxHash)
 
 	holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
