@@ -71,10 +71,10 @@ func makeBeautifier(
 		b := &beauty{
 			pulse:          r.pulse,
 			members:        make(map[insolar.ID]*observer.Member),
-			deposits:       make(map[insolar.ID]*observer.Deposit),
+			deposits:       make(map[insolar.ID]observer.Deposit),
 			addresses:      make(map[string]*observer.MigrationAddress),
 			balances:       make(map[insolar.ID]*observer.Balance),
-			depositUpdates: make(map[insolar.ID]*observer.DepositUpdate),
+			depositUpdates: make(map[insolar.ID]observer.DepositUpdate),
 			wastings:       make(map[string]*observer.Wasting),
 		}
 
@@ -131,7 +131,7 @@ func makeBeautifier(
 
 			update := depositUpdates.Collect(ctx, &obsRecord)
 			if update != nil {
-				b.depositUpdates[update.ID] = update
+				b.depositUpdates[update.ID] = *update
 			}
 
 			wasting := wastings.Collect(ctx, &obsRecord)

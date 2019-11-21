@@ -32,10 +32,7 @@ type Deposit struct {
 	Vesting         int64
 	VestingStep     int64
 	DepositNumber   int64
-}
-
-type DepositCollector interface {
-	Collect(*Record) *Deposit
+	IsConfirmed     bool
 }
 
 type DepositUpdate struct {
@@ -47,8 +44,4 @@ type DepositUpdate struct {
 	PrevState   insolar.ID
 	TxHash      string // for debug purposes
 	IsConfirmed bool
-}
-
-type DepositUpdateCollector interface {
-	Collect(*Record) *DepositUpdate
 }

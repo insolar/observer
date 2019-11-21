@@ -187,7 +187,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		deposits := postgres.NewDepositStorage(obs, tx)
 
-		err := deposits.Insert(&observer.Deposit{
+		err := deposits.Insert(observer.Deposit{
 			EthHash:         expectedDeposit[0].EtheriumHash,
 			Ref:             *insolar.NewReferenceFromBytes(expectedDeposit[0].Reference),
 			Member:          *insolar.NewReferenceFromBytes(expectedDeposit[0].MemberReference),
@@ -278,7 +278,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 		deposits := postgres.NewDepositStorage(obs, tx)
 
 		for _, dep := range expectedDeposit {
-			err := deposits.Insert(&observer.Deposit{
+			err := deposits.Insert(observer.Deposit{
 				EthHash:         dep.EtheriumHash,
 				Ref:             *insolar.NewReferenceFromBytes(dep.Reference),
 				Member:          *insolar.NewReferenceFromBytes(dep.MemberReference),
@@ -330,7 +330,7 @@ func TestStorerOK(t *testing.T) {
 				},
 			},
 		},
-		deposits: map[insolar.ID]*observer.Deposit{
+		deposits: map[insolar.ID]observer.Deposit{
 			gen.ID(): {
 				EthHash:         strings.ToLower("0x5ca5e6417f818ba1c74d"),
 				Ref:             gen.Reference(),

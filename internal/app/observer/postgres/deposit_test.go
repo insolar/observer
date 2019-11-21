@@ -47,7 +47,7 @@ func TestDepositStorage_Update(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		now := time.Now().Unix()
 
-		deposit := &observer.Deposit{
+		deposit := observer.Deposit{
 			EthHash:         "123",
 			Ref:             gen.Reference(),
 			Member:          gen.Reference(),
@@ -61,7 +61,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
 
-		update := &observer.DepositUpdate{
+		update := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
@@ -93,7 +93,7 @@ func TestDepositStorage_Update(t *testing.T) {
 	t.Run("two deposits", func(t *testing.T) {
 		now := time.Now().Unix()
 
-		deposit1 := &observer.Deposit{
+		deposit1 := observer.Deposit{
 			EthHash:         "123",
 			Ref:             gen.Reference(),
 			Member:          gen.Reference(),
@@ -107,7 +107,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		err := depositRepo.Insert(deposit1)
 		require.NoError(t, err, "insert")
 
-		update1 := &observer.DepositUpdate{
+		update1 := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
@@ -135,7 +135,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			InnerStatus:     models.DepositStatusConfirmed,
 		}, res)
 
-		deposit2 := &observer.Deposit{
+		deposit2 := observer.Deposit{
 			EthHash:         "123",
 			Ref:             gen.Reference(),
 			Member:          deposit1.Member,
@@ -149,7 +149,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		err = depositRepo.Insert(deposit2)
 		require.NoError(t, err, "insert")
 
-		update2 := &observer.DepositUpdate{
+		update2 := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
@@ -179,7 +179,7 @@ func TestDepositStorage_Update(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		update := &observer.DepositUpdate{
+		update := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: time.Now().Unix() + 1,
 			Amount:          "100",
@@ -196,7 +196,7 @@ func TestDepositStorage_Update(t *testing.T) {
 	t.Run("failed to update", func(t *testing.T) {
 		now := time.Now().Unix()
 
-		deposit := &observer.Deposit{
+		deposit := observer.Deposit{
 			EthHash:         "123",
 			Ref:             gen.Reference(),
 			Member:          gen.Reference(),
@@ -210,7 +210,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
 
-		update := &observer.DepositUpdate{
+		update := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
