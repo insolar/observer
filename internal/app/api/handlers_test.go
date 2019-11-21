@@ -1741,6 +1741,49 @@ func TestObserverServer_Notifications(t *testing.T) {
 	require.Equal(t, expected, jsonResp)
 }
 
+func TestIsMigrationAddressFailed(t *testing.T) {
+	address := "0x012345678901234567890123456789qwertyuiop"
+	migrationAddress := models.MigrationAddress{
+		ID:        32000 + int64(0),
+		Addr:      address,
+		Timestamp: time.Now().Unix(),
+		Wasted:    true,
+	}
+
+	err := db.Insert(&migrationAddress)
+	require.NoError(t, err)
+
+	type testCase struct {
+		address string
+		result  bool
+	}
+
+	var testCases []testCase
+	testCases = append(
+		testCases,
+		testCase{address: notExistedMigrationAddress, result: false},
+		testCase{address: address, result: true},
+		)
+
+	for _, test := range testCases {
+		resp, err := http.Get("http://" + apihost + "/admin/isMigrationAddress/" + test.address)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		jsonResp := ResponsesIsMigrationAddressYaml{}
+		err = json.Unmarshal(bodyBytes, &jsonResp)
+		require.NoError(t, err)
+		expected := ResponsesIsMigrationAddressYaml{
+			IsMigrationAddress: test.result,
+		}
+		require.Equal(t, expected, jsonResp)
+	}
+
+}
+
 func newInt(val int64) *int64 {
 	return &val
 }

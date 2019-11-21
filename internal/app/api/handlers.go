@@ -53,7 +53,7 @@ func (c *DefaultClock) Now() time.Time {
 	return time.Now()
 }
 
-type ObserverServer struct {
+type ObserverServer struct { // it is realization of ServerInterface
 	db    *pg.DB
 	log   *logrus.Logger
 	clock Clock
@@ -63,6 +63,23 @@ type ObserverServer struct {
 
 func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
 	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
+}
+
+func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress string) error {
+	s.setExpire(ctx, 1*time.Minute)
+
+	count, err := s.db.Model(&models.MigrationAddress{}).
+		Where("addr = ?", ethereumAddress).
+		Count()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesIsMigrationAddressYaml{
+		IsMigrationAddress: count > 0,
+	})
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
