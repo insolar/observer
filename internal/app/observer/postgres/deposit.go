@@ -124,7 +124,7 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 	deposit := new(models.Deposit)
 	err := s.db.Model(deposit).Where("deposit_state=?", model.PrevState.Bytes()).Select()
 	if err != nil {
-		return errors.Wrapf(err, "failed to find deposit for update upd=%#v", model)
+		return errors.Wrapf(err, "failed to find deposit for update upd=%s", model.PrevState.String())
 	}
 
 	log := s.log.WithField("deposit", insolar.NewReferenceFromBytes(deposit.Reference).String()).WithField("upd", model)

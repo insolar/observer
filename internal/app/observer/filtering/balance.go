@@ -30,7 +30,7 @@ func NewBalanceFilter() *BalanceFilter {
 
 func (*BalanceFilter) Filter(balances map[insolar.ID]*observer.Balance, members map[insolar.ID]*observer.Member) {
 	// This code block collapses the balance sequence.
-	for _, balance := range balances {
+	for state, balance := range balances {
 		bal, ok := balances[balance.PrevState]
 		for ok {
 			delete(balances, balance.PrevState)
@@ -38,6 +38,7 @@ func (*BalanceFilter) Filter(balances map[insolar.ID]*observer.Balance, members 
 			balance.PrevState = bal.PrevState
 			bal, ok = balances[balance.PrevState]
 		}
+		balances[state] = balance
 	}
 
 	// We try to apply balance update in memory.
