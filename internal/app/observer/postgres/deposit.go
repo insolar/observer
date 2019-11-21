@@ -17,6 +17,9 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -83,19 +86,9 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		values = append(values, models.DepositStatusCreated)
 	}
 
-	res, err := s.db.Query(model, `
-		insert into deposits (
-			eth_hash,
-			deposit_ref,
-			member_ref,
-			transfer_date,
-			hold_release_date,
-			amount,
-			balance,
-			deposit_state,
-			vesting,
-			vesting_step,
-			status
+	res, err := s.db.Query(model, fmt.Sprintf( // nolint: gosec
+		`insert into deposits (
+			%s
 		) values (
 			?,
 			?,
@@ -108,7 +101,7 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 			?,
 			?,
 			?
-		)`,
+		)`, strings.Join(fields, ",")),
 		values...,
 	)
 
