@@ -71,8 +71,14 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		}
 	)
 
+	valuePlaces := make([]string, len(fields))
+	for i := range fields {
+		valuePlaces[i] = "?"
+	}
+
 	if model.IsConfirmed {
-		fields = append(fields, `deposit_number = (select
+		fields = append(fields, `deposit_number`)
+		valuePlaces = append(valuePlaces, `(select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
 						then 1
@@ -90,18 +96,8 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		`insert into deposits (
 			%s
 		) values (
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?
-		)`, strings.Join(fields, ",")),
+			%s
+		)`, strings.Join(fields, ","), strings.Join(valuePlaces, ",")),
 		values...,
 	)
 
@@ -124,7 +120,7 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 	deposit := new(models.Deposit)
 	err := s.db.Model(deposit).Where("deposit_state=?", model.PrevState.Bytes()).Select()
 	if err != nil {
-		return errors.Wrapf(err, "failed to find deposit for update upd=%#v", model)
+		return errors.Wrapf(err, "failed to find deposit for update upd=%s", model.PrevState.String())
 	}
 
 	log := s.log.WithField("deposit", insolar.NewReferenceFromBytes(deposit.Reference).String()).WithField("upd", model)
