@@ -34,6 +34,54 @@ func newInt(val int64) *int64 {
 	return &val
 }
 
+func TestDepositStorage_Insert(t *testing.T) {
+	cfg := &configuration.Configuration{
+		DB: configuration.DB{
+			Attempts: 1,
+		},
+		LogLevel: "debug",
+	}
+
+	depositRepo := postgres.NewDepositStorage(observability.Make(cfg), db)
+
+	t.Run("not confirmed", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Member:          gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+		}
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+	})
+
+	t.Run("confirmed", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Member:          gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+			IsConfirmed:     true,
+		}
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+	})
+}
+
 func TestDepositStorage_Update(t *testing.T) {
 	cfg := &configuration.Configuration{
 		DB: configuration.DB{

@@ -71,8 +71,14 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		}
 	)
 
+	valuePlaces := make([]string, len(fields))
+	for i := range fields {
+		valuePlaces[i] = "?"
+	}
+
 	if model.IsConfirmed {
-		fields = append(fields, `deposit_number = (select
+		fields = append(fields, `deposit_number`)
+		valuePlaces = append(valuePlaces, `(select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
 						then 1
@@ -90,18 +96,8 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		`insert into deposits (
 			%s
 		) values (
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?,
-			?
-		)`, strings.Join(fields, ",")),
+			%s
+		)`, strings.Join(fields, ","), strings.Join(valuePlaces, ",")),
 		values...,
 	)
 
