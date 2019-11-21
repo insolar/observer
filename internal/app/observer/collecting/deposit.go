@@ -59,14 +59,17 @@ func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *Depos
 	}
 }
 
-func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []*observer.Deposit {
+func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []observer.Deposit {
 	if rec == nil {
 		return nil
 	}
 
+	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "DepositCollector")
+
 	// genesis deposit records
 	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec) {
-		return c.processGenesisRecord(ctx, rec)
+		log.Debug("found genesis deposit")
+		return c.processGenesisRecord(ctx, rec, log)
 	}
 
 	res := observer.CastToResult(rec)
@@ -97,12 +100,14 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 	daemonCall, err := c.find(migrationTree.Outgoings, c.isDepositMigrationCall)
 	if err != nil {
 		// TODO: maybe should create failed deposit
+		log.Debug("probably failed deposit")
 		return nil
 	}
 
 	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
 	if err != nil {
 		// TODO: maybe should create failed deposit
+		log.Debug("probably failed deposit")
 		return nil
 	}
 
@@ -121,25 +126,29 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
 	}
-	return []*observer.Deposit{d}
+
+	log.Debugf("New deposit ref %s, state %s, member %s, EthHash %s", d.Ref.String(),
+		d.DepositState.String(), d.Member.String(), d.EthHash)
+
+	return []observer.Deposit{*d}
 }
 
-func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record) []*observer.Deposit {
+func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record, log *logrus.Entry) []observer.Deposit {
 	activate := rec.Virtual.GetActivate()
 	shard := c.initialPKShard(activate)
 	var (
-		deposits []*observer.Deposit
+		deposits []observer.Deposit
 	)
 	for _, memberRefStr := range shard.Map {
 		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
 		if err != nil {
-			c.log.WithField("member_ref_str", memberRefStr).
+			log.WithField("member_ref_str", memberRefStr).
 				Error("failed to build reference from string")
 			continue
 		}
 		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
 		if err != nil {
-			c.log.WithField("member_ref", memberRef).
+			log.WithField("member_ref", memberRef).
 				Error("failed to find member activate record")
 			continue
 		}
@@ -147,12 +156,12 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 		memberState := c.initialMemberState(activate)
 		// Deposit migration members has no wallet
 		if memberState.Wallet.IsEmpty() {
-			c.log.Debug("Member has no wallet. ", memberRef)
+			log.Debug("Member has no wallet. ", memberRef)
 			continue
 		}
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
-			c.log.WithField("wallet_ref", memberState.Wallet).
+			log.WithField("wallet_ref", memberState.Wallet).
 				Warn("failed to find wallet activate record")
 			continue
 		}
@@ -162,21 +171,21 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 		for _, depositRefString := range walletState.Deposits {
 			depositRef, err := insolar.NewReferenceFromString(depositRefString)
 			if err != nil {
-				c.log.WithField("deposit_ref_str", depositRefString).
+				log.WithField("deposit_ref_str", depositRefString).
 					Warn("failed to build reference from string")
 				continue
 			}
 
 			depositActivate, err := c.fetcher.SideEffect(ctx, *depositRef.GetLocal())
 			if err != nil {
-				c.log.WithField("deposit_ref", depositRef).
+				log.WithField("deposit_ref", depositRef).
 					Error("failed to find deposit activate record")
 				continue
 			}
 
 			timeActivate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
 			if err != nil {
-				c.log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
+				log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
 				continue
 			}
 
@@ -185,10 +194,11 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 
 			hrd, err := depositState.PulseDepositUnHold.AsApproximateTime()
 			if err != nil {
-				c.log.Errorf("wrong timestamp in genesis deposit PulseDepositUnHold: %+v", depositState)
+				log.Errorf("wrong timestamp in genesis deposit PulseDepositUnHold: %+v", depositState)
 				hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 			}
-			deposits = append(deposits, &observer.Deposit{
+
+			d := observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
 				Ref:             *depositRef,
 				DepositState:    depositActivate.ID,
@@ -199,7 +209,12 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
-			})
+			}
+
+			log.Debugf("New deposit ref %s, state %s, member %s, EthHash %s", d.Ref.String(),
+				d.DepositState.String(), d.Member.String(), d.EthHash)
+
+			deposits = append(deposits, d)
 		}
 	}
 	return deposits

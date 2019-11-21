@@ -146,9 +146,6 @@ func makeStorer(
 
 				deposits := postgres.NewDepositStorage(obs, tx)
 				for _, deposit := range b.deposits {
-					if deposit == nil {
-						continue
-					}
 					err := deposits.Insert(deposit)
 					if err != nil {
 						return errors.Wrap(err, "failed to insert deposit")
@@ -179,9 +176,6 @@ func makeStorer(
 				}
 
 				for _, update := range b.depositUpdates {
-					if update == nil {
-						continue
-					}
 					err := deposits.Update(update)
 					if err != nil {
 						return errors.Wrap(err, "failed to insert deposit update")

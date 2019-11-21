@@ -216,7 +216,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 	res := beautifier(ctx, raw)
 
 	assert.Equal(t, 1, len(res.deposits))
-	assert.Equal(t, map[insolar.ID]*observer.Deposit{
+	assert.Equal(t, map[insolar.ID]observer.Deposit{
 		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
 			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),

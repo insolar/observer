@@ -17,6 +17,9 @@
 package postgres
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
@@ -46,32 +49,46 @@ func NewDepositStorage(obs *observability.Observability, db orm.DB) *DepositStor
 	}
 }
 
-func (s *DepositStorage) Insert(model *observer.Deposit) error {
-	if model == nil {
-		s.log.Warnf("trying to insert nil deposit model")
-		return nil
-	}
+func (s *DepositStorage) Insert(model observer.Deposit) error {
 	row := depositSchema(model)
 
-	return s.insertDeposit(row)
-}
+	log := s.log.WithField("deposit", model)
 
-func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
-	log := s.log.WithField("deposit", insolar.NewReferenceFromBytes(deposit.Reference).String())
+	var (
+		fields = []string{"eth_hash", "deposit_ref", "member_ref", "transfer_date", "hold_release_date", "amount",
+			"balance", "deposit_state", "vesting", "vesting_step", "status"}
+		values = []interface{}{
+			row.EtheriumHash,
+			row.Reference,
+			row.MemberReference,
+			row.TransferDate,
+			row.HoldReleaseDate,
+			row.Amount,
+			row.Balance,
+			row.State,
+			row.Vesting,
+			row.VestingStep,
+		}
+	)
 
-	res, err := s.db.Query(deposit, `
-		insert into deposits (
-			eth_hash,
-			deposit_ref,
-			member_ref,
-			transfer_date,
-			hold_release_date,
-			amount,
-			balance,
-			deposit_state,
-			vesting,
-			vesting_step,
-			status
+	if model.IsConfirmed {
+		fields = append(fields, `deposit_number = (select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			)`)
+		values = append(values, models.DepositStatusConfirmed, row.MemberReference, row.MemberReference)
+	} else {
+		values = append(values, models.DepositStatusCreated)
+	}
+
+	res, err := s.db.Query(model, fmt.Sprintf( // nolint: gosec
+		`insert into deposits (
+			%s
 		) values (
 			?,
 			?,
@@ -84,27 +101,17 @@ func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
 			?,
 			?,
 			?
-		)`,
-		deposit.EtheriumHash,
-		deposit.Reference,
-		deposit.MemberReference,
-		deposit.TransferDate,
-		deposit.HoldReleaseDate,
-		deposit.Amount,
-		deposit.Balance,
-		deposit.State,
-		deposit.Vesting,
-		deposit.VestingStep,
-		models.DepositStatusCreated,
+		)`, strings.Join(fields, ",")),
+		values...,
 	)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert deposit %v", deposit)
+		return errors.Wrapf(err, "failed to insert deposit %v", model)
 	}
 
 	if res.RowsAffected() == 0 {
 		s.errorCounter.Inc()
-		log.WithField("deposit_row", deposit).Errorf("failed to insert deposit")
+		log.WithField("deposit_row", model).Errorf("failed to insert deposit")
 		return errors.New("failed to insert, affected is 0")
 	}
 
@@ -113,12 +120,7 @@ func (s *DepositStorage) insertDeposit(deposit *models.Deposit) error {
 	return nil
 }
 
-func (s *DepositStorage) Update(model *observer.DepositUpdate) error {
-	if model == nil {
-		s.log.Warnf("trying to apply nil deposit update model")
-		return nil
-	}
-
+func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 	deposit := new(models.Deposit)
 	err := s.db.Model(deposit).Where("deposit_state=?", model.PrevState.Bytes()).Select()
 	if err != nil {
@@ -174,8 +176,8 @@ func (s *DepositStorage) GetDeposit(ref []byte) (*models.Deposit, error) {
 	return deposit, nil
 }
 
-func depositSchema(model *observer.Deposit) *models.Deposit {
-	return &models.Deposit{
+func depositSchema(model observer.Deposit) models.Deposit {
+	return models.Deposit{
 		EtheriumHash:    model.EthHash,
 		Reference:       model.Ref.Bytes(),
 		MemberReference: model.Member.Bytes(),

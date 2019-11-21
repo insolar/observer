@@ -91,7 +91,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 	if err != nil {
 		panic("invalid pulse")
 	}
-	expected := []*observer.Deposit{{
+	expected := []observer.Deposit{{
 		EthHash:         txHash,
 		Ref:             genesisrefs.ContractMigrationDeposit,
 		Member:          genesisrefs.ContractMigrationAdminMember,
