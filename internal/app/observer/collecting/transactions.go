@@ -343,6 +343,10 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
+	if request.Method == methodTransferToDeposit {
+		return c.fromMigration(log, *request)
+	}
+
 	if request.Method != methodCall {
 		log.Debug("skipped (method is not Call)")
 		return nil
@@ -352,6 +356,11 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		log.Debug("skipped (APINode is empty)")
 		return nil
 	}
+	// API calls never have prototype.
+	if request.Prototype != nil {
+		return nil
+	}
+
 	// Skip saga.
 	if request.IsDetachedCall() {
 		log.Debug("skipped (request is saga)")
@@ -363,23 +372,8 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
-	switch args.Params.CallSite {
-	case callSiteTransfer:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
-			return nil
-		}
-	case callSiteMigration:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
-	case callSiteRelease:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
-	}
-
 	// Migration and release don't have fees.
-	if args.Params.CallSite == callSiteMigration || args.Params.CallSite == callSiteRelease {
+	if args.Params.CallSite == callSiteRelease {
 		tx := &observer.TxResult{
 			TransactionID: txID,
 			Fee:           "0",
@@ -416,6 +410,40 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 	return tx
+}
+
+func (c *TxResultCollector) fromMigration(
+	log *logrus.Entry,
+	request record.IncomingRequest,
+) *observer.TxResult {
+	// Skip API requests.
+	if !request.APINode.IsEmpty() {
+		log.Debug("skipped (APINode is empty)")
+		return nil
+	}
+
+	// Skip saga.
+	if request.IsDetachedCall() {
+		log.Debug("skipped (request is saga)")
+		return nil
+	}
+
+	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		log.Debugf("skipped (not deposit object)")
+		return nil
+	}
+
+	var txID insolar.Reference
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil})
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse arguments"))
+		return nil
+	}
+
+	return &observer.TxResult{
+		TransactionID: txID,
+		Fee:           "0",
+	}
 }
 
 type TxSagaResultCollector struct {
@@ -570,19 +598,9 @@ func (c *TxSagaResultCollector) fromCall(
 		return nil
 	}
 
-	switch args.Params.CallSite {
-	case callSiteTransfer:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyMember.PrototypeReference) {
-			return nil
-		}
-	case callSiteMigration:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
-	case callSiteRelease:
-		if request.Prototype != nil && !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-			return nil
-		}
+	// API calls never have prototype.
+	if request.Prototype != nil {
+		return nil
 	}
 
 	var response foundation.Result
