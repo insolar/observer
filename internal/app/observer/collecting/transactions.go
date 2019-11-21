@@ -413,7 +413,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 }
 
 func (c *TxResultCollector) fromMigration(
-	ctx context.Context,
+	_ context.Context,
 	log *logrus.Entry,
 	rec exporter.Record,
 	request record.IncomingRequest,

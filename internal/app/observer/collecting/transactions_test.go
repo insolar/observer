@@ -197,7 +197,6 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
-				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -230,23 +229,17 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		memberRequest := member.Request{Params: member.Params{CallSite: callSiteMigration}}
-		encodedRequest, err := json.Marshal(&memberRequest)
-		require.NoError(t, err)
-		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
-		require.NoError(t, err)
-		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		txID := *insolar.NewRecordReference(gen.ID())
+		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil})
 		require.NoError(t, err)
 		request := record.Material{
 			Virtual: record.Wrap(&record.IncomingRequest{
 				ReturnMode: record.ReturnResult,
-				Method:     methodCall,
+				Method:     methodTransferToDeposit,
 				Arguments:  arguments,
-				APINode:    gen.Reference(),
 				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
-		txID := *insolar.NewRecordReference(gen.ID())
 		require.NoError(t, err)
 		rec := exporter.Record{
 			Record: record.Material{
@@ -283,7 +276,6 @@ func TestTxResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
-				Prototype:  proxyDeposit.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -482,7 +474,6 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 				Method:     methodCall,
 				Arguments:  arguments,
 				APINode:    gen.Reference(),
-				Prototype:  proxyMember.PrototypeReference,
 			}),
 		}
 		txID := *insolar.NewRecordReference(gen.ID())
