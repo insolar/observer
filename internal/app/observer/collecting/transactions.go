@@ -344,7 +344,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	if request.Method == methodTransferToDeposit {
-		return c.fromMigration(ctx, log, rec, *request)
+		return c.fromMigration(log, *request)
 	}
 
 	if request.Method != methodCall {
@@ -413,9 +413,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 }
 
 func (c *TxResultCollector) fromMigration(
-	_ context.Context,
 	log *logrus.Entry,
-	rec exporter.Record,
 	request record.IncomingRequest,
 ) *observer.TxResult {
 	// Skip API requests.
