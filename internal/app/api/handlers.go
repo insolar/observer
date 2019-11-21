@@ -53,7 +53,7 @@ func (c *DefaultClock) Now() time.Time {
 	return time.Now()
 }
 
-type ObserverServer struct { // it is realization of ServerInterface
+type ObserverServer struct {
 	db    *pg.DB
 	log   *logrus.Logger
 	clock Clock
