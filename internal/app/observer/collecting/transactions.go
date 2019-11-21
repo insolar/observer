@@ -343,6 +343,10 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
+	if request.Method == methodTransferToDeposit {
+		return c.fromMigration(ctx, log, rec, *request)
+	}
+
 	if request.Method != methodCall {
 		log.Debug("skipped (method is not Call)")
 		return nil
@@ -369,7 +373,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	// Migration and release don't have fees.
-	if args.Params.CallSite == callSiteMigration || args.Params.CallSite == callSiteRelease {
+	if args.Params.CallSite == callSiteRelease {
 		tx := &observer.TxResult{
 			TransactionID: txID,
 			Fee:           "0",
@@ -406,6 +410,42 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 	return tx
+}
+
+func (c *TxResultCollector) fromMigration(
+	ctx context.Context,
+	log *logrus.Entry,
+	rec exporter.Record,
+	request record.IncomingRequest,
+) *observer.TxResult {
+	// Skip API requests.
+	if !request.APINode.IsEmpty() {
+		log.Debug("skipped (APINode is empty)")
+		return nil
+	}
+
+	// Skip saga.
+	if request.IsDetachedCall() {
+		log.Debug("skipped (request is saga)")
+		return nil
+	}
+
+	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		log.Debugf("skipped (not deposit object)")
+		return nil
+	}
+
+	var txID insolar.Reference
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil})
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse arguments"))
+		return nil
+	}
+
+	return &observer.TxResult{
+		TransactionID: txID,
+		Fee:           "0",
+	}
 }
 
 type TxSagaResultCollector struct {
