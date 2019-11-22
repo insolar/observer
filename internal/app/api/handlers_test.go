@@ -643,7 +643,7 @@ func insertDeposit(
 		Balance:         balance,
 		EtheriumHash:    etheriumHash,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   &depositNumber,
 		InnerStatus:     status,
 	}
@@ -1157,7 +1157,7 @@ func TestMember_Hold(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(100),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1221,7 +1221,7 @@ func TestMember_Vesting(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(200),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1287,7 +1287,7 @@ func TestMember_VestingAll(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(300),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1350,7 +1350,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(500),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1763,7 +1763,7 @@ func TestIsMigrationAddressFailed(t *testing.T) {
 		testCases,
 		testCase{address: notExistedMigrationAddress, result: false},
 		testCase{address: address, result: true},
-		)
+	)
 
 	for _, test := range testCases {
 		resp, err := http.Get("http://" + apihost + "/admin/isMigrationAddress/" + test.address)

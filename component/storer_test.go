@@ -178,7 +178,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Balance:         "100",
 			Vesting:         10,
 			VestingStep:     5,
-			TransferDate:    transferDate,
 			InnerStatus:     models.DepositStatusCreated,
 		},
 	}
@@ -242,7 +241,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Balance:         "100",
 			Vesting:         10,
 			VestingStep:     5,
-			TransferDate:    transferDate,
+			Timestamp:       transferDate,
 			DepositNumber:   newInt(1),
 		},
 		{
@@ -255,7 +254,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Balance:         "10",
 			Vesting:         10,
 			VestingStep:     5,
-			TransferDate:    transferDate,
+			Timestamp:       transferDate,
 			DepositNumber:   newInt(2),
 		},
 		{
@@ -268,7 +267,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			Balance:         "200",
 			Vesting:         10,
 			VestingStep:     5,
-			TransferDate:    transferDate,
+			Timestamp:       transferDate,
 			DepositNumber:   newInt(1),
 		},
 	}

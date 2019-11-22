@@ -123,7 +123,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			ReleasedAmount:  releaseAmount.Text(10),
 			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
 			Status:          d.Status(currentTime),
-			Timestamp:       d.TransferDate,
+			Timestamp:       d.Timestamp,
 		}
 		ref := insolar.NewReferenceFromBytes(d.Reference)
 		if ref != nil {

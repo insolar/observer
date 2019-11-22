@@ -183,12 +183,6 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				continue
 			}
 
-			timeActivate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
-			if err != nil {
-				log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
-				continue
-			}
-
 			activate = depositActivate.Virtual.GetActivate()
 			depositState := c.initialDepositState(activate)
 
@@ -203,7 +197,6 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				Ref:             *depositRef,
 				DepositState:    depositActivate.ID,
 				Member:          *memberRef,
-				Timestamp:       timeActivate.Unix(),
 				Amount:          depositState.Amount,
 				Balance:         depositState.Balance,
 				HoldReleaseDate: hrd.Unix(),

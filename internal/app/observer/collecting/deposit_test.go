@@ -87,15 +87,11 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 
 	actual := collector.Collect(ctx, pkshardActivate)
 
-	timestamp, err := pn.AsApproximateTime()
-	if err != nil {
-		panic("invalid pulse")
-	}
 	expected := []observer.Deposit{{
 		EthHash:         txHash,
 		Ref:             genesisrefs.ContractMigrationDeposit,
 		Member:          genesisrefs.ContractMigrationAdminMember,
-		Timestamp:       timestamp.Unix(),
+		Timestamp:       0,
 		Balance:         balance,
 		Amount:          amount,
 		DepositState:    cache[*depositRef.GetLocal()].ID,
