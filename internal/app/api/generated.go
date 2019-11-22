@@ -5,10 +5,9 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 // ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
@@ -48,6 +47,11 @@ type ResponsesInvalidReferenceYaml struct {
 // ResponsesInvalidTransactionIdYaml defines model for responses-invalidTransactionId-yaml.
 type ResponsesInvalidTransactionIdYaml struct {
 	Error []string `json:"error"`
+}
+
+// ResponsesIsMigrationAddressYaml defines model for responses-is-migration-address-yaml.
+type ResponsesIsMigrationAddressYaml struct {
+	IsMigrationAddress bool `json:"isMigrationAddress"`
 }
 
 // ResponsesMarketStatsYaml defines model for responses-marketStats-yaml.
@@ -227,6 +231,7 @@ type Transactions struct {
 
 // GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
 type GetMigrationAddressesParams struct {
+
 	// Index of the last known address to start the list from the next one. To start from the first added migration address, do not specify.
 	Index *string `json:"index,omitempty"`
 
@@ -236,6 +241,7 @@ type GetMigrationAddressesParams struct {
 
 // MemberTransactionsParams defines parameters for MemberTransactions.
 type MemberTransactionsParams struct {
+
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
@@ -275,6 +281,7 @@ type MemberTransactionsParams struct {
 
 // TransactionsSearchParams defines parameters for TransactionsSearch.
 type TransactionsSearchParams struct {
+
 	// Value of `txID`, `fromMemberReference`, `toMemberReference` or `pulseNumber` by which to search (filter) transactions.
 	//
 	// Note: since path parameters must be valid parts of URL, the `:` after `insolar` in references and IDs is to be replaced with `%3A` in accordance with the HTML URL encoding.
@@ -312,6 +319,7 @@ type TransactionsSearchParams struct {
 
 // ClosedTransactionsParams defines parameters for ClosedTransactions.
 type ClosedTransactionsParams struct {
+
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
@@ -329,6 +337,8 @@ type ClosedTransactionsParams struct {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// check migration address// (GET /admin/isMigrationAddress/{ethereumAddress})
+	IsMigrationAddress(ctx echo.Context, ethereumAddress string) error
 	// addresses// (GET /admin/migration/addresses)
 	GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error
 	// addresses/count// (GET /admin/migration/addresses/count)
@@ -368,6 +378,22 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// IsMigrationAddress converts echo context to params.
+func (w *ServerInterfaceWrapper) IsMigrationAddress(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "ethereumAddress" -------------
+	var ethereumAddress string
+
+	err = runtime.BindStyledParameter("simple", false, "ethereumAddress", ctx.Param("ethereumAddress"), &ethereumAddress)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ethereumAddress: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.IsMigrationAddress(ctx, ethereumAddress)
+	return err
 }
 
 // GetMigrationAddresses converts echo context to params.
@@ -752,12 +778,23 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 }
 
 // RegisterHandlers adds each server route to the EchoRouter.
-func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
+func RegisterHandlers(router interface {
+	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+}, si ServerInterface) {
 
 	wrapper := ServerInterfaceWrapper{
 		Handler: si,
 	}
 
+	router.GET("/admin/isMigrationAddress/:ethereumAddress", wrapper.IsMigrationAddress)
 	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
 	router.GET("/api/fee/:amount", wrapper.Fee)
@@ -777,3 +814,4 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
+
