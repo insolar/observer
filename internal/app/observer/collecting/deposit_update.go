@@ -65,6 +65,7 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 	return &observer.DepositUpdate{
 		ID:              rec.ID,
 		HoldReleaseDate: holdReleasedDate.Unix(),
+		Timestamp:       holdReleasedDate.Unix() - d.Lockup,
 		Amount:          d.Amount,
 		Balance:         d.Balance,
 		PrevState:       amd.PrevState,

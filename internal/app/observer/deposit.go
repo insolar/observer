@@ -37,6 +37,7 @@ type Deposit struct {
 
 type DepositUpdate struct {
 	ID              insolar.ID
+	Timestamp       int64
 	HoldReleaseDate int64
 	Amount          string
 	Balance         string

@@ -112,6 +112,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		update := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
+			Timestamp:       now,
 			Amount:          "100",
 			Balance:         "100",
 			PrevState:       deposit.DepositState,
@@ -132,7 +133,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
 			Balance:         "100",
-			TransferDate:    now,
+			Timestamp:       now,
 			DepositNumber:   newInt(1),
 			InnerStatus:     models.DepositStatusConfirmed,
 		}, res)
@@ -158,6 +159,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		update1 := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
+			Timestamp:       now,
 			Amount:          "100",
 			Balance:         "100",
 			PrevState:       deposit1.DepositState,
@@ -178,7 +180,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
 			Balance:         "100",
-			TransferDate:    now,
+			Timestamp:       now,
 			DepositNumber:   newInt(1),
 			InnerStatus:     models.DepositStatusConfirmed,
 		}, res)
@@ -200,6 +202,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		update2 := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
+			Timestamp:       now,
 			Amount:          "100",
 			Balance:         "100",
 			PrevState:       deposit2.DepositState,
@@ -220,7 +223,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
 			Balance:         "100",
-			TransferDate:    now,
+			Timestamp:       now,
 			DepositNumber:   newInt(2),
 			InnerStatus:     models.DepositStatusConfirmed,
 		}, res)

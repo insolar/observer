@@ -122,7 +122,7 @@ create table if not exists deposits
     status deposit_status not null,
     eth_hash varchar(256) not null,
     member_ref bytea not null,
-    transfer_date bigint not null,
+    transfer_date bigint,
     hold_release_date bigint not null default 0,
     amount varchar(256) not null,
     balance varchar(256) not null,
