@@ -27,13 +27,20 @@ type Group struct {
 	Goal        string
 	Image       string
 	ProductType ProductType
+	Product     insolar.Reference
 	ChairMan    insolar.Reference
 	Treasurer   insolar.Reference
 	Membership  foundation.StableMap
-	Members     []insolar.Reference
+	Members     []GroupMember
 	Status      string
 	State       insolar.ID
 	Timestamp   int64
+	Balance     insolar.Reference
+}
+
+type GroupMember struct {
+	MemberReference string
+	MemberGoal      string
 }
 
 type GroupUpdate struct {
@@ -49,7 +56,7 @@ type GroupUpdate struct {
 	ChairMan       insolar.Reference
 	Product        insolar.Reference
 	Title          string
-	Balance        *insolar.Reference
+	Balance        insolar.Reference
 }
 
 type GroupStorage interface {

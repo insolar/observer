@@ -1,10 +1,11 @@
 package postgres
 
 import (
+	"encoding/json"
 	"github.com/go-pg/pg/orm"
-	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,6 +19,7 @@ type UserGroupSchema struct {
 	GroupRef        []byte
 	Role            string
 	Status          string
+	AmountDue       uint64
 	StatusTimestamp int64
 }
 
@@ -40,27 +42,27 @@ type UserGroupStorage struct {
 	db           orm.DB
 }
 
-func (s *UserGroupStorage) Insert(model *observer.Group) error {
-	if model == nil {
-		s.log.Warnf("trying to insert nil user-group model")
+func (s *UserGroupStorage) Insert(group *observer.Group) error {
+	if group == nil {
+		s.log.Warnf("trying to insert nil user-group group")
 		return nil
 	}
-	// User status
-	// 1	invited
-	// 2	active
-	// 3	inactive
-	// 4	expelled
-	for _, u := range model.Members {
-		// regular roles with invited status
-		row := userGroupMemberSchema(model, u, "member", "invited", model.Timestamp)
-		err := s.insertRow(row)
-		if err != nil {
-			return err
+
+	if group.Membership != nil {
+		for _, membershipStr := range group.Membership {
+			byt := []byte(membershipStr)
+			var membership collecting.Membership
+			if err := json.Unmarshal(byt, &membership); err != nil {
+				return nil
+			}
+			row := userGroupMemberSchema(group, membership)
+			err := s.insertRow(row)
+			if err != nil {
+				return err
+			}
 		}
 	}
-	// creator with active status
-	row := userGroupMemberSchema(model, model.ChairMan, "admin", "active", model.Timestamp)
-	return s.insertRow(row)
+	return nil
 }
 
 func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
@@ -80,12 +82,13 @@ func (s *UserGroupStorage) insertRow(row *UserGroupSchema) error {
 	return nil
 }
 
-func userGroupMemberSchema(group *observer.Group, userRef insolar.Reference, role string, status string, timestamp int64) *UserGroupSchema {
+func userGroupMemberSchema(group *observer.Group, membership collecting.Membership) *UserGroupSchema {
 	return &UserGroupSchema{
-		UserRef:         userRef.Bytes(),
+		UserRef:         membership.MemberRef.Bytes(),
 		GroupRef:        group.Ref.Bytes(),
-		Role:            role,
-		Status:          status,
-		StatusTimestamp: timestamp,
+		Role:            membership.MemberRole.String(),
+		Status:          membership.MemberStatus.String(),
+		AmountDue:       membership.AmountDue,
+		StatusTimestamp: group.Timestamp,
 	}
 }

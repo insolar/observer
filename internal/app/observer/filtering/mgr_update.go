@@ -47,9 +47,9 @@ func (*MGRUpdateFilter) Filter(mgrUpdates map[insolar.ID]*observer.MGRUpdate, mg
 			continue
 		}
 		delete(mgrs, update.PrevState)
+		d.GroupReference = update.GroupReference
 		d.SwapProcess = update.SwapProcess
 		d.Sequence = update.Sequence
-		d.NextPaymentTime = update.NextPaymentTime
 		d.FinishRoundDate = update.FinishRoundDate
 		d.StartRoundDate = update.StartRoundDate
 		d.AmountDue = update.AmountDue

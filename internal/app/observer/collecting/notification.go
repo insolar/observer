@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/log"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -141,7 +140,6 @@ func NewNotificationCollector(log *logrus.Logger) *NotificationCollector {
 }
 
 type Notification struct {
-	foundation.BaseContract
 	GroupRef         insolar.Reference
 	MemberRef        insolar.Reference
 	TypeNotification observer.NotificationType
@@ -246,7 +244,7 @@ func isNotificationActivate(chain interface{}) bool {
 	act := activate.Virtual.GetActivate()
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q")
 	return act.Image.Equal(*prototypeRef)
 }
 
@@ -266,7 +264,7 @@ func isNotificationNew(chain interface{}) bool {
 	}
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q") // ntf
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q") // ntf
 	return in.Prototype.Equal(*prototypeRef)
 }
 
@@ -285,6 +283,6 @@ func isCreateNotification(chain interface{}) bool {
 		return false
 	}
 
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR") // user
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR") // user
 	return in.Prototype.Equal(*prototypeRef)
 }

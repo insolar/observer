@@ -65,6 +65,6 @@ func (c *KYCCollector) Collect(rec *observer.Record) *observer.UserKYC {
 }
 
 func isUserAmend(amd *record.Amend) bool {
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
 	return amd.Image.Equal(*prototypeRef)
 }

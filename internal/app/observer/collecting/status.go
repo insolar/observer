@@ -17,11 +17,23 @@
 package collecting
 
 // Status type of membership status
-type Status int
+type StatusMemberShip int
 
-//go:generate stringer -type=Status
 const (
-	StatusInvite Status = iota + 1
+	StatusInvite StatusMemberShip = iota + 1
 	StatusActive
 	StatusInactive
 )
+
+func (s *StatusMemberShip) String() string {
+	switch *s {
+	case StatusInvite:
+		return "invited"
+	case StatusActive:
+		return "active"
+	case StatusInactive:
+		return "inactive"
+	default:
+		return "unknown"
+	}
+}

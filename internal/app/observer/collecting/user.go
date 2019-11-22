@@ -66,7 +66,7 @@ func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*ob
 	response := &CreateResponse{}
 	res.ParseFirstPayloadValue(response)
 
-	ref, err := insolar.NewReferenceFromBase58(response.Reference)
+	ref, err := insolar.NewReferenceFromString(response.Reference)
 	if err != nil || ref == nil {
 		return nil, errors.New("invalid user reference")
 	}
@@ -108,7 +108,7 @@ func isUserActivate(chain interface{}) bool {
 	act := activate.Virtual.GetActivate()
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
 	return act.Image.Equal(*prototypeRef)
 }
 
@@ -128,7 +128,7 @@ func isUserNew(chain interface{}) bool {
 	}
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
 	return in.Prototype.Equal(*prototypeRef)
 }
 

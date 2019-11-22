@@ -13,7 +13,7 @@ import (
 type MGRSchema struct {
 	tableName      struct{} `sql:"product_mgr"`
 	Ref            []byte   `sql:",pk"`
-	GroupReference []byte   `sql:"group_ref,pk"`
+	GroupReference []byte   `sql:"group_ref"`
 
 	StartRoundDate  int64 `sql:"start_date,notnull"`
 	FinishRoundDate int64 `sql:"fin_date,notnull"`
@@ -101,8 +101,8 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 		Where("state=?", model.PrevState.Bytes()).
 		Set("period=?,amount=?", model.PaymentFrequency, model.AmountDue).
 		Set("start_date=?", model.StartRoundDate).
+		Set("group_ref=?", model.GroupReference.Bytes()).
 		Set("fin_date=?", model.FinishRoundDate).
-		Set("next_payment=?", model.NextPaymentTime).
 		Set("state=?", model.MGRState.Bytes()).
 		Update()
 

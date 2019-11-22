@@ -72,7 +72,7 @@ func (c *BalanceUpdateCollector) Collect(rec *observer.Record) *observer.Balance
 }
 
 func isBalanceAmend(amd *record.Amend) bool {
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7rSyB9B9zk2FHqBzD15g7DnfVY3kbDkTRoJHiHm")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A7rSyB9B9zk2FHqBzD15g7DnfVY3kbDkTRoJHiHm")
 	return amd.Image.Equal(*prototypeRef)
 }
 

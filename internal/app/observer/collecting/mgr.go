@@ -4,7 +4,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -73,13 +72,11 @@ func NewMGRCollector(log *logrus.Logger) *MGRCollector {
 }
 
 type MerryGoRound struct {
-	foundation.BaseContract
-	GroupReference   insolar.Reference
+	GroupReference   *insolar.Reference
 	StartRoundDate   int64      // unix timestamp
 	FinishRoundDate  int64      // unix timestamp
 	AmountDue        string     // amount of money
-	PaymentFrequency string     // daily, weekly, monthly
-	NextPaymentTime  int64      // unix timestamp, need to be calculated
+	PaymentFrequency string     // week, month,year,half-hour
 	Sequence         []Sequence // array of users refs, [0] element is first in queue
 	SwapProcess      Swap       // Swap started and finished processes
 }
@@ -105,39 +102,33 @@ const (
 )
 
 func (c *MGRCollector) Collect(rec *observer.Record) *observer.MGR {
-	res := c.results.Collect(rec)
-	act := c.activates.Collect(rec)
-	half := c.halfChain.Collect(rec)
-
-	if act != nil {
-		half = c.halfChain.Collect(act)
+	if rec == nil {
+		return nil
 	}
+	actCandidate := observer.CastToActivate(rec)
 
-	var chain *observer.Chain
-	if res != nil {
-		chain = c.chains.Collect(res)
-	}
-
-	if half != nil {
-		chain = c.chains.Collect(half)
-	}
-
-	if chain == nil {
+	if !actCandidate.IsActivate() {
 		return nil
 	}
 
-	coupleAct, coupleRes, request := c.unwrapMGRChain(chain)
+	act := actCandidate.Virtual.GetActivate()
 
-	g, err := c.build(coupleAct, coupleRes, request)
+	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	if !act.Image.Equal(*prototypeRef) {
+		return nil
+	}
+
+	tx, err := c.build(actCandidate)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build group"))
+		log.Error(errors.Wrapf(err, "failed to build transaction"))
 		return nil
 	}
-	return g
+	return tx
 }
 
-func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.MGR, error) {
-	if res == nil || act == nil {
+func (c *MGRCollector) build(act *observer.Activate) (*observer.MGR, error) {
+	if act == nil {
 		return nil, errors.New("trying to create mgr from non complete builder")
 	}
 
@@ -154,18 +145,23 @@ func (c *MGRCollector) build(act *observer.Activate, res *observer.Result, req *
 	for _, v := range mgr.Sequence {
 		seq = append(seq, observer.Sequence{Member: v.Member, DrawDate: v.DrawDate, IsActive: v.IsActive})
 	}
-	return &observer.MGR{
+
+	resultProduct := observer.MGR{
 		Ref:              *insolar.NewReference(act.ObjectID),
-		GroupReference:   mgr.GroupReference,
 		StartRoundDate:   mgr.StartRoundDate,
 		FinishRoundDate:  mgr.FinishRoundDate,
 		AmountDue:        mgr.AmountDue,
 		PaymentFrequency: mgr.PaymentFrequency,
-		NextPaymentTime:  mgr.NextPaymentTime,
 		Sequence:         seq,
 		Status:           "SUCCESS",
 		State:            act.ID,
-	}, nil
+	}
+
+	if mgr.GroupReference != nil {
+		resultProduct.GroupReference = *mgr.GroupReference
+	}
+
+	return &resultProduct, nil
 }
 
 func isMGRCreationCall(chain interface{}) bool {
@@ -189,7 +185,7 @@ func isMGRActivate(chain interface{}) bool {
 	act := activate.Virtual.GetActivate()
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
 	return act.Image.Equal(*prototypeRef)
 }
 
@@ -209,7 +205,7 @@ func isMGRNew(chain interface{}) bool {
 	}
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
 	return in.Prototype.Equal(*prototypeRef)
 }
 
@@ -227,7 +223,7 @@ func isGroupMGRCreateCall(chain interface{}) bool {
 	if in.Prototype == nil {
 		return false
 	}
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
 	return in.Prototype.Equal(*prototypeRef)
 }
 
