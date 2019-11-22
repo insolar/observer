@@ -2,7 +2,6 @@ package collecting
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
@@ -136,13 +135,6 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 	if res.Virtual.GetResult().Payload == nil {
 		return nil, errors.New("group creation result payload is nil")
 	}
-	response := &CreateResponse{}
-	res.ParseFirstPayloadValue(response)
-
-	ref, err := insolar.NewReferenceFromString(response.Reference)
-	if err != nil || ref == nil {
-		return nil, errors.New("invalid group reference")
-	}
 
 	activate := act.Virtual.GetActivate()
 	state := c.initialGroupState(activate)
@@ -151,9 +143,9 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 		return nil, errors.Wrapf(err, "failed to convert group create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	fmt.Println("Insert new group ref:", ref.String())
+	logrus.Info("Insert new group ref:", insolar.NewReference(act.ObjectID).String())
 	resultGroup := observer.Group{
-		Ref:        *ref,
+		Ref:        *insolar.NewReference(act.ObjectID),
 		Title:      state.Title,
 		Goal:       state.Goal,
 		Image:      state.Image,
@@ -253,8 +245,6 @@ func (c *GroupCollector) initialGroupState(act *record.Activate) *Group {
 			if err := json.Unmarshal(byt, &membership); err != nil {
 				return nil
 			}
-			fmt.Printf("%+v\n", membership)
-			//fmt.Println(i, membership.MemberRef, membership.AmountDue)
 		}
 
 	}
