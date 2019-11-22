@@ -18,11 +18,10 @@ package component
 
 import (
 	"github.com/insolar/insolar/insolar"
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/collecting"
 	"github.com/insolar/observer/observability"
+	"github.com/sirupsen/logrus"
 )
 
 func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {

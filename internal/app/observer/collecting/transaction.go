@@ -51,7 +51,7 @@ func (c *TransactionCollector) Collect(rec *observer.Record) *observer.Transacti
 	act := actCandidate.Virtual.GetActivate()
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq")
 	if !act.Image.Equal(*prototypeRef) {
 		return nil
 	}

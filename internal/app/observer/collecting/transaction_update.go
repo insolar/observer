@@ -76,6 +76,6 @@ func (c *TransactionUpdateCollector) Collect(rec *observer.Record) *observer.Tra
 }
 
 func isTransactionAmend(amd *record.Amend) bool {
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5gs8yv91EiGSWZK862DDoM7qJMXUnfjktXxYMYq")
 	return amd.Image.Equal(*prototypeRef)
 }

@@ -38,7 +38,6 @@ type MGRUpdate struct {
 	FinishRoundDate  int64
 	AmountDue        string
 	PaymentFrequency string
-	NextPaymentTime  int64
 	Timestamp        int64
 	Sequence         []Sequence
 	SwapProcess      Swap

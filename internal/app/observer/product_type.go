@@ -23,3 +23,14 @@ const (
 	MerryGoRound ProductType = iota + 1
 	Saving
 )
+
+func (s *ProductType) String() string {
+	switch *s {
+	case MerryGoRound:
+		return "merry-go-round"
+	case Saving:
+		return "savings"
+	default:
+		return "unknown"
+	}
+}

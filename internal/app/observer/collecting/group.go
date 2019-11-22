@@ -1,7 +1,7 @@
 package collecting
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
@@ -105,30 +105,26 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 	return g
 }
 
-type Members struct {
-	Members []insolar.Reference
-}
-
 type Group struct {
-	foundation.BaseContract
 	ChairMan    insolar.Reference
-	Treasurer   insolar.Reference
+	Treasurer   *insolar.Reference
 	Title       string
 	Membership  foundation.StableMap
 	Goal        string
-	ProductType observer.ProductType
-	Product     insolar.Reference
+	ProductType *observer.ProductType
+	Product     *insolar.Reference
 	Balance     *insolar.Reference
 	Image       string
+	invitedUser int
 }
 
 type Membership struct {
-	MemberRef    insolar.Reference   `json:"MemberRef"`
-	MemberRole   Role                `json:"MemberRole"`
-	MemberStatus Status              `json:"MemberStatus"`
-	AmountDue    uint64              `json:"callParams,omitempty"`
-	JoinPulse    insolar.PulseNumber `json:"callParams,omitempty"`
-	IsAnonymous  bool                `json:"callParams,omitempty"`
+	MemberRef    insolar.Reference
+	MemberRole   RoleMembership
+	MemberStatus StatusMemberShip
+	AmountDue    uint64
+	JoinPulse    insolar.PulseNumber
+	IsAnonymous  bool
 }
 
 func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req *observer.Request) (*observer.Group, error) {
@@ -139,39 +135,39 @@ func (c *GroupCollector) build(act *observer.Activate, res *observer.Result, req
 	if res.Virtual.GetResult().Payload == nil {
 		return nil, errors.New("group creation result payload is nil")
 	}
-	response := &CreateResponse{}
-	res.ParseFirstPayloadValue(response)
-
-	ref, err := insolar.NewReferenceFromBase58(response.Reference)
-	if err != nil || ref == nil {
-		return nil, errors.New("invalid group reference")
-	}
 
 	activate := act.Virtual.GetActivate()
 	state := c.initialGroupState(activate)
-
-	members := &Members{}
-
-	req.ParseMemberContractCallParams(members)
-
 	date, err := act.ID.Pulse().AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert group create pulse (%d) to time", act.ID.Pulse())
 	}
 
-	fmt.Println("Insert new group ref:", ref.String())
-	return &observer.Group{
-		Ref:        *ref,
+	logrus.Info("Insert new group ref:", insolar.NewReference(act.ObjectID).String())
+	resultGroup := observer.Group{
+		Ref:        *insolar.NewReference(act.ObjectID),
 		Title:      state.Title,
-		ChairMan:   state.ChairMan,
 		Goal:       state.Goal,
 		Image:      state.Image,
+		ChairMan:   state.ChairMan,
 		Membership: state.Membership,
-		Members:    members.Members,
 		Status:     "SUCCESS",
 		State:      act.ID,
 		Timestamp:  date.Unix(),
-	}, nil
+	}
+
+	if state.Treasurer != nil {
+		resultGroup.Treasurer = *state.Treasurer
+	}
+
+	if state.ProductType != nil {
+		resultGroup.ProductType = *state.ProductType
+	}
+
+	if state.Product != nil {
+		resultGroup.Product = *state.Product
+	}
+	return &resultGroup, nil
 }
 
 func isUserGroupCreateCall(chain interface{}) bool {
@@ -188,7 +184,7 @@ func isUserGroupCreateCall(chain interface{}) bool {
 	if in.Prototype == nil {
 		return false
 	}
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
 	return in.Prototype.Equal(*prototypeRef)
 }
 
@@ -200,7 +196,7 @@ func isGroupActivate(chain interface{}) bool {
 	act := activate.Virtual.GetActivate()
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
 	return act.Image.Equal(*prototypeRef)
 }
 func isGroupCreationCall(chain interface{}) bool {
@@ -214,7 +210,7 @@ func isGroupCreationCall(chain interface{}) bool {
 	}
 
 	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "group.create"
+	return args.Params.CallSite == "group.create" || args.Params.CallSite == "group.initialize"
 }
 func isGroupNew(chain interface{}) bool {
 	request := observer.CastToRequest(chain)
@@ -232,7 +228,7 @@ func isGroupNew(chain interface{}) bool {
 	}
 
 	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
 	return in.Prototype.Equal(*prototypeRef)
 }
 
@@ -241,6 +237,16 @@ func (c *GroupCollector) initialGroupState(act *record.Activate) *Group {
 	err := insolar.Deserialize(act.Memory, &g)
 	if err != nil {
 		log.Error(errors.New("failed to deserialize group contract state"))
+	}
+	if g.Membership != nil {
+		for _, v := range g.Membership {
+			byt := []byte(v)
+			var membership Membership
+			if err := json.Unmarshal(byt, &membership); err != nil {
+				return nil
+			}
+		}
+
 	}
 	return &g
 }

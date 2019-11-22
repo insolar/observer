@@ -35,6 +35,7 @@ type GroupSchema struct {
 	Title          string
 	Goal           string
 	Image          string
+	Type           string
 	GroupOwner     []byte
 	TreasureHolder []byte
 	Status         string
@@ -105,26 +106,24 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		return nil
 	}
 
-	var productType string
-
-	switch model.ProductType {
-	case observer.MerryGoRound:
-		productType = "merry-go-round"
-	case observer.Saving:
-		productType = "saving"
-	}
-
 	_, err := s.db.Model(&GroupSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
 		Set("image=?,goal=?", model.Image, model.Goal).
-		Set("type=?", productType).
+		Set("type=?", model.ProductType.String()).
 		Set("title=?", model.Title).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("state=?", model.GroupState.Bytes()).
 		Update()
-
 	if err != nil {
 		return errors.Wrapf(err, "failed to update group =%v", model)
+	}
+
+	_, err = s.db.Model(&MGRSchema{}).
+		Where("ref=?", model.Product.Bytes()).
+		Set("group_ref=?", model.GroupReference.Bytes()).
+		Update()
+	if err != nil {
+		return errors.Wrapf(err, "failed to update mgr group ref =%v", model)
 	}
 
 	if model.Membership != nil {
@@ -134,26 +133,6 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 			if err := json.Unmarshal(byt, &membership); err != nil {
 				return nil
 			}
-			var dbState string
-			var dbRole string
-			switch membership.MemberStatus {
-			case collecting.StatusInvite:
-				dbState = "invited"
-			case collecting.StatusActive:
-				dbState = "active"
-			case collecting.StatusInactive:
-				dbState = "inactive"
-			}
-
-			switch membership.MemberRole {
-			case collecting.RoleChairMan:
-				dbRole = "admin"
-			case collecting.RoleTreasure:
-				dbRole = "treasurer"
-			case collecting.RoleMember:
-				dbRole = "member"
-			}
-
 			count, err := s.db.Model(&UserGroupSchema{}).Where("group_ref=?", model.GroupReference.Bytes()).
 				Where("user_ref=?", membership.MemberRef.Bytes()).Count()
 			if count == 0 {
@@ -184,8 +163,8 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 			_, err = s.db.Model(&UserGroupSchema{}).
 				Where("group_ref=?", model.GroupReference.Bytes()).
 				Where("user_ref=?", membership.MemberRef.Bytes()).
-				Set("status=?", dbState).
-				Set("role=?", dbRole).
+				Set("status=?", membership.MemberStatus.String()).
+				Set("role=?", membership.MemberRole.String()).
 				Update()
 
 			if err != nil {
@@ -202,6 +181,7 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		Ref:        model.Ref.Bytes(),
 		Title:      model.Title,
 		Goal:       model.Goal,
+		Type:       model.ProductType.String(),
 		GroupOwner: model.ChairMan.Bytes(),
 		Image:      model.Image,
 		Status:     model.Status,

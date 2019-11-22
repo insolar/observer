@@ -68,22 +68,26 @@ func (c *MGRUpdateCollector) Collect(rec *observer.Record) *observer.MGRUpdate {
 		return nil
 	}
 
-	return &observer.MGRUpdate{
-		GroupReference:   mgr.GroupReference,
+	resultProduct := observer.MGRUpdate{
 		PrevState:        amd.PrevState,
 		MGRState:         rec.ID,
 		StartRoundDate:   mgr.StartRoundDate,
 		FinishRoundDate:  mgr.FinishRoundDate,
 		AmountDue:        mgr.AmountDue,
 		PaymentFrequency: mgr.PaymentFrequency,
-		NextPaymentTime:  mgr.NextPaymentTime,
 		Sequence:         seq,
 		Timestamp:        date.Unix(),
 		SwapProcess:      observer.Swap{From: mgr.SwapProcess.From, To: mgr.SwapProcess.To},
 	}
+
+	if mgr.GroupReference != nil {
+		resultProduct.GroupReference = *mgr.GroupReference
+	}
+
+	return &resultProduct
 }
 
 func isMGRAmend(amd *record.Amend) bool {
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A6L4ytii4Z9jWLJpFqjDkH8ZRZ8HNscmmzsBF85i")
 	return amd.Image.Equal(*prototypeRef)
 }

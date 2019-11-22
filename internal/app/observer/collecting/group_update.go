@@ -63,22 +63,34 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		return nil
 	}
 
-	return &observer.GroupUpdate{
+	resultGroup := observer.GroupUpdate{
 		GroupReference: *insolar.NewReference(rec.ObjectID),
 		PrevState:      amd.PrevState,
 		GroupState:     rec.ID,
 		Goal:           group.Goal,
 		Image:          group.Image,
 		Title:          group.Title,
-		ProductType:    group.ProductType,
-		Treasurer:      group.Treasurer,
 		Membership:     group.Membership,
 		ChairMan:       group.ChairMan,
 		Timestamp:      date.Unix(),
 	}
+
+	if group.ProductType != nil {
+		resultGroup.ProductType = *group.ProductType
+	}
+
+	if group.Product != nil {
+		resultGroup.Product = *group.Product
+	}
+
+	if group.Treasurer != nil {
+		resultGroup.Treasurer = *group.Treasurer
+	}
+
+	return &resultGroup
 }
 
 func isGroupAmend(amd *record.Amend) bool {
-	prototypeRef, _ := insolar.NewReferenceFromBase58("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A7bz1ZzDD9CJwckb5ufdarH7KtCwSSg2uVME3LN9")
 	return amd.Image.Equal(*prototypeRef)
 }
