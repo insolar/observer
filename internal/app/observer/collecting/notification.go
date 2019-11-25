@@ -23,119 +23,15 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"reflect"
 )
 
 type NotificationCollector struct {
-	log          *logrus.Logger
-	collector    *ResultCollector
-	user         *ChainCollector
-	notification *ChainCollector
-	activate     *ActivateCollector
+	log *logrus.Logger
 }
 
 func NewNotificationCollector(log *logrus.Logger) *NotificationCollector {
-	collector := NewResultCollector(isNotificationCreationCall, successResult)
-	activate := NewActivateCollector(isNotificationNew, isNotificationActivate)
-
-	user := NewChainCollector(&RelationDesc{
-		Is: func(chain interface{}) bool {
-			res, ok := chain.(*observer.CoupledResult)
-			if !ok {
-				return false
-			}
-			return isNotificationCreationCall(res.Request)
-		},
-		Origin: func(chain interface{}) insolar.ID {
-			res, ok := chain.(*observer.CoupledResult)
-			if !ok {
-				return insolar.ID{}
-			}
-			return res.Request.ID
-		},
-		Proper: func(chain interface{}) bool {
-			res, ok := chain.(*observer.CoupledResult)
-			if !ok {
-				return false
-			}
-			return isNotificationCreationCall(res.Request)
-		},
-	}, &RelationDesc{
-		Is: func(chain interface{}) bool {
-			request := observer.CastToRequest(chain)
-			return request.IsIncoming()
-		},
-		Origin: func(chain interface{}) insolar.ID {
-			request := observer.CastToRequest(chain)
-			return request.Reason()
-		},
-		Proper: func(chain interface{}) bool {
-			request := observer.CastToRequest(chain)
-			return isCreateNotification(request)
-		},
-	})
-	notification := NewChainCollector(&RelationDesc{
-		Is: func(chain interface{}) bool {
-			che, ok := chain.(*observer.Chain)
-			if !ok {
-				return false
-			}
-			res, ok := che.Parent.(*observer.CoupledResult)
-			if !ok {
-				return false
-			}
-			return isNotificationCreationCall(res.Request)
-		},
-		Origin: func(chain interface{}) insolar.ID {
-			che, ok := chain.(*observer.Chain)
-			if !ok {
-				return insolar.ID{}
-			}
-			rec, ok := che.Child.(*observer.Record)
-			if !ok {
-				return insolar.ID{}
-			}
-			return rec.ID
-		},
-		Proper: func(chain interface{}) bool {
-			che, ok := chain.(*observer.Chain)
-			if !ok {
-				return false
-			}
-			res, ok := che.Parent.(*observer.CoupledResult)
-			if !ok {
-				return false
-			}
-			return isNotificationCreationCall(res.Request)
-		},
-	}, &RelationDesc{
-		Is: func(chain interface{}) bool {
-			act, ok := chain.(*observer.CoupledActivate)
-			if !ok {
-				return false
-			}
-			return isNotificationNew(act.Request)
-		},
-		Origin: func(chain interface{}) insolar.ID {
-			act, ok := chain.(*observer.CoupledActivate)
-			if !ok {
-				return insolar.ID{}
-			}
-			return act.Request.Reason()
-		},
-		Proper: func(chain interface{}) bool {
-			act, ok := chain.(*observer.CoupledActivate)
-			if !ok {
-				return false
-			}
-			return isNotificationNew(act.Request)
-		},
-	})
 	return &NotificationCollector{
-		collector:    collector,
-		user:         user,
-		notification: notification,
-		activate:     activate,
+		log: log,
 	}
 }
 
@@ -149,51 +45,26 @@ func (c *NotificationCollector) Collect(rec *observer.Record) *observer.Notifica
 	if rec == nil {
 		return nil
 	}
-	res := c.collector.Collect(rec)
-	act := c.activate.Collect(rec)
-	var half *observer.Chain
-	if isCreateNotification(rec) {
-		half = c.user.Collect(rec)
-	}
-	if res != nil {
-		half = c.user.Collect(res)
-	}
-	var chain *observer.Chain
-	if half != nil {
-		chain = c.notification.Collect(half)
-	}
-	if act != nil {
-		chain = c.notification.Collect(act)
-	}
+	actCandidate := observer.CastToActivate(rec)
 
-	if chain == nil {
+	if !actCandidate.IsActivate() {
 		return nil
 	}
 
-	coupleAct := c.unwrapNotificationChain(chain)
+	act := actCandidate.Virtual.GetActivate()
 
-	m, err := c.build(coupleAct)
+	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q")
+	if !act.Image.Equal(*prototypeRef) {
+		return nil
+	}
+
+	n, err := c.build(actCandidate)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to build notification"))
 		return nil
 	}
-	return m
-}
-
-func (c *NotificationCollector) unwrapNotificationChain(chain *observer.Chain) *observer.Activate {
-	log := c.log
-
-	coupledAct, ok := chain.Child.(*observer.CoupledActivate)
-	if !ok {
-		log.Error(errors.Errorf("trying to use %s as *observer.CoupledActivate", reflect.TypeOf(chain.Child)))
-		return nil
-	}
-	if coupledAct.Activate == nil {
-		log.Error(errors.New("invalid coupled activate chain, child is nil"))
-		return nil
-	}
-
-	return coupledAct.Activate
+	return n
 }
 
 func (c *NotificationCollector) build(act *observer.Activate) (*observer.Notification, error) {
@@ -221,68 +92,4 @@ func (c *NotificationCollector) build(act *observer.Activate) (*observer.Notific
 		Timestamp:      date.Unix(),
 		Type:           notification.TypeNotification,
 	}, nil
-}
-
-func isNotificationCreationCall(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	if !request.IsMemberCall() {
-		return false
-	}
-	args := request.ParseMemberCallArguments()
-	return args.Params.CallSite == "group.setNotification"
-}
-
-func isNotificationActivate(chain interface{}) bool {
-	activate := observer.CastToActivate(chain)
-	if !activate.IsActivate() {
-		return false
-	}
-	act := activate.Virtual.GetActivate()
-
-	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromString("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q")
-	return act.Image.Equal(*prototypeRef)
-}
-
-func isNotificationNew(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "New" {
-		return false
-	}
-
-	if in.Prototype == nil {
-		return false
-	}
-
-	// TODO: import from platform
-	prototypeRef, _ := insolar.NewReferenceFromString("0111A5pYbHstfXoD4bf2iZh128mQmuS6BFxUfKqjTg5q") // ntf
-	return in.Prototype.Equal(*prototypeRef)
-}
-
-func isCreateNotification(chain interface{}) bool {
-	request := observer.CastToRequest(chain)
-	if !request.IsIncoming() {
-		return false
-	}
-
-	in := request.Virtual.GetIncomingRequest()
-	if in.Method != "CreateNotification" {
-		return false
-	}
-
-	if in.Prototype == nil {
-		return false
-	}
-
-	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR") // user
-	return in.Prototype.Equal(*prototypeRef)
 }
