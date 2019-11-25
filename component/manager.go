@@ -103,15 +103,28 @@ func (m *Manager) needStop() bool {
 
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
+	m.log.Debug("Timer: new round started at ", timeStart)
 	ctx := context.Background()
+
+	tempTimer := time.Now()
 	raw := m.fetch(ctx, s)
+	m.log.Debug("Timer: fetched ", time.Since(tempTimer))
+
+	tempTimer = time.Now()
 	beauty := m.beautify(ctx, raw)
+	m.log.Debug("Timer: beautifyed ", time.Since(tempTimer))
+
+	tempTimer = time.Now()
 	collapsed := m.filter(beauty)
+	m.log.Debug("Timer: filtered ", time.Since(tempTimer))
+
+	tempTimer = time.Now()
 	statistic := m.store(collapsed, s)
+	m.log.Debug("Timer: stored ", time.Since(tempTimer))
 
 	timeExecuted := time.Since(timeStart)
 	m.commonMetrics.PulseProcessingTime.Set(timeExecuted.Seconds())
-	m.log.Debug("timeExecuted: ", timeExecuted)
+	m.log.Debug("Timer: executed ", timeExecuted)
 	m.log.Debugf("Stats: %+v", statistic)
 
 	if raw != nil {
@@ -120,7 +133,7 @@ func (m *Manager) run(s *state) {
 	}
 
 	sleepTime := m.sleepCounter.Count(ctx, raw, timeExecuted)
-	m.log.Debug("Sleep: ", sleepTime)
+	m.log.Info("Sleep: ", sleepTime)
 	time.Sleep(sleepTime)
 }
 
