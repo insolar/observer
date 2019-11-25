@@ -101,7 +101,7 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 	)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert deposit %v", model)
+		return errors.Wrapf(err, "failed to insert deposit %+v", model)
 	}
 
 	if res.RowsAffected() == 0 {
