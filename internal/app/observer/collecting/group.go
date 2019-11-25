@@ -41,7 +41,7 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 
 	g, err := c.build(actCandidate)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build transaction"))
+		log.Error(errors.Wrapf(err, "failed to build group"))
 		return nil
 	}
 	return g
