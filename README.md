@@ -26,6 +26,7 @@ db:
   attempts: 2147483647
   attemptinterval: 3s
   createtables: false
+  migration: 5.0.0-beauty
 ```
 
 #### Run and build
