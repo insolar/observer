@@ -26,3 +26,20 @@ const (
 	NotificationFinishMGRRound
 	NotificationSwap
 )
+
+func (s *NotificationType) String() string {
+	switch *s {
+	case NotificationInvite:
+		return "invite"
+	case NotificationContribution:
+		return "contribute"
+	case NotificationDeactivate:
+		return "deactivate"
+	case NotificationFinishMGRRound:
+		return "finishMgrRound"
+	case NotificationSwap:
+		return "swap"
+	default:
+		return "unknown"
+	}
+}

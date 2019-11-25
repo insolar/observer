@@ -68,25 +68,11 @@ func (s *NotificationStorage) Insert(model *observer.Notification) error {
 }
 
 func notificationSchema(model *observer.Notification) *NotificationSchema {
-	var notificationType string
-	switch model.Type {
-	case observer.NotificationInvite:
-		notificationType = "invite"
-	case observer.NotificationContribution:
-		notificationType = "contribute"
-	case observer.NotificationDeactivate:
-		notificationType = "deactivate"
-	case observer.NotificationFinishMGRRound:
-		notificationType = "finishMgrRound"
-	case observer.NotificationSwap:
-		notificationType = "swap"
-	}
-
 	return &NotificationSchema{
 		Ref:            model.Ref.Bytes(),
 		UserReference:  model.UserReference.Bytes(),
 		GroupReference: model.GroupReference.Bytes(),
-		Type:           notificationType,
+		Type:           model.Type.String(),
 		Timestamp:      model.Timestamp,
 	}
 }
