@@ -55,16 +55,9 @@ func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Materia
 	if ok {
 		// Found in cache, append required.
 		fromCache = append(fromCache, &record)
-	} else {
-		// No append required because we already wrote the request to backend.
-		fromBackend, err := c.backend.CalledRequests(ctx, reasonID)
-		if err != nil {
-			return err
-		}
-		fromCache = refMany(fromBackend)
+		c.setMany(scopeCalledRequests, reasonID, fromCache)
 	}
 
-	c.setMany(scopeCalledRequests, reasonID, fromCache)
 	return c.setOne(scopeRequest, &record)
 }
 
