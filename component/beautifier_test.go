@@ -163,10 +163,10 @@ func TestBeautifier_Deposit(t *testing.T) {
 	memberRef := gen.Reference()
 
 	daemonCall := tdg.makeMigrationDaemonCall(pn, *insolar.NewReference(call.Record.ID))
-	daemonCallIn := tdg.makeIncomingFromOutgoing(daemonCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	daemonCallIn := tdg.makeIncomingFromOutgoing(pn, daemonCall.Record.Virtual.GetOutgoingRequest())
 
 	newDepositCall := tdg.makeNewDepositRequest(pn, *insolar.NewReference(daemonCallIn.Record.ID))
-	newDepositCallIn := tdg.makeIncomingFromOutgoing(newDepositCall.Record.Virtual.Union.(*record.Virtual_OutgoingRequest).OutgoingRequest)
+	newDepositCallIn := tdg.makeIncomingFromOutgoing(pn, newDepositCall.Record.Virtual.GetOutgoingRequest())
 
 	balance := "123"
 	amount := "456"
@@ -210,7 +210,7 @@ func TestBeautifier_Deposit(t *testing.T) {
 			}}),
 		},
 	}
-	transferDate, err := act.Record.ID.Pulse().AsApproximateTime()
+	transferDate, err := newDepositCall.Record.ID.Pulse().AsApproximateTime()
 	require.NoError(t, err)
 
 	res := beautifier(ctx, raw)
@@ -280,9 +280,9 @@ func (t *treeDataGenerator) makeOutgouingRequest(reason insolar.Reference, proto
 }
 
 // we need same nonce in makeOutgouingRequest and makeIncomingRequest
-func (t *treeDataGenerator) makeIncomingFromOutgoing(outgoing *record.OutgoingRequest) *exporter.Record {
+func (t *treeDataGenerator) makeIncomingFromOutgoing(pn insolar.PulseNumber, outgoing *record.OutgoingRequest) *exporter.Record {
 	rec := &exporter.Record{Record: record.Material{
-		ID: gen.ID(),
+		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
 			Union: &record.Virtual_IncomingRequest{
 				IncomingRequest: &record.IncomingRequest{
