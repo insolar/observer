@@ -88,7 +88,7 @@ func userGroupMemberSchema(group *observer.Group, membership collecting.Membersh
 		GroupRef:        group.Ref.Bytes(),
 		Role:            membership.MemberRole.String(),
 		Status:          membership.MemberStatus.String(),
-		AmountDue:       membership.AmountDue,
+		AmountDue:       membership.MemberGoal,
 		StatusTimestamp: group.Timestamp,
 	}
 }
