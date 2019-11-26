@@ -29,6 +29,8 @@ import (
 	"github.com/insolar/observer/internal/app/observer/store"
 )
 
+const batchSize = 5000
+
 type Store struct {
 	db *pg.DB
 }
@@ -194,160 +196,168 @@ func (s *Store) SetRequest(ctx context.Context, requestRecord record.Material) e
 	return errors.Wrap(err, "failed to insert request")
 }
 
-func (s *Store) SetRequestBatch(ctx context.Context, records []record.Material) error {
-	if len(records) == 0 {
+func (s *Store) SetRequestBatch(ctx context.Context, recs []record.Material) error {
+	if len(recs) == 0 {
 		return nil
 	}
 
-	var values []interface{}
 	columns := []string{
 		"request_id",
 		"reason_id",
 		"request_body",
 	}
 
-	for _, requestRecord := range records {
-		id, reason, err := store.ExtractRequestData(&requestRecord) //nolint
-		if err != nil {
-			return errors.Wrap(err, "failed to parse request data")
-		}
-		body, err := requestRecord.Marshal()
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal request")
-		}
-		values = append(
-			values,
-			id.String(),
-			reason.String(),
-			body,
-		)
-	}
+	batches := makeBatches(batchSize, recs)
 
-	_, err := s.db.ExecContext(ctx,
-		fmt.Sprintf( // nolint: gosec
-			`
+	for _, records := range batches {
+		var values []interface{}
+		for _, requestRecord := range records {
+			id, reason, err := store.ExtractRequestData(&requestRecord) // nolint
+			if err != nil {
+				return errors.Wrap(err, "failed to parse request data")
+			}
+			body, err := requestRecord.Marshal()
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal request")
+			}
+			values = append(
+				values,
+				id.String(),
+				reason.String(),
+				body,
+			)
+		}
+		_, err := s.db.ExecContext(ctx,
+			fmt.Sprintf( // nolint: gosec
+				`
 				insert into raw_requests (%s) VALUES %s
 				ON CONFLICT DO NOTHING
 			`,
-			strings.Join(columns, ","),
-			valuesTemplate(len(columns), len(records)),
-		),
-		values...,
-	)
-
-	if err != nil {
-		return errors.Wrap(err, "can't insert batch of requests")
+				strings.Join(columns, ","),
+				valuesTemplate(len(columns), len(records)),
+			),
+			values...,
+		)
+		if err != nil {
+			return errors.Wrap(err, "can't insert batch of requests")
+		}
 	}
 
 	return nil
 }
 
-func (s *Store) SetResultBatch(ctx context.Context, records []record.Material) error {
-	if len(records) == 0 {
+func (s *Store) SetResultBatch(ctx context.Context, recs []record.Material) error {
+	if len(recs) == 0 {
 		return nil
 	}
 
-	var values []interface{}
 	columns := []string{
 		"request_id",
 		"result_body",
 	}
 
-	for _, resultRecord := range records {
-		if resultRecord.Virtual.GetResult() == nil {
-			return errors.Errorf("trying to save not a result as result")
-		}
-		id, err := store.RequestID(&resultRecord) //nolint
-		if err != nil {
-			return errors.Wrap(err, "failed to parse result data")
+	batches := makeBatches(batchSize, recs)
+
+	for _, records := range batches {
+		var values []interface{}
+		for _, resultRecord := range records {
+			if resultRecord.Virtual.GetResult() == nil {
+				return errors.Errorf("trying to save not a result as result")
+			}
+			id, err := store.RequestID(&resultRecord) // nolint
+			if err != nil {
+				return errors.Wrap(err, "failed to parse result data")
+			}
+
+			body, err := resultRecord.Marshal()
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal result")
+			}
+
+			values = append(
+				values,
+				id.String(),
+				body,
+			)
 		}
 
-		body, err := resultRecord.Marshal()
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal result")
-		}
-
-		values = append(
-			values,
-			id.String(),
-			body,
-		)
-	}
-
-	_, err := s.db.ExecContext(ctx,
-		fmt.Sprintf( // nolint: gosec
-			`
+		_, err := s.db.ExecContext(ctx,
+			fmt.Sprintf( // nolint: gosec
+				`
 				insert into raw_results (%s) VALUES %s
 				ON CONFLICT DO NOTHING
 			`,
-			strings.Join(columns, ","),
-			valuesTemplate(len(columns), len(records)),
-		),
-		values...,
-	)
+				strings.Join(columns, ","),
+				valuesTemplate(len(columns), len(records)),
+			),
+			values...,
+		)
 
-	if err != nil {
-		return errors.Wrap(err, "can't insert batch of results")
+		if err != nil {
+			return errors.Wrap(err, "can't insert batch of results")
+		}
 	}
 
 	return nil
 }
 
-func (s *Store) SetSideEffectBatch(ctx context.Context, records []record.Material) error {
-	if len(records) == 0 {
+func (s *Store) SetSideEffectBatch(ctx context.Context, recs []record.Material) error {
+	if len(recs) == 0 {
 		return nil
 	}
 
-	var values []interface{}
 	columns := []string{
 		"id",
 		"request_id",
 		"side_effect_body",
 	}
-	for _, sideEffectRecord := range records {
-		if sideEffectRecord.Virtual.GetAmend() == nil &&
-			sideEffectRecord.Virtual.GetActivate() == nil &&
-			sideEffectRecord.Virtual.GetDeactivate() == nil {
-			return errors.Errorf("trying to save not a side effect as side effect")
+
+	batches := makeBatches(batchSize, recs)
+
+	for _, records := range batches {
+		var values []interface{}
+		for _, sideEffectRecord := range records {
+			if sideEffectRecord.Virtual.GetAmend() == nil &&
+				sideEffectRecord.Virtual.GetActivate() == nil &&
+				sideEffectRecord.Virtual.GetDeactivate() == nil {
+				return errors.Errorf("trying to save not a side effect as side effect")
+			}
+
+			requestID, err := store.RequestID(&sideEffectRecord) // nolint
+			if err != nil {
+				return errors.Wrap(err, "failed to parse side effect data")
+			}
+
+			body, err := sideEffectRecord.Marshal()
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal side effect")
+			}
+
+			values = append(
+				values,
+				sideEffectRecord.ID.String(),
+				requestID.String(),
+				body,
+			)
 		}
 
-		requestID, err := store.RequestID(&sideEffectRecord) //nolint
-		if err != nil {
-			return errors.Wrap(err, "failed to parse side effect data")
-		}
-
-		body, err := sideEffectRecord.Marshal()
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal side effect")
-		}
-
-		values = append(
-			values,
-			sideEffectRecord.ID.String(),
-			requestID.String(),
-			body,
-		)
-	}
-
-	_, err := s.db.ExecContext(ctx,
-		fmt.Sprintf( // nolint: gosec
-			`
+		_, err := s.db.ExecContext(ctx,
+			fmt.Sprintf( // nolint: gosec
+				`
 				insert into raw_side_effects (%s) VALUES %s
 				ON CONFLICT DO NOTHING
 			`,
-			strings.Join(columns, ","),
-			valuesTemplate(len(columns), len(records)),
-		),
-		values...,
-	)
+				strings.Join(columns, ","),
+				valuesTemplate(len(columns), len(records)),
+			),
+			values...,
+		)
 
-	if err != nil {
-		return errors.Wrap(err, "can't insert batch of side effects")
+		if err != nil {
+			return errors.Wrap(err, "can't insert batch of side effects")
+		}
 	}
 
-	return nil
-}
-func (s *Store) Flush(ctx context.Context) error {
 	return nil
 }
 
@@ -367,4 +377,14 @@ func valuesTemplate(columns, rows int) string {
 		}
 	}
 	return b.String()
+}
+
+func makeBatches(batchSize int, records []record.Material) [][]record.Material {
+	var batches [][]record.Material
+
+	for batchSize < len(records) {
+		records, batches = records[batchSize:], append(batches, records[0:batchSize:batchSize])
+	}
+	batches = append(batches, records)
+	return batches
 }

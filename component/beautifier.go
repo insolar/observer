@@ -80,9 +80,10 @@ func makeBeautifier(
 		}
 
 		// preparing data
-		var requests []record.Material
-		var results []record.Material
-		var sideEffects []record.Material
+		maxLen := len(r.batch)
+		requests := make([]record.Material, 0, maxLen)
+		results := make([]record.Material, 0, maxLen)
+		sideEffects := make([]record.Material, 0, maxLen)
 
 		for _, rec := range r.batch {
 			switch rec.Record.Virtual.Union.(type) {
@@ -110,11 +111,6 @@ func makeBeautifier(
 			panic(errors.Wrap(err, "failed to insert record to storage"))
 		}
 
-		//todo, make prepare stmt and add batch size
-		err = permanentStore.Flush(ctx)
-		if err != nil {
-			panic(errors.Wrap(err, "failed to flush record to storage"))
-		}
 		log.Debug("Timer:  raw stored permanently ", time.Since(tempTimer))
 
 		// writing to cache
