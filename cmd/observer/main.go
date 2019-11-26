@@ -17,7 +17,7 @@
 package main
 
 import (
-	_ "net/http/pprof"
+	_ "net/http/pprof" //nolint
 	"os"
 	"os/signal"
 	"syscall"
