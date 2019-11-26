@@ -21,7 +21,7 @@ $(ARTIFACTS):
 
 .PHONY: $(CONFIG)
 $(CONFIG):
-	go run internal/configuration/gen/gen.go
+	go run configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS)/observer.yaml
 
 .PHONY: ensure
