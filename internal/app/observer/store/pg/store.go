@@ -18,6 +18,8 @@ package pg
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -190,4 +192,179 @@ func (s *Store) SetRequest(ctx context.Context, requestRecord record.Material) e
 		id.String(), reason.String(), body)
 
 	return errors.Wrap(err, "failed to insert request")
+}
+
+func (s *Store) SetRequestBatch(ctx context.Context, records []record.Material) error {
+	if len(records) == 0 {
+		return nil
+	}
+
+	var values []interface{}
+	columns := []string{
+		"request_id",
+		"reason_id",
+		"request_body",
+	}
+
+	for _, requestRecord := range records {
+		id, reason, err := store.ExtractRequestData(&requestRecord) //nolint
+		if err != nil {
+			return errors.Wrap(err, "failed to parse request data")
+		}
+		body, err := requestRecord.Marshal()
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal request")
+		}
+		values = append(
+			values,
+			id.String(),
+			reason.String(),
+			body,
+		)
+	}
+
+	_, err := s.db.ExecContext(ctx,
+		fmt.Sprintf( // nolint: gosec
+			`
+				insert into raw_requests (%s) VALUES %s
+				ON CONFLICT DO NOTHING
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(records)),
+		),
+		values...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't insert batch of requests")
+	}
+
+	return nil
+}
+
+func (s *Store) SetResultBatch(ctx context.Context, records []record.Material) error {
+	if len(records) == 0 {
+		return nil
+	}
+
+	var values []interface{}
+	columns := []string{
+		"request_id",
+		"result_body",
+	}
+
+	for _, resultRecord := range records {
+		if resultRecord.Virtual.GetResult() == nil {
+			return errors.Errorf("trying to save not a result as result")
+		}
+		id, err := store.RequestID(&resultRecord) //nolint
+		if err != nil {
+			return errors.Wrap(err, "failed to parse result data")
+		}
+
+		body, err := resultRecord.Marshal()
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal result")
+		}
+
+		values = append(
+			values,
+			id.String(),
+			body,
+		)
+	}
+
+	_, err := s.db.ExecContext(ctx,
+		fmt.Sprintf( // nolint: gosec
+			`
+				insert into raw_results (%s) VALUES %s
+				ON CONFLICT DO NOTHING
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(records)),
+		),
+		values...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't insert batch of results")
+	}
+
+	return nil
+}
+
+func (s *Store) SetSideEffectBatch(ctx context.Context, records []record.Material) error {
+	if len(records) == 0 {
+		return nil
+	}
+
+	var values []interface{}
+	columns := []string{
+		"id",
+		"request_id",
+		"side_effect_body",
+	}
+	for _, sideEffectRecord := range records {
+		if sideEffectRecord.Virtual.GetAmend() == nil &&
+			sideEffectRecord.Virtual.GetActivate() == nil &&
+			sideEffectRecord.Virtual.GetDeactivate() == nil {
+			return errors.Errorf("trying to save not a side effect as side effect")
+		}
+
+		requestID, err := store.RequestID(&sideEffectRecord) //nolint
+		if err != nil {
+			return errors.Wrap(err, "failed to parse side effect data")
+		}
+
+		body, err := sideEffectRecord.Marshal()
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal side effect")
+		}
+
+		values = append(
+			values,
+			sideEffectRecord.ID.String(),
+			requestID.String(),
+			body,
+		)
+	}
+
+	_, err := s.db.ExecContext(ctx,
+		fmt.Sprintf( // nolint: gosec
+			`
+				insert into raw_side_effects (%s) VALUES %s
+				ON CONFLICT DO NOTHING
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(records)),
+		),
+		values...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't insert batch of side effects")
+	}
+
+	return nil
+}
+func (s *Store) Flush(ctx context.Context) error {
+	return nil
+}
+
+func valuesTemplate(columns, rows int) string {
+	b := strings.Builder{}
+	for r := 0; r < rows; r++ {
+		b.WriteString("(")
+		for c := 0; c < columns; c++ {
+			b.WriteString("?")
+			if c < columns-1 {
+				b.WriteString(",")
+			}
+		}
+		b.WriteString(")")
+		if r < rows-1 {
+			b.WriteString(",")
+		}
+	}
+	return b.String()
 }

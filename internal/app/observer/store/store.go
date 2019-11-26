@@ -38,6 +38,10 @@ type RecordSetter interface {
 	SetResult(ctx context.Context, record record.Material) error
 	SetSideEffect(ctx context.Context, record record.Material) error
 	SetRequest(ctx context.Context, record record.Material) error
+	SetRequestBatch(ctx context.Context, requestRecords []record.Material) error
+	SetResultBatch(ctx context.Context, requestRecords []record.Material) error
+	SetSideEffectBatch(ctx context.Context, requestRecords []record.Material) error
+	Flush(ctx context.Context) error
 }
 
 //go:generate minimock -i github.com/insolar/observer/internal/app/observer/store.RecordStore -o ./ -s _mock.go -g

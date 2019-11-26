@@ -18,6 +18,7 @@ package component
 
 import (
 	"context"
+	"time"
 
 	gopg "github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -45,8 +46,8 @@ func makeBeautifier(
 ) func(context.Context, *raw) *beauty {
 	log := obs.Log()
 	metric := observability.MakeBeautyMetrics(obs, "collected")
-
-	cachedStore, err := store.NewCacheRecordStore(pg.NewPgStore(conn.PG()), cfg.Replicator.CacheSize)
+	permanentStore := pg.NewPgStore(conn.PG())
+	cachedStore, err := store.NewCacheRecordStore(permanentStore, cfg.Replicator.CacheSize)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to init cached record store"))
 	}
@@ -78,20 +79,67 @@ func makeBeautifier(
 			wastings:       make(map[string]*observer.Wasting),
 		}
 
+		// preparing data
+		var requests []record.Material
+		var results []record.Material
+		var sideEffects []record.Material
+
 		for _, rec := range r.batch {
 			switch rec.Record.Virtual.Union.(type) {
 			case *record.Virtual_IncomingRequest, *record.Virtual_OutgoingRequest:
-				err = cachedStore.SetRequest(ctx, rec.Record)
+				requests = append(requests, rec.Record)
 			case *record.Virtual_Activate, *record.Virtual_Amend, *record.Virtual_Deactivate:
-				err = cachedStore.SetSideEffect(ctx, rec.Record)
+				sideEffects = append(sideEffects, rec.Record)
 			case *record.Virtual_Result:
-				err = cachedStore.SetResult(ctx, rec.Record)
+				results = append(results, rec.Record)
 			}
+		}
+
+		// writing to pg
+		tempTimer := time.Now()
+		err := permanentStore.SetRequestBatch(ctx, requests)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to insert record to storage"))
+		}
+		err = permanentStore.SetSideEffectBatch(ctx, sideEffects)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to insert record to storage"))
+		}
+		err = permanentStore.SetResultBatch(ctx, results)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to insert record to storage"))
+		}
+
+		//todo, make prepare stmt and add batch size
+		err = permanentStore.Flush(ctx)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to flush record to storage"))
+		}
+		log.Debug("Timer:  raw stored permanently ", time.Since(tempTimer))
+
+		// writing to cache
+		tempTimer = time.Now()
+		for _, rec := range requests {
+			err = cachedStore.SetRequest(ctx, rec)
 			if err != nil {
 				panic(errors.Wrap(err, "failed to insert record to storage"))
 			}
 		}
+		for _, rec := range sideEffects {
+			err = cachedStore.SetSideEffect(ctx, rec)
+			if err != nil {
+				panic(errors.Wrap(err, "failed to insert record to storage"))
+			}
+		}
+		for _, rec := range results {
+			err = cachedStore.SetResult(ctx, rec)
+			if err != nil {
+				panic(errors.Wrap(err, "failed to insert record to storage"))
+			}
+		}
+		log.Debug("Timer:  cached ", time.Since(tempTimer))
 
+		tempTimer = time.Now()
 		for _, rec := range r.batch {
 			// entities
 			obsRecord := observer.Record(rec.Record)
@@ -139,6 +187,7 @@ func makeBeautifier(
 				b.wastings[wasting.Addr] = wasting
 			}
 		}
+		log.Debug("Timer:  collected ", time.Since(tempTimer))
 
 		log := obs.Log()
 		log.WithFields(logrus.Fields{

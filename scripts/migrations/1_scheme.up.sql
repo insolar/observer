@@ -6,6 +6,9 @@ create table if not exists raw_requests
     request_body bytea not null
 );
 
+create index if not exists idx_raw_requests_by_reason_id
+    on raw_requests (reason_id);
+
 create table if not exists raw_results
 (
     request_id varchar(256) not null
@@ -23,8 +26,8 @@ create table if not exists raw_side_effects
     side_effect_body bytea not null
 );
 
-create index if not exists idx_raw_side_effects_by_request_id
-    on raw_requests (request_id);
+create unique index raw_side_effects_req_id_index
+    on raw_side_effects (request_id);
 
 create table if not exists objects
 (

@@ -23,6 +23,12 @@ type RecordStoreMock struct {
 	beforeCalledRequestsCounter uint64
 	CalledRequestsMock          mRecordStoreMockCalledRequests
 
+	funcFlush          func(ctx context.Context) (err error)
+	inspectFuncFlush   func(ctx context.Context)
+	afterFlushCounter  uint64
+	beforeFlushCounter uint64
+	FlushMock          mRecordStoreMockFlush
+
 	funcRequest          func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error)
 	inspectFuncRequest   func(ctx context.Context, reqID insolar.ID)
 	afterRequestCounter  uint64
@@ -41,17 +47,35 @@ type RecordStoreMock struct {
 	beforeSetRequestCounter uint64
 	SetRequestMock          mRecordStoreMockSetRequest
 
+	funcSetRequestBatch          func(ctx context.Context, requestRecords []record.Material) (err error)
+	inspectFuncSetRequestBatch   func(ctx context.Context, requestRecords []record.Material)
+	afterSetRequestBatchCounter  uint64
+	beforeSetRequestBatchCounter uint64
+	SetRequestBatchMock          mRecordStoreMockSetRequestBatch
+
 	funcSetResult          func(ctx context.Context, record record.Material) (err error)
 	inspectFuncSetResult   func(ctx context.Context, record record.Material)
 	afterSetResultCounter  uint64
 	beforeSetResultCounter uint64
 	SetResultMock          mRecordStoreMockSetResult
 
+	funcSetResultBatch          func(ctx context.Context, requestRecords []record.Material) (err error)
+	inspectFuncSetResultBatch   func(ctx context.Context, requestRecords []record.Material)
+	afterSetResultBatchCounter  uint64
+	beforeSetResultBatchCounter uint64
+	SetResultBatchMock          mRecordStoreMockSetResultBatch
+
 	funcSetSideEffect          func(ctx context.Context, record record.Material) (err error)
 	inspectFuncSetSideEffect   func(ctx context.Context, record record.Material)
 	afterSetSideEffectCounter  uint64
 	beforeSetSideEffectCounter uint64
 	SetSideEffectMock          mRecordStoreMockSetSideEffect
+
+	funcSetSideEffectBatch          func(ctx context.Context, requestRecords []record.Material) (err error)
+	inspectFuncSetSideEffectBatch   func(ctx context.Context, requestRecords []record.Material)
+	afterSetSideEffectBatchCounter  uint64
+	beforeSetSideEffectBatchCounter uint64
+	SetSideEffectBatchMock          mRecordStoreMockSetSideEffectBatch
 
 	funcSideEffect          func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error)
 	inspectFuncSideEffect   func(ctx context.Context, reqID insolar.ID)
@@ -70,6 +94,9 @@ func NewRecordStoreMock(t minimock.Tester) *RecordStoreMock {
 	m.CalledRequestsMock = mRecordStoreMockCalledRequests{mock: m}
 	m.CalledRequestsMock.callArgs = []*RecordStoreMockCalledRequestsParams{}
 
+	m.FlushMock = mRecordStoreMockFlush{mock: m}
+	m.FlushMock.callArgs = []*RecordStoreMockFlushParams{}
+
 	m.RequestMock = mRecordStoreMockRequest{mock: m}
 	m.RequestMock.callArgs = []*RecordStoreMockRequestParams{}
 
@@ -79,11 +106,20 @@ func NewRecordStoreMock(t minimock.Tester) *RecordStoreMock {
 	m.SetRequestMock = mRecordStoreMockSetRequest{mock: m}
 	m.SetRequestMock.callArgs = []*RecordStoreMockSetRequestParams{}
 
+	m.SetRequestBatchMock = mRecordStoreMockSetRequestBatch{mock: m}
+	m.SetRequestBatchMock.callArgs = []*RecordStoreMockSetRequestBatchParams{}
+
 	m.SetResultMock = mRecordStoreMockSetResult{mock: m}
 	m.SetResultMock.callArgs = []*RecordStoreMockSetResultParams{}
 
+	m.SetResultBatchMock = mRecordStoreMockSetResultBatch{mock: m}
+	m.SetResultBatchMock.callArgs = []*RecordStoreMockSetResultBatchParams{}
+
 	m.SetSideEffectMock = mRecordStoreMockSetSideEffect{mock: m}
 	m.SetSideEffectMock.callArgs = []*RecordStoreMockSetSideEffectParams{}
+
+	m.SetSideEffectBatchMock = mRecordStoreMockSetSideEffectBatch{mock: m}
+	m.SetSideEffectBatchMock.callArgs = []*RecordStoreMockSetSideEffectBatchParams{}
 
 	m.SideEffectMock = mRecordStoreMockSideEffect{mock: m}
 	m.SideEffectMock.callArgs = []*RecordStoreMockSideEffectParams{}
@@ -305,6 +341,221 @@ func (m *RecordStoreMock) MinimockCalledRequestsInspect() {
 	// if func was set then invocations count should be greater than zero
 	if m.funcCalledRequests != nil && mm_atomic.LoadUint64(&m.afterCalledRequestsCounter) < 1 {
 		m.t.Error("Expected call to RecordStoreMock.CalledRequests")
+	}
+}
+
+type mRecordStoreMockFlush struct {
+	mock               *RecordStoreMock
+	defaultExpectation *RecordStoreMockFlushExpectation
+	expectations       []*RecordStoreMockFlushExpectation
+
+	callArgs []*RecordStoreMockFlushParams
+	mutex    sync.RWMutex
+}
+
+// RecordStoreMockFlushExpectation specifies expectation struct of the RecordStore.Flush
+type RecordStoreMockFlushExpectation struct {
+	mock    *RecordStoreMock
+	params  *RecordStoreMockFlushParams
+	results *RecordStoreMockFlushResults
+	Counter uint64
+}
+
+// RecordStoreMockFlushParams contains parameters of the RecordStore.Flush
+type RecordStoreMockFlushParams struct {
+	ctx context.Context
+}
+
+// RecordStoreMockFlushResults contains results of the RecordStore.Flush
+type RecordStoreMockFlushResults struct {
+	err error
+}
+
+// Expect sets up expected params for RecordStore.Flush
+func (mmFlush *mRecordStoreMockFlush) Expect(ctx context.Context) *mRecordStoreMockFlush {
+	if mmFlush.mock.funcFlush != nil {
+		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
+	}
+
+	if mmFlush.defaultExpectation == nil {
+		mmFlush.defaultExpectation = &RecordStoreMockFlushExpectation{}
+	}
+
+	mmFlush.defaultExpectation.params = &RecordStoreMockFlushParams{ctx}
+	for _, e := range mmFlush.expectations {
+		if minimock.Equal(e.params, mmFlush.defaultExpectation.params) {
+			mmFlush.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFlush.defaultExpectation.params)
+		}
+	}
+
+	return mmFlush
+}
+
+// Inspect accepts an inspector function that has same arguments as the RecordStore.Flush
+func (mmFlush *mRecordStoreMockFlush) Inspect(f func(ctx context.Context)) *mRecordStoreMockFlush {
+	if mmFlush.mock.inspectFuncFlush != nil {
+		mmFlush.mock.t.Fatalf("Inspect function is already set for RecordStoreMock.Flush")
+	}
+
+	mmFlush.mock.inspectFuncFlush = f
+
+	return mmFlush
+}
+
+// Return sets up results that will be returned by RecordStore.Flush
+func (mmFlush *mRecordStoreMockFlush) Return(err error) *RecordStoreMock {
+	if mmFlush.mock.funcFlush != nil {
+		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
+	}
+
+	if mmFlush.defaultExpectation == nil {
+		mmFlush.defaultExpectation = &RecordStoreMockFlushExpectation{mock: mmFlush.mock}
+	}
+	mmFlush.defaultExpectation.results = &RecordStoreMockFlushResults{err}
+	return mmFlush.mock
+}
+
+//Set uses given function f to mock the RecordStore.Flush method
+func (mmFlush *mRecordStoreMockFlush) Set(f func(ctx context.Context) (err error)) *RecordStoreMock {
+	if mmFlush.defaultExpectation != nil {
+		mmFlush.mock.t.Fatalf("Default expectation is already set for the RecordStore.Flush method")
+	}
+
+	if len(mmFlush.expectations) > 0 {
+		mmFlush.mock.t.Fatalf("Some expectations are already set for the RecordStore.Flush method")
+	}
+
+	mmFlush.mock.funcFlush = f
+	return mmFlush.mock
+}
+
+// When sets expectation for the RecordStore.Flush which will trigger the result defined by the following
+// Then helper
+func (mmFlush *mRecordStoreMockFlush) When(ctx context.Context) *RecordStoreMockFlushExpectation {
+	if mmFlush.mock.funcFlush != nil {
+		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
+	}
+
+	expectation := &RecordStoreMockFlushExpectation{
+		mock:   mmFlush.mock,
+		params: &RecordStoreMockFlushParams{ctx},
+	}
+	mmFlush.expectations = append(mmFlush.expectations, expectation)
+	return expectation
+}
+
+// Then sets up RecordStore.Flush return parameters for the expectation previously defined by the When method
+func (e *RecordStoreMockFlushExpectation) Then(err error) *RecordStoreMock {
+	e.results = &RecordStoreMockFlushResults{err}
+	return e.mock
+}
+
+// Flush implements RecordStore
+func (mmFlush *RecordStoreMock) Flush(ctx context.Context) (err error) {
+	mm_atomic.AddUint64(&mmFlush.beforeFlushCounter, 1)
+	defer mm_atomic.AddUint64(&mmFlush.afterFlushCounter, 1)
+
+	if mmFlush.inspectFuncFlush != nil {
+		mmFlush.inspectFuncFlush(ctx)
+	}
+
+	mm_params := &RecordStoreMockFlushParams{ctx}
+
+	// Record call args
+	mmFlush.FlushMock.mutex.Lock()
+	mmFlush.FlushMock.callArgs = append(mmFlush.FlushMock.callArgs, mm_params)
+	mmFlush.FlushMock.mutex.Unlock()
+
+	for _, e := range mmFlush.FlushMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmFlush.FlushMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmFlush.FlushMock.defaultExpectation.Counter, 1)
+		mm_want := mmFlush.FlushMock.defaultExpectation.params
+		mm_got := RecordStoreMockFlushParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmFlush.t.Errorf("RecordStoreMock.Flush got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmFlush.FlushMock.defaultExpectation.results
+		if mm_results == nil {
+			mmFlush.t.Fatal("No results are set for the RecordStoreMock.Flush")
+		}
+		return (*mm_results).err
+	}
+	if mmFlush.funcFlush != nil {
+		return mmFlush.funcFlush(ctx)
+	}
+	mmFlush.t.Fatalf("Unexpected call to RecordStoreMock.Flush. %v", ctx)
+	return
+}
+
+// FlushAfterCounter returns a count of finished RecordStoreMock.Flush invocations
+func (mmFlush *RecordStoreMock) FlushAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFlush.afterFlushCounter)
+}
+
+// FlushBeforeCounter returns a count of RecordStoreMock.Flush invocations
+func (mmFlush *RecordStoreMock) FlushBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmFlush.beforeFlushCounter)
+}
+
+// Calls returns a list of arguments used in each call to RecordStoreMock.Flush.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmFlush *mRecordStoreMockFlush) Calls() []*RecordStoreMockFlushParams {
+	mmFlush.mutex.RLock()
+
+	argCopy := make([]*RecordStoreMockFlushParams, len(mmFlush.callArgs))
+	copy(argCopy, mmFlush.callArgs)
+
+	mmFlush.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockFlushDone returns true if the count of the Flush invocations corresponds
+// the number of defined expectations
+func (m *RecordStoreMock) MinimockFlushDone() bool {
+	for _, e := range m.FlushMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.FlushMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcFlush != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockFlushInspect logs each unmet expectation
+func (m *RecordStoreMock) MinimockFlushInspect() {
+	for _, e := range m.FlushMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to RecordStoreMock.Flush with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.FlushMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
+		if m.FlushMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to RecordStoreMock.Flush")
+		} else {
+			m.t.Errorf("Expected call to RecordStoreMock.Flush with params: %#v", *m.FlushMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcFlush != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
+		m.t.Error("Expected call to RecordStoreMock.Flush")
 	}
 }
 
@@ -958,6 +1209,222 @@ func (m *RecordStoreMock) MinimockSetRequestInspect() {
 	}
 }
 
+type mRecordStoreMockSetRequestBatch struct {
+	mock               *RecordStoreMock
+	defaultExpectation *RecordStoreMockSetRequestBatchExpectation
+	expectations       []*RecordStoreMockSetRequestBatchExpectation
+
+	callArgs []*RecordStoreMockSetRequestBatchParams
+	mutex    sync.RWMutex
+}
+
+// RecordStoreMockSetRequestBatchExpectation specifies expectation struct of the RecordStore.SetRequestBatch
+type RecordStoreMockSetRequestBatchExpectation struct {
+	mock    *RecordStoreMock
+	params  *RecordStoreMockSetRequestBatchParams
+	results *RecordStoreMockSetRequestBatchResults
+	Counter uint64
+}
+
+// RecordStoreMockSetRequestBatchParams contains parameters of the RecordStore.SetRequestBatch
+type RecordStoreMockSetRequestBatchParams struct {
+	ctx            context.Context
+	requestRecords []record.Material
+}
+
+// RecordStoreMockSetRequestBatchResults contains results of the RecordStore.SetRequestBatch
+type RecordStoreMockSetRequestBatchResults struct {
+	err error
+}
+
+// Expect sets up expected params for RecordStore.SetRequestBatch
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) Expect(ctx context.Context, requestRecords []record.Material) *mRecordStoreMockSetRequestBatch {
+	if mmSetRequestBatch.mock.funcSetRequestBatch != nil {
+		mmSetRequestBatch.mock.t.Fatalf("RecordStoreMock.SetRequestBatch mock is already set by Set")
+	}
+
+	if mmSetRequestBatch.defaultExpectation == nil {
+		mmSetRequestBatch.defaultExpectation = &RecordStoreMockSetRequestBatchExpectation{}
+	}
+
+	mmSetRequestBatch.defaultExpectation.params = &RecordStoreMockSetRequestBatchParams{ctx, requestRecords}
+	for _, e := range mmSetRequestBatch.expectations {
+		if minimock.Equal(e.params, mmSetRequestBatch.defaultExpectation.params) {
+			mmSetRequestBatch.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSetRequestBatch.defaultExpectation.params)
+		}
+	}
+
+	return mmSetRequestBatch
+}
+
+// Inspect accepts an inspector function that has same arguments as the RecordStore.SetRequestBatch
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) Inspect(f func(ctx context.Context, requestRecords []record.Material)) *mRecordStoreMockSetRequestBatch {
+	if mmSetRequestBatch.mock.inspectFuncSetRequestBatch != nil {
+		mmSetRequestBatch.mock.t.Fatalf("Inspect function is already set for RecordStoreMock.SetRequestBatch")
+	}
+
+	mmSetRequestBatch.mock.inspectFuncSetRequestBatch = f
+
+	return mmSetRequestBatch
+}
+
+// Return sets up results that will be returned by RecordStore.SetRequestBatch
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) Return(err error) *RecordStoreMock {
+	if mmSetRequestBatch.mock.funcSetRequestBatch != nil {
+		mmSetRequestBatch.mock.t.Fatalf("RecordStoreMock.SetRequestBatch mock is already set by Set")
+	}
+
+	if mmSetRequestBatch.defaultExpectation == nil {
+		mmSetRequestBatch.defaultExpectation = &RecordStoreMockSetRequestBatchExpectation{mock: mmSetRequestBatch.mock}
+	}
+	mmSetRequestBatch.defaultExpectation.results = &RecordStoreMockSetRequestBatchResults{err}
+	return mmSetRequestBatch.mock
+}
+
+//Set uses given function f to mock the RecordStore.SetRequestBatch method
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) Set(f func(ctx context.Context, requestRecords []record.Material) (err error)) *RecordStoreMock {
+	if mmSetRequestBatch.defaultExpectation != nil {
+		mmSetRequestBatch.mock.t.Fatalf("Default expectation is already set for the RecordStore.SetRequestBatch method")
+	}
+
+	if len(mmSetRequestBatch.expectations) > 0 {
+		mmSetRequestBatch.mock.t.Fatalf("Some expectations are already set for the RecordStore.SetRequestBatch method")
+	}
+
+	mmSetRequestBatch.mock.funcSetRequestBatch = f
+	return mmSetRequestBatch.mock
+}
+
+// When sets expectation for the RecordStore.SetRequestBatch which will trigger the result defined by the following
+// Then helper
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) When(ctx context.Context, requestRecords []record.Material) *RecordStoreMockSetRequestBatchExpectation {
+	if mmSetRequestBatch.mock.funcSetRequestBatch != nil {
+		mmSetRequestBatch.mock.t.Fatalf("RecordStoreMock.SetRequestBatch mock is already set by Set")
+	}
+
+	expectation := &RecordStoreMockSetRequestBatchExpectation{
+		mock:   mmSetRequestBatch.mock,
+		params: &RecordStoreMockSetRequestBatchParams{ctx, requestRecords},
+	}
+	mmSetRequestBatch.expectations = append(mmSetRequestBatch.expectations, expectation)
+	return expectation
+}
+
+// Then sets up RecordStore.SetRequestBatch return parameters for the expectation previously defined by the When method
+func (e *RecordStoreMockSetRequestBatchExpectation) Then(err error) *RecordStoreMock {
+	e.results = &RecordStoreMockSetRequestBatchResults{err}
+	return e.mock
+}
+
+// SetRequestBatch implements RecordStore
+func (mmSetRequestBatch *RecordStoreMock) SetRequestBatch(ctx context.Context, requestRecords []record.Material) (err error) {
+	mm_atomic.AddUint64(&mmSetRequestBatch.beforeSetRequestBatchCounter, 1)
+	defer mm_atomic.AddUint64(&mmSetRequestBatch.afterSetRequestBatchCounter, 1)
+
+	if mmSetRequestBatch.inspectFuncSetRequestBatch != nil {
+		mmSetRequestBatch.inspectFuncSetRequestBatch(ctx, requestRecords)
+	}
+
+	mm_params := &RecordStoreMockSetRequestBatchParams{ctx, requestRecords}
+
+	// Record call args
+	mmSetRequestBatch.SetRequestBatchMock.mutex.Lock()
+	mmSetRequestBatch.SetRequestBatchMock.callArgs = append(mmSetRequestBatch.SetRequestBatchMock.callArgs, mm_params)
+	mmSetRequestBatch.SetRequestBatchMock.mutex.Unlock()
+
+	for _, e := range mmSetRequestBatch.SetRequestBatchMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSetRequestBatch.SetRequestBatchMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSetRequestBatch.SetRequestBatchMock.defaultExpectation.Counter, 1)
+		mm_want := mmSetRequestBatch.SetRequestBatchMock.defaultExpectation.params
+		mm_got := RecordStoreMockSetRequestBatchParams{ctx, requestRecords}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSetRequestBatch.t.Errorf("RecordStoreMock.SetRequestBatch got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSetRequestBatch.SetRequestBatchMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSetRequestBatch.t.Fatal("No results are set for the RecordStoreMock.SetRequestBatch")
+		}
+		return (*mm_results).err
+	}
+	if mmSetRequestBatch.funcSetRequestBatch != nil {
+		return mmSetRequestBatch.funcSetRequestBatch(ctx, requestRecords)
+	}
+	mmSetRequestBatch.t.Fatalf("Unexpected call to RecordStoreMock.SetRequestBatch. %v %v", ctx, requestRecords)
+	return
+}
+
+// SetRequestBatchAfterCounter returns a count of finished RecordStoreMock.SetRequestBatch invocations
+func (mmSetRequestBatch *RecordStoreMock) SetRequestBatchAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetRequestBatch.afterSetRequestBatchCounter)
+}
+
+// SetRequestBatchBeforeCounter returns a count of RecordStoreMock.SetRequestBatch invocations
+func (mmSetRequestBatch *RecordStoreMock) SetRequestBatchBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetRequestBatch.beforeSetRequestBatchCounter)
+}
+
+// Calls returns a list of arguments used in each call to RecordStoreMock.SetRequestBatch.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSetRequestBatch *mRecordStoreMockSetRequestBatch) Calls() []*RecordStoreMockSetRequestBatchParams {
+	mmSetRequestBatch.mutex.RLock()
+
+	argCopy := make([]*RecordStoreMockSetRequestBatchParams, len(mmSetRequestBatch.callArgs))
+	copy(argCopy, mmSetRequestBatch.callArgs)
+
+	mmSetRequestBatch.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSetRequestBatchDone returns true if the count of the SetRequestBatch invocations corresponds
+// the number of defined expectations
+func (m *RecordStoreMock) MinimockSetRequestBatchDone() bool {
+	for _, e := range m.SetRequestBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetRequestBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetRequestBatchCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetRequestBatch != nil && mm_atomic.LoadUint64(&m.afterSetRequestBatchCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSetRequestBatchInspect logs each unmet expectation
+func (m *RecordStoreMock) MinimockSetRequestBatchInspect() {
+	for _, e := range m.SetRequestBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to RecordStoreMock.SetRequestBatch with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetRequestBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetRequestBatchCounter) < 1 {
+		if m.SetRequestBatchMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to RecordStoreMock.SetRequestBatch")
+		} else {
+			m.t.Errorf("Expected call to RecordStoreMock.SetRequestBatch with params: %#v", *m.SetRequestBatchMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetRequestBatch != nil && mm_atomic.LoadUint64(&m.afterSetRequestBatchCounter) < 1 {
+		m.t.Error("Expected call to RecordStoreMock.SetRequestBatch")
+	}
+}
+
 type mRecordStoreMockSetResult struct {
 	mock               *RecordStoreMock
 	defaultExpectation *RecordStoreMockSetResultExpectation
@@ -1174,6 +1641,222 @@ func (m *RecordStoreMock) MinimockSetResultInspect() {
 	}
 }
 
+type mRecordStoreMockSetResultBatch struct {
+	mock               *RecordStoreMock
+	defaultExpectation *RecordStoreMockSetResultBatchExpectation
+	expectations       []*RecordStoreMockSetResultBatchExpectation
+
+	callArgs []*RecordStoreMockSetResultBatchParams
+	mutex    sync.RWMutex
+}
+
+// RecordStoreMockSetResultBatchExpectation specifies expectation struct of the RecordStore.SetResultBatch
+type RecordStoreMockSetResultBatchExpectation struct {
+	mock    *RecordStoreMock
+	params  *RecordStoreMockSetResultBatchParams
+	results *RecordStoreMockSetResultBatchResults
+	Counter uint64
+}
+
+// RecordStoreMockSetResultBatchParams contains parameters of the RecordStore.SetResultBatch
+type RecordStoreMockSetResultBatchParams struct {
+	ctx            context.Context
+	requestRecords []record.Material
+}
+
+// RecordStoreMockSetResultBatchResults contains results of the RecordStore.SetResultBatch
+type RecordStoreMockSetResultBatchResults struct {
+	err error
+}
+
+// Expect sets up expected params for RecordStore.SetResultBatch
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) Expect(ctx context.Context, requestRecords []record.Material) *mRecordStoreMockSetResultBatch {
+	if mmSetResultBatch.mock.funcSetResultBatch != nil {
+		mmSetResultBatch.mock.t.Fatalf("RecordStoreMock.SetResultBatch mock is already set by Set")
+	}
+
+	if mmSetResultBatch.defaultExpectation == nil {
+		mmSetResultBatch.defaultExpectation = &RecordStoreMockSetResultBatchExpectation{}
+	}
+
+	mmSetResultBatch.defaultExpectation.params = &RecordStoreMockSetResultBatchParams{ctx, requestRecords}
+	for _, e := range mmSetResultBatch.expectations {
+		if minimock.Equal(e.params, mmSetResultBatch.defaultExpectation.params) {
+			mmSetResultBatch.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSetResultBatch.defaultExpectation.params)
+		}
+	}
+
+	return mmSetResultBatch
+}
+
+// Inspect accepts an inspector function that has same arguments as the RecordStore.SetResultBatch
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) Inspect(f func(ctx context.Context, requestRecords []record.Material)) *mRecordStoreMockSetResultBatch {
+	if mmSetResultBatch.mock.inspectFuncSetResultBatch != nil {
+		mmSetResultBatch.mock.t.Fatalf("Inspect function is already set for RecordStoreMock.SetResultBatch")
+	}
+
+	mmSetResultBatch.mock.inspectFuncSetResultBatch = f
+
+	return mmSetResultBatch
+}
+
+// Return sets up results that will be returned by RecordStore.SetResultBatch
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) Return(err error) *RecordStoreMock {
+	if mmSetResultBatch.mock.funcSetResultBatch != nil {
+		mmSetResultBatch.mock.t.Fatalf("RecordStoreMock.SetResultBatch mock is already set by Set")
+	}
+
+	if mmSetResultBatch.defaultExpectation == nil {
+		mmSetResultBatch.defaultExpectation = &RecordStoreMockSetResultBatchExpectation{mock: mmSetResultBatch.mock}
+	}
+	mmSetResultBatch.defaultExpectation.results = &RecordStoreMockSetResultBatchResults{err}
+	return mmSetResultBatch.mock
+}
+
+//Set uses given function f to mock the RecordStore.SetResultBatch method
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) Set(f func(ctx context.Context, requestRecords []record.Material) (err error)) *RecordStoreMock {
+	if mmSetResultBatch.defaultExpectation != nil {
+		mmSetResultBatch.mock.t.Fatalf("Default expectation is already set for the RecordStore.SetResultBatch method")
+	}
+
+	if len(mmSetResultBatch.expectations) > 0 {
+		mmSetResultBatch.mock.t.Fatalf("Some expectations are already set for the RecordStore.SetResultBatch method")
+	}
+
+	mmSetResultBatch.mock.funcSetResultBatch = f
+	return mmSetResultBatch.mock
+}
+
+// When sets expectation for the RecordStore.SetResultBatch which will trigger the result defined by the following
+// Then helper
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) When(ctx context.Context, requestRecords []record.Material) *RecordStoreMockSetResultBatchExpectation {
+	if mmSetResultBatch.mock.funcSetResultBatch != nil {
+		mmSetResultBatch.mock.t.Fatalf("RecordStoreMock.SetResultBatch mock is already set by Set")
+	}
+
+	expectation := &RecordStoreMockSetResultBatchExpectation{
+		mock:   mmSetResultBatch.mock,
+		params: &RecordStoreMockSetResultBatchParams{ctx, requestRecords},
+	}
+	mmSetResultBatch.expectations = append(mmSetResultBatch.expectations, expectation)
+	return expectation
+}
+
+// Then sets up RecordStore.SetResultBatch return parameters for the expectation previously defined by the When method
+func (e *RecordStoreMockSetResultBatchExpectation) Then(err error) *RecordStoreMock {
+	e.results = &RecordStoreMockSetResultBatchResults{err}
+	return e.mock
+}
+
+// SetResultBatch implements RecordStore
+func (mmSetResultBatch *RecordStoreMock) SetResultBatch(ctx context.Context, requestRecords []record.Material) (err error) {
+	mm_atomic.AddUint64(&mmSetResultBatch.beforeSetResultBatchCounter, 1)
+	defer mm_atomic.AddUint64(&mmSetResultBatch.afterSetResultBatchCounter, 1)
+
+	if mmSetResultBatch.inspectFuncSetResultBatch != nil {
+		mmSetResultBatch.inspectFuncSetResultBatch(ctx, requestRecords)
+	}
+
+	mm_params := &RecordStoreMockSetResultBatchParams{ctx, requestRecords}
+
+	// Record call args
+	mmSetResultBatch.SetResultBatchMock.mutex.Lock()
+	mmSetResultBatch.SetResultBatchMock.callArgs = append(mmSetResultBatch.SetResultBatchMock.callArgs, mm_params)
+	mmSetResultBatch.SetResultBatchMock.mutex.Unlock()
+
+	for _, e := range mmSetResultBatch.SetResultBatchMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSetResultBatch.SetResultBatchMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSetResultBatch.SetResultBatchMock.defaultExpectation.Counter, 1)
+		mm_want := mmSetResultBatch.SetResultBatchMock.defaultExpectation.params
+		mm_got := RecordStoreMockSetResultBatchParams{ctx, requestRecords}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSetResultBatch.t.Errorf("RecordStoreMock.SetResultBatch got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSetResultBatch.SetResultBatchMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSetResultBatch.t.Fatal("No results are set for the RecordStoreMock.SetResultBatch")
+		}
+		return (*mm_results).err
+	}
+	if mmSetResultBatch.funcSetResultBatch != nil {
+		return mmSetResultBatch.funcSetResultBatch(ctx, requestRecords)
+	}
+	mmSetResultBatch.t.Fatalf("Unexpected call to RecordStoreMock.SetResultBatch. %v %v", ctx, requestRecords)
+	return
+}
+
+// SetResultBatchAfterCounter returns a count of finished RecordStoreMock.SetResultBatch invocations
+func (mmSetResultBatch *RecordStoreMock) SetResultBatchAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetResultBatch.afterSetResultBatchCounter)
+}
+
+// SetResultBatchBeforeCounter returns a count of RecordStoreMock.SetResultBatch invocations
+func (mmSetResultBatch *RecordStoreMock) SetResultBatchBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetResultBatch.beforeSetResultBatchCounter)
+}
+
+// Calls returns a list of arguments used in each call to RecordStoreMock.SetResultBatch.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSetResultBatch *mRecordStoreMockSetResultBatch) Calls() []*RecordStoreMockSetResultBatchParams {
+	mmSetResultBatch.mutex.RLock()
+
+	argCopy := make([]*RecordStoreMockSetResultBatchParams, len(mmSetResultBatch.callArgs))
+	copy(argCopy, mmSetResultBatch.callArgs)
+
+	mmSetResultBatch.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSetResultBatchDone returns true if the count of the SetResultBatch invocations corresponds
+// the number of defined expectations
+func (m *RecordStoreMock) MinimockSetResultBatchDone() bool {
+	for _, e := range m.SetResultBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetResultBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetResultBatchCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetResultBatch != nil && mm_atomic.LoadUint64(&m.afterSetResultBatchCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSetResultBatchInspect logs each unmet expectation
+func (m *RecordStoreMock) MinimockSetResultBatchInspect() {
+	for _, e := range m.SetResultBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to RecordStoreMock.SetResultBatch with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetResultBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetResultBatchCounter) < 1 {
+		if m.SetResultBatchMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to RecordStoreMock.SetResultBatch")
+		} else {
+			m.t.Errorf("Expected call to RecordStoreMock.SetResultBatch with params: %#v", *m.SetResultBatchMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetResultBatch != nil && mm_atomic.LoadUint64(&m.afterSetResultBatchCounter) < 1 {
+		m.t.Error("Expected call to RecordStoreMock.SetResultBatch")
+	}
+}
+
 type mRecordStoreMockSetSideEffect struct {
 	mock               *RecordStoreMock
 	defaultExpectation *RecordStoreMockSetSideEffectExpectation
@@ -1387,6 +2070,222 @@ func (m *RecordStoreMock) MinimockSetSideEffectInspect() {
 	// if func was set then invocations count should be greater than zero
 	if m.funcSetSideEffect != nil && mm_atomic.LoadUint64(&m.afterSetSideEffectCounter) < 1 {
 		m.t.Error("Expected call to RecordStoreMock.SetSideEffect")
+	}
+}
+
+type mRecordStoreMockSetSideEffectBatch struct {
+	mock               *RecordStoreMock
+	defaultExpectation *RecordStoreMockSetSideEffectBatchExpectation
+	expectations       []*RecordStoreMockSetSideEffectBatchExpectation
+
+	callArgs []*RecordStoreMockSetSideEffectBatchParams
+	mutex    sync.RWMutex
+}
+
+// RecordStoreMockSetSideEffectBatchExpectation specifies expectation struct of the RecordStore.SetSideEffectBatch
+type RecordStoreMockSetSideEffectBatchExpectation struct {
+	mock    *RecordStoreMock
+	params  *RecordStoreMockSetSideEffectBatchParams
+	results *RecordStoreMockSetSideEffectBatchResults
+	Counter uint64
+}
+
+// RecordStoreMockSetSideEffectBatchParams contains parameters of the RecordStore.SetSideEffectBatch
+type RecordStoreMockSetSideEffectBatchParams struct {
+	ctx            context.Context
+	requestRecords []record.Material
+}
+
+// RecordStoreMockSetSideEffectBatchResults contains results of the RecordStore.SetSideEffectBatch
+type RecordStoreMockSetSideEffectBatchResults struct {
+	err error
+}
+
+// Expect sets up expected params for RecordStore.SetSideEffectBatch
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) Expect(ctx context.Context, requestRecords []record.Material) *mRecordStoreMockSetSideEffectBatch {
+	if mmSetSideEffectBatch.mock.funcSetSideEffectBatch != nil {
+		mmSetSideEffectBatch.mock.t.Fatalf("RecordStoreMock.SetSideEffectBatch mock is already set by Set")
+	}
+
+	if mmSetSideEffectBatch.defaultExpectation == nil {
+		mmSetSideEffectBatch.defaultExpectation = &RecordStoreMockSetSideEffectBatchExpectation{}
+	}
+
+	mmSetSideEffectBatch.defaultExpectation.params = &RecordStoreMockSetSideEffectBatchParams{ctx, requestRecords}
+	for _, e := range mmSetSideEffectBatch.expectations {
+		if minimock.Equal(e.params, mmSetSideEffectBatch.defaultExpectation.params) {
+			mmSetSideEffectBatch.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSetSideEffectBatch.defaultExpectation.params)
+		}
+	}
+
+	return mmSetSideEffectBatch
+}
+
+// Inspect accepts an inspector function that has same arguments as the RecordStore.SetSideEffectBatch
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) Inspect(f func(ctx context.Context, requestRecords []record.Material)) *mRecordStoreMockSetSideEffectBatch {
+	if mmSetSideEffectBatch.mock.inspectFuncSetSideEffectBatch != nil {
+		mmSetSideEffectBatch.mock.t.Fatalf("Inspect function is already set for RecordStoreMock.SetSideEffectBatch")
+	}
+
+	mmSetSideEffectBatch.mock.inspectFuncSetSideEffectBatch = f
+
+	return mmSetSideEffectBatch
+}
+
+// Return sets up results that will be returned by RecordStore.SetSideEffectBatch
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) Return(err error) *RecordStoreMock {
+	if mmSetSideEffectBatch.mock.funcSetSideEffectBatch != nil {
+		mmSetSideEffectBatch.mock.t.Fatalf("RecordStoreMock.SetSideEffectBatch mock is already set by Set")
+	}
+
+	if mmSetSideEffectBatch.defaultExpectation == nil {
+		mmSetSideEffectBatch.defaultExpectation = &RecordStoreMockSetSideEffectBatchExpectation{mock: mmSetSideEffectBatch.mock}
+	}
+	mmSetSideEffectBatch.defaultExpectation.results = &RecordStoreMockSetSideEffectBatchResults{err}
+	return mmSetSideEffectBatch.mock
+}
+
+//Set uses given function f to mock the RecordStore.SetSideEffectBatch method
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) Set(f func(ctx context.Context, requestRecords []record.Material) (err error)) *RecordStoreMock {
+	if mmSetSideEffectBatch.defaultExpectation != nil {
+		mmSetSideEffectBatch.mock.t.Fatalf("Default expectation is already set for the RecordStore.SetSideEffectBatch method")
+	}
+
+	if len(mmSetSideEffectBatch.expectations) > 0 {
+		mmSetSideEffectBatch.mock.t.Fatalf("Some expectations are already set for the RecordStore.SetSideEffectBatch method")
+	}
+
+	mmSetSideEffectBatch.mock.funcSetSideEffectBatch = f
+	return mmSetSideEffectBatch.mock
+}
+
+// When sets expectation for the RecordStore.SetSideEffectBatch which will trigger the result defined by the following
+// Then helper
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) When(ctx context.Context, requestRecords []record.Material) *RecordStoreMockSetSideEffectBatchExpectation {
+	if mmSetSideEffectBatch.mock.funcSetSideEffectBatch != nil {
+		mmSetSideEffectBatch.mock.t.Fatalf("RecordStoreMock.SetSideEffectBatch mock is already set by Set")
+	}
+
+	expectation := &RecordStoreMockSetSideEffectBatchExpectation{
+		mock:   mmSetSideEffectBatch.mock,
+		params: &RecordStoreMockSetSideEffectBatchParams{ctx, requestRecords},
+	}
+	mmSetSideEffectBatch.expectations = append(mmSetSideEffectBatch.expectations, expectation)
+	return expectation
+}
+
+// Then sets up RecordStore.SetSideEffectBatch return parameters for the expectation previously defined by the When method
+func (e *RecordStoreMockSetSideEffectBatchExpectation) Then(err error) *RecordStoreMock {
+	e.results = &RecordStoreMockSetSideEffectBatchResults{err}
+	return e.mock
+}
+
+// SetSideEffectBatch implements RecordStore
+func (mmSetSideEffectBatch *RecordStoreMock) SetSideEffectBatch(ctx context.Context, requestRecords []record.Material) (err error) {
+	mm_atomic.AddUint64(&mmSetSideEffectBatch.beforeSetSideEffectBatchCounter, 1)
+	defer mm_atomic.AddUint64(&mmSetSideEffectBatch.afterSetSideEffectBatchCounter, 1)
+
+	if mmSetSideEffectBatch.inspectFuncSetSideEffectBatch != nil {
+		mmSetSideEffectBatch.inspectFuncSetSideEffectBatch(ctx, requestRecords)
+	}
+
+	mm_params := &RecordStoreMockSetSideEffectBatchParams{ctx, requestRecords}
+
+	// Record call args
+	mmSetSideEffectBatch.SetSideEffectBatchMock.mutex.Lock()
+	mmSetSideEffectBatch.SetSideEffectBatchMock.callArgs = append(mmSetSideEffectBatch.SetSideEffectBatchMock.callArgs, mm_params)
+	mmSetSideEffectBatch.SetSideEffectBatchMock.mutex.Unlock()
+
+	for _, e := range mmSetSideEffectBatch.SetSideEffectBatchMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSetSideEffectBatch.SetSideEffectBatchMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSetSideEffectBatch.SetSideEffectBatchMock.defaultExpectation.Counter, 1)
+		mm_want := mmSetSideEffectBatch.SetSideEffectBatchMock.defaultExpectation.params
+		mm_got := RecordStoreMockSetSideEffectBatchParams{ctx, requestRecords}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSetSideEffectBatch.t.Errorf("RecordStoreMock.SetSideEffectBatch got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSetSideEffectBatch.SetSideEffectBatchMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSetSideEffectBatch.t.Fatal("No results are set for the RecordStoreMock.SetSideEffectBatch")
+		}
+		return (*mm_results).err
+	}
+	if mmSetSideEffectBatch.funcSetSideEffectBatch != nil {
+		return mmSetSideEffectBatch.funcSetSideEffectBatch(ctx, requestRecords)
+	}
+	mmSetSideEffectBatch.t.Fatalf("Unexpected call to RecordStoreMock.SetSideEffectBatch. %v %v", ctx, requestRecords)
+	return
+}
+
+// SetSideEffectBatchAfterCounter returns a count of finished RecordStoreMock.SetSideEffectBatch invocations
+func (mmSetSideEffectBatch *RecordStoreMock) SetSideEffectBatchAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetSideEffectBatch.afterSetSideEffectBatchCounter)
+}
+
+// SetSideEffectBatchBeforeCounter returns a count of RecordStoreMock.SetSideEffectBatch invocations
+func (mmSetSideEffectBatch *RecordStoreMock) SetSideEffectBatchBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetSideEffectBatch.beforeSetSideEffectBatchCounter)
+}
+
+// Calls returns a list of arguments used in each call to RecordStoreMock.SetSideEffectBatch.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSetSideEffectBatch *mRecordStoreMockSetSideEffectBatch) Calls() []*RecordStoreMockSetSideEffectBatchParams {
+	mmSetSideEffectBatch.mutex.RLock()
+
+	argCopy := make([]*RecordStoreMockSetSideEffectBatchParams, len(mmSetSideEffectBatch.callArgs))
+	copy(argCopy, mmSetSideEffectBatch.callArgs)
+
+	mmSetSideEffectBatch.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSetSideEffectBatchDone returns true if the count of the SetSideEffectBatch invocations corresponds
+// the number of defined expectations
+func (m *RecordStoreMock) MinimockSetSideEffectBatchDone() bool {
+	for _, e := range m.SetSideEffectBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetSideEffectBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetSideEffectBatchCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetSideEffectBatch != nil && mm_atomic.LoadUint64(&m.afterSetSideEffectBatchCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSetSideEffectBatchInspect logs each unmet expectation
+func (m *RecordStoreMock) MinimockSetSideEffectBatchInspect() {
+	for _, e := range m.SetSideEffectBatchMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to RecordStoreMock.SetSideEffectBatch with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetSideEffectBatchMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetSideEffectBatchCounter) < 1 {
+		if m.SetSideEffectBatchMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to RecordStoreMock.SetSideEffectBatch")
+		} else {
+			m.t.Errorf("Expected call to RecordStoreMock.SetSideEffectBatch with params: %#v", *m.SetSideEffectBatchMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetSideEffectBatch != nil && mm_atomic.LoadUint64(&m.afterSetSideEffectBatchCounter) < 1 {
+		m.t.Error("Expected call to RecordStoreMock.SetSideEffectBatch")
 	}
 }
 
@@ -1612,15 +2511,23 @@ func (m *RecordStoreMock) MinimockFinish() {
 	if !m.minimockDone() {
 		m.MinimockCalledRequestsInspect()
 
+		m.MinimockFlushInspect()
+
 		m.MinimockRequestInspect()
 
 		m.MinimockResultInspect()
 
 		m.MinimockSetRequestInspect()
 
+		m.MinimockSetRequestBatchInspect()
+
 		m.MinimockSetResultInspect()
 
+		m.MinimockSetResultBatchInspect()
+
 		m.MinimockSetSideEffectInspect()
+
+		m.MinimockSetSideEffectBatchInspect()
 
 		m.MinimockSideEffectInspect()
 		m.t.FailNow()
@@ -1647,10 +2554,14 @@ func (m *RecordStoreMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockCalledRequestsDone() &&
+		m.MinimockFlushDone() &&
 		m.MinimockRequestDone() &&
 		m.MinimockResultDone() &&
 		m.MinimockSetRequestDone() &&
+		m.MinimockSetRequestBatchDone() &&
 		m.MinimockSetResultDone() &&
+		m.MinimockSetResultBatchDone() &&
 		m.MinimockSetSideEffectDone() &&
+		m.MinimockSetSideEffectBatchDone() &&
 		m.MinimockSideEffectDone()
 }
