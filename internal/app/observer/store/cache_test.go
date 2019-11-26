@@ -71,12 +71,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.CalledRequestsMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
-			reasonID, err := ReasonID(&expectedRecord)
-			require.NoError(t, err)
-			require.Equal(t, reasonID, reqID)
-		}).Return(nil, nil)
-
 		err := cache.SetRequest(ctx, expectedRecord)
 		assert.NoError(t, err)
 
@@ -89,7 +83,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.CalledRequestsMock.Return(nil, nil)
 		backend.RequestMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
@@ -110,8 +103,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 	t.Run("updated usage for accessed record", func(t *testing.T) {
 		setup()
 		defer mc.Finish()
-
-		backend.CalledRequestsMock.Return(nil, nil)
 
 		// Set expected (will be the last).
 		err := cache.SetRequest(ctx, expectedRecord)
