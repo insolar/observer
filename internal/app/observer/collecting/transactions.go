@@ -24,7 +24,6 @@ import (
 
 const (
 	callSiteTransfer  = "member.transfer"
-	callSiteMigration = "deposit.migration"
 	callSiteRelease   = "deposit.transfer"
 )
 
@@ -591,9 +590,8 @@ func (c *TxSagaResultCollector) fromCall(
 	}
 
 	isTransfer := args.Params.CallSite == callSiteTransfer
-	isMigration := args.Params.CallSite == callSiteMigration
 	isRelease := args.Params.CallSite == callSiteRelease
-	if !isTransfer && !isMigration && !isRelease {
+	if !isTransfer && !isRelease {
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
 	}
