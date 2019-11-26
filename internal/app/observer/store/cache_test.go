@@ -71,9 +71,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetRequestMock.Inspect(func(ctx context.Context, record record.Material) {
-			require.Equal(t, expectedRecord, record)
-		}).Return(nil)
 		backend.CalledRequestsMock.Inspect(func(ctx context.Context, reqID insolar.ID) {
 			reasonID, err := ReasonID(&expectedRecord)
 			require.NoError(t, err)
@@ -92,7 +89,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetRequestMock.Return(nil)
 		backend.CalledRequestsMock.Return(nil, nil)
 		backend.RequestMock.Return(record.Material{}, ErrNotFound)
 
@@ -116,7 +112,6 @@ func TestCacheRecordStore_Request(t *testing.T) {
 		defer mc.Finish()
 
 		backend.CalledRequestsMock.Return(nil, nil)
-		backend.SetRequestMock.Return(nil)
 
 		// Set expected (will be the last).
 		err := cache.SetRequest(ctx, expectedRecord)
@@ -203,10 +198,6 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetResultMock.Inspect(func(ctx context.Context, record record.Material) {
-			require.Equal(t, expectedRecord, record)
-		}).Return(nil)
-
 		err := cache.SetResult(ctx, expectedRecord)
 		assert.NoError(t, err)
 
@@ -219,7 +210,6 @@ func TestCacheRecordStore_Result(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetResultMock.Return(nil)
 		backend.ResultMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
@@ -240,8 +230,6 @@ func TestCacheRecordStore_Result(t *testing.T) {
 	t.Run("updated usage for accessed record", func(t *testing.T) {
 		setup()
 		defer mc.Finish()
-
-		backend.SetResultMock.Return(nil)
 
 		// Set expected (will be the last).
 		err := cache.SetResult(ctx, expectedRecord)
@@ -326,10 +314,6 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetSideEffectMock.Inspect(func(ctx context.Context, record record.Material) {
-			require.Equal(t, expectedRecord, record)
-		}).Return(nil)
-
 		err := cache.SetSideEffect(ctx, expectedRecord)
 		assert.NoError(t, err)
 
@@ -342,7 +326,6 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetSideEffectMock.Return(nil)
 		backend.SideEffectMock.Return(record.Material{}, ErrNotFound)
 
 		// Set expected (will be the last).
@@ -363,8 +346,6 @@ func TestCacheRecordStore_SideEffect(t *testing.T) {
 	t.Run("updated usage for accessed record", func(t *testing.T) {
 		setup()
 		defer mc.Finish()
-
-		backend.SetSideEffectMock.Return(nil)
 
 		// Set expected (will be the last).
 		err := cache.SetSideEffect(ctx, expectedRecord)
@@ -419,9 +400,7 @@ func TestCacheRecordStore_CalledRequests(t *testing.T) {
 		setup()
 		defer mc.Finish()
 
-		backend.SetRequestMock.Inspect(func(ctx context.Context, calledRecord record.Material) {
-			require.Equal(t, requestRecord, calledRecord)
-		}).Return(nil).CalledRequestsMock.Set(func(ctx context.Context, reqID insolar.ID) (ma1 []record.Material, err error) {
+		backend.CalledRequestsMock.Set(func(ctx context.Context, reqID insolar.ID) (ma1 []record.Material, err error) {
 			require.Equal(t, expectedReasonID, reqID)
 			return []record.Material{requestRecord}, nil
 		})
