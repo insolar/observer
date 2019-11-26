@@ -169,7 +169,8 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 		return nil
 	}
 
-	if currentTime >= (deposit.HoldReleaseDate + deposit.Vesting) {
+	vestingEnd := deposit.HoldReleaseDate + deposit.Vesting
+	if currentTime >= vestingEnd {
 		return nil
 	}
 
@@ -178,16 +179,24 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep
 	} else {
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
+		if timestamp >= vestingEnd {
+			return &SchemaNextRelease{Timestamp: vestingEnd, Amount: lastReleaseAmount(amount, &deposit)}
+		}
 	}
-	res := SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit)}
-	return &res
+	return &SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit, currentTime)}
 }
 
-func nextReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
-	stepValue := deposit.Vesting / deposit.VestingStep
-	if stepValue == 0 {
-		return amount.Text(10)
-	}
-	releaseAmount := new(big.Int).Quo(amount, big.NewInt(stepValue))
-	return releaseAmount.Text(10)
+func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) string {
+	steps := deposit.Vesting / deposit.VestingStep
+	step := (currentTime-deposit.HoldReleaseDate)/deposit.VestingStep
+	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step)), big.NewInt(steps))
+	willReleaseAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step+1)), big.NewInt(steps))
+
+	return new(big.Int).Sub(willReleaseAmount, releasedAmount).Text(10)
+}
+
+func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
+	steps := deposit.Vesting / deposit.VestingStep
+	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(steps-1)), big.NewInt(steps))
+	return new(big.Int).Sub(amount, releasedAmount).Text(10)
 }
