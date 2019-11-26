@@ -13,12 +13,14 @@ import (
 )
 
 type UserCollector struct {
-	log *logrus.Logger
+	log       *logrus.Logger
+	collector *BoundCollector
 }
 
 func NewUserCollector(log *logrus.Logger) *UserCollector {
+	collector := NewBoundCollector(isUserCreationCall, successResult, isUserNew, isUserActivate)
 	return &UserCollector{
-		log: log,
+		collector: collector,
 	}
 }
 
@@ -32,51 +34,107 @@ type User struct {
 	Key         string
 }
 
+type CreateResponse struct {
+	Reference string `json:"reference"`
+}
+
 func (c *UserCollector) Collect(rec *observer.Record) *observer.User {
 	if rec == nil {
 		return nil
 	}
-	actCandidate := observer.CastToActivate(rec)
-
-	if !actCandidate.IsActivate() {
+	couple := c.collector.Collect(rec)
+	if couple == nil {
 		return nil
 	}
 
-	act := actCandidate.Virtual.GetActivate()
-
-	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
-	if !act.Image.Equal(*prototypeRef) {
-		return nil
-	}
-
-	user, err := c.build(actCandidate)
+	m, err := c.build(couple.Activate, couple.Result)
 	if err != nil {
 		log.Error(errors.Wrapf(err, "failed to build user"))
 		return nil
 	}
-	return user
+	return m
 }
 
-func (c *UserCollector) build(act *observer.Activate) (*observer.User, error) {
-	if act == nil {
+func (c *UserCollector) build(act *observer.Activate, res *observer.Result) (*observer.User, error) {
+	if res == nil || act == nil {
 		return nil, errors.New("trying to create user from non complete builder")
 	}
 
+	if res.Virtual.GetResult().Payload == nil {
+		return nil, errors.New("user creation result payload is nil")
+	}
+	response := &CreateResponse{}
+	res.ParseFirstPayloadValue(response)
+
+	ref, err := insolar.NewReferenceFromString(response.Reference)
+	if err != nil || ref == nil {
+		return nil, errors.New("invalid user reference")
+	}
 	var user User
 
-	err := insolar.Deserialize(act.Virtual.GetActivate().Memory, &user)
+	err = insolar.Deserialize(act.Virtual.GetActivate().Memory, &user)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Insert new user ref:", insolar.NewReference(act.ObjectID).String())
+	fmt.Println("Insert new user ref:", ref.String())
 	return &observer.User{
-		UserRef:   *insolar.NewReference(act.ObjectID),
+		UserRef:   *ref,
 		KYCStatus: user.KYCStatus,
 		Status:    "SUCCESS",
 		State:     act.ID.Bytes(),
 		Public:    user.Key,
 	}, nil
+}
+
+func isUserCreationCall(chain interface{}) bool {
+	request := observer.CastToRequest(chain)
+	if !request.IsIncoming() {
+		return false
+	}
+
+	if !request.IsMemberCall() {
+		return false
+	}
+	args := request.ParseMemberCallArguments()
+	return args.Params.CallSite == "user.create"
+}
+
+func isUserActivate(chain interface{}) bool {
+	activate := observer.CastToActivate(chain)
+	if !activate.IsActivate() {
+		return false
+	}
+	act := activate.Virtual.GetActivate()
+
+	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	return act.Image.Equal(*prototypeRef)
+}
+
+func isUserNew(chain interface{}) bool {
+	request := observer.CastToRequest(chain)
+	if !request.IsIncoming() {
+		return false
+	}
+
+	in := request.Virtual.GetIncomingRequest()
+	if in.Method != "New" {
+		return false
+	}
+
+	if in.Prototype == nil {
+		return false
+	}
+
+	// TODO: import from platform
+	prototypeRef, _ := insolar.NewReferenceFromString("0111A5tDgkPiUrCANU8NTa73b7w6pWGRAUxJTYFXwTnR")
+	return in.Prototype.Equal(*prototypeRef)
+}
+
+func successResult(chain interface{}) bool {
+	result := observer.CastToResult(chain)
+	return result.IsSuccess()
 }
 
 func userKYC(act *observer.Record) (bool, int64, string, error) {

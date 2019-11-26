@@ -140,8 +140,8 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 				row := &UserGroupSchema{
 					UserRef:         membership.MemberRef.Bytes(),
 					GroupRef:        model.GroupReference.Bytes(),
-					Role:            "member",
-					Status:          "invited",
+					Role:            membership.MemberRole.String(),
+					Status:          membership.MemberRole.String(),
 					StatusTimestamp: model.Timestamp,
 				}
 
