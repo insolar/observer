@@ -118,8 +118,53 @@ func TestNextRelease(t *testing.T) {
 			currentTime: 1573910366,
 			amount:      big.NewInt(4000),
 			expectation: &SchemaNextRelease{
-				Amount:    "10",
+				Amount:    "11",
 				Timestamp: 1573996765,
+			},
+		},
+		{
+			name: "jumping sum 1",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "6",
+				Vesting:         40,
+				VestingStep:     10,
+			},
+			currentTime: 111,
+			amount:      big.NewInt(6),
+			expectation: &SchemaNextRelease{
+				Amount:    "2",
+				Timestamp: 120,
+			},
+		},
+		{
+			name: "jumping sum 2",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "6",
+				Vesting:         40,
+				VestingStep:     10,
+			},
+			currentTime: 121,
+			amount:      big.NewInt(6),
+			expectation: &SchemaNextRelease{
+				Amount:    "1",
+				Timestamp: 130,
+			},
+		},
+		{
+			name: "jumping sum 3",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "6",
+				Vesting:         40,
+				VestingStep:     10,
+			},
+			currentTime: 131,
+			amount:      big.NewInt(6),
+			expectation: &SchemaNextRelease{
+				Amount:    "2",
+				Timestamp: 140,
 			},
 		},
 	} {
