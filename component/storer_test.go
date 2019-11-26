@@ -173,6 +173,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			MemberReference: memberRef.Bytes(),
 			EtheriumHash:    "tx_hash_0",
 			State:           state.GetLocal().Bytes(),
+			Timestamp:       transferDate,
 			HoldReleaseDate: holdDate,
 			Amount:          "100500",
 			Balance:         "100",

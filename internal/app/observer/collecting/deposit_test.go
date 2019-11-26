@@ -91,7 +91,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		EthHash:         txHash,
 		Ref:             genesisrefs.ContractMigrationDeposit,
 		Member:          genesisrefs.ContractMigrationAdminMember,
-		Timestamp:       0,
+		Timestamp:       1546300800,
 		Balance:         balance,
 		Amount:          amount,
 		DepositState:    cache[*depositRef.GetLocal()].ID,

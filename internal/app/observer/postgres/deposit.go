@@ -55,12 +55,18 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 	log := s.log.WithField("deposit", model)
 
 	var (
-		fields = []string{"eth_hash", "deposit_ref", "member_ref", "hold_release_date", "amount",
-			"balance", "deposit_state", "vesting", "vesting_step", "status"}
+		fields = []string{
+			"eth_hash", "deposit_ref", "member_ref",
+			"transfer_date", "hold_release_date",
+			"amount", "balance", "deposit_state",
+			"vesting", "vesting_step",
+			"status",
+		}
 		values = []interface{}{
 			row.EtheriumHash,
 			row.Reference,
 			row.MemberReference,
+			row.Timestamp,
 			row.HoldReleaseDate,
 			row.Amount,
 			row.Balance,
@@ -128,12 +134,15 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 		Where("deposit_ref=?", deposit.Reference).
 		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate)
 
+	if model.Timestamp > 0 {
+		query.Set("transfer_date=?", model.Timestamp)
+	}
+
 	if model.IsConfirmed {
 		if deposit.InnerStatus == models.DepositStatusCreated {
 			query.Set("status=?", models.DepositStatusConfirmed)
 		}
 		if deposit.DepositNumber == nil {
-			query.Set("transfer_date=?", model.Timestamp)
 			query.Set(`deposit_number = (select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
