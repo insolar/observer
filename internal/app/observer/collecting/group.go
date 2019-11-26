@@ -64,7 +64,7 @@ type Membership struct {
 	MemberRef    insolar.Reference
 	MemberRole   RoleMembership
 	MemberStatus StatusMemberShip
-	AmountDue    uint64
+	MemberGoal   uint64
 	JoinPulse    insolar.PulseNumber
 	IsAnonymous  bool
 }
