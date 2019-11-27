@@ -23,12 +23,6 @@ type RecordStoreMock struct {
 	beforeCalledRequestsCounter uint64
 	CalledRequestsMock          mRecordStoreMockCalledRequests
 
-	funcFlush          func(ctx context.Context) (err error)
-	inspectFuncFlush   func(ctx context.Context)
-	afterFlushCounter  uint64
-	beforeFlushCounter uint64
-	FlushMock          mRecordStoreMockFlush
-
 	funcRequest          func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error)
 	inspectFuncRequest   func(ctx context.Context, reqID insolar.ID)
 	afterRequestCounter  uint64
@@ -93,9 +87,6 @@ func NewRecordStoreMock(t minimock.Tester) *RecordStoreMock {
 
 	m.CalledRequestsMock = mRecordStoreMockCalledRequests{mock: m}
 	m.CalledRequestsMock.callArgs = []*RecordStoreMockCalledRequestsParams{}
-
-	m.FlushMock = mRecordStoreMockFlush{mock: m}
-	m.FlushMock.callArgs = []*RecordStoreMockFlushParams{}
 
 	m.RequestMock = mRecordStoreMockRequest{mock: m}
 	m.RequestMock.callArgs = []*RecordStoreMockRequestParams{}
@@ -341,221 +332,6 @@ func (m *RecordStoreMock) MinimockCalledRequestsInspect() {
 	// if func was set then invocations count should be greater than zero
 	if m.funcCalledRequests != nil && mm_atomic.LoadUint64(&m.afterCalledRequestsCounter) < 1 {
 		m.t.Error("Expected call to RecordStoreMock.CalledRequests")
-	}
-}
-
-type mRecordStoreMockFlush struct {
-	mock               *RecordStoreMock
-	defaultExpectation *RecordStoreMockFlushExpectation
-	expectations       []*RecordStoreMockFlushExpectation
-
-	callArgs []*RecordStoreMockFlushParams
-	mutex    sync.RWMutex
-}
-
-// RecordStoreMockFlushExpectation specifies expectation struct of the RecordStore.Flush
-type RecordStoreMockFlushExpectation struct {
-	mock    *RecordStoreMock
-	params  *RecordStoreMockFlushParams
-	results *RecordStoreMockFlushResults
-	Counter uint64
-}
-
-// RecordStoreMockFlushParams contains parameters of the RecordStore.Flush
-type RecordStoreMockFlushParams struct {
-	ctx context.Context
-}
-
-// RecordStoreMockFlushResults contains results of the RecordStore.Flush
-type RecordStoreMockFlushResults struct {
-	err error
-}
-
-// Expect sets up expected params for RecordStore.Flush
-func (mmFlush *mRecordStoreMockFlush) Expect(ctx context.Context) *mRecordStoreMockFlush {
-	if mmFlush.mock.funcFlush != nil {
-		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
-	}
-
-	if mmFlush.defaultExpectation == nil {
-		mmFlush.defaultExpectation = &RecordStoreMockFlushExpectation{}
-	}
-
-	mmFlush.defaultExpectation.params = &RecordStoreMockFlushParams{ctx}
-	for _, e := range mmFlush.expectations {
-		if minimock.Equal(e.params, mmFlush.defaultExpectation.params) {
-			mmFlush.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmFlush.defaultExpectation.params)
-		}
-	}
-
-	return mmFlush
-}
-
-// Inspect accepts an inspector function that has same arguments as the RecordStore.Flush
-func (mmFlush *mRecordStoreMockFlush) Inspect(f func(ctx context.Context)) *mRecordStoreMockFlush {
-	if mmFlush.mock.inspectFuncFlush != nil {
-		mmFlush.mock.t.Fatalf("Inspect function is already set for RecordStoreMock.Flush")
-	}
-
-	mmFlush.mock.inspectFuncFlush = f
-
-	return mmFlush
-}
-
-// Return sets up results that will be returned by RecordStore.Flush
-func (mmFlush *mRecordStoreMockFlush) Return(err error) *RecordStoreMock {
-	if mmFlush.mock.funcFlush != nil {
-		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
-	}
-
-	if mmFlush.defaultExpectation == nil {
-		mmFlush.defaultExpectation = &RecordStoreMockFlushExpectation{mock: mmFlush.mock}
-	}
-	mmFlush.defaultExpectation.results = &RecordStoreMockFlushResults{err}
-	return mmFlush.mock
-}
-
-//Set uses given function f to mock the RecordStore.Flush method
-func (mmFlush *mRecordStoreMockFlush) Set(f func(ctx context.Context) (err error)) *RecordStoreMock {
-	if mmFlush.defaultExpectation != nil {
-		mmFlush.mock.t.Fatalf("Default expectation is already set for the RecordStore.Flush method")
-	}
-
-	if len(mmFlush.expectations) > 0 {
-		mmFlush.mock.t.Fatalf("Some expectations are already set for the RecordStore.Flush method")
-	}
-
-	mmFlush.mock.funcFlush = f
-	return mmFlush.mock
-}
-
-// When sets expectation for the RecordStore.Flush which will trigger the result defined by the following
-// Then helper
-func (mmFlush *mRecordStoreMockFlush) When(ctx context.Context) *RecordStoreMockFlushExpectation {
-	if mmFlush.mock.funcFlush != nil {
-		mmFlush.mock.t.Fatalf("RecordStoreMock.Flush mock is already set by Set")
-	}
-
-	expectation := &RecordStoreMockFlushExpectation{
-		mock:   mmFlush.mock,
-		params: &RecordStoreMockFlushParams{ctx},
-	}
-	mmFlush.expectations = append(mmFlush.expectations, expectation)
-	return expectation
-}
-
-// Then sets up RecordStore.Flush return parameters for the expectation previously defined by the When method
-func (e *RecordStoreMockFlushExpectation) Then(err error) *RecordStoreMock {
-	e.results = &RecordStoreMockFlushResults{err}
-	return e.mock
-}
-
-// Flush implements RecordStore
-func (mmFlush *RecordStoreMock) Flush(ctx context.Context) (err error) {
-	mm_atomic.AddUint64(&mmFlush.beforeFlushCounter, 1)
-	defer mm_atomic.AddUint64(&mmFlush.afterFlushCounter, 1)
-
-	if mmFlush.inspectFuncFlush != nil {
-		mmFlush.inspectFuncFlush(ctx)
-	}
-
-	mm_params := &RecordStoreMockFlushParams{ctx}
-
-	// Record call args
-	mmFlush.FlushMock.mutex.Lock()
-	mmFlush.FlushMock.callArgs = append(mmFlush.FlushMock.callArgs, mm_params)
-	mmFlush.FlushMock.mutex.Unlock()
-
-	for _, e := range mmFlush.FlushMock.expectations {
-		if minimock.Equal(e.params, mm_params) {
-			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.err
-		}
-	}
-
-	if mmFlush.FlushMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmFlush.FlushMock.defaultExpectation.Counter, 1)
-		mm_want := mmFlush.FlushMock.defaultExpectation.params
-		mm_got := RecordStoreMockFlushParams{ctx}
-		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmFlush.t.Errorf("RecordStoreMock.Flush got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
-		}
-
-		mm_results := mmFlush.FlushMock.defaultExpectation.results
-		if mm_results == nil {
-			mmFlush.t.Fatal("No results are set for the RecordStoreMock.Flush")
-		}
-		return (*mm_results).err
-	}
-	if mmFlush.funcFlush != nil {
-		return mmFlush.funcFlush(ctx)
-	}
-	mmFlush.t.Fatalf("Unexpected call to RecordStoreMock.Flush. %v", ctx)
-	return
-}
-
-// FlushAfterCounter returns a count of finished RecordStoreMock.Flush invocations
-func (mmFlush *RecordStoreMock) FlushAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmFlush.afterFlushCounter)
-}
-
-// FlushBeforeCounter returns a count of RecordStoreMock.Flush invocations
-func (mmFlush *RecordStoreMock) FlushBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmFlush.beforeFlushCounter)
-}
-
-// Calls returns a list of arguments used in each call to RecordStoreMock.Flush.
-// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (mmFlush *mRecordStoreMockFlush) Calls() []*RecordStoreMockFlushParams {
-	mmFlush.mutex.RLock()
-
-	argCopy := make([]*RecordStoreMockFlushParams, len(mmFlush.callArgs))
-	copy(argCopy, mmFlush.callArgs)
-
-	mmFlush.mutex.RUnlock()
-
-	return argCopy
-}
-
-// MinimockFlushDone returns true if the count of the Flush invocations corresponds
-// the number of defined expectations
-func (m *RecordStoreMock) MinimockFlushDone() bool {
-	for _, e := range m.FlushMock.expectations {
-		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			return false
-		}
-	}
-
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FlushMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
-		return false
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFlush != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
-		return false
-	}
-	return true
-}
-
-// MinimockFlushInspect logs each unmet expectation
-func (m *RecordStoreMock) MinimockFlushInspect() {
-	for _, e := range m.FlushMock.expectations {
-		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to RecordStoreMock.Flush with params: %#v", *e.params)
-		}
-	}
-
-	// if default expectation was set then invocations count should be greater than zero
-	if m.FlushMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
-		if m.FlushMock.defaultExpectation.params == nil {
-			m.t.Error("Expected call to RecordStoreMock.Flush")
-		} else {
-			m.t.Errorf("Expected call to RecordStoreMock.Flush with params: %#v", *m.FlushMock.defaultExpectation.params)
-		}
-	}
-	// if func was set then invocations count should be greater than zero
-	if m.funcFlush != nil && mm_atomic.LoadUint64(&m.afterFlushCounter) < 1 {
-		m.t.Error("Expected call to RecordStoreMock.Flush")
 	}
 }
 
@@ -2511,8 +2287,6 @@ func (m *RecordStoreMock) MinimockFinish() {
 	if !m.minimockDone() {
 		m.MinimockCalledRequestsInspect()
 
-		m.MinimockFlushInspect()
-
 		m.MinimockRequestInspect()
 
 		m.MinimockResultInspect()
@@ -2554,7 +2328,6 @@ func (m *RecordStoreMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockCalledRequestsDone() &&
-		m.MinimockFlushDone() &&
 		m.MinimockRequestDone() &&
 		m.MinimockResultDone() &&
 		m.MinimockSetRequestDone() &&
