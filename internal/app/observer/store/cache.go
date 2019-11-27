@@ -49,43 +49,23 @@ func (c *CacheRecordStore) SetRequest(ctx context.Context, record record.Materia
 		return errors.Wrap(err, "failed to extract reason id")
 	}
 
-	err = c.backend.SetRequest(ctx, record)
-	if err != nil {
-		return err
-	}
-
 	c.requestLock.Lock()
 	defer c.requestLock.Unlock()
 	fromCache, ok := c.getMany(scopeCalledRequests, reasonID)
 	if ok {
 		// Found in cache, append required.
 		fromCache = append(fromCache, &record)
-	} else {
-		// No append required because we already wrote the request to backend.
-		fromBackend, err := c.backend.CalledRequests(ctx, reasonID)
-		if err != nil {
-			return err
-		}
-		fromCache = refMany(fromBackend)
+		c.setMany(scopeCalledRequests, reasonID, fromCache)
 	}
 
-	c.setMany(scopeCalledRequests, reasonID, fromCache)
 	return c.setOne(scopeRequest, &record)
 }
 
 func (c *CacheRecordStore) SetResult(ctx context.Context, record record.Material) error {
-	err := c.backend.SetResult(ctx, record)
-	if err != nil {
-		return err
-	}
 	return c.setOne(scopeResult, &record)
 }
 
 func (c *CacheRecordStore) SetSideEffect(ctx context.Context, record record.Material) error {
-	err := c.backend.SetSideEffect(ctx, record)
-	if err != nil {
-		return err
-	}
 	return c.setOne(scopeSideEffect, &record)
 }
 

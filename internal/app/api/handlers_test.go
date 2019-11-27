@@ -643,7 +643,7 @@ func insertDeposit(
 		Balance:         balance,
 		EtheriumHash:    etheriumHash,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   &depositNumber,
 		InnerStatus:     status,
 	}
@@ -1157,7 +1157,7 @@ func TestMember_Hold(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(100),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1221,7 +1221,7 @@ func TestMember_Vesting(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(200),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1287,7 +1287,7 @@ func TestMember_VestingAll(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(300),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1350,7 +1350,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		Vesting:         1000,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
-		TransferDate:    currentTime - 10,
+		Timestamp:       currentTime - 10,
 		DepositNumber:   newInt(500),
 		InnerStatus:     models.DepositStatusConfirmed,
 	}
@@ -1739,6 +1739,49 @@ func TestObserverServer_Notifications(t *testing.T) {
 		Notification: "show now",
 	}
 	require.Equal(t, expected, jsonResp)
+}
+
+func TestIsMigrationAddressFailed(t *testing.T) {
+	address := "0x012345678901234567890123456789qwertyuiop"
+	migrationAddress := models.MigrationAddress{
+		ID:        32000 + int64(0),
+		Addr:      address,
+		Timestamp: time.Now().Unix(),
+		Wasted:    true,
+	}
+
+	err := db.Insert(&migrationAddress)
+	require.NoError(t, err)
+
+	type testCase struct {
+		address string
+		result  bool
+	}
+
+	var testCases []testCase
+	testCases = append(
+		testCases,
+		testCase{address: notExistedMigrationAddress, result: false},
+		testCase{address: address, result: true},
+	)
+
+	for _, test := range testCases {
+		resp, err := http.Get("http://" + apihost + "/admin/isMigrationAddress/" + test.address)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		jsonResp := ResponsesIsMigrationAddressYaml{}
+		err = json.Unmarshal(bodyBytes, &jsonResp)
+		require.NoError(t, err)
+		expected := ResponsesIsMigrationAddressYaml{
+			IsMigrationAddress: test.result,
+		}
+		require.Equal(t, expected, jsonResp)
+	}
+
 }
 
 func newInt(val int64) *int64 {

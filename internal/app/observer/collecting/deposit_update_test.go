@@ -72,6 +72,7 @@ func makeDepositUpdate() (*observer.DepositUpdate, *observer.Record) {
 	upd := &observer.DepositUpdate{
 		ID:              rec.ID,
 		HoldReleaseDate: timestamp.Unix(),
+		Timestamp:       timestamp.Unix(),
 		Amount:          amount,
 		Balance:         balance,
 		PrevState:       prev,

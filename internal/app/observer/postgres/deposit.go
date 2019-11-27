@@ -55,13 +55,18 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 	log := s.log.WithField("deposit", model)
 
 	var (
-		fields = []string{"eth_hash", "deposit_ref", "member_ref", "transfer_date", "hold_release_date", "amount",
-			"balance", "deposit_state", "vesting", "vesting_step", "status"}
+		fields = []string{
+			"eth_hash", "deposit_ref", "member_ref",
+			"transfer_date", "hold_release_date",
+			"amount", "balance", "deposit_state",
+			"vesting", "vesting_step",
+			"status",
+		}
 		values = []interface{}{
 			row.EtheriumHash,
 			row.Reference,
 			row.MemberReference,
-			row.TransferDate,
+			row.Timestamp,
 			row.HoldReleaseDate,
 			row.Amount,
 			row.Balance,
@@ -102,7 +107,7 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 	)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to insert deposit %v", model)
+		return errors.Wrapf(err, "failed to insert deposit %+v", model)
 	}
 
 	if res.RowsAffected() == 0 {
@@ -128,6 +133,10 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 	query := s.db.Model(&models.Deposit{}).
 		Where("deposit_ref=?", deposit.Reference).
 		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate)
+
+	if model.Timestamp > 0 {
+		query.Set("transfer_date=?", model.Timestamp)
+	}
 
 	if model.IsConfirmed {
 		if deposit.InnerStatus == models.DepositStatusCreated {
@@ -177,7 +186,7 @@ func depositSchema(model observer.Deposit) models.Deposit {
 		EtheriumHash:    model.EthHash,
 		Reference:       model.Ref.Bytes(),
 		MemberReference: model.Member.Bytes(),
-		TransferDate:    model.Timestamp,
+		Timestamp:       model.Timestamp,
 		HoldReleaseDate: model.HoldReleaseDate,
 		Amount:          model.Amount,
 		Balance:         model.Balance,

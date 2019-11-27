@@ -55,7 +55,7 @@ type Deposit struct {
 	HoldReleaseDate int64  `sql:"hold_release_date"`
 	Amount          string `sql:"amount"`
 	Balance         string `sql:"balance"`
-	TransferDate    int64  `sql:"transfer_date"` // TODO: Do we really need it?
+	Timestamp       int64  `sql:"transfer_date"`
 	DepositNumber   *int64 `sql:"deposit_number"`
 	Vesting         int64  `sql:"vesting"`
 	VestingStep     int64  `sql:"vesting_step"`

@@ -121,7 +121,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		return nil
 	}
 
-	d, err := c.build(activateID, activate, res)
+	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, res)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -183,12 +183,6 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				continue
 			}
 
-			timeActivate, err := depositRef.GetLocal().Pulse().AsApproximateTime()
-			if err != nil {
-				log.Errorf("wrong timestamp in genesis deposit record: %+v", rec)
-				continue
-			}
-
 			activate = depositActivate.Virtual.GetActivate()
 			depositState := c.initialDepositState(activate)
 
@@ -203,9 +197,9 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				Ref:             *depositRef,
 				DepositState:    depositActivate.ID,
 				Member:          *memberRef,
-				Timestamp:       timeActivate.Unix(),
 				Amount:          depositState.Amount,
 				Balance:         depositState.Balance,
+				Timestamp:       hrd.Unix() - depositState.Lockup,
 				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
@@ -220,13 +214,13 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 	return deposits
 }
 
-func (c *DepositCollector) build(id insolar.ID, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
+func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
 	callResult := migrationdaemon.DepositMigrationResult{}
 	res.ParseFirstPayloadValue(&callResult)
 	if !res.IsSuccess() {
 		return nil, errors.New("invalid create deposit result payload")
 	}
-	transferDate, err := id.Pulse().AsApproximateTime()
+	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
 	}
