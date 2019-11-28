@@ -20,13 +20,12 @@ func NewMGRCollector(log *logrus.Logger) *MGRCollector {
 }
 
 type MerryGoRound struct {
-	GroupReference   *insolar.Reference
-	StartRoundDate   int64      // unix timestamp
-	FinishRoundDate  int64      // unix timestamp
-	AmountDue        string     // amount of money
-	PaymentFrequency string     // week, month,year,half-hour
-	Sequence         []Sequence // array of users refs, [0] element is first in queue
-	SwapProcess      Swap       // Swap started and finished processes
+	GroupReference  *insolar.Reference
+	StartRoundDate  int64      // unix timestamp
+	FinishRoundDate int64      // unix timestamp
+	AmountDue       string     // amount of money
+	Sequence        []Sequence // array of users refs, [0] element is first in queue
+	SwapProcess     Swap       // Swap started and finished processes
 }
 
 type Sequence struct {
@@ -95,14 +94,13 @@ func (c *MGRCollector) build(act *observer.Activate) (*observer.MGR, error) {
 	}
 
 	resultProduct := observer.MGR{
-		Ref:              *insolar.NewReference(act.ObjectID),
-		StartRoundDate:   mgr.StartRoundDate,
-		FinishRoundDate:  mgr.FinishRoundDate,
-		AmountDue:        mgr.AmountDue,
-		PaymentFrequency: mgr.PaymentFrequency,
-		Sequence:         seq,
-		Status:           "SUCCESS",
-		State:            act.ID,
+		Ref:             *insolar.NewReference(act.ObjectID),
+		StartRoundDate:  mgr.StartRoundDate,
+		FinishRoundDate: mgr.FinishRoundDate,
+		AmountDue:       mgr.AmountDue,
+		Sequence:        seq,
+		Status:          "SUCCESS",
+		State:           act.ID,
 	}
 
 	if mgr.GroupReference != nil {

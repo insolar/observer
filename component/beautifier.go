@@ -30,11 +30,13 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 	mgrsUpdate := collecting.NewMGRUpdateCollector(log)
 	groupUpdate := collecting.NewGroupUpdateCollector(log)
+	nsUpdate := collecting.NewSavingsUpdateCollector(log)
 	transactionsUpdate := collecting.NewTransactionUpdateCollector(log)
 	kycs := collecting.NewKYCCollector(log)
 	users := collecting.NewUserCollector(log)
 	groups := collecting.NewGroupCollector(log)
 	mgrs := collecting.NewMGRCollector(log)
+	savings := collecting.NewSavingCollector(log)
 	notifications := collecting.NewNotificationCollector(log)
 	transactions := collecting.NewTransactionCollector(log)
 	groupBalances := collecting.NewBalanceUpdateCollector(log)
@@ -52,6 +54,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			users:              make(map[insolar.Reference]*observer.User),
 			groups:             make(map[insolar.ID]*observer.Group),
 			mgrs:               make(map[insolar.ID]*observer.MGR),
+			savings:            make(map[insolar.ID]*observer.NormalSaving),
 			mgrUpdates:         make(map[insolar.ID]*observer.MGRUpdate),
 			notifications:      make(map[insolar.Reference]*observer.Notification),
 			transactions:       []*observer.Transaction{},
@@ -85,6 +88,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 				b.transactions = append(b.transactions, tx)
 			}
 
+			saving := savings.Collect(rec)
+			if saving != nil {
+				b.savings[saving.State] = saving
+			}
+
 			// updates
 
 			groupUpdate := groupUpdate.Collect(rec)
@@ -95,6 +103,11 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrUpdate := mgrsUpdate.Collect(rec)
 			if mgrUpdate != nil {
 				b.mgrUpdates[mgrUpdate.MGRState] = mgrUpdate
+			}
+
+			nsUpdate := nsUpdate.Collect(rec)
+			if nsUpdate != nil {
+				b.groupUpdates[nsUpdate.SavingState] = groupUpdate
 			}
 
 			balanceUpdate := groupBalances.Collect(rec)
@@ -120,6 +133,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			"transactions":  len(b.transactions),
 			"notifications": len(b.notifications),
 			"MGR":           len(b.mgrs),
+			"Savings":       len(b.savings),
 		}).Infof("collected entities")
 
 		log.WithFields(logrus.Fields{
@@ -135,12 +149,14 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 		metric.Transactions.Add(float64(len(b.transactions)))
 		metric.Notifications.Add(float64(len(b.notifications)))
 		metric.MGRs.Add(float64(len(b.mgrs)))
+		metric.Savings.Add(float64(len(b.savings)))
 
 		metric.UserUpdates.Add(float64(len(b.kycs)))
 		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
 		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
 		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
 		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
+		metric.SavingsUpdates.Add(float64(len(b.nsUpdates)))
 
 		return b
 	}

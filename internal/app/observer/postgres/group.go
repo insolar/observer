@@ -31,15 +31,17 @@ import (
 type GroupSchema struct {
 	tableName struct{} `sql:"groups"`
 
-	Ref            []byte `sql:",pk"`
-	Title          string
-	Goal           string
-	Image          string
-	Type           string
-	GroupOwner     []byte
-	TreasureHolder []byte
-	Status         string
-	State          []byte
+	Ref              []byte `sql:",pk"`
+	Title            string
+	Goal             string
+	Image            string
+	Type             string
+	GroupOwner       []byte
+	TreasureHolder   []byte
+	ProductRef       []byte
+	PaymentFrequency string `sql:"payment_frequency,"`
+	Status           string
+	State            []byte
 }
 
 func NewGroupStorage(obs *observability.Observability, db orm.DB) *GroupStorage {
@@ -111,7 +113,9 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		Set("image=?,goal=?", model.Image, model.Goal).
 		Set("type=?", model.ProductType.String()).
 		Set("title=?", model.Title).
+		Set("payment_frequency=?", model.PaymentFrequency).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
+		Set("product_ref=?", model.ProductRef.Bytes()).
 		Set("state=?", model.GroupState.Bytes()).
 		Update()
 	if err != nil {
@@ -119,7 +123,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 	}
 
 	_, err = s.db.Model(&MGRSchema{}).
-		Where("ref=?", model.Product.Bytes()).
+		Where("ref=?", model.ProductRef.Bytes()).
 		Set("group_ref=?", model.GroupReference.Bytes()).
 		Update()
 	if err != nil {
@@ -178,13 +182,15 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 
 func groupSchema(model *observer.Group) *GroupSchema {
 	return &GroupSchema{
-		Ref:        model.Ref.Bytes(),
-		Title:      model.Title,
-		Goal:       model.Goal,
-		Type:       model.ProductType.String(),
-		GroupOwner: model.ChairMan.Bytes(),
-		Image:      model.Image,
-		Status:     model.Status,
-		State:      model.State.Bytes(),
+		Ref:              model.Ref.Bytes(),
+		Title:            model.Title,
+		Goal:             model.Goal,
+		Type:             model.ProductType.String(),
+		GroupOwner:       model.ChairMan.Bytes(),
+		Image:            model.Image,
+		ProductRef:       model.ProductRef.Bytes(),
+		PaymentFrequency: model.PaymentFrequency,
+		Status:           model.Status,
+		State:            model.State.Bytes(),
 	}
 }

@@ -32,6 +32,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		}
 		filtering.NewGroupUpdateFilter().Filter(b.groupUpdates, b.groups)
 		filtering.NewMGRUpdateFilter().Filter(b.mgrUpdates, b.mgrs)
+		filtering.NewSavingUpdateFilter().Filter(b.nsUpdates, b.savings)
 
 		b.requests, b.results, b.activates, b.amends, b.deactivates = filtering.NewSeparatorFilter().
 			Filter(b.records)
@@ -50,12 +51,14 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		metric.Transactions.Add(float64(len(b.transactions)))
 		metric.Notifications.Add(float64(len(b.notifications)))
 		metric.MGRs.Add(float64(len(b.mgrs)))
+		metric.Savings.Add(float64(len(b.savings)))
 
 		metric.UserUpdates.Add(float64(len(b.kycs)))
 		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
 		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
 		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
 		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
+		metric.SavingsUpdates.Add(float64(len(b.nsUpdates)))
 		return b
 	}
 }
