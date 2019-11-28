@@ -19,8 +19,6 @@ type MGRSchema struct {
 	FinishRoundDate int64 `sql:"fin_date,notnull"`
 	NextPaymentDate int64 `sql:"next_payment,notnull"`
 
-	//PaymentFrequency string `sql:"period,notnull"`
-
 	AmountDue string `sql:"amount,notnull"`
 	Status    string `sql:",notnull"`
 	State     []byte `sql:",notnull"`
