@@ -107,7 +107,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 
 			nsUpdate := nsUpdate.Collect(rec)
 			if nsUpdate != nil {
-				b.groupUpdates[nsUpdate.SavingState] = groupUpdate
+				b.nsUpdates[nsUpdate.SavingState] = nsUpdate
 			}
 
 			balanceUpdate := groupBalances.Collect(rec)
