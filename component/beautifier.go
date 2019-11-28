@@ -56,6 +56,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			mgrs:               make(map[insolar.ID]*observer.MGR),
 			savings:            make(map[insolar.ID]*observer.NormalSaving),
 			mgrUpdates:         make(map[insolar.ID]*observer.MGRUpdate),
+			nsUpdates:          make(map[insolar.ID]*observer.SavingUpdate),
 			notifications:      make(map[insolar.Reference]*observer.Notification),
 			transactions:       []*observer.Transaction{},
 			transactionsUpdate: []*observer.TransactionUpdate{},
