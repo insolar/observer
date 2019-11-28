@@ -48,16 +48,18 @@ func (c *GroupCollector) Collect(rec *observer.Record) *observer.Group {
 }
 
 type Group struct {
-	ChairMan    insolar.Reference
-	Treasurer   *insolar.Reference
-	Title       string
-	Membership  foundation.StableMap
-	Goal        string
-	ProductType *observer.ProductType
-	Product     *insolar.Reference
-	Balance     *insolar.Reference
-	Image       string
-	invitedUser int
+	ChairMan         insolar.Reference
+	Treasurer        *insolar.Reference
+	Title            string
+	Membership       foundation.StableMap
+	Goal             string
+	ProductType      *observer.ProductType
+	StartDate        int64
+	PaymentFrequency PaymentFrequency
+	Product          *insolar.Reference
+	Balance          *insolar.Reference
+	Image            string
+	invitedUser      int
 }
 
 type Membership struct {
@@ -83,15 +85,16 @@ func (c *GroupCollector) build(act *observer.Activate) (*observer.Group, error) 
 
 	logrus.Info("Insert new group ref:", insolar.NewReference(act.ObjectID).String())
 	resultGroup := observer.Group{
-		Ref:        *insolar.NewReference(act.ObjectID),
-		Title:      state.Title,
-		Goal:       state.Goal,
-		Image:      state.Image,
-		ChairMan:   state.ChairMan,
-		Membership: state.Membership,
-		Status:     "SUCCESS",
-		State:      act.ID,
-		Timestamp:  date.Unix(),
+		Ref:              *insolar.NewReference(act.ObjectID),
+		Title:            state.Title,
+		Goal:             state.Goal,
+		Image:            state.Image,
+		ChairMan:         state.ChairMan,
+		Membership:       state.Membership,
+		Status:           "SUCCESS",
+		State:            act.ID,
+		PaymentFrequency: state.PaymentFrequency.String(),
+		Timestamp:        date.Unix(),
 	}
 
 	if state.Treasurer != nil {
@@ -103,7 +106,7 @@ func (c *GroupCollector) build(act *observer.Activate) (*observer.Group, error) 
 	}
 
 	if state.Product != nil {
-		resultGroup.Product = *state.Product
+		resultGroup.ProductRef = *state.Product
 	}
 	return &resultGroup, nil
 }

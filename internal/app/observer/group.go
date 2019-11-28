@@ -22,20 +22,21 @@ import (
 )
 
 type Group struct {
-	Ref         insolar.Reference
-	Title       string
-	Goal        string
-	Image       string
-	ProductType ProductType
-	Product     insolar.Reference
-	ChairMan    insolar.Reference
-	Treasurer   insolar.Reference
-	Membership  foundation.StableMap
-	Members     []GroupMember
-	Status      string
-	State       insolar.ID
-	Timestamp   int64
-	Balance     insolar.Reference
+	Ref              insolar.Reference
+	Title            string
+	Goal             string
+	Image            string
+	ProductType      ProductType
+	ProductRef       insolar.Reference
+	PaymentFrequency string
+	ChairMan         insolar.Reference
+	Treasurer        insolar.Reference
+	Membership       foundation.StableMap
+	Members          []GroupMember
+	Status           string
+	State            insolar.ID
+	Timestamp        int64
+	Balance          insolar.Reference
 }
 
 type GroupMember struct {
@@ -44,19 +45,20 @@ type GroupMember struct {
 }
 
 type GroupUpdate struct {
-	PrevState      insolar.ID
-	GroupState     insolar.ID
-	GroupReference insolar.Reference
-	Image          string
-	Goal           string
-	ProductType    ProductType // TODO: create group type table
-	Treasurer      insolar.Reference
-	Membership     foundation.StableMap
-	Timestamp      int64
-	ChairMan       insolar.Reference
-	Product        insolar.Reference
-	Title          string
-	Balance        insolar.Reference
+	PrevState        insolar.ID
+	GroupState       insolar.ID
+	GroupReference   insolar.Reference
+	Image            string
+	Goal             string
+	ProductType      ProductType
+	Treasurer        insolar.Reference
+	Membership       foundation.StableMap
+	Timestamp        int64
+	ChairMan         insolar.Reference
+	ProductRef       insolar.Reference
+	PaymentFrequency string
+	Title            string
+	Balance          insolar.Reference
 }
 
 type GroupStorage interface {

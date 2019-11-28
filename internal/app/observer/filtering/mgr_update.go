@@ -53,7 +53,6 @@ func (*MGRUpdateFilter) Filter(mgrUpdates map[insolar.ID]*observer.MGRUpdate, mg
 		d.FinishRoundDate = update.FinishRoundDate
 		d.StartRoundDate = update.StartRoundDate
 		d.AmountDue = update.AmountDue
-		d.PaymentFrequency = update.PaymentFrequency
 		d.State = update.MGRState
 		mgrs[update.MGRState] = d
 		delete(mgrUpdates, id)

@@ -64,15 +64,16 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 	}
 
 	resultGroup := observer.GroupUpdate{
-		GroupReference: *insolar.NewReference(rec.ObjectID),
-		PrevState:      amd.PrevState,
-		GroupState:     rec.ID,
-		Goal:           group.Goal,
-		Image:          group.Image,
-		Title:          group.Title,
-		Membership:     group.Membership,
-		ChairMan:       group.ChairMan,
-		Timestamp:      date.Unix(),
+		GroupReference:   *insolar.NewReference(rec.ObjectID),
+		PrevState:        amd.PrevState,
+		GroupState:       rec.ID,
+		Goal:             group.Goal,
+		Image:            group.Image,
+		Title:            group.Title,
+		Membership:       group.Membership,
+		ChairMan:         group.ChairMan,
+		PaymentFrequency: group.PaymentFrequency.String(),
+		Timestamp:        date.Unix(),
 	}
 
 	if group.ProductType != nil {
@@ -80,7 +81,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 	}
 
 	if group.Product != nil {
-		resultGroup.Product = *group.Product
+		resultGroup.ProductRef = *group.Product
 	}
 
 	if group.Treasurer != nil {

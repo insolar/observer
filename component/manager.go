@@ -120,7 +120,9 @@ type beauty struct {
 	kycs               map[insolar.ID]*observer.UserKYC
 	groups             map[insolar.ID]*observer.Group
 	groupUpdates       map[insolar.ID]*observer.GroupUpdate
+	nsUpdates          map[insolar.ID]*observer.SavingUpdate
 	mgrs               map[insolar.ID]*observer.MGR
+	savings            map[insolar.ID]*observer.NormalSaving
 	mgrUpdates         map[insolar.ID]*observer.MGRUpdate
 	notifications      map[insolar.Reference]*observer.Notification
 	transactions       []*observer.Transaction

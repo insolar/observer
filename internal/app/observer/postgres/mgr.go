@@ -19,8 +19,6 @@ type MGRSchema struct {
 	FinishRoundDate int64 `sql:"fin_date,notnull"`
 	NextPaymentDate int64 `sql:"next_payment,notnull"`
 
-	PaymentFrequency string `sql:"period,notnull"`
-
 	AmountDue string `sql:"amount,notnull"`
 	Status    string `sql:",notnull"`
 	State     []byte `sql:",notnull"`
@@ -171,15 +169,14 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 
 func mgrSchema(model *observer.MGR) *MGRSchema {
 	return &MGRSchema{
-		Ref:              model.Ref.Bytes(),
-		GroupReference:   model.GroupReference.Bytes(),
-		AmountDue:        model.AmountDue,
-		PaymentFrequency: model.PaymentFrequency,
-		StartRoundDate:   model.StartRoundDate,
-		FinishRoundDate:  model.FinishRoundDate,
-		NextPaymentDate:  model.NextPaymentTime,
-		Status:           model.Status,
-		State:            model.State.Bytes(),
+		Ref:             model.Ref.Bytes(),
+		GroupReference:  model.GroupReference.Bytes(),
+		AmountDue:       model.AmountDue,
+		StartRoundDate:  model.StartRoundDate,
+		FinishRoundDate: model.FinishRoundDate,
+		NextPaymentDate: model.NextPaymentTime,
+		Status:          model.Status,
+		State:           model.State.Bytes(),
 	}
 }
 

@@ -140,6 +140,14 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			savings := postgres.NewSavingStorage(obs, tx)
+			for _, saving := range b.savings {
+				err := savings.Insert(saving)
+				if err != nil {
+					return err
+				}
+			}
+
 			// updates
 			for _, mgr := range b.mgrUpdates {
 				err := mgrs.Update(mgr)
@@ -169,6 +177,13 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 				}
 			}
 
+			for _, ns := range b.nsUpdates {
+				err := savings.Update(ns)
+				if err != nil {
+					return err
+				}
+			}
+
 			for _, kyc := range b.kycs {
 				err := users.Update(kyc)
 				if err != nil {
@@ -189,11 +204,13 @@ func makeStorer(cfg *configuration.Configuration, obs *observability.Observabili
 		metric.Transactions.Add(float64(len(b.transactions)))
 		metric.Notifications.Add(float64(len(b.notifications)))
 		metric.MGRs.Add(float64(len(b.mgrs)))
+		metric.Savings.Add(float64(len(b.savings)))
 
 		metric.UserUpdates.Add(float64(len(b.kycs)))
 		metric.GroupUpdates.Add(float64(len(b.groupUpdates)))
 		metric.BalanceUpdates.Add(float64(len(b.groupBalances)))
 		metric.TransactionUpdates.Add(float64(len(b.transactionsUpdate)))
 		metric.MGRUpdates.Add(float64(len(b.mgrUpdates)))
+		metric.SavingsUpdates.Add(float64(len(b.nsUpdates)))
 	}
 }

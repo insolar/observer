@@ -111,6 +111,7 @@ type beautyMetrics struct {
 	Users         prometheus.Counter
 	Groups        prometheus.Counter
 	MGRs          prometheus.Counter
+	Savings       prometheus.Counter
 	Transactions  prometheus.Counter
 	Notifications prometheus.Counter
 
@@ -118,5 +119,6 @@ type beautyMetrics struct {
 	GroupUpdates       prometheus.Counter
 	BalanceUpdates     prometheus.Counter
 	MGRUpdates         prometheus.Counter
+	SavingsUpdates     prometheus.Counter
 	TransactionUpdates prometheus.Counter
 }
