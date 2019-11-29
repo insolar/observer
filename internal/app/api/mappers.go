@@ -188,7 +188,11 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 
 func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) string {
 	steps := deposit.Vesting / deposit.VestingStep
-	step := (currentTime-deposit.HoldReleaseDate)/deposit.VestingStep
+	sinceRelease := currentTime-deposit.HoldReleaseDate
+	if sinceRelease < 0 {
+		sinceRelease = 0
+	}
+	step := sinceRelease/deposit.VestingStep
 	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step)), big.NewInt(steps))
 	willReleaseAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step+1)), big.NewInt(steps))
 
