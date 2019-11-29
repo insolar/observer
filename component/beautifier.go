@@ -142,6 +142,7 @@ func makeBeautifier(obs *observability.Observability) func(*raw) *beauty {
 			"group_update":       len(b.groupUpdates),
 			"balance_update":     len(b.groupBalances),
 			"MGR_update":         len(b.mgrUpdates),
+			"NS_update":          len(b.nsUpdates),
 			"transaction_update": len(b.transactionsUpdate),
 		}).Infof("collected updates")
 
