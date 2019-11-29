@@ -26,23 +26,32 @@ import (
 )
 
 func TestNextRelease(t *testing.T) {
+
+	type variant struct {
+		currentTime int64
+		expectation *SchemaNextRelease
+	}
+
 	for _, tc := range []struct {
 		name        string
 		deposit     models.Deposit
-		currentTime int64
 		amount      *big.Int
-		expectation *SchemaNextRelease
+		variants    []variant
 	}{
 		{
 			name: "HoldReleaseDate 0",
 			deposit: models.Deposit{
 				HoldReleaseDate: 0,
 				Amount:          "4000",
-				Vesting:         31636000,
-				VestingStep:     86400,
+				Vesting:         0,
+				VestingStep:     0,
 			},
-			currentTime: 1573910366,
-			amount:      big.NewInt(4000),
+			amount: big.NewInt(4000),
+			variants: []variant{
+				{
+					currentTime: 1573910366,
+				},
+			},
 		},
 		{
 			name: "vesting 0",
@@ -50,127 +59,135 @@ func TestNextRelease(t *testing.T) {
 				HoldReleaseDate: 1573823965,
 				Amount:          "4000",
 				Vesting:         0,
-				VestingStep:     86400,
+				VestingStep:     0,
 			},
-			currentTime: 1573910366,
 			amount:      big.NewInt(4000),
+			variants: []variant{
+				{
+					currentTime: 1573910366,
+				},
+			},
 		},
 		{
-			name: "vested",
-			deposit: models.Deposit{
-				HoldReleaseDate: 1573823965,
-				Amount:          "4000",
-				Vesting:         86400,
-				VestingStep:     86400,
-			},
-			currentTime: 1573910365,
-			amount:      big.NewInt(4000),
-		},
-		{
-			name: "step > vested",
-			deposit: models.Deposit{
-				HoldReleaseDate: 1573823965,
-				Amount:          "4000",
-				Vesting:         86400,
-				VestingStep:     86401,
-			},
-			currentTime: 1573910365,
-			amount:      big.NewInt(4000),
-		},
-		{
-			name: "before first step",
+			name: "close to real numbers",
 			deposit: models.Deposit{
 				HoldReleaseDate: 1573823965,
 				Amount:          "4000",
 				Vesting:         31636000,
 				VestingStep:     86400,
 			},
-			currentTime: 1573823964,
 			amount:      big.NewInt(4000),
-			expectation: &SchemaNextRelease{
-				Amount:    "10",
-				Timestamp: 1573910365,
+			variants: []variant{
+				{
+					currentTime: 1573823964,
+					expectation: &SchemaNextRelease{
+						Amount:    "10",
+						Timestamp: 1573910365,
+					},
+				},
+				{
+					currentTime: 1573823967,
+					expectation: &SchemaNextRelease{
+						Amount:    "10",
+						Timestamp: 1573910365,
+					},
+				},
+				{
+					currentTime: 1573910366,
+					expectation: &SchemaNextRelease{
+						Amount:    "11",
+						Timestamp: 1573996765,
+					},
+				},
+				{
+					currentTime: 1605459965,
+				},
 			},
 		},
 		{
-			name: "first step",
-			deposit: models.Deposit{
-				HoldReleaseDate: 1573823965,
-				Amount:          "4000",
-				Vesting:         31636000,
-				VestingStep:     86400,
-			},
-			currentTime: 1573823967,
-			amount:      big.NewInt(4000),
-			expectation: &SchemaNextRelease{
-				Amount:    "10",
-				Timestamp: 1573910365,
-			},
-		},
-		{
-			name: "second step",
-			deposit: models.Deposit{
-				HoldReleaseDate: 1573823965,
-				Amount:          "4000",
-				Vesting:         31636000,
-				VestingStep:     86400,
-			},
-			currentTime: 1573910366,
-			amount:      big.NewInt(4000),
-			expectation: &SchemaNextRelease{
-				Amount:    "11",
-				Timestamp: 1573996765,
-			},
-		},
-		{
-			name: "jumping sum 1",
+			name: "jumping sum",
 			deposit: models.Deposit{
 				HoldReleaseDate: 100,
 				Amount:          "6",
 				Vesting:         40,
 				VestingStep:     10,
 			},
-			currentTime: 111,
 			amount:      big.NewInt(6),
-			expectation: &SchemaNextRelease{
-				Amount:    "2",
-				Timestamp: 120,
-			},
-		},
-		{
-			name: "jumping sum 2",
-			deposit: models.Deposit{
-				HoldReleaseDate: 100,
-				Amount:          "6",
-				Vesting:         40,
-				VestingStep:     10,
-			},
-			currentTime: 121,
-			amount:      big.NewInt(6),
-			expectation: &SchemaNextRelease{
-				Amount:    "1",
-				Timestamp: 130,
-			},
-		},
-		{
-			name: "jumping sum 3",
-			deposit: models.Deposit{
-				HoldReleaseDate: 100,
-				Amount:          "6",
-				Vesting:         40,
-				VestingStep:     10,
-			},
-			currentTime: 131,
-			amount:      big.NewInt(6),
-			expectation: &SchemaNextRelease{
-				Amount:    "2",
-				Timestamp: 140,
+			variants: []variant{
+				{
+					currentTime: 10,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 20,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 90,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 100,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 109,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 110,
+					expectation: &SchemaNextRelease{
+						Amount:    "2",
+						Timestamp: 120,
+					},
+				},
+				{
+					currentTime: 119,
+					expectation: &SchemaNextRelease{
+						Amount:    "2",
+						Timestamp: 120,
+					},
+				},
+				{
+					currentTime: 120,
+					expectation: &SchemaNextRelease{
+						Amount:    "1",
+						Timestamp: 130,
+					},
+				},
+				{
+					currentTime: 131,
+					expectation: &SchemaNextRelease{
+						Amount:    "2",
+						Timestamp: 140,
+					},
+				},
+				{
+					currentTime: 140,
+				},
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			res := NextRelease(tc.currentTime, tc.amount, tc.deposit)
-			assert.Equal(t, tc.expectation, res)
+			for _, e := range tc.variants {
+				res := NextRelease(e.currentTime, tc.amount, tc.deposit)
+				assert.Equal(t, e.expectation, res)
+			}
 		})
 	}
 }
