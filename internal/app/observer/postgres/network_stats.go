@@ -157,8 +157,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		sqlRes := struct{ Count int }{}
 		sql := "SELECT COUNT(1) AS Count FROM simple_transactions" +
 			" WHERE finish_pulse_record[1] = (" +
-			"   SELECT finish_pulse_record[1] FROM simple_transactions" +
-			"   WHERE finish_pulse_record IS NOT NULL ORDER BY id DESC LIMIT 1" +
+			"   select pulse from pulses ORDER BY pulse DESC LIMIT 1" +
 			" )"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
