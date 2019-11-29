@@ -236,15 +236,15 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 
 	state := c.initialDepositState(activate)
 	d := &observer.Deposit{
-		EthHash:         strings.ToLower(state.TxHash),
-		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
-		Member:          *memberRef,
-		Timestamp:       transferDate.Unix(),
-		Amount:          state.Amount,
-		Balance:         state.Balance,
-		DepositState:    id,
-		Vesting:         state.Vesting,
-		VestingStep:     state.VestingStep,
+		EthHash:      strings.ToLower(state.TxHash),
+		Ref:          *insolar.NewReference(*activate.Request.GetLocal()),
+		Member:       *memberRef,
+		Timestamp:    transferDate.Unix(),
+		Amount:       state.Amount,
+		Balance:      state.Balance,
+		DepositState: id,
+		Vesting:      state.Vesting,
+		VestingStep:  state.VestingStep,
 	}
 
 	if state.PulseDepositUnHold > 0 {
