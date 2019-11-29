@@ -231,23 +231,28 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 	}
 
 	state := c.initialDepositState(activate)
-	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
-	if err != nil {
-		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
-		hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
-	}
-	return &observer.Deposit{
+	d := &observer.Deposit{
 		EthHash:         strings.ToLower(state.TxHash),
 		Ref:             *insolar.NewReference(*activate.Request.GetLocal()),
 		Member:          *memberRef,
 		Timestamp:       transferDate.Unix(),
-		HoldReleaseDate: hrd.Unix(),
 		Amount:          state.Amount,
 		Balance:         state.Balance,
 		DepositState:    id,
 		Vesting:         state.Vesting,
 		VestingStep:     state.VestingStep,
-	}, nil
+	}
+
+	if state.PulseDepositUnHold > 0 {
+		hrd, err := state.PulseDepositUnHold.AsApproximateTime()
+		if err != nil {
+			c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
+		} else {
+			d.HoldReleaseDate = hrd.Unix()
+		}
+	}
+
+	return d, nil
 }
 
 func (c *DepositCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
