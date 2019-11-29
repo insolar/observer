@@ -145,6 +145,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 					UserRef:         membership.MemberRef.Bytes(),
 					GroupRef:        model.GroupReference.Bytes(),
 					Role:            membership.MemberRole.String(),
+					AmountDue:       membership.MemberGoal,
 					Status:          membership.MemberRole.String(),
 					StatusTimestamp: model.Timestamp,
 				}
@@ -168,6 +169,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 				Where("group_ref=?", model.GroupReference.Bytes()).
 				Where("user_ref=?", membership.MemberRef.Bytes()).
 				Set("status=?", membership.MemberStatus.String()).
+				Set("amount_due=?", membership.MemberGoal).
 				Set("role=?", membership.MemberRole.String()).
 				Update()
 
