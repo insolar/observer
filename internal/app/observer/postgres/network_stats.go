@@ -113,7 +113,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 
 		sqlRes := struct{ Count int }{}
 		_, err = s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions"+
-			" WHERE finish_pulse_record[1] >= ?", monthAgoPulse)
+			" WHERE finish_pulse_record[1] >= ? AND status_registered", monthAgoPulse)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
 		}
@@ -123,7 +123,10 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 	// TotalTransactions
 	{
 		sqlRes := struct{ Count int }{}
-		_, err := s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions")
+		_, err := s.db.QueryOne(
+			&sqlRes,
+			"SELECT COUNT(1) AS Count FROM simple_transactions WHERE status_registered",
+		)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
 		}
@@ -143,8 +146,11 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 	// MaxTPS
 	{
 		sqlRes := struct{ Count int }{}
-		sql := "SELECT MAX(t.tpp) AS Count FROM (SELECT COUNT(1) as tpp FROM" +
-			" simple_transactions WHERE finish_pulse_record IS NOT NULL GROUP BY finish_pulse_record[1]) AS t"
+		sql := "SELECT MAX(t.tpp) AS Count FROM (" +
+			"  SELECT COUNT(1) as tpp FROM simple_transactions" +
+			"  WHERE status_registered AND finish_pulse_record IS NOT NULL" +
+			"  GROUP BY finish_pulse_record[1]" +
+			") AS t"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
@@ -158,7 +164,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		sql := "SELECT COUNT(1) AS Count FROM simple_transactions" +
 			" WHERE finish_pulse_record[1] = (" +
 			"   select pulse from pulses ORDER BY pulse DESC LIMIT 1" +
-			" )"
+			" ) AND status_registered"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
 			return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
