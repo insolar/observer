@@ -26,6 +26,7 @@ import (
 
 func TestConnectionHolder_DB(t *testing.T) {
 	cfg := configuration.Default()
-	db := Connect(cfg.DB)
+	db, err := Connect(cfg.DB)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 }

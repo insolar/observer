@@ -14,9 +14,9 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,7 +27,7 @@ import (
 
 func TestTxRegisterCollector_Collect(t *testing.T) {
 	ctx := context.Background()
-	c := NewTxRegisterCollector(logrus.New())
+	c := NewTxRegisterCollector(inslogger.FromContext(ctx))
 
 	t.Run("transfer happy path", func(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
@@ -170,7 +170,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 func TestTxResultCollector_Collect(t *testing.T) {
 	ctx := context.Background()
 	mc := minimock.NewController(t)
-	log := logrus.New()
+	log := inslogger.FromContext(ctx)
 	var (
 		fetcher   *store.RecordFetcherMock
 		collector *TxResultCollector
@@ -302,7 +302,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 func TestTxSagaResultCollector_Collect(t *testing.T) {
 	ctx := context.Background()
 	mc := minimock.NewController(t)
-	log := logrus.New()
+	log := inslogger.FromContext(ctx)
 	var (
 		fetcher   *store.RecordFetcherMock
 		collector *TxSagaResultCollector

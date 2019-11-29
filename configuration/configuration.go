@@ -19,13 +19,10 @@ package configuration
 import (
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
 type Configuration struct {
-	LogLevel   string
 	Replicator Replicator
 	DB         DB
 }
@@ -54,7 +51,6 @@ type DB struct {
 
 func Default() *Configuration {
 	return &Configuration{
-		LogLevel: logrus.DebugLevel.String(),
 		Replicator: Replicator{
 			Addr:                "127.0.0.1:5678",
 			MaxTransportMsg:     1073741824,

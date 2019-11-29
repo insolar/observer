@@ -19,8 +19,6 @@ package grpc
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
@@ -34,7 +32,7 @@ import (
 
 type PulseFetcher struct {
 	cfg    *configuration.Configuration
-	log    *logrus.Logger
+	log    insolar.Logger
 	client exporter.PulseExporterClient
 }
 

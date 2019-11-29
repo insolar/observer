@@ -17,13 +17,13 @@
 package postgres_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
-	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
@@ -35,14 +35,7 @@ func newInt(val int64) *int64 {
 }
 
 func TestDepositStorage_Insert(t *testing.T) {
-	cfg := &configuration.Configuration{
-		DB: configuration.DB{
-			Attempts: 1,
-		},
-		LogLevel: "debug",
-	}
-
-	depositRepo := postgres.NewDepositStorage(observability.Make(cfg), db)
+	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
 
 	t.Run("not confirmed", func(t *testing.T) {
 		now := time.Now().Unix()
@@ -83,14 +76,7 @@ func TestDepositStorage_Insert(t *testing.T) {
 }
 
 func TestDepositStorage_Update(t *testing.T) {
-	cfg := &configuration.Configuration{
-		DB: configuration.DB{
-			Attempts: 1,
-		},
-		LogLevel: "debug",
-	}
-
-	depositRepo := postgres.NewDepositStorage(observability.Make(cfg), db)
+	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
 
 	t.Run("ok", func(t *testing.T) {
 		now := time.Now().Unix()

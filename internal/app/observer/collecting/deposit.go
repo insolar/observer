@@ -36,7 +36,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
@@ -46,12 +45,12 @@ const (
 )
 
 type DepositCollector struct {
-	log     *logrus.Logger
+	log     insolar.Logger
 	fetcher store.RecordFetcher
 	builder tree.Builder
 }
 
-func NewDepositCollector(log *logrus.Logger, fetcher store.RecordFetcher) *DepositCollector {
+func NewDepositCollector(log insolar.Logger, fetcher store.RecordFetcher) *DepositCollector {
 	return &DepositCollector{
 		log:     log,
 		fetcher: fetcher,
@@ -67,13 +66,18 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "DepositCollector")
 
 	// genesis deposit records
-	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec) {
+	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec, log) {
 		log.Debug("found genesis deposit")
 		return c.processGenesisRecord(ctx, rec, log)
 	}
 
-	res := observer.CastToResult(rec)
-	if !res.IsResult() || !res.IsSuccess() {
+	res, err := observer.CastToResult(rec)
+	if err != nil {
+		log.Warn(err.Error())
+		return nil
+	}
+
+	if !res.IsResult() || !res.IsSuccess(log) {
 		return nil
 	}
 
@@ -82,7 +86,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	_, ok := c.isDepositCall(&req)
+	_, ok := c.isDepositCall(&req, log)
 	if !ok {
 		return nil
 	}
@@ -121,7 +125,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		return nil
 	}
 
-	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, res)
+	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, res, log)
 	if err != nil {
 		c.log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
@@ -133,7 +137,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 	return []observer.Deposit{*d}
 }
 
-func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record, log *logrus.Entry) []observer.Deposit {
+func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observer.Record, log insolar.Logger) []observer.Deposit {
 	activate := rec.Virtual.GetActivate()
 	shard := c.initialPKShard(activate)
 	var (
@@ -214,10 +218,10 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 	return deposits
 }
 
-func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *record.Activate, res *observer.Result) (*observer.Deposit, error) {
+func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *record.Activate, res *observer.Result, log insolar.Logger) (*observer.Deposit, error) {
 	callResult := migrationdaemon.DepositMigrationResult{}
-	res.ParseFirstPayloadValue(&callResult)
-	if !res.IsSuccess() {
+	res.ParseFirstPayloadValue(&callResult, log)
+	if !res.IsSuccess(log) {
 		return nil, errors.New("invalid create deposit result payload")
 	}
 	transferDate, err := pn.AsApproximateTime()
@@ -233,7 +237,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 	state := c.initialDepositState(activate)
 	hrd, err := state.PulseDepositUnHold.AsApproximateTime()
 	if err != nil {
-		c.log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
+		log.Errorf("wrong timestamp in deposit PulseDepositUnHold: %+v", state)
 		hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 	}
 	return &observer.Deposit{
@@ -287,8 +291,8 @@ func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
 	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
 }
 
-func isPKShardActivate(rec *observer.Record) bool {
-	activate := observer.CastToActivate(rec)
+func isPKShardActivate(rec *observer.Record, logger insolar.Logger) bool {
+	activate := observer.CastToActivate(rec, logger)
 	if !activate.IsActivate() {
 		return false
 	}
@@ -332,13 +336,13 @@ func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.De
 	return &d
 }
 
-func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
-	request := observer.CastToRequest((*observer.Record)(rec))
+func (c *DepositCollector) isDepositCall(rec *record.Material, logger insolar.Logger) (*observer.Request, bool) {
+	request := observer.CastToRequest((*observer.Record)(rec), logger)
 
-	if !request.IsIncoming() || !request.IsMemberCall() {
+	if !request.IsIncoming() || !request.IsMemberCall(logger) {
 		return nil, false
 	}
 
-	args := request.ParseMemberCallArguments()
+	args := request.ParseMemberCallArguments(logger)
 	return request, args.Params.CallSite == CallSite
 }

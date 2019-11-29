@@ -22,8 +22,8 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 )
@@ -43,7 +43,7 @@ type RequestSchema struct {
 }
 
 type RequestStorage struct {
-	log          *logrus.Logger
+	log          insolar.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }

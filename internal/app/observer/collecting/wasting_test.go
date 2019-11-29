@@ -23,6 +23,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/stretchr/testify/require"
 
@@ -55,17 +56,17 @@ func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
 }
 
 func TestWastingCollector_Collect(t *testing.T) {
-
+	log := inslogger.FromContext(inslogger.TestContext(t))
 	t.Run("nil", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(fetcher)
+		collector := NewWastingCollector(log, fetcher)
 		ctx := context.Background()
 		require.Nil(t, collector.Collect(ctx, nil))
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(fetcher)
+		collector := NewWastingCollector(log, fetcher)
 
 		pn := insolar.GenesisPulse.PulseNumber
 		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"

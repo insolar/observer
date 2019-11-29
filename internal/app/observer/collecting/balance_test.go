@@ -24,8 +24,8 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/pulse"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -69,7 +69,7 @@ func makeBalanceUpdate() (*observer.Balance, *observer.Record) {
 }
 
 func TestBalanceCollector_Collect(t *testing.T) {
-	log := logrus.New()
+	log := inslogger.FromContext(inslogger.TestContext(t))
 	collector := NewBalanceCollector(log)
 
 	t.Run("nil", func(t *testing.T) {

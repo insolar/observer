@@ -17,13 +17,14 @@
 package configuration
 
 import (
+	"context"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
@@ -34,14 +35,15 @@ const (
 	ConfigFilePath = ConfigName + "." + ConfigType
 )
 
-func Load() *Configuration {
-	printWorkingDir()
-	actual := load()
-	printConfig(actual)
+func Load(ctx context.Context) *Configuration {
+	log := inslogger.FromContext(ctx)
+	printWorkingDir(log)
+	actual := load(log)
+	printConfig(log, actual)
 	return actual
 }
 
-func load() *Configuration {
+func load(log insolar.Logger) *Configuration {
 	v := viper.New()
 
 	v.AutomaticEnv()
@@ -71,12 +73,12 @@ func load() *Configuration {
 	return actual
 }
 
-func printWorkingDir() {
+func printWorkingDir(log insolar.Logger) {
 	wd, _ := os.Getwd()
 	log.Infof("Working dir: %s", wd)
 }
 
-func printConfig(c *Configuration) {
+func printConfig(log insolar.Logger, c *Configuration) {
 	cc, err := cleanSecrects(c)
 	if err != nil {
 		log.Error(err)

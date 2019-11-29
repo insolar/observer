@@ -17,12 +17,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
@@ -34,13 +36,12 @@ func main() {
 	collectDT := flag.String("time", "", "Historical request, format 2006-01-02 15:04:05")
 	flag.Parse()
 
-	cfg := configuration.Load()
-	db := dbconn.Connect(cfg.DB)
-
-	log := logrus.New()
-	err := log.Level.UnmarshalText([]byte(cfg.LogLevel))
+	ctx := context.Background()
+	log := inslogger.FromContext(ctx)
+	cfg := configuration.Load(ctx)
+	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
-		log.SetLevel(logrus.InfoLevel)
+		log.Fatal(err.Error())
 	}
 
 	var dt *time.Time
@@ -57,7 +58,7 @@ func main() {
 	calcNetwork(log, db)
 }
 
-func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
+func calcSupply(log insolar.Logger, db *pg.DB, dt *time.Time) {
 	repo := postgres.NewSupplyStatsRepository(db)
 	sr := component.NewStatsManager(log, repo)
 
@@ -68,7 +69,7 @@ func calcSupply(log *logrus.Logger, db *pg.DB, dt *time.Time) {
 	}
 }
 
-func calcNetwork(log *logrus.Logger, db *pg.DB) {
+func calcNetwork(log insolar.Logger, db *pg.DB) {
 	repo := postgres.NewNetworkStatsRepository(db)
 
 	stats, err := repo.CountStats()

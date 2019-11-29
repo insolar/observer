@@ -17,6 +17,7 @@
 package postgres_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -37,10 +38,9 @@ func TestCountStats(t *testing.T) {
 		DB: configuration.DB{
 			Attempts: 1,
 		},
-		LogLevel: "debug",
 	}
 
-	pulseRepo := postgres.NewPulseStorage(cfg, observability.Make(cfg), db)
+	pulseRepo := postgres.NewPulseStorage(cfg, observability.Make(context.Background()), db)
 
 	now := time.Now()
 

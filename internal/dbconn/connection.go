@@ -19,17 +19,15 @@ package dbconn
 import (
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 )
 
-func Connect(cfg configuration.DB) *pg.DB {
+func Connect(cfg configuration.DB) (*pg.DB, error) {
 	opt, err := pg.ParseURL(cfg.URL)
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to parse cfg.DB.URL"))
-		return nil
+		return nil, errors.Wrapf(err, "failed to parse cfg.DB.URL")
 	}
 	opt.PoolSize = cfg.PoolSize
-	return pg.Connect(opt)
+	return pg.Connect(opt), nil
 }

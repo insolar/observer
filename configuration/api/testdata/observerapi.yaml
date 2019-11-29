@@ -1,4 +1,3 @@
-loglevel: debug
 listen: 0.0.0.0:8090
 db:
   url: postgres://observer:observer@localhost/observer?sslmode=disable

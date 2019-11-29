@@ -49,7 +49,10 @@ Heavy node replication API:
 `OBSERVER_REPLICATOR_ADDR=127.0.0.1:5678`
 
 Log level:
-`OBSERVER_LOGLEVEL=info`
+`INSOLAR_LOG_LEVEL=info`
+
+Log format:
+`INSOLAR_LOG_FORMATTER=text`
 
 ### Metrics and health check
 
@@ -92,7 +95,10 @@ Max number of connections to DB:
 `OBSERVERAPI_DB_POOLSIZE=20`
 
 Log level:
-`OBSERVERAPI_LOGLEVEL=info`
+`INSOLAR_LOG_LEVEL=info`
+
+Log format:
+`INSOLAR_LOG_FORMATTER=text`
 
 ## Statistics collector
 

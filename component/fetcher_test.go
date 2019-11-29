@@ -28,7 +28,6 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 )
@@ -36,14 +35,12 @@ import (
 func Test_makeFetcher(t *testing.T) {
 	mc := minimock.NewController(t)
 	ctx := context.Background()
-	var cfg *configuration.Configuration
 	var obs *observability.Observability
 	var pulseFetcher *observer.PulseFetcherMock
 	var recordFetcher *observer.HeavyRecordFetcherMock
 
 	resetComponents := func() {
-		cfg = configuration.Default()
-		obs = observability.Make(cfg)
+		obs = observability.Make(ctx)
 		pulseFetcher = observer.NewPulseFetcherMock(mc)
 		recordFetcher = observer.NewHeavyRecordFetcherMock(mc)
 	}

@@ -20,8 +20,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/configuration"
 )
 
@@ -30,7 +28,6 @@ type Configuration struct {
 	DB        configuration.DB
 	FeeAmount *big.Int
 	Price     string
-	LogLevel  string
 }
 
 func Default() *Configuration {
@@ -41,7 +38,6 @@ func Default() *Configuration {
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 		},
-		LogLevel:  logrus.DebugLevel.String(),
 		FeeAmount: big.NewInt(1000000000),
 		Price:     "0.05",
 	}

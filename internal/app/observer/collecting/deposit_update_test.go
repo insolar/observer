@@ -26,7 +26,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -83,7 +83,7 @@ func makeDepositUpdate() (*observer.DepositUpdate, *observer.Record) {
 func TestDepositUpdateCollector_Collect(t *testing.T) {
 
 	t.Run("nil", func(t *testing.T) {
-		log := logrus.New()
+		log := inslogger.FromContext(inslogger.TestContext(t))
 		mc := minimock.NewController(t)
 
 		collector := NewDepositUpdateCollector(log)
@@ -95,7 +95,7 @@ func TestDepositUpdateCollector_Collect(t *testing.T) {
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
-		log := logrus.New()
+		log := inslogger.FromContext(inslogger.TestContext(t))
 		mc := minimock.NewController(t)
 
 		collector := NewDepositUpdateCollector(log)

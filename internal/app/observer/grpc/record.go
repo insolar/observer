@@ -23,7 +23,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -33,7 +32,7 @@ import (
 //go:generate minimock -g -i github.com/insolar/insolar/ledger/heavy/exporter.RecordExporterClient -s "_mock.go"
 
 type RecordFetcher struct {
-	log     *logrus.Logger
+	log     insolar.Logger
 	client  exporter.RecordExporterClient
 	records observer.RecordStorage //nolint: unused,structcheck
 	request *exporter.GetRecords

@@ -23,7 +23,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
@@ -43,7 +42,7 @@ type ObjectSchema struct {
 }
 
 type ObjectStorage struct {
-	log          *logrus.Logger
+	log          insolar.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }

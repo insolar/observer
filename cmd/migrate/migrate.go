@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 
 	"github.com/go-pg/migrations"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/dbconn"
@@ -16,11 +17,14 @@ var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
 	flag.Parse()
-	cfg := configuration.Load()
-	log := logrus.New()
+	ctx := context.Background()
+	cfg := configuration.Load(ctx)
+	log := inslogger.FromContext(ctx)
 
-	db := dbconn.Connect(cfg.DB)
-
+	db, err := dbconn.Connect(cfg.DB)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	migrationCollection := migrations.NewCollection()
 	if *doInit {
 		_, _, err := migrationCollection.Run(db, "init")
@@ -29,7 +33,7 @@ func main() {
 		}
 	}
 
-	err := migrationCollection.DiscoverSQLMigrations(*migrationDir)
+	err = migrationCollection.DiscoverSQLMigrations(*migrationDir)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "Failed to read migrations"))
 	}

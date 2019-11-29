@@ -22,8 +22,8 @@ import (
 
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 )
 
@@ -70,11 +70,11 @@ type StatsCollecter interface {
 }
 
 type StatsManager struct {
-	log        *logrus.Logger
+	log        insolar.Logger
 	repository postgres.SupplyStatsRepo
 }
 
-func NewStatsManager(log *logrus.Logger, r postgres.SupplyStatsRepo) *StatsManager {
+func NewStatsManager(log insolar.Logger, r postgres.SupplyStatsRepo) *StatsManager {
 	return &StatsManager{
 		log:        log,
 		repository: r,
@@ -156,12 +156,12 @@ func (s *StatsManager) convertToCMCFormat(str string) string {
 }
 
 type CalculateStatsCommand struct {
-	log          *logrus.Logger
+	log          insolar.Logger
 	db           orm.DB
 	statsManager StatsCollecter
 }
 
-func NewCalculateStatsCommand(logger *logrus.Logger, db orm.DB, manager StatsCollecter) *CalculateStatsCommand {
+func NewCalculateStatsCommand(logger insolar.Logger, db orm.DB, manager StatsCollecter) *CalculateStatsCommand {
 	return &CalculateStatsCommand{
 		log:          logger,
 		db:           db,

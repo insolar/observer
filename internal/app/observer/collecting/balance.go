@@ -24,16 +24,15 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
 
 type BalanceCollector struct {
-	log *logrus.Logger
+	log insolar.Logger
 }
 
-func NewBalanceCollector(log *logrus.Logger) *BalanceCollector {
+func NewBalanceCollector(log insolar.Logger) *BalanceCollector {
 	return &BalanceCollector{
 		log: log,
 	}

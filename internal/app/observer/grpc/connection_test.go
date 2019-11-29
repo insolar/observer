@@ -22,10 +22,10 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/observer/configuration"
 )
 
@@ -59,7 +59,7 @@ func stopServer(server *grpc.Server) {
 }
 
 func TestConnectionHolder_Conn(t *testing.T) {
-	log := logrus.New()
+	log := inslogger.FromContext(inslogger.TestContext(t))
 
 	t.Run("ordinary", func(t *testing.T) {
 		cfg := configuration.Default()

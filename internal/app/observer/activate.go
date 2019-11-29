@@ -21,18 +21,17 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	log "github.com/sirupsen/logrus"
 )
 
 type Activate record.Material
 
-func CastToActivate(r interface{}) *Activate {
+func CastToActivate(r interface{}, logger insolar.Logger) *Activate {
 	if act, ok := r.(*Activate); ok {
 		return act
 	}
 	rec, ok := r.(*Record)
 	if !ok {
-		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
+		logger.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
 		return nil
 	}
 	return (*Activate)(rec)

@@ -22,7 +22,6 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/connectivity"
@@ -35,7 +34,7 @@ type Manager struct {
 	stopSignal chan bool
 
 	cfg           *configuration.Configuration
-	log           logrus.Logger
+	log           insolar.Logger
 	init          func() *state
 	commonMetrics *observability.CommonObserverMetrics
 	fetch         func(context.Context, *state) *raw
@@ -48,9 +47,9 @@ type Manager struct {
 	sleepCounter sleepCounter
 }
 
-func Prepare() *Manager {
-	cfg := configuration.Load()
-	obs := observability.Make(cfg)
+func Prepare(ctx context.Context) *Manager {
+	cfg := configuration.Load(ctx)
+	obs := observability.Make(ctx)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
 	pulses := grpc.NewPulseFetcher(cfg, obs, exporter.NewPulseExporterClient(conn.GRPC()))
@@ -59,7 +58,7 @@ func Prepare() *Manager {
 	return &Manager{
 		stopSignal:    make(chan bool, 1),
 		init:          makeInitter(cfg, obs, conn),
-		log:           *obs.Log(),
+		log:           obs.Log(),
 		commonMetrics: observability.MakeCommonMetrics(obs),
 		fetch:         makeFetcher(obs, pulses, records),
 		beautify:      makeBeautifier(cfg, obs, conn),

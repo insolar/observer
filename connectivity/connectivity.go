@@ -30,7 +30,11 @@ func Make(cfg *configuration.Configuration, obs *observability.Observability) *C
 	log := obs.Log()
 	return &Connectivity{
 		pg: func() *pg.DB {
-			return dbconn.Connect(cfg.DB)
+			db, err := dbconn.Connect(cfg.DB)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			return db
 		}(),
 		grpc: func() *grpc.ClientConn {
 			limits := grpc.WithDefaultCallOptions(

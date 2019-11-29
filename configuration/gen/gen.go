@@ -17,10 +17,11 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	"github.com/insolar/observer/configuration"
@@ -36,6 +37,7 @@ func main() {
 		out, _ := yaml.Marshal(cfg)
 		err := ioutil.WriteFile(filePath, out, 0644)
 		if err != nil {
+			log := inslogger.FromContext(context.Background())
 			log.Error(errors.Wrapf(err, "failed to write config file"))
 			return
 		}

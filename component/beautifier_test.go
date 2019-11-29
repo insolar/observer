@@ -85,10 +85,9 @@ func TestBeautifier_Run(t *testing.T) {
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
-			LogLevel: "debug",
 		}
-		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 		ctx := context.Background()
+		beautifier := makeBeautifier(cfg, observability.Make(ctx), fakeConn{})
 
 		beautifier(ctx, nil)
 	})
@@ -98,10 +97,9 @@ func TestBeautifier_Run(t *testing.T) {
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
-			LogLevel: "debug",
 		}
-		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 		ctx := context.Background()
+		beautifier := makeBeautifier(cfg, observability.Make(ctx), fakeConn{})
 
 		tdg := NewTreeDataGenerator()
 		raw := &raw{
@@ -118,10 +116,9 @@ func TestBeautifier_Run(t *testing.T) {
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
-			LogLevel: "debug",
 		}
-		beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 		ctx := context.Background()
+		beautifier := makeBeautifier(cfg, observability.Make(ctx), fakeConn{})
 
 		tdg := NewTreeDataGenerator()
 
@@ -151,10 +148,9 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Replicator: configuration.Replicator{
 			CacheSize: 100000,
 		},
-		LogLevel: "debug",
 	}
-	beautifier := makeBeautifier(cfg, observability.Make(cfg), fakeConn{})
 	ctx := context.Background()
+	beautifier := makeBeautifier(cfg, observability.Make(ctx), fakeConn{})
 	pn := insolar.GenesisPulse.PulseNumber
 	tdg := NewTreeDataGenerator()
 

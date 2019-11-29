@@ -39,8 +39,6 @@ import (
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Clock interface {
@@ -55,13 +53,13 @@ func (c *DefaultClock) Now() time.Time {
 
 type ObserverServer struct {
 	db    *pg.DB
-	log   *logrus.Logger
+	log   insolar.Logger
 	clock Clock
 	fee   *big.Int
 	price string
 }
 
-func NewObserverServer(db *pg.DB, log *logrus.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
+func NewObserverServer(db *pg.DB, log insolar.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
 	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
 }
 

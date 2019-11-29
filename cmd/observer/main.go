@@ -17,11 +17,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 
 	"github.com/insolar/observer/component"
 )
@@ -29,14 +31,16 @@ import (
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	manager := component.Prepare()
+	ctx := context.Background()
+	logger := inslogger.FromContext(ctx)
+	manager := component.Prepare(ctx)
 	manager.Start()
-	graceful(manager.Stop)
+	graceful(logger, manager.Stop)
 }
 
-func graceful(that func()) {
+func graceful(logger insolar.Logger, that func()) {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
-	log.Infof("gracefully stopping...")
+	logger.Infof("gracefully stopping...")
 	that()
 }

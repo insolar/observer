@@ -24,18 +24,17 @@ import (
 	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
 )
 
 type MigrationAddressCollector struct {
-	log     *logrus.Logger
+	log     insolar.Logger
 	fetcher store.RecordFetcher
 }
 
-func NewMigrationAddressesCollector(log *logrus.Logger, fetcher store.RecordFetcher) *MigrationAddressCollector {
+func NewMigrationAddressesCollector(log insolar.Logger, fetcher store.RecordFetcher) *MigrationAddressCollector {
 	return &MigrationAddressCollector{
 		log:     log,
 		fetcher: fetcher,
@@ -46,15 +45,20 @@ func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.R
 	if rec == nil {
 		return nil
 	}
+	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "MigrationAddressCollector")
 
 	// This code block collects addresses from incoming request.
-	res := observer.CastToResult(rec)
+	res, err := observer.CastToResult(rec)
+	if err != nil {
+		log.Warn(err.Error())
+		return nil
+	}
 	if res.IsResult() {
-		return c.collectFromResult(ctx, res)
+		return c.collectFromResult(ctx, res, log)
 	}
 
 	// This code block collects addresses from genesis record.
-	activate := observer.CastToActivate(rec)
+	activate := observer.CastToActivate(rec, log)
 	if activate.IsActivate() {
 		return c.collectFromGenesis(ctx, rec, activate)
 	}
@@ -62,8 +66,8 @@ func (c *MigrationAddressCollector) Collect(ctx context.Context, rec *observer.R
 	return nil
 }
 
-func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *observer.Result) []*observer.MigrationAddress {
-	if !res.IsSuccess() {
+func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *observer.Result, log insolar.Logger) []*observer.MigrationAddress {
+	if !res.IsSuccess(log) {
 		return nil
 	}
 
@@ -72,7 +76,7 @@ func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *
 		panic(fmt.Sprintf("recordID %s: failed to fetch request for result", res.ID))
 	}
 
-	call, ok := c.isAddMigrationAddresses(&req)
+	call, ok := c.isAddMigrationAddresses(&req, log)
 	if !ok {
 		return nil
 	}
@@ -81,7 +85,7 @@ func (c *MigrationAddressCollector) collectFromResult(ctx context.Context, res *
 	}
 
 	params := &addAddresses{}
-	call.ParseMemberContractCallParams(params)
+	call.ParseMemberContractCallParams(params, log)
 	addresses := make([]*observer.MigrationAddress, 0, len(params.MigrationAddresses))
 	for _, addr := range params.MigrationAddresses {
 		addresses = append(addresses, &observer.MigrationAddress{
@@ -130,16 +134,16 @@ func migrationShardActivate(act *record.Activate) []string {
 	return shard.FreeMigrationAddresses
 }
 
-func (c *MigrationAddressCollector) isAddMigrationAddresses(rec *record.Material) (*observer.Request, bool) {
-	request := observer.CastToRequest((*observer.Record)(rec))
+func (c *MigrationAddressCollector) isAddMigrationAddresses(rec *record.Material, logger insolar.Logger) (*observer.Request, bool) {
+	request := observer.CastToRequest((*observer.Record)(rec), logger)
 	if !request.IsIncoming() {
 		return nil, false
 	}
 
-	if !request.IsMemberCall() {
+	if !request.IsMemberCall(logger) {
 		return nil, false
 	}
 
-	args := request.ParseMemberCallArguments()
+	args := request.ParseMemberCallArguments(logger)
 	return request, args.Params.CallSite == "migration.addAddresses"
 }

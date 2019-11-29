@@ -24,7 +24,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -62,7 +61,7 @@ func makeBeautifier(
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
-	wastings := collecting.NewWastingCollector(cachedStore)
+	wastings := collecting.NewWastingCollector(log, cachedStore)
 
 	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
@@ -186,7 +185,7 @@ func makeBeautifier(
 		log.Debug("Timer:  collected ", time.Since(tempTimer))
 
 		log := obs.Log()
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"tx_registrations": len(b.txRegister),
 			"tx_results":       len(b.txResult),
 			"tx_saga_results":  len(b.txSagaResult),
@@ -195,7 +194,7 @@ func makeBeautifier(
 			"addresses":        len(b.addresses),
 		}).Infof("collected entities")
 
-		log.WithFields(logrus.Fields{
+		log.WithFields(map[string]interface{}{
 			"balances":                  len(b.balances),
 			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.wastings),

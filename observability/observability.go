@@ -17,24 +17,19 @@
 package observability
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
-
-	"github.com/insolar/observer/configuration"
 )
 
-func Make(cfg *configuration.Configuration) *Observability {
-	log := logrus.New()
-	err := log.Level.UnmarshalText([]byte(cfg.LogLevel))
-	if err != nil {
-		log.SetLevel(logrus.InfoLevel)
-	}
+func Make(ctx context.Context) *Observability {
 	return &Observability{
-		log:      log,
+		log:      inslogger.FromContext(ctx),
 		metrics:  prometheus.NewRegistry(),
 		counters: make(map[string]prometheus.Counter),
 		gauges:   make(map[string]prometheus.Gauge),
@@ -42,13 +37,13 @@ func Make(cfg *configuration.Configuration) *Observability {
 }
 
 type Observability struct {
-	log      *logrus.Logger
+	log      insolar.Logger
 	metrics  *prometheus.Registry
 	counters map[string]prometheus.Counter
 	gauges   map[string]prometheus.Gauge
 }
 
-func (o *Observability) Log() *logrus.Logger {
+func (o *Observability) Log() insolar.Logger {
 	return o.log
 }
 

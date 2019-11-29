@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -32,10 +33,12 @@ const (
 
 type WastingCollector struct {
 	fetcher store.RecordFetcher
+	log     insolar.Logger
 }
 
-func NewWastingCollector(fetcher store.RecordFetcher) *WastingCollector {
+func NewWastingCollector(log insolar.Logger, fetcher store.RecordFetcher) *WastingCollector {
 	return &WastingCollector{
+		log:     log,
 		fetcher: fetcher,
 	}
 }
@@ -45,12 +48,15 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		return nil
 	}
 
-	result := observer.CastToResult(rec)
-	if result == nil {
+	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "WastingCollector")
+
+	result, err := observer.CastToResult(rec)
+	if err != nil {
+		log.Warn(err.Error())
 		return nil
 	}
 
-	if !result.IsSuccess() {
+	if !result.IsSuccess(log) {
 		return nil
 	}
 
@@ -74,7 +80,7 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 	}
 
 	address := ""
-	result.ParseFirstPayloadValue(&address)
+	result.ParseFirstPayloadValue(&address, log)
 	return &observer.Wasting{
 		Addr: address,
 	}

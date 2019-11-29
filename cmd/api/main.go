@@ -17,12 +17,13 @@
 package main
 
 import (
+	"context"
+
+	echoPrometheus "github.com/globocom/echo-prometheus"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
-
-	echoPrometheus "github.com/globocom/echo-prometheus"
 
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
@@ -30,18 +31,13 @@ import (
 )
 
 func main() {
-	cfg := apiconfiguration.Load()
-
-	level, err := logrus.ParseLevel(cfg.LogLevel)
+	ctx := context.Background()
+	logger := inslogger.FromContext(ctx)
+	cfg := apiconfiguration.Load(ctx)
+	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
-		level = logrus.InfoLevel
+		logger.Fatal(err.Error())
 	}
-
-	logger := logrus.New()
-	logger.SetLevel(level)
-	logger.SetFormatter(&logrus.JSONFormatter{})
-
-	db := dbconn.Connect(cfg.DB)
 
 	e := echo.New()
 	e.Use(middleware.Logger())
