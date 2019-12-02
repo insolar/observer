@@ -30,17 +30,16 @@ type Sequence struct {
 }
 
 type MGRUpdate struct {
-	PrevState        insolar.ID
-	MGRState         insolar.ID
-	GroupReference   insolar.Reference
-	MGRReference     insolar.Reference
-	StartRoundDate   int64
-	FinishRoundDate  int64
-	AmountDue        string
-	PaymentFrequency string
-	Timestamp        int64
-	Sequence         []Sequence
-	SwapProcess      Swap
+	PrevState       insolar.ID
+	MGRState        insolar.ID
+	GroupReference  insolar.Reference
+	MGRReference    insolar.Reference
+	StartRoundDate  int64
+	FinishRoundDate int64
+	AmountDue       string
+	Timestamp       int64
+	Sequence        []Sequence
+	SwapProcess     Swap
 }
 
 type MGRStorage interface {

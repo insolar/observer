@@ -66,11 +66,11 @@ func (c *TransactionUpdateCollector) Collect(rec *observer.Record) *observer.Tra
 		Reference:   *insolar.NewReference(rec.ObjectID),
 		Amount:      transaction.Amount,
 		Timestamp:   date.Unix(),
-		ExtTxId:     transaction.ExtTxId,
+		ExtTxId:     transaction.TransactionParams.ExtTxId,
 		TxDirection: transaction.TxDirection.String(),
 		MemberRef:   transaction.MemberRef,
 		GroupRef:    transaction.GroupRef,
-		UID:         transaction.UID,
+		UID:         transaction.TransactionParams.UID,
 		Status:      transaction.Status.String(),
 	}
 }
