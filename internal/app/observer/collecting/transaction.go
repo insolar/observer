@@ -21,7 +21,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -65,15 +64,26 @@ func (c *TransactionCollector) Collect(rec *observer.Record) *observer.Transacti
 }
 
 type Transaction struct {
-	foundation.BaseContract
-	Amount      uint64
-	PulseTx     insolar.PulseNumber
-	ExtTxId     string
-	TxDirection TxDirection
-	MemberRef   insolar.Reference
-	GroupRef    insolar.Reference
-	UID         string
-	Status      StatusTx
+	Amount            uint64
+	PulseTx           insolar.PulseNumber
+	TxDirection       TxDirection
+	MemberRef         insolar.Reference
+	GroupRef          insolar.Reference
+	Status            StatusTx
+	TransactionParams TransactionParams
+}
+
+type TransactionParams struct {
+	ExtTxId         string
+	UID             string
+	Description     string
+	Currency        string
+	CreationTime    int64
+	Pull            string
+	Push            string
+	RefreshTime     int64
+	TransactionType string
+	Details         string
 }
 
 func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transaction, error) {
@@ -98,11 +108,11 @@ func (c *TransactionCollector) build(act *observer.Activate) (*observer.Transact
 		Reference:   *insolar.NewReference(act.ObjectID),
 		Amount:      strconv.FormatUint(tx.Amount, 10),
 		Timestamp:   date.Unix(),
-		ExtTxId:     tx.ExtTxId,
+		ExtTxId:     tx.TransactionParams.ExtTxId,
 		TxDirection: tx.TxDirection.String(),
 		GroupRef:    tx.GroupRef,
 		MemberRef:   tx.MemberRef,
-		UID:         tx.UID,
+		UID:         tx.TransactionParams.UID,
 		Status:      tx.Status.String(),
 	}, nil
 }

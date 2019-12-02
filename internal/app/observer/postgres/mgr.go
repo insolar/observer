@@ -97,7 +97,7 @@ func (s *MGRStorage) Update(model *observer.MGRUpdate) error {
 
 	_, err := s.db.Model(&MGRSchema{}).
 		Where("state=?", model.PrevState.Bytes()).
-		Set("period=?,amount=?", model.PaymentFrequency, model.AmountDue).
+		Set("amount=?", model.AmountDue).
 		Set("start_date=?", model.StartRoundDate).
 		Set("group_ref=?", model.GroupReference.Bytes()).
 		Set("fin_date=?", model.FinishRoundDate).
