@@ -29,6 +29,8 @@ type Group struct {
 	ProductType      ProductType
 	ProductRef       insolar.Reference
 	PaymentFrequency string
+	Purpose          string
+	StartDate        int64
 	ChairMan         insolar.Reference
 	Treasurer        insolar.Reference
 	Membership       foundation.StableMap
@@ -58,6 +60,8 @@ type GroupUpdate struct {
 	ProductRef       insolar.Reference
 	PaymentFrequency string
 	Title            string
+	Purpose          string
+	StartDate        int64
 	Balance          insolar.Reference
 }
 

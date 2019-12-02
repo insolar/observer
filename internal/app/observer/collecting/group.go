@@ -55,6 +55,7 @@ type Group struct {
 	Goal             string
 	ProductType      *observer.ProductType
 	StartDate        int64
+	Purpose          string
 	PaymentFrequency PaymentFrequency
 	Product          *insolar.Reference
 	Balance          *insolar.Reference
@@ -93,6 +94,8 @@ func (c *GroupCollector) build(act *observer.Activate) (*observer.Group, error) 
 		Membership:       state.Membership,
 		Status:           "SUCCESS",
 		State:            act.ID,
+		Purpose:          state.Purpose,
+		StartDate:        state.StartDate,
 		PaymentFrequency: state.PaymentFrequency.String(),
 		Timestamp:        date.Unix(),
 	}
