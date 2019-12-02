@@ -357,7 +357,7 @@ func (t *treeDataGenerator) makeGetMigrationAddressCall(pn insolar.PulseNumber) 
 func (t *treeDataGenerator) makeDepositMigrationCall(pn insolar.PulseNumber) *exporter.Record {
 	request := &requester.ContractRequest{
 		Params: requester.Params{
-			CallSite:   collecting.CallSite,
+			CallSite:   "deposit.migration",
 			CallParams: nil,
 		},
 	}

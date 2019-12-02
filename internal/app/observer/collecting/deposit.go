@@ -41,10 +41,6 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 )
 
-const (
-	CallSite = "deposit.migration"
-)
-
 type DepositCollector struct {
 	log     *logrus.Logger
 	fetcher store.RecordFetcher
@@ -82,8 +78,7 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	_, ok := c.isDepositCall(&req)
-	if !ok {
+	if !c.isDepositMigrationAPICallSite(&req) {
 		return nil
 	}
 
@@ -92,38 +87,36 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		panic(errors.Wrap(err, "failed to build tree"))
 	}
 
-	var (
-		activate   *record.Activate
-		activateID insolar.ID
-	)
-
 	daemonCall, err := c.find(migrationTree.Outgoings, c.isDepositMigrationCall)
 	if err != nil {
-		// TODO: maybe should create failed deposit
-		log.Debug("probably failed deposit")
+		log.Error("deposit.migration call site didn't result in DepositMigration call")
 		return nil
 	}
 
 	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
 	if err != nil {
-		// TODO: maybe should create failed deposit
-		log.Debug("probably failed deposit")
+		log.Debug("no deposit constructor call, probably second or third confirmation, skipping")
 		return nil
 	}
 
-	if newCall != nil {
+	var (
+		activate   *record.Activate
+		activateID insolar.ID
+	)
+
+	if newCall.SideEffect != nil {
 		activateID = newCall.SideEffect.ID
 		activate = newCall.SideEffect.Activation
 	}
 
 	if activate == nil {
-		c.log.Warn("failed to find activation")
+		log.Error("deposit's constructor request has no activation side effect")
 		return nil
 	}
 
 	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, res)
 	if err != nil {
-		c.log.Error(errors.Wrapf(err, "failed to build member"))
+		log.Error(errors.Wrapf(err, "failed to build member"))
 		return nil
 	}
 
@@ -337,13 +330,13 @@ func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.De
 	return &d
 }
 
-func (c *DepositCollector) isDepositCall(rec *record.Material) (*observer.Request, bool) {
+func (c *DepositCollector) isDepositMigrationAPICallSite(rec *record.Material) bool {
 	request := observer.CastToRequest((*observer.Record)(rec))
 
 	if !request.IsIncoming() || !request.IsMemberCall() {
-		return nil, false
+		return false
 	}
 
 	args := request.ParseMemberCallArguments()
-	return request, args.Params.CallSite == CallSite
+	return args.Params.CallSite == "deposit.migration"
 }
