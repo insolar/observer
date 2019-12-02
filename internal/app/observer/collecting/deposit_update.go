@@ -23,7 +23,7 @@ import (
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/pulse"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -56,22 +56,26 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 
 	log.Debugf("%s: amount %s, balance %s, txHash %s, prevState %s", rec.ID.String(), d.Amount, d.Balance, d.TxHash, amd.PrevState.String())
 
-	holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime()
-	if err != nil {
-		log.Warnf("bad PulseDepositUnHold: %v", err)
-		holdReleasedDate, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
+	res := &observer.DepositUpdate{
+		ID:          rec.ID,
+		Amount:      d.Amount,
+		Balance:     d.Balance,
+		PrevState:   amd.PrevState,
+		TxHash:      d.TxHash,
+		IsConfirmed: d.IsConfirmed,
 	}
 
-	return &observer.DepositUpdate{
-		ID:              rec.ID,
-		HoldReleaseDate: holdReleasedDate.Unix(),
-		Timestamp:       holdReleasedDate.Unix() - d.Lockup,
-		Amount:          d.Amount,
-		Balance:         d.Balance,
-		PrevState:       amd.PrevState,
-		TxHash:          d.TxHash,
-		IsConfirmed:     d.IsConfirmed,
+	if d.PulseDepositUnHold > 0 {
+		holdReleasedDate, err := d.PulseDepositUnHold.AsApproximateTime()
+		if err != nil {
+			log.Error(errors.Wrap(err, "bad PulseDepositUnHold"))
+		} else {
+			res.HoldReleaseDate = holdReleasedDate.Unix()
+			res.Timestamp = holdReleasedDate.Unix() - d.Lockup
+		}
 	}
+
+	return res
 }
 
 func isDepositAmend(rec *observer.Record) bool {
