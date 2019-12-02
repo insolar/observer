@@ -18,7 +18,7 @@ var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 func main() {
 	flag.Parse()
 	ctx := context.Background()
-	cfg := configuration.Load(ctx)
+	cfg := configuration.Load()
 	log := inslogger.FromContext(ctx)
 
 	db, err := dbconn.Connect(cfg.DB)

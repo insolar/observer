@@ -25,6 +25,7 @@ import (
 type Configuration struct {
 	Replicator Replicator
 	DB         DB
+	Log        Log
 }
 
 type Replicator struct {
@@ -49,6 +50,11 @@ type DB struct {
 	AttemptInterval time.Duration
 }
 
+type Log struct {
+	Level  string
+	Format string
+}
+
 func Default() *Configuration {
 	return &Configuration{
 		Replicator: Replicator{
@@ -66,6 +72,10 @@ func Default() *Configuration {
 			PoolSize:        100,
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
+		},
+		Log: Log{
+			Level:  "debug",
+			Format: "text",
 		},
 	}
 }

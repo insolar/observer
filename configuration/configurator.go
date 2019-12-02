@@ -17,13 +17,12 @@
 package configuration
 
 import (
-	"context"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -35,15 +34,14 @@ const (
 	ConfigFilePath = ConfigName + "." + ConfigType
 )
 
-func Load(ctx context.Context) *Configuration {
-	log := inslogger.FromContext(ctx)
-	printWorkingDir(log)
-	actual := load(log)
-	printConfig(log, actual)
+func Load() *Configuration {
+	printWorkingDir()
+	actual := load()
+	printConfig(actual)
 	return actual
 }
 
-func load(log insolar.Logger) *Configuration {
+func load() *Configuration {
 	v := viper.New()
 
 	v.AutomaticEnv()
@@ -73,12 +71,12 @@ func load(log insolar.Logger) *Configuration {
 	return actual
 }
 
-func printWorkingDir(log insolar.Logger) {
+func printWorkingDir() {
 	wd, _ := os.Getwd()
 	log.Infof("Working dir: %s", wd)
 }
 
-func printConfig(log insolar.Logger, c *Configuration) {
+func printConfig(c *Configuration) {
 	cc, err := cleanSecrects(c)
 	if err != nil {
 		log.Error(err)
@@ -106,7 +104,7 @@ func cleanSecrects(c *Configuration) (*Configuration, error) {
 
 func replacePassword(url string) string {
 	re := regexp.MustCompile(`^(?P<start>.*)(:(?P<pass>[^@\/:?]+)@)(?P<end>.*)$`)
-	result := []byte{}
+	var result []byte
 	if re.MatchString(url) {
 		for _, submatches := range re.FindAllStringSubmatchIndex(url, -1) {
 			result = re.ExpandString(result, `$start:<masked>@$end`, url, submatches)

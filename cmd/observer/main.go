@@ -24,16 +24,31 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/insolar/insolar/log"
+
+	insconf "github.com/insolar/insolar/configuration"
 
 	"github.com/insolar/observer/component"
+	"github.com/insolar/observer/configuration"
 )
 
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	ctx := context.Background()
-	logger := inslogger.FromContext(ctx)
-	manager := component.Prepare(ctx)
+	cfg := configuration.Load()
+	logger, err := log.NewLog(insconf.Log{
+		Level:      cfg.Log.Level,
+		Formatter:  cfg.Log.Format,
+		Adapter:    "zerolog",
+		OutputType: "stderr",
+		BufferSize: 0,
+	})
+	if err != nil {
+		log.Fatalf("Can't create logger: %s", err.Error())
+	}
+	ctx := inslogger.SetLogger(context.Background(), logger)
+
+	manager := component.Prepare(ctx, cfg)
 	manager.Start()
 	graceful(logger, manager.Stop)
 }

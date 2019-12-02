@@ -47,8 +47,7 @@ type Manager struct {
 	sleepCounter sleepCounter
 }
 
-func Prepare(ctx context.Context) *Manager {
-	cfg := configuration.Load(ctx)
+func Prepare(ctx context.Context, cfg *configuration.Configuration) *Manager {
 	obs := observability.Make(ctx)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)

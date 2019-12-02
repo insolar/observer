@@ -33,7 +33,7 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build:
+build: ## build all binaries
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
@@ -64,7 +64,7 @@ $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
 
 .PHONY: config
-config:
+config: ## generate configs
 	mkdir -p $(ARTIFACTS_DIR)
 	go run ./configuration/gen/gen.go
 	mv ./observer.yaml $(ARTIFACTS_DIR)/observer.yaml
@@ -74,10 +74,10 @@ ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: test
-test:
+test: ## tests
 	go test ./... -v
 
-integration:
+integration: ## integration tests
 	go test ./... -tags=integration -v
 
 .PHONY: all
@@ -88,5 +88,5 @@ help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: migrate
-migrate:
+migrate: ## migrate
 	go run ./cmd/migrate/migrate.go -dir scripts/migrations -init

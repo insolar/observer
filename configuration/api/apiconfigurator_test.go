@@ -21,13 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConfigLoad(t *testing.T) {
-	log := inslogger.FromContext(inslogger.TestContext(t))
-	actual := load(log, "./testdata")
+	actual := load("./testdata")
 	require.Equal(t, big.NewInt(2000000000), actual.FeeAmount)
 	require.Equal(t, time.Second*3, actual.DB.AttemptInterval)
 }

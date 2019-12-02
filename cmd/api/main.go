@@ -17,10 +17,13 @@
 package main
 
 import (
-	"context"
+	"fmt"
 
 	echoPrometheus "github.com/globocom/echo-prometheus"
-	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/insolar/insolar/insolar"
+
+	insconf "github.com/insolar/insolar/configuration"
+	"github.com/insolar/insolar/log"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -31,16 +34,28 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
-	logger := inslogger.FromContext(ctx)
-	cfg := apiconfiguration.Load(ctx)
+	cfg := apiconfiguration.Load()
+	logger, err := log.NewLog(insconf.Log{
+		Level:      cfg.Log.Level,
+		Formatter:  cfg.Log.Format,
+		Adapter:    "zerolog",
+		OutputType: "stderr",
+		BufferSize: 0,
+	})
+	if err != nil {
+		log.Fatalf("Can't create logger: %s", err.Error())
+	}
+	fmt.Printf("cfg: %+v", cfg)
 	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
+	wa := EchoWriterAdapter{logger: logger}
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: &wa,
+	}))
 	e.Use(echoPrometheus.MetricsMiddleware())
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
@@ -48,4 +63,13 @@ func main() {
 	api.RegisterHandlers(e, observerAPI)
 
 	e.Logger.Fatal(e.Start(cfg.Listen))
+}
+
+type EchoWriterAdapter struct {
+	logger insolar.Logger
+}
+
+func (o *EchoWriterAdapter) Write(p []byte) (n int, err error) {
+	o.logger.Info(string(p))
+	return len(p), nil
 }

@@ -28,6 +28,12 @@ type Configuration struct {
 	DB        configuration.DB
 	FeeAmount *big.Int
 	Price     string
+	Log       Log
+}
+
+type Log struct {
+	Level  string
+	Format string
 }
 
 func Default() *Configuration {
@@ -40,5 +46,9 @@ func Default() *Configuration {
 		},
 		FeeAmount: big.NewInt(1000000000),
 		Price:     "0.05",
+		Log: Log{
+			Level:  "debug",
+			Format: "text",
+		},
 	}
 }
