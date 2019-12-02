@@ -124,6 +124,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	balance := c.accountBalance(accountTree.SideEffect.Activation)
 	walletRef := c.walletRef(memberTree.SideEffect.Activation)
 	accountRef := c.accountRef(walletTree.SideEffect.Activation)
+	publicKey := c.publicKey(memberTree.SideEffect.Activation)
 
 	response := c.createResponse(contractResult)
 
@@ -140,6 +141,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 		MigrationAddress: response.MigrationAddress,
 		AccountState:     accountTree.SideEffect.ID,
 		Status:           "SUCCESS",
+		PublicKey:        publicKey,
 	}}
 }
 
@@ -213,6 +215,10 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 			activate = accountActivate.Virtual.GetActivate()
 			balance = c.accountBalance(activate)
 		}
+		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
+		if pubKey == "" {
+			pubKey = memberState.PublicKey
+		}
 
 		members = append(members, &observer.Member{
 			MemberRef:    *memberRef,
@@ -221,6 +227,7 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 			Balance:      balance,
 			AccountState: activateID,
 			Status:       "INTERNAL",
+			PublicKey:    pubKey,
 		})
 	}
 	return members
@@ -309,6 +316,27 @@ func (c *MemberCollector) walletRef(act *record.Activate) insolar.Reference {
 	}
 
 	return mbr.Wallet
+}
+
+func (c *MemberCollector) publicKey(act *record.Activate) string {
+	memory := act.Memory
+
+	if memory == nil {
+		c.log.Warn(errors.New("failed to deserialize member memory"))
+		return ""
+	}
+
+	mbr := member.Member{}
+	if err := insolar.Deserialize(memory, &mbr); err != nil {
+		c.log.Error(errors.New("failed to deserialize member memory")) // TODO
+		return ""
+	}
+
+	pubKey := foundation.TrimPublicKey(mbr.PublicKey)
+	if pubKey == "" {
+		return mbr.PublicKey
+	}
+	return pubKey
 }
 
 func (c *MemberCollector) ParseResultPayload(res *record.Result) (foundation.Result, error) {

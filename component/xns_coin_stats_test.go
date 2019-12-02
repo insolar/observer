@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/gojuno/minimock"
+	"github.com/google/uuid"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/labstack/gommon/random"
@@ -130,6 +131,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 			AccountState:     gen.ID().Bytes(),
 			Status:           "TEST",
 			AccountRef:       gen.Reference().Bytes(),
+			PublicKey:        randomString(),
 		}
 		err := db.Insert(memberModel)
 		require.NoError(t, err)
@@ -201,6 +203,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 				AccountState:     gen.ID().Bytes(),
 				Status:           "TEST",
 				AccountRef:       gen.Reference().Bytes(),
+				PublicKey:        randomString(),
 			}
 			err := db.Insert(memberModel)
 			require.NoError(t, err)
@@ -362,4 +365,9 @@ func TestStatsManager_CLI_command(t *testing.T) {
 		require.Equal(t, "100000", stats.Total())
 		require.Equal(t, "100000", stats.Max())
 	})
+}
+
+func randomString() string {
+	id, _ := uuid.NewRandom()
+	return id.String()
 }
