@@ -70,6 +70,8 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		Goal:             group.Goal,
 		Image:            group.Image,
 		Title:            group.Title,
+		Purpose:          group.Purpose,
+		StartDate:        group.StartDate,
 		Membership:       group.Membership,
 		ChairMan:         group.ChairMan,
 		PaymentFrequency: group.PaymentFrequency.String(),

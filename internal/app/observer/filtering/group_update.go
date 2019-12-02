@@ -59,6 +59,8 @@ func (*GroupUpdateFilter) Filter(groupUpdates map[insolar.ID]*observer.GroupUpda
 		d.Membership = update.Membership
 		d.ChairMan = update.ChairMan
 		d.Balance = update.Balance
+		d.Purpose = update.Purpose
+		d.StartDate = update.StartDate
 		d.PaymentFrequency = update.PaymentFrequency
 		groups[update.GroupState] = d
 		delete(groupUpdates, id)

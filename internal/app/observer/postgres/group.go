@@ -41,6 +41,8 @@ type GroupSchema struct {
 	ProductRef       []byte
 	PaymentFrequency string `sql:"payment_frequency,"`
 	Status           string
+	Purpose          string
+	StartDate        int64
 	State            []byte
 }
 
@@ -113,6 +115,8 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		Set("image=?,goal=?", model.Image, model.Goal).
 		Set("type=?", model.ProductType.String()).
 		Set("title=?", model.Title).
+		Set("purpose=?", model.Purpose).
+		Set("start_date=?", model.StartDate).
 		Set("payment_frequency=?", model.PaymentFrequency).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("product_ref=?", model.ProductRef.Bytes()).
@@ -190,6 +194,8 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		Type:             model.ProductType.String(),
 		GroupOwner:       model.ChairMan.Bytes(),
 		Image:            model.Image,
+		Purpose:          model.Purpose,
+		StartDate:        model.StartDate,
 		ProductRef:       model.ProductRef.Bytes(),
 		PaymentFrequency: model.PaymentFrequency,
 		Status:           model.Status,
