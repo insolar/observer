@@ -85,7 +85,6 @@ create table if not exists pulses
             primary key,
     pulse_date bigint,
     entropy varchar(256),
-    requests_count integer,
     nodes bigint
 );
 

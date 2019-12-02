@@ -23,24 +23,18 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/component"
-	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
-	"github.com/insolar/observer/observability"
 )
 
 func TestCountStats(t *testing.T) {
-	cfg := &configuration.Configuration{
-		DB: configuration.DB{
-			Attempts: 1,
-		},
-	}
-
-	pulseRepo := postgres.NewPulseStorage(cfg, observability.Make(context.Background()), db)
+	log := inslogger.FromContext(context.Background())
+	pulseRepo := postgres.NewPulseStorage(log, db)
 
 	now := time.Now()
 

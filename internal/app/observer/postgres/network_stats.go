@@ -23,6 +23,8 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/internal/models"
 )
 
 type NetworkStatsModel struct {
@@ -82,7 +84,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 
 	// LastPulseNumber and Nodes
 	{
-		pulseSchema := PulseSchema{}
+		pulseSchema := models.Pulse{}
 		err := s.db.Model(&pulseSchema).
 			Order("pulse DESC").
 			Limit(1).
@@ -99,7 +101,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 	// MonthTransactions
 	{
 		monthAgoPulse := uint32(insolar.GenesisPulse.PulseNumber)
-		pulseSchema := PulseSchema{}
+		pulseSchema := models.Pulse{}
 		err := s.db.Model(&pulseSchema).
 			Where("pulse_date < extract(epoch from (NOW() - INTERVAL '30 DAYS'))").
 			Order("pulse DESC").

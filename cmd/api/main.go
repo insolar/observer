@@ -30,6 +30,7 @@ import (
 
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 )
 
@@ -59,7 +60,8 @@ func main() {
 	e.Use(echoPrometheus.MetricsMiddleware())
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
-	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, &api.DefaultClock{}, cfg.Price)
+	pStorage := postgres.NewPulseStorage(logger, db)
+	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, pStorage, cfg.Price)
 	api.RegisterHandlers(e, observerAPI)
 
 	e.Logger.Fatal(e.Start(cfg.Listen))

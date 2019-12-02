@@ -29,6 +29,7 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
 
+	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 )
@@ -1142,7 +1143,6 @@ func TestMember_Hold(t *testing.T) {
 	memberWalletReference := gen.Reference()
 	memberAccountReference := gen.Reference()
 	balance := "5000"
-	clock.nowTime = currentTime
 
 	deposite := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
@@ -1228,7 +1228,10 @@ func TestMember_Vesting(t *testing.T) {
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
 
-	clock.nowTime = currentTime + deposit.VestingStep + 1
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60199947,
+	})
+	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
 	require.NoError(t, err)
@@ -1294,7 +1297,10 @@ func TestMember_VestingAll(t *testing.T) {
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
 
-	clock.nowTime = currentTime + deposit.Vesting + 1
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60200937,
+	})
+	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
 	require.NoError(t, err)
@@ -1357,7 +1363,10 @@ func TestMember_VestingAndSpent(t *testing.T) {
 	err := db.Insert(&deposit)
 	require.NoError(t, err)
 
-	clock.nowTime = currentTime + deposit.VestingStep*11 + 1
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60200047,
+	})
+	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
 	require.NoError(t, err)

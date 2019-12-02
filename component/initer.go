@@ -19,6 +19,7 @@ package component
 import (
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
+	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -27,7 +28,7 @@ import (
 
 func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) func() *state {
 	logger := obs.Log()
-	last := MustKnowPulse(cfg, obs, conn.PG())
+	last := MustKnowPulse(obs, conn.PG())
 	metricState := getMetricState(cfg, obs, conn.PG())
 	st := state{
 		last: last,
@@ -40,12 +41,11 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 	}
 }
 
-func MustKnowPulse(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) insolar.PulseNumber {
-	pulses := postgres.NewPulseStorage(cfg, obs, db)
-	p := pulses.Last()
-	if p == nil {
-		panic("Something wrong with DB. Most likely failed to connect to the DB" +
-			" in the allotted number of attempts.")
+func MustKnowPulse(obs *observability.Observability, db orm.DB) insolar.PulseNumber {
+	pulses := postgres.NewPulseStorage(obs.Log(), db)
+	p, err := pulses.Last()
+	if err != nil {
+		panic(errors.Wrap(err, "Something wrong with pulses in DB or DB itself"))
 	}
 	return p.Number
 }
