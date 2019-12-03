@@ -52,7 +52,7 @@ Log level:
 `OBSERVER_LOG_LEVEL=info`
 
 Log format:
-`OBSERVER_LOG_FORMATTER=text`
+`OBSERVER_LOG_FORMAT=text`
 
 ### Metrics and health check
 
@@ -95,10 +95,10 @@ Max number of connections to DB:
 `OBSERVERAPI_DB_POOLSIZE=20`
 
 Log level:
-`OBSERVER_LOG_LEVEL=info`
+`OBSERVERAPI_LOG_LEVEL=info`
 
 Log format:
-`OBSERVER_LOG_FORMATTER=text`
+`OBSERVERAPI_LOG_FORMAT=text`
 
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
