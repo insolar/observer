@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,8 +30,12 @@ import (
 
 var stop = make(chan os.Signal, 1)
 
+var Version string
+var Commit string
+
 func main() {
 	defer panic.Catch("main")
+	showVersion()
 	manager := component.Prepare()
 	manager.Start()
 	graceful(manager.Stop)
@@ -41,4 +46,18 @@ func graceful(that func()) {
 	<-stop
 	log.Infof("gracefully stopping...")
 	that()
+}
+
+func showVersion() {
+	msg := "The observer"
+
+	if Version != "" {
+		msg += fmt.Sprintf(" version: %s", Version)
+	}
+
+	if Commit != "" {
+		msg += fmt.Sprintf(" commit: %s", Commit)
+	}
+
+	fmt.Println(msg)
 }

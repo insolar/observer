@@ -3,6 +3,9 @@ OBSERVER = observer
 ARTIFACTS = .artifacts
 CONFIG = config
 
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+GIT_TAG := $(shell git describe --tags)
+
 .PHONY: build
 build: $(BIN_DIR) $(OBSERVER)
 
@@ -14,7 +17,7 @@ $(BIN_DIR):
 
 .PHONY: $(OBSERVER)
 $(OBSERVER):
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -ldflags "-X main.Commit=${GIT_COMMIT} -X main.Version=${GIT_TAG}" -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 
 $(ARTIFACTS):
 	mkdir -p $(ARTIFACTS)

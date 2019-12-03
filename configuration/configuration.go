@@ -46,7 +46,7 @@ func Default() *Configuration {
 			Attempts:        cycle.INFINITY,
 			AttemptInterval: 3 * time.Second,
 			CreateTables:    false,
-			Migration:       "5.0.0-beauty",
+			Migration:       "5.0.2-beauty",
 		},
 	}
 }
