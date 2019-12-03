@@ -208,3 +208,8 @@ create table if not exists notifications
 
 create index if not exists idx_notifications_start
     on notifications (start);
+
+create or replace function debug_reference(ref bytea) returns text as $$
+select translate(left(encode(ref, 'base64'), 43), '+/', '-_');
+$$ language sql
+;
