@@ -33,34 +33,25 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/internal/app/observer/postgres"
-
 	"github.com/labstack/echo/v4"
+
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
 )
 
-type Clock interface {
-	Now() time.Time
-}
-
-type DefaultClock struct{}
-
-func (c *DefaultClock) Now() time.Time {
-	return time.Now()
-}
-
 type ObserverServer struct {
-	db    *pg.DB
-	log   insolar.Logger
-	clock Clock
-	fee   *big.Int
-	price string
+	db       *pg.DB
+	log      insolar.Logger
+	pStorage observer.PulseStorage
+	fee      *big.Int
+	price    string
 }
 
-func NewObserverServer(db *pg.DB, log insolar.Logger, fee *big.Int, clock Clock, price string) *ObserverServer {
-	return &ObserverServer{db: db, log: log, clock: clock, fee: fee, price: price}
+func NewObserverServer(db *pg.DB, log insolar.Logger, fee *big.Int, pStorage observer.PulseStorage, price string) *ObserverServer {
+	return &ObserverServer{db: db, log: log, pStorage: pStorage, fee: fee, price: price}
 }
 
 func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress string) error {
@@ -238,13 +229,25 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
+	pulse, err := s.pStorage.Last()
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "couldn't load last pulse"))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	pTime, err := pulse.Number.AsApproximateTime()
+	if err != nil {
+		s.log.Error(errors.Wrapf(err, "couldn't convert pulse %d to time", pulse.Number))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
 	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference, true)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	response, err := MemberToAPIMember(*member, deposits, s.clock.Now().Unix(), byMigrationAddress)
+	response, err := MemberToAPIMember(*member, deposits, pTime.Unix(), byMigrationAddress)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})

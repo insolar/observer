@@ -59,7 +59,7 @@ func makeStorer(
 			err := db.RunInTransaction(func(tx *pg.Tx) error {
 				// plain records
 
-				pulses := postgres.NewPulseStorage(cfg, obs, tx)
+				pulses := postgres.NewPulseStorage(log, tx)
 				err := pulses.Insert(b.pulse)
 				if err != nil {
 					return errors.Wrap(err, "failed to insert pulse")

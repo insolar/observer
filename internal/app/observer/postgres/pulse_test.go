@@ -30,21 +30,20 @@ import (
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/observability"
 )
 
 func TestPulseStorage_Insert(t *testing.T) {
 	ctx := context.Background()
 	t.Run("nil", func(t *testing.T) {
-		cfg := configuration.Default()
 		obs := observability.Make(ctx)
-		storage := NewPulseStorage(cfg, obs, nil)
+		storage := NewPulseStorage(obs.Log(), nil)
 
 		require.NoError(t, storage.Insert(nil))
 	})
 
 	t.Run("insert_with_err", func(t *testing.T) {
-		cfg := configuration.Default()
 		obs := observability.Make(ctx)
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -53,7 +52,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return nil, errors.New("something wrong")
 		}
-		storage := NewPulseStorage(cfg, obs, db)
+		storage := NewPulseStorage(obs.Log(), db)
 
 		empty := &observer.Pulse{}
 
@@ -61,7 +60,6 @@ func TestPulseStorage_Insert(t *testing.T) {
 	})
 
 	t.Run("insert_with_conflict", func(t *testing.T) {
-		cfg := configuration.Default()
 		obs := observability.Make(ctx)
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -70,7 +68,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return makeResult(obs.Log()), nil
 		}
-		storage := NewPulseStorage(cfg, obs, db)
+		storage := NewPulseStorage(obs.Log(), db)
 
 		empty := &observer.Pulse{}
 
@@ -78,7 +76,6 @@ func TestPulseStorage_Insert(t *testing.T) {
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		cfg := configuration.Default()
 		obs := observability.Make(ctx)
 		empty := &observer.Pulse{}
 		db := &DBMock{}
@@ -88,7 +85,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 		db.query = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
 			return makeResult(obs.Log(), empty), nil
 		}
-		storage := NewPulseStorage(cfg, obs, db)
+		storage := NewPulseStorage(obs.Log(), db)
 
 		err := storage.Insert(empty)
 		require.NoError(t, err)
@@ -111,10 +108,9 @@ func TestPulseStorage_Last(t *testing.T) {
 		cfg.DB.Attempts = 1
 		cfg.DB.AttemptInterval = time.Nanosecond
 
-		storage := NewPulseStorage(cfg, obs, db)
-		require.Panics(t, func() {
-			storage.Last()
-		})
+		storage := NewPulseStorage(obs.Log(), db)
+		_, err := storage.Last()
+		require.Error(t, err)
 	})
 
 	t.Run("no_pulses", func(t *testing.T) {
@@ -130,19 +126,19 @@ func TestPulseStorage_Last(t *testing.T) {
 		}
 		cfg.DB.Attempts = 1
 		cfg.DB.AttemptInterval = time.Nanosecond
-		empty := &observer.Pulse{}
 
-		storage := NewPulseStorage(cfg, obs, db)
-		require.Equal(t, empty, storage.Last())
+		storage := NewPulseStorage(obs.Log(), db)
+		pulse, err := storage.Last()
+		require.Error(t, err)
+		require.Nil(t, pulse)
 	})
 
 	t.Run("existing_pulse", func(t *testing.T) {
-		cfg := configuration.Default()
 		obs := observability.Make(ctx)
 		expected := &observer.Pulse{Number: insolar.GenesisPulse.PulseNumber}
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
-			model[0].(*PulseSchema).Pulse = uint32(expected.Number)
+			model[0].(*models.Pulse).Pulse = uint32(expected.Number)
 			return orm.NewQuery(db, model...)
 		}
 		db.queryOne = func(model, query interface{}, params ...interface{}) (orm.Result, error) {
@@ -150,7 +146,9 @@ func TestPulseStorage_Last(t *testing.T) {
 			return res, nil
 		}
 
-		storage := NewPulseStorage(cfg, obs, db)
-		require.Equal(t, expected, storage.Last())
+		storage := NewPulseStorage(obs.Log(), db)
+		pulse, err := storage.Last()
+		require.NoError(t, err)
+		require.Equal(t, expected, pulse)
 	})
 }

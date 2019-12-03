@@ -133,6 +133,15 @@ type Notification struct {
 	Stop    time.Time `sql:"stop,notnull"`
 }
 
+type Pulse struct {
+	tableName struct{} `sql:"pulses"` //nolint: unused,structcheck
+
+	Pulse     uint32 `sql:"pulse,notnull"`
+	PulseDate int64  `sql:"pulse_date"`
+	Entropy   []byte `sql:"entropy"`
+	Nodes     uint32 `sql:"nodes"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string

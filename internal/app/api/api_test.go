@@ -24,11 +24,14 @@ import (
 	"time"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/pulse"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
 
+	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/testutils"
 )
@@ -42,7 +45,7 @@ const (
 var (
 	db *pg.DB
 
-	clock = &testClock{}
+	pStorage  observer.PulseStorage
 
 	testFee   = big.NewInt(1000000000)
 	testPrice = "0.05"
@@ -56,7 +59,12 @@ func TestMain(t *testing.M) {
 	e := echo.New()
 
 	logger := inslogger.FromContext(context.Background())
-	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
+
+	pStorage = postgres.NewPulseStorage(logger, db)
+	nowPulse := 1575302444 - pulse.UnixTimeOfMinTimePulse + pulse.MinTimePulse
+	_ = pStorage.Insert(&observer.Pulse{Number: pulse.Number(nowPulse)})
+
+	observerAPI := NewObserverServer(db, logger, testFee, pStorage, testPrice)
 
 	RegisterHandlers(e, observerAPI)
 	go func() {
@@ -82,12 +90,9 @@ func truncateDB(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.Model(&models.MigrationAddress{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
-}
 
-type testClock struct {
-	nowTime int64
-}
-
-func (c *testClock) Now() time.Time {
-	return time.Unix(c.nowTime, 0)
+	_, err = db.Exec("TRUNCATE TABLE pulses CASCADE")
+	require.NoError(t, err)
+	nowPulse := 1575302444 - pulse.UnixTimeOfMinTimePulse + pulse.MinTimePulse
+	_ = pStorage.Insert(&observer.Pulse{Number: pulse.Number(nowPulse)})
 }
