@@ -33,7 +33,6 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -45,14 +44,14 @@ const (
 )
 
 type MemberCollector struct {
-	log *logrus.Logger
+	log insolar.Logger
 
 	fetcher store.RecordFetcher
 	builder tree.Builder
 }
 
 func NewMemberCollector(
-	log *logrus.Logger,
+	log insolar.Logger,
 	fetcher store.RecordFetcher,
 	builder tree.Builder,
 ) *MemberCollector {
@@ -68,17 +67,20 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 		return nil
 	}
 
+	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "MemberCollector")
+
 	// genesis member records
-	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec) {
+	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec, log) {
 		return c.processGenesisRecord(ctx, rec)
 	}
 
-	result := observer.CastToResult(rec) // TODO: still observer.Result
-	if result == nil {
+	result, err := observer.CastToResult(rec) // TODO: still observer.Result
+	if err != nil {
+		log.Warn(err.Error())
 		return nil
 	}
 
-	if !result.IsSuccess() { // TODO: still observer.Result
+	if !result.IsSuccess(log) { // TODO: still observer.Result
 		// TODO: what should we do with bad result records?
 		return nil
 	}

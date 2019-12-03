@@ -17,12 +17,16 @@
 package main
 
 import (
+	"fmt"
+
+	echoPrometheus "github.com/globocom/echo-prometheus"
+	"github.com/insolar/insolar/insolar"
+
+	insconf "github.com/insolar/insolar/configuration"
+	"github.com/insolar/insolar/log"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
-
-	echoPrometheus "github.com/globocom/echo-prometheus"
 
 	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/insolar/observer/internal/app/api"
@@ -31,20 +35,27 @@ import (
 
 func main() {
 	cfg := apiconfiguration.Load()
-
-	level, err := logrus.ParseLevel(cfg.LogLevel)
+	logger, err := log.NewLog(insconf.Log{
+		Level:      cfg.Log.Level,
+		Formatter:  cfg.Log.Format,
+		Adapter:    "zerolog",
+		OutputType: "stderr",
+		BufferSize: 0,
+	})
 	if err != nil {
-		level = logrus.InfoLevel
+		log.Fatalf("Can't create logger: %s", err.Error())
+	}
+	fmt.Printf("cfg: %+v", cfg)
+	db, err := dbconn.Connect(cfg.DB)
+	if err != nil {
+		logger.Fatal(err.Error())
 	}
 
-	logger := logrus.New()
-	logger.SetLevel(level)
-	logger.SetFormatter(&logrus.JSONFormatter{})
-
-	db := dbconn.Connect(cfg.DB)
-
+	wa := EchoWriterAdapter{logger: logger}
 	e := echo.New()
-	e.Use(middleware.Logger())
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Output: &wa,
+	}))
 	e.Use(echoPrometheus.MetricsMiddleware())
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
@@ -52,4 +63,13 @@ func main() {
 	api.RegisterHandlers(e, observerAPI)
 
 	e.Logger.Fatal(e.Start(cfg.Listen))
+}
+
+type EchoWriterAdapter struct {
+	logger insolar.Logger
+}
+
+func (o *EchoWriterAdapter) Write(p []byte) (n int, err error) {
+	o.logger.Info(string(p))
+	return len(p), nil
 }

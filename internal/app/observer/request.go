@@ -23,7 +23,6 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/pkg/errors"
@@ -35,13 +34,13 @@ type RequestCollector interface {
 	Collect(*Record)
 }
 
-func CastToRequest(r interface{}) *Request {
+func CastToRequest(r interface{}, logger insolar.Logger) *Request {
 	if req, ok := r.(*Request); ok {
 		return req
 	}
 	rec, ok := r.(*Record)
 	if !ok {
-		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
+		logger.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
 		return nil
 	}
 	return (*Request)(rec)
@@ -81,16 +80,16 @@ func (r *Request) IsOutgoing() bool {
 	return ok
 }
 
-func (r *Request) IsMemberCall() bool {
+func (r *Request) IsMemberCall(logger insolar.Logger) bool {
 	if r == nil {
-		log.Errorf("trying to use nil dto.Request receiver")
+		logger.Errorf("trying to use nil dto.Request receiver")
 		debug.PrintStack()
 		return false
 	}
 
 	v, ok := r.Virtual.Union.(*record.Virtual_IncomingRequest)
 	if !ok {
-		log.Errorf("trying to use %s as IncomingRequest", reflect.TypeOf(r.Virtual.Union).String())
+		logger.Errorf("trying to use %s as IncomingRequest", reflect.TypeOf(r.Virtual.Union).String())
 		debug.PrintStack()
 		return false
 	}
@@ -106,22 +105,22 @@ func (r *Request) IsMemberCall() bool {
 	return req.Method == "Call"
 }
 
-func (r *Request) ParseMemberCallArguments() member.Request {
-	if !r.IsMemberCall() {
-		log.Errorf("trying to parse member call arguments of not member call")
+func (r *Request) ParseMemberCallArguments(logger insolar.Logger) member.Request {
+	if !r.IsMemberCall(logger) {
+		logger.Errorf("trying to parse member call arguments of not member call")
 		debug.PrintStack()
 		return member.Request{}
 	}
 
 	in := r.Virtual.GetIncomingRequest().Arguments
 	if in == nil {
-		log.Warnf("member call arguments is nil")
+		logger.Warnf("member call arguments is nil")
 		return member.Request{}
 	}
 	var args []interface{}
 	err := insolar.Deserialize(in, &args)
 	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
+		logger.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
 		return member.Request{}
 	}
 
@@ -135,12 +134,12 @@ func (r *Request) ParseMemberCallArguments() member.Request {
 			)
 			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
 			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal params"))
+				logger.Warn(errors.Wrapf(err, "failed to unmarshal params"))
 				return member.Request{}
 			}
 			err = json.Unmarshal(raw, &request)
 			if err != nil {
-				log.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
+				logger.Warn(errors.Wrapf(err, "failed to unmarshal json member request"))
 				return member.Request{}
 			}
 		}
@@ -148,85 +147,19 @@ func (r *Request) ParseMemberCallArguments() member.Request {
 	return request
 }
 
-func (r *Request) ParseMemberContractCallParams(v interface{}) {
-	if !r.IsMemberCall() {
+func (r *Request) ParseMemberContractCallParams(v interface{}, logger insolar.Logger) {
+	if !r.IsMemberCall(logger) {
 		return
 	}
-	args := r.ParseMemberCallArguments()
+	args := r.ParseMemberCallArguments(logger)
 	data, err := json.Marshal(args.Params.CallParams)
 	if err != nil {
-		log.Warn("failed to marshal CallParams")
+		logger.Warn("failed to marshal CallParams")
 		debug.PrintStack()
 	}
 	err = json.Unmarshal(data, v)
 	if err != nil {
-		log.Warn("failed to unmarshal CallParams")
+		logger.Warn("failed to unmarshal CallParams")
 		debug.PrintStack()
-	}
-}
-
-func (r *Request) ParseIncomingArguments(args ...interface{}) {
-	if !r.IsIncoming() {
-		log.Warnf("trying to parse arguments of not incoming request")
-		return
-	}
-	in := r.Virtual.GetIncomingRequest().Arguments
-	if in == nil {
-		log.Warnf("member call arguments is nil")
-		return
-	}
-	err := insolar.Deserialize(in, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return
-	}
-}
-
-func ParseMemberCallArguments(req *record.IncomingRequest) (member.Request, error) {
-	if req == nil {
-		return member.Request{}, errors.New("nil request")
-	}
-
-	in := req.Arguments
-	if in == nil {
-		return member.Request{}, errors.New("member call arguments is nil")
-	}
-	var args []interface{}
-	err := insolar.Deserialize(in, &args)
-	if err != nil {
-		return member.Request{}, errors.Wrapf(err, "failed to deserialize request arguments")
-	}
-
-	request := member.Request{}
-	if len(args) > 0 {
-		if rawRequest, ok := args[0].([]byte); ok {
-			var (
-				pulseTimeStamp int64
-				signature      string
-				raw            []byte
-			)
-			err = insolar.Deserialize(rawRequest, []interface{}{&raw, &signature, &pulseTimeStamp})
-			if err != nil {
-				return member.Request{}, errors.Wrapf(err, "failed to unmarshal params")
-			}
-			err = json.Unmarshal(raw, &request)
-			if err != nil {
-				return member.Request{}, errors.Wrapf(err, "failed to unmarshal json member request")
-			}
-		}
-	}
-	return request, nil
-}
-
-func ParseIncomingArguments(req *record.IncomingRequest, args ...interface{}) {
-	in := req.Arguments
-	if in == nil {
-		log.Warnf("member call arguments is nil")
-		return
-	}
-	err := insolar.Deserialize(in, &args)
-	if err != nil {
-		log.Warn(errors.Wrapf(err, "failed to deserialize request arguments"))
-		return
 	}
 }

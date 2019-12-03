@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg/orm"
-	"github.com/sirupsen/logrus"
+	"github.com/insolar/insolar/insolar"
 )
 
 type DBMock struct {
@@ -57,11 +57,11 @@ func (m *DBMock) QueryOneContext(_ context.Context, model, query interface{}, pa
 
 type resultMock struct {
 	orm.Result
-	log   *logrus.Logger
+	log   insolar.Logger
 	model []interface{}
 }
 
-func makeResult(log *logrus.Logger, model ...interface{}) orm.Result {
+func makeResult(log insolar.Logger, model ...interface{}) orm.Result {
 	return &resultMock{log: log, model: model}
 }
 

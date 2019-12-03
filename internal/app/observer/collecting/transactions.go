@@ -15,7 +15,6 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"
@@ -23,8 +22,8 @@ import (
 )
 
 const (
-	callSiteTransfer  = "member.transfer"
-	callSiteRelease   = "deposit.transfer"
+	callSiteTransfer = "member.transfer"
+	callSiteRelease  = "deposit.transfer"
 )
 
 const (
@@ -40,18 +39,23 @@ const (
 )
 
 type TxRegisterCollector struct {
-	log *logrus.Logger
+	log insolar.Logger
 }
 
-func NewTxRegisterCollector(log *logrus.Logger) *TxRegisterCollector {
+func NewTxRegisterCollector(log insolar.Logger) *TxRegisterCollector {
 	return &TxRegisterCollector{
 		log: log,
 	}
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
-	log := c.log.WithField("collector", "TxRegisterCollector").WithField("record_id", rec.Record.ID.DebugString())
-	log = log.WithField("collect_process_id", uuid.New())
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxRegisterCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
+
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -83,7 +87,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	return tx
 }
 
-func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromTransfer(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
 	txID := *insolar.NewRecordReference(rec.Record.ID)
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 
@@ -159,7 +163,7 @@ func (c *TxRegisterCollector) fromTransfer(log *logrus.Entry, rec exporter.Recor
 	}
 }
 
-func (c *TxRegisterCollector) fromMigration(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -210,7 +214,7 @@ func (c *TxRegisterCollector) fromMigration(log *logrus.Entry, rec exporter.Reco
 	}
 }
 
-func (c *TxRegisterCollector) fromRelease(log *logrus.Entry, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromRelease(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -300,10 +304,10 @@ func parseExternalArguments(in []byte) (member.Request, map[string]interface{}, 
 
 type TxResultCollector struct {
 	fetcher store.RecordFetcher
-	log     *logrus.Logger
+	log     insolar.Logger
 }
 
-func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxResultCollector {
+func NewTxResultCollector(log insolar.Logger, fetcher store.RecordFetcher) *TxResultCollector {
 	return &TxResultCollector{
 		fetcher: fetcher,
 		log:     log,
@@ -311,8 +315,12 @@ func NewTxResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxRe
 }
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
-	log := c.log.WithField("collector", "TxResultCollector").WithField("record_id", rec.Record.ID.DebugString())
-	log = log.WithField("collect_process_id", uuid.New())
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxResultCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -412,7 +420,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 }
 
 func (c *TxResultCollector) fromMigration(
-	log *logrus.Entry,
+	log insolar.Logger,
 	request record.IncomingRequest,
 ) *observer.TxResult {
 	// Skip API requests.
@@ -447,10 +455,10 @@ func (c *TxResultCollector) fromMigration(
 
 type TxSagaResultCollector struct {
 	fetcher store.RecordFetcher
-	log     *logrus.Logger
+	log     insolar.Logger
 }
 
-func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *TxSagaResultCollector {
+func NewTxSagaResultCollector(log insolar.Logger, fetcher store.RecordFetcher) *TxSagaResultCollector {
 	return &TxSagaResultCollector{
 		fetcher: fetcher,
 		log:     log,
@@ -458,8 +466,12 @@ func NewTxSagaResultCollector(log *logrus.Logger, fetcher store.RecordFetcher) *
 }
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
-	log := c.log.WithField("collector", "TxSagaResultCollector").WithField("record_id", rec.Record.ID.DebugString())
-	log = log.WithField("collect_process_id", uuid.New())
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxSagaResultCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -508,7 +520,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 }
 
 func (c *TxSagaResultCollector) fromAccept(
-	log *logrus.Entry,
+	log insolar.Logger,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,
@@ -563,7 +575,7 @@ func (c *TxSagaResultCollector) fromAccept(
 }
 
 func (c *TxSagaResultCollector) fromCall(
-	log *logrus.Entry,
+	log insolar.Logger,
 	resultRec exporter.Record,
 	request record.IncomingRequest,
 	result record.Result,

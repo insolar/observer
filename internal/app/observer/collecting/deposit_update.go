@@ -24,16 +24,15 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
 
 type DepositUpdateCollector struct {
-	log *logrus.Logger
+	log insolar.Logger
 }
 
-func NewDepositUpdateCollector(log *logrus.Logger) *DepositUpdateCollector {
+func NewDepositUpdateCollector(log insolar.Logger) *DepositUpdateCollector {
 	return &DepositUpdateCollector{
 		log: log,
 	}

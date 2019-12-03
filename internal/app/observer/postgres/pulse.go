@@ -22,7 +22,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -41,7 +40,7 @@ type PulseSchema struct {
 
 type PulseStorage struct {
 	cfg          *configuration.Configuration
-	log          *logrus.Logger
+	log          insolar.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }

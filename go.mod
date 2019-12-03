@@ -12,7 +12,6 @@ require (
 	github.com/gojuno/minimock v0.0.0-20190805155710-1672f6126e23
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insolar v0.9.20
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -29,8 +28,6 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
-	github.com/renstrom/shortuuid v3.0.0+incompatible // indirect
-	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0

@@ -30,8 +30,8 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -39,7 +39,7 @@ import (
 )
 
 func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
-	log := logrus.New()
+	log := inslogger.FromContext(inslogger.TestContext(t))
 	fetcher := store.NewRecordFetcherMock(t)
 	collector := NewDepositCollector(log, fetcher)
 	ctx := context.Background()

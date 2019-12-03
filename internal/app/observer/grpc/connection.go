@@ -17,9 +17,9 @@
 package grpc
 
 import (
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
 )
 
@@ -27,7 +27,7 @@ type ConnectionHolder struct {
 	conn *grpc.ClientConn
 }
 
-func NewConnectionHolder(cfg *configuration.Configuration, log *logrus.Logger) *ConnectionHolder {
+func NewConnectionHolder(cfg *configuration.Configuration, log insolar.Logger) *ConnectionHolder {
 	limits := grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(cfg.Replicator.MaxTransportMsg),
 		grpc.MaxCallSendMsgSize(cfg.Replicator.MaxTransportMsg),

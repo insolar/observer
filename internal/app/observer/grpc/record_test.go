@@ -38,7 +38,7 @@ func TestRecordFetcher_Fetch(t *testing.T) {
 	mc := minimock.NewController(t)
 	ctx := context.Background()
 	cfg := configuration.Default()
-	obs := observability.Make(cfg)
+	obs := observability.Make(ctx)
 	recordClient := NewRecordExporterClientMock(mc)
 	cfg.Replicator.AttemptInterval = 0
 	cfg.Replicator.Attempts = 1

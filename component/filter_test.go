@@ -17,6 +17,7 @@
 package component
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -25,14 +26,12 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/observability"
 )
 
 func TestFilter_DepositsUpdates(t *testing.T) {
-	cfg := configuration.Default()
-	obs := observability.Make(cfg)
+	obs := observability.Make(context.Background())
 
 	filter := makeFilter(obs)
 

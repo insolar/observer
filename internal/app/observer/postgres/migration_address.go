@@ -21,8 +21,8 @@ import (
 	"github.com/go-pg/pg/orm"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
@@ -39,7 +39,7 @@ type MigrationAddressSchema struct {
 
 type MigrationAddressStorage struct {
 	cfg          *configuration.Configuration
-	log          *logrus.Logger
+	log          insolar.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }

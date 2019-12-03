@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/log"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
@@ -134,7 +134,7 @@ func cleanSecrects(c *Configuration) (*Configuration, error) {
 
 func replacePassword(url string) string {
 	re := regexp.MustCompile(`^(?P<start>.*)(:(?P<pass>[^@\/:?]+)@)(?P<end>.*)$`)
-	result := []byte{}
+	var result []byte
 	if re.MatchString(url) {
 		for _, submatches := range re.FindAllStringSubmatchIndex(url, -1) {
 			result = re.ExpandString(result, `$start:<masked>@$end`, url, submatches)

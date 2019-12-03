@@ -25,21 +25,18 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type Result record.Material
 
-func CastToResult(r interface{}) *Result {
+func CastToResult(r interface{}) (*Result, error) {
 	if res, ok := r.(*Result); ok {
-		return res
+		return res, nil
 	}
-	rec, ok := r.(*Record)
-	if !ok {
-		log.Warnf("trying to cast %s as *observer.Record", reflect.TypeOf(r))
-		return nil
+	if rec, ok := r.(*Record); ok {
+		return (*Result)(rec), nil
 	}
-	return (*Result)(rec)
+	return nil, errors.New("trying to cast %s as *observer.Record " + reflect.TypeOf(r).String())
 }
 
 func (r *Result) IsResult() bool {
@@ -63,8 +60,9 @@ func (r *Result) Request() insolar.ID {
 	return *id
 }
 
-func (r *Result) ParsePayload() (foundation.Result, error) {
+func (r *Result) ParsePayload(log insolar.Logger) (foundation.Result, error) {
 	if r == nil {
+		// todo: throw out logger from here
 		log.Errorf("trying to use nil dto.Result receiver")
 		debug.PrintStack()
 		return foundation.Result{}, nil
@@ -78,8 +76,9 @@ func (r *Result) ParsePayload() (foundation.Result, error) {
 }
 
 func ExtractFoundationResult(payload []byte) (foundation.Result, error) {
+
+	// todo fix this checkup
 	if payload == nil {
-		log.Warn("trying to parse nil Result.Payload")
 		return foundation.Result{}, nil
 	}
 
@@ -99,12 +98,12 @@ func ExtractFoundationResult(payload []byte) (foundation.Result, error) {
 	return result, nil
 }
 
-func (r *Result) ParseFirstPayloadValue(v interface{}) {
-	if !r.IsSuccess() {
+func (r *Result) ParseFirstPayloadValue(v interface{}, log insolar.Logger) {
+	if !r.IsSuccess(log) {
 		return
 	}
 
-	result, err := r.ParsePayload()
+	result, err := r.ParsePayload(log)
 	if err != nil {
 		return
 	}
@@ -129,12 +128,12 @@ const (
 	CANCELED Status = "CANCELED"
 )
 
-func (r *Result) IsSuccess() bool {
+func (r *Result) IsSuccess(log insolar.Logger) bool {
 	if !r.IsResult() {
 		return false
 	}
 
-	result, err := r.ParsePayload()
+	result, err := r.ParsePayload(log)
 	if err != nil {
 		return false
 	}
@@ -160,38 +159,4 @@ type CoupledResult struct {
 
 type ResultCollector interface {
 	Collect(*Record) *CoupledResult
-}
-
-func ParseResultPayload(res *record.Result) (foundation.Result, error) {
-	var firstValue interface{}
-	var contractErr *foundation.Error
-	requestErr, err := foundation.UnmarshalMethodResult(res.Payload, &firstValue, &contractErr)
-
-	if err != nil {
-		return foundation.Result{}, errors.Wrap(err, "failed to unmarshal result payload")
-	}
-
-	result := foundation.Result{
-		Error:   requestErr,
-		Returns: []interface{}{firstValue, contractErr},
-	}
-	return result, nil
-}
-
-func ParseFirstValueResult(res *record.Result, v interface{}) {
-	result, err := ParseResultPayload(res)
-	if err != nil {
-		return
-	}
-	returns := result.Returns
-	data, err := json.Marshal(returns[0])
-	if err != nil {
-		log.Warn("failed to marshal Payload.Returns[0]")
-		debug.PrintStack()
-	}
-	err = json.Unmarshal(data, v)
-	if err != nil {
-		log.WithField("json", string(data)).Warn("failed to unmarshal Payload.Returns[0]")
-		debug.PrintStack()
-	}
 }

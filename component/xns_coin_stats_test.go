@@ -22,8 +22,8 @@ import (
 
 	"github.com/gojuno/minimock"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/labstack/gommon/random"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -33,7 +33,7 @@ import (
 func TestStatsManager_Coins(t *testing.T) {
 	t.Parallel()
 	mc := minimock.NewController(t)
-	log := logrus.New()
+	log := inslogger.FromContext(inslogger.TestContext(t))
 
 	t.Run("small counts", func(t *testing.T) {
 		t.Parallel()
@@ -92,7 +92,7 @@ func TestStatsManager_Coins(t *testing.T) {
 
 // THIS TESTS ARE ORDER DEPENDENT!
 func TestStatsManager_CLI_command(t *testing.T) {
-	log := logrus.New()
+	log := inslogger.FromContext(inslogger.TestContext(t))
 	repo := postgres.NewSupplyStatsRepository(db)
 	sr := NewStatsManager(log, repo)
 
@@ -101,7 +101,7 @@ func TestStatsManager_CLI_command(t *testing.T) {
 
 	getStats := func(dt *time.Time) XnsCoinStats {
 		if dt != nil {
-			log.Infoln("dt: ", dt.String())
+			log.Info("dt: ", dt.String())
 		}
 		command := NewCalculateStatsCommand(log, db, sr)
 		stats, err := command.Run(dt)

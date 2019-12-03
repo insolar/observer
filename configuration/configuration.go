@@ -19,15 +19,13 @@ package configuration
 import (
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
 type Configuration struct {
-	LogLevel   string
 	Replicator Replicator
 	DB         DB
+	Log        Log
 }
 
 type Replicator struct {
@@ -52,9 +50,13 @@ type DB struct {
 	AttemptInterval time.Duration
 }
 
+type Log struct {
+	Level  string
+	Format string
+}
+
 func Default() *Configuration {
 	return &Configuration{
-		LogLevel: logrus.DebugLevel.String(),
 		Replicator: Replicator{
 			Addr:                "127.0.0.1:5678",
 			MaxTransportMsg:     1073741824,
@@ -70,6 +72,10 @@ func Default() *Configuration {
 			PoolSize:        100,
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
+		},
+		Log: Log{
+			Level:  "debug",
+			Format: "text",
 		},
 	}
 }

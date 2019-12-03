@@ -18,6 +18,7 @@
 package postgres
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -33,9 +34,10 @@ import (
 )
 
 func TestPulseStorage_Insert(t *testing.T) {
+	ctx := context.Background()
 	t.Run("nil", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 		storage := NewPulseStorage(cfg, obs, nil)
 
 		require.NoError(t, storage.Insert(nil))
@@ -43,7 +45,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 
 	t.Run("insert_with_err", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
 			return orm.NewQuery(db, model...)
@@ -60,7 +62,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 
 	t.Run("insert_with_conflict", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
 			return orm.NewQuery(db, model...)
@@ -77,7 +79,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 		empty := &observer.Pulse{}
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -94,9 +96,10 @@ func TestPulseStorage_Insert(t *testing.T) {
 }
 
 func TestPulseStorage_Last(t *testing.T) {
+	ctx := context.Background()
 	t.Run("connection_error", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -116,7 +119,7 @@ func TestPulseStorage_Last(t *testing.T) {
 
 	t.Run("no_pulses", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {
@@ -135,7 +138,7 @@ func TestPulseStorage_Last(t *testing.T) {
 
 	t.Run("existing_pulse", func(t *testing.T) {
 		cfg := configuration.Default()
-		obs := observability.Make(cfg)
+		obs := observability.Make(ctx)
 		expected := &observer.Pulse{Number: insolar.GenesisPulse.PulseNumber}
 		db := &DBMock{}
 		db.model = func(model ...interface{}) *orm.Query {

@@ -17,6 +17,7 @@
 package api
 
 import (
+	"context"
 	"math/big"
 	"os"
 	"testing"
@@ -24,8 +25,9 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/insolar/instrumentation/inslogger"
 
 	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/internal/testutils"
@@ -53,8 +55,7 @@ func TestMain(t *testing.M) {
 
 	e := echo.New()
 
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.JSONFormatter{})
+	logger := inslogger.FromContext(context.Background())
 	observerAPI := NewObserverServer(db, logger, testFee, clock, testPrice)
 
 	RegisterHandlers(e, observerAPI)

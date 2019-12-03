@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -39,7 +40,7 @@ func NewRouter(cfg *configuration.Configuration, obs *observability.Observabilit
 	})
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, req *http.Request) {
 		ops := promhttp.HandlerOpts{
-			ErrorLog: obs.Log(),
+			ErrorLog: PromHTTPLoggerAdapter{obs.Log()},
 		}
 		handler := promhttp.HandlerFor(obs.Metrics(), ops)
 		handler.ServeHTTP(w, req)
@@ -59,6 +60,14 @@ func NewRouter(cfg *configuration.Configuration, obs *observability.Observabilit
 	}
 
 	return r
+}
+
+type PromHTTPLoggerAdapter struct {
+	insolar.Logger
+}
+
+func (o PromHTTPLoggerAdapter) Println(v ...interface{}) {
+	o.Error(v)
 }
 
 type RouterInterface interface {

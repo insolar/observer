@@ -32,8 +32,8 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -395,7 +395,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
 			mc := minimock.NewController(t)
-			log := logrus.New()
+			log := inslogger.FromContext(inslogger.TestContext(t))
 
 			records, fetcher, builder, expected := test.mocks(mc)
 

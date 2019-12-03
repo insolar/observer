@@ -158,8 +158,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 }
 
 func TestStoreSimpleDeposit(t *testing.T) {
-	cfg := configuration.Default()
-	obs := observability.Make(cfg)
+	obs := observability.Make(context.Background())
 
 	ref := gen.RecordReference()
 	memberRef := gen.RecordReference()
@@ -222,8 +221,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 }
 
 func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
-	cfg := configuration.Default()
-	obs := observability.Make(cfg)
+	obs := observability.Make(context.Background())
 
 	ref := gen.RecordReference()
 	memberRef := gen.RecordReference()
@@ -316,7 +314,7 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 func TestStorerOK(t *testing.T) {
 	cfg := configuration.Default()
-	obs := observability.Make(cfg)
+	obs := observability.Make(context.Background())
 
 	storer := makeStorer(cfg, obs, fakeConn{})
 

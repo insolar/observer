@@ -49,7 +49,10 @@ Heavy node replication API:
 `OBSERVER_REPLICATOR_ADDR=127.0.0.1:5678`
 
 Log level:
-`OBSERVER_LOGLEVEL=info`
+`OBSERVER_LOG_LEVEL=info`
+
+Log format:
+`OBSERVER_LOG_FORMAT=text`
 
 ### Metrics and health check
 
@@ -92,15 +95,10 @@ Max number of connections to DB:
 `OBSERVERAPI_DB_POOLSIZE=20`
 
 Log level:
-`OBSERVERAPI_LOGLEVEL=info`
+`OBSERVERAPI_LOG_LEVEL=info`
 
-## Statistics collector
-
-Command calculates, gathers and saves statistics, add to cron for 1/min execution.
-Uses replicator's config (see above).
-```
-./bin/stats-collector
-```
+Log format:
+`OBSERVERAPI_LOG_FORMAT=text`
 
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
@@ -157,6 +155,8 @@ oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exp
 ```
 
 ## Stats collector
+Command calculates, gathers and saves statistics, add to cron for 1/min execution.
+Uses replicator's config (see above).
 
 `./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
 specified date/time. Example `-time="2006-01-02 15:04:05"`
