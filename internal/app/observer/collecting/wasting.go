@@ -48,7 +48,11 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 		return nil
 	}
 
-	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "WastingCollector")
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector": "WastingCollector",
+			"record_id": rec.ID.DebugString(),
+		})
 
 	result, err := observer.CastToResult(rec)
 	if err != nil {

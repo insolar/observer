@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
+
 	"github.com/insolar/observer/configuration"
 )
 
