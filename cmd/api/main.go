@@ -17,10 +17,11 @@
 package main
 
 import (
-	"fmt"
+	"context"
 
 	echoPrometheus "github.com/globocom/echo-prometheus"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/log"
@@ -36,17 +37,14 @@ import (
 
 func main() {
 	cfg := apiconfiguration.Load()
-	logger, err := log.NewLog(insconf.Log{
+	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,
 		Adapter:    "zerolog",
 		OutputType: "stderr",
 		BufferSize: 0,
-	})
-	if err != nil {
-		log.Fatalf("Can't create logger: %s", err.Error())
 	}
-	fmt.Printf("cfg: %+v", cfg)
+	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -74,4 +72,16 @@ type EchoWriterAdapter struct {
 func (o *EchoWriterAdapter) Write(p []byte) (n int, err error) {
 	o.logger.Info(string(p))
 	return len(p), nil
+}
+
+func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
+	inslog, err := log.NewGlobalLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = inslogger.SetLogger(ctx, inslog)
+	log.SetGlobalLogger(inslog)
+
+	return ctx, inslog
 }

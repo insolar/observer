@@ -17,12 +17,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"time"
 
 	"github.com/go-pg/pg"
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 
@@ -33,20 +35,19 @@ import (
 )
 
 func main() {
-	collectDT := flag.String("time", "", "Historical request, format 2006-01-02 15:04:05")
-	flag.Parse()
-
 	cfg := configuration.Load()
-	logger, err := log.NewLog(insconf.Log{
+	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,
 		Adapter:    "zerolog",
 		OutputType: "stderr",
 		BufferSize: 0,
-	})
-	if err != nil {
-		log.Fatalf("Can't create logger: %s", err.Error())
 	}
+	_, logger := initGlobalLogger(context.Background(), loggerConfig)
+
+	collectDT := flag.String("time", "", "Historical request, format 2006-01-02 15:04:05")
+	flag.Parse()
+
 	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -91,4 +92,16 @@ func calcNetwork(log insolar.Logger, db *pg.DB) {
 	if err != nil {
 		log.Fatal(errors.Wrapf(err, "failed to save network stats"))
 	}
+}
+
+func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
+	inslog, err := log.NewGlobalLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = inslogger.SetLogger(ctx, inslog)
+	log.SetGlobalLogger(inslog)
+
+	return ctx, inslog
 }

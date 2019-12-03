@@ -36,18 +36,14 @@ var stop = make(chan os.Signal, 1)
 
 func main() {
 	cfg := configuration.Load()
-	logger, err := log.NewLog(insconf.Log{
+	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,
 		Adapter:    "zerolog",
 		OutputType: "stderr",
 		BufferSize: 0,
-	})
-	if err != nil {
-		log.Fatalf("Can't create logger: %s", err.Error())
 	}
-	ctx := inslogger.SetLogger(context.Background(), logger)
-
+	ctx, logger := initGlobalLogger(context.Background(), loggerConfig)
 	manager := component.Prepare(ctx, cfg)
 	manager.Start()
 	graceful(logger, manager.Stop)
@@ -58,4 +54,16 @@ func graceful(logger insolar.Logger, that func()) {
 	<-stop
 	logger.Infof("gracefully stopping...")
 	that()
+}
+
+func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
+	inslog, err := log.NewGlobalLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = inslogger.SetLogger(ctx, inslog)
+	log.SetGlobalLogger(inslog)
+
+	return ctx, inslog
 }
