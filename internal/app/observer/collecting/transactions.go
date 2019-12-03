@@ -49,11 +49,12 @@ func NewTxRegisterCollector(log insolar.Logger) *TxRegisterCollector {
 }
 
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
-	fields := make(map[string]interface{})
-	fields["collector"] = "TxRegisterCollector"
-	fields["record_id"] = rec.Record.ID.DebugString()
-	fields["collect_process_id"] = uuid.New()
-	log := c.log.WithFields(fields)
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxRegisterCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
 
 	log.Debug("received record")
 	defer log.Debug("record processed")
@@ -314,8 +315,12 @@ func NewTxResultCollector(log insolar.Logger, fetcher store.RecordFetcher) *TxRe
 }
 
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
-	log := c.log.WithField("collector", "TxResultCollector").WithField("record_id", rec.Record.ID.DebugString())
-	log = log.WithField("collect_process_id", uuid.New())
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxResultCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
@@ -461,8 +466,12 @@ func NewTxSagaResultCollector(log insolar.Logger, fetcher store.RecordFetcher) *
 }
 
 func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxSagaResult {
-	log := c.log.WithField("collector", "TxSagaResultCollector").WithField("record_id", rec.Record.ID.DebugString())
-	log = log.WithField("collect_process_id", uuid.New())
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "TxSagaResultCollector",
+			"record_id":          rec.Record.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
 	log.Debug("received record")
 	defer log.Debug("record processed")
 
