@@ -23,6 +23,7 @@ import (
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/observability"
 )
 
@@ -44,6 +45,9 @@ func makeInitter(cfg *configuration.Configuration, obs *observability.Observabil
 func MustKnowPulse(obs *observability.Observability, db orm.DB) insolar.PulseNumber {
 	pulses := postgres.NewPulseStorage(obs.Log(), db)
 	p, err := pulses.Last()
+	if err == store.ErrNotFound {
+		return 0
+	}
 	if err != nil {
 		panic(errors.Wrap(err, "Something wrong with pulses in DB or DB itself"))
 	}
