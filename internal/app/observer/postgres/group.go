@@ -43,6 +43,7 @@ type GroupSchema struct {
 	Status           string
 	Purpose          string
 	StartDate        int64
+	Active           bool
 	State            []byte
 }
 
@@ -117,6 +118,7 @@ func (s *GroupStorage) Update(model *observer.GroupUpdate) error {
 		Set("title=?", model.Title).
 		Set("purpose=?", model.Purpose).
 		Set("start_date=?", model.StartDate).
+		Set("active=?", model.IsActive).
 		Set("payment_frequency=?", model.PaymentFrequency).
 		Set("treasure_holder=?", model.Treasurer.Bytes()).
 		Set("product_ref=?", model.ProductRef.Bytes()).
@@ -198,6 +200,7 @@ func groupSchema(model *observer.Group) *GroupSchema {
 		StartDate:        model.StartDate,
 		ProductRef:       model.ProductRef.Bytes(),
 		PaymentFrequency: model.PaymentFrequency,
+		Active:           model.IsActive,
 		Status:           model.Status,
 		State:            model.State.Bytes(),
 	}

@@ -38,6 +38,7 @@ type Group struct {
 	Status           string
 	State            insolar.ID
 	Timestamp        int64
+	IsActive         bool
 	Balance          insolar.Reference
 }
 
@@ -61,6 +62,7 @@ type GroupUpdate struct {
 	PaymentFrequency string
 	Title            string
 	Purpose          string
+	IsActive         bool
 	StartDate        int64
 	Balance          insolar.Reference
 }
