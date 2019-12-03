@@ -113,10 +113,15 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
 		}
 		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
+		available := big.NewInt(0).Sub(balance, amountOnHold)
+		// if partially vested and partially transferred to wallet
+		if available.Cmp(big.NewInt(0)) == -1 {
+			available = big.NewInt(0)
+		}
 		resDeposit := SchemaDeposit{
 			Index:           int(*d.DepositNumber),
 			AmountOnHold:    amountOnHold.Text(10),
-			AvailableAmount: big.NewInt(0).Sub(balance, amountOnHold).Text(10),
+			AvailableAmount: available.Text(10),
 			EthTxHash:       d.EtheriumHash,
 			HoldReleaseDate: d.HoldReleaseDate,
 			NextRelease:     NextRelease(currentTime, amount, d),
@@ -188,11 +193,11 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 
 func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) string {
 	steps := deposit.Vesting / deposit.VestingStep
-	sinceRelease := currentTime-deposit.HoldReleaseDate
+	sinceRelease := currentTime - deposit.HoldReleaseDate
 	if sinceRelease < 0 {
 		sinceRelease = 0
 	}
-	step := sinceRelease/deposit.VestingStep
+	step := sinceRelease / deposit.VestingStep
 	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step)), big.NewInt(steps))
 	willReleaseAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step+1)), big.NewInt(steps))
 
