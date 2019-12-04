@@ -451,6 +451,21 @@ func GetMemberByMigrationAddress(ctx context.Context, db Querier, ma string) (*m
 	return member, nil
 }
 
+func GetMemberByPublicKey(ctx context.Context, db Querier, pk string) (*models.Member, error) {
+	member := &models.Member{}
+	_, err := db.QueryOneContext(ctx, member,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from members where public_key = ?0`, strings.Join(models.Member{}.Fields(), ",")),
+		pk)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch member")
+	}
+	return member, nil
+}
+
 func GetDeposits(ctx context.Context, db Querier, memberReference []byte, onlyConfirmed bool) ([]models.Deposit, error) {
 	deposits := make([]models.Deposit, 0)
 	whereCond := []string{"member_ref = ?0"}

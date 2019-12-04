@@ -145,7 +145,8 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 	}
 
 	res := ResponsesMemberYaml{
-		Balance: member.Balance,
+		Balance:   member.Balance,
+		Reference: insolar.NewReferenceFromBytes(member.Reference).String(),
 	}
 	if len(resDeposits) > 0 {
 		res.Deposits = &resDeposits

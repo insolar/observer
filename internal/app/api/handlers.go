@@ -195,31 +195,48 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
-	s.setExpire(ctx, 1*time.Second)
-	var migrationAddress string
-
 	ref, errMsg := s.checkReference(reference)
 	if errMsg != nil {
 		if appfoundation.IsEthereumAddress(reference) {
-			migrationAddress = reference
-		} else {
-			return ctx.JSON(http.StatusBadRequest, *errMsg)
+			return s.getMember(ctx, getByMigrationAddress, reference)
 		}
+		return ctx.JSON(http.StatusBadRequest, *errMsg)
 	}
-	byMigrationAddress := migrationAddress != ""
+	return s.getMember(ctx, getByReference, ref.String())
+}
+
+func (s *ObserverServer) MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error {
+	return s.getMember(ctx, getByPublicKey, params.PublicKey)
+}
+
+const (
+	getByReference = iota
+	getByMigrationAddress
+	getByPublicKey
+)
+
+func (s *ObserverServer) getMember(ctx echo.Context, method int, smth string) error {
+	s.setExpire(ctx, 1*time.Second)
 
 	var member *models.Member
 	var err error
 	var memberReference []byte
 
-	if byMigrationAddress {
-		member, err = component.GetMemberByMigrationAddress(ctx.Request().Context(), s.db, migrationAddress)
-		if member != nil {
-			memberReference = member.Reference
+	switch method {
+	case getByReference:
+		ref, refErr := insolar.NewReferenceFromString(smth)
+		if refErr != nil {
+			panic("invalid reference")
 		}
-	} else {
-		memberReference = ref.Bytes()
-		member, err = component.GetMember(ctx.Request().Context(), s.db, memberReference)
+		member, err = component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	case getByMigrationAddress:
+		member, err = component.GetMemberByMigrationAddress(ctx.Request().Context(), s.db, smth)
+	case getByPublicKey:
+		member, err = component.GetMemberByPublicKey(ctx.Request().Context(), s.db, smth)
+	}
+
+	if member != nil {
+		memberReference = member.Reference
 	}
 	if err != nil {
 		if err == component.ErrReferenceNotFound {
@@ -247,7 +264,7 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	response, err := MemberToAPIMember(*member, deposits, pTime.Unix(), byMigrationAddress)
+	response, err := MemberToAPIMember(*member, deposits, pTime.Unix(), method != getByReference)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
