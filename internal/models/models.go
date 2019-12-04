@@ -301,7 +301,7 @@ func (d *Deposit) Status(currentTime int64) string {
 	if d.HoldReleaseDate == 0 {
 		return "AVAILABLE"
 	}
-	if currentTime <= d.HoldReleaseDate {
+	if currentTime < d.HoldReleaseDate {
 		return "LOCKED"
 	}
 	return "AVAILABLE"
