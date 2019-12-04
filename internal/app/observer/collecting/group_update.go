@@ -76,6 +76,7 @@ func (c *GroupUpdateCollector) Collect(rec *observer.Record) *observer.GroupUpda
 		ChairMan:         group.ChairMan,
 		PaymentFrequency: group.PaymentFrequency.String(),
 		Timestamp:        date.Unix(),
+		IsActive:         group.IsActive,
 	}
 
 	if group.ProductType != nil {

@@ -60,7 +60,7 @@ type Group struct {
 	Product          *insolar.Reference
 	Balance          *insolar.Reference
 	Image            string
-	invitedUser      int
+	IsActive         bool
 }
 
 type Membership struct {
@@ -98,6 +98,7 @@ func (c *GroupCollector) build(act *observer.Activate) (*observer.Group, error) 
 		StartDate:        state.StartDate,
 		PaymentFrequency: state.PaymentFrequency.String(),
 		Timestamp:        date.Unix(),
+		IsActive:         state.IsActive,
 	}
 
 	if state.Treasurer != nil {
