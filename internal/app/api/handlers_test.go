@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
@@ -618,10 +619,11 @@ func insertTransactionForMembers(
 	require.NoError(t, err)
 }
 
-func insertMember(t *testing.T, reference insolar.Reference, walletReference, accountReference *insolar.Reference, balance string) {
+func insertMember(t *testing.T, reference insolar.Reference, walletReference, accountReference *insolar.Reference, balance, publicKey string) {
 	member := models.Member{
 		Reference: reference.Bytes(),
 		Balance:   balance,
+		PublicKey: publicKey,
 	}
 	if walletReference != nil {
 		member.WalletReference = walletReference.Bytes()
@@ -835,8 +837,8 @@ func TestMemberBalance(t *testing.T) {
 	member2 := gen.Reference()
 	balance2 := "567890"
 
-	insertMember(t, member1, nil, nil, balance1)
-	insertMember(t, member2, nil, nil, balance2)
+	insertMember(t, member1, nil, nil, balance1, "")
+	insertMember(t, member2, nil, nil, balance2, "")
 
 	member1Str := url.QueryEscape(member1.String())
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member1Str + "/balance")
@@ -941,7 +943,7 @@ func TestMember(t *testing.T) {
 
 	deposite1 := gen.Reference()
 	deposite2 := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
 	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
 
@@ -957,6 +959,7 @@ func TestMember(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -990,6 +993,76 @@ func TestMember(t *testing.T) {
 	require.Equal(t, expected, received)
 }
 
+func TestMemberByPublicKey(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberStr := member.String()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+	publicKey := randomString()
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, publicKey)
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
+
+	pkStr := url.QueryEscape(publicKey)
+	resp, err := http.Get("http://" + apihost + "/api/member/byPublicKey?publicKey=" + pkStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		Reference:        memberStr,
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				MemberReference:  &memberStr,
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite1.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  0,
+				Index:            1,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+			{
+				MemberReference:  &memberStr,
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  0,
+				Index:            2,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMemberByPublicKey_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/member/byPublicKey?publicKey=" + randomString())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
 func TestMember_UnconfirmedDeposit(t *testing.T) {
 	defer truncateDB(t)
 
@@ -1000,7 +1073,7 @@ func TestMember_UnconfirmedDeposit(t *testing.T) {
 
 	deposite1 := gen.Reference()
 	deposite2 := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 1, models.DepositStatusConfirmed)
 	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 2, models.DepositStatusCreated)
 
@@ -1016,6 +1089,7 @@ func TestMember_UnconfirmedDeposit(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1072,6 +1146,7 @@ func TestMember_MigrationAddress(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        memberRef.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1116,7 +1191,7 @@ func TestMember_WithoutDeposit(t *testing.T) {
 	memberAccountReference := gen.Reference()
 	balance := "989898989"
 
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
 	require.NoError(t, err)
@@ -1129,6 +1204,7 @@ func TestMember_WithoutDeposit(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1145,7 +1221,7 @@ func TestMember_Hold(t *testing.T) {
 	balance := "5000"
 
 	deposite := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 
 	deposit := models.Deposit{
 		Reference:       deposite.Bytes(),
@@ -1175,6 +1251,7 @@ func TestMember_Hold(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1209,7 +1286,7 @@ func TestMember_Vesting(t *testing.T) {
 	balance := "5000"
 
 	deposite := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 
 	deposit := models.Deposit{
 		Reference:       deposite.Bytes(),
@@ -1244,6 +1321,7 @@ func TestMember_Vesting(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1278,7 +1356,7 @@ func TestMember_VestingAll(t *testing.T) {
 	balance := "5000"
 
 	deposite := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 
 	deposit := models.Deposit{
 		Reference:       deposite.Bytes(),
@@ -1313,6 +1391,7 @@ func TestMember_VestingAll(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1344,7 +1423,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 	balance := "4500"
 
 	deposite := gen.Reference()
-	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance)
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
 
 	deposit := models.Deposit{
 		Reference:       deposite.Bytes(),
@@ -1379,6 +1458,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
 		WalletReference:  memberWalletReference.String(),
@@ -1424,7 +1504,7 @@ func TestMemberTransaction_NoContent(t *testing.T) {
 
 func TestMemberTransaction_Empty(t *testing.T) {
 	member := gen.Reference()
-	insertMember(t, member, nil, nil, "10000")
+	insertMember(t, member, nil, nil, "10000", "")
 	resp, err := http.Get("http://" + apihost + fmt.Sprintf("/api/member/%s/transactions?limit=15", member.String()))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
@@ -1440,10 +1520,10 @@ func TestMemberTransactions(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000")
+	insertMember(t, member1, nil, nil, "10000", "")
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000")
+	insertMember(t, member2, nil, nil, "20000", "")
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	member1Str := url.QueryEscape(member1.String())
@@ -1483,7 +1563,7 @@ func TestMemberTransactions_NotRegistered(t *testing.T) {
 
 	txIDSecond := gen.RecordReference()
 
-	insertMember(t, member1, nil, nil, "10000")
+	insertMember(t, member1, nil, nil, "10000", "")
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, gen.Reference(), member1)
 
 	member1Str := url.QueryEscape(member1.String())
@@ -1511,10 +1591,10 @@ func TestMemberTransactions_Direction(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000")
+	insertMember(t, member1, nil, nil, "10000", "")
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000")
+	insertMember(t, member2, nil, nil, "20000", "")
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	resp, err := http.Get(
@@ -1547,10 +1627,10 @@ func TestMemberTransactions_OrderChronological(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000")
+	insertMember(t, member1, nil, nil, "10000", "")
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000")
+	insertMember(t, member2, nil, nil, "20000", "")
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	resp, err := http.Get(
@@ -1795,4 +1875,9 @@ func TestIsMigrationAddressFailed(t *testing.T) {
 
 func newInt(val int64) *int64 {
 	return &val
+}
+
+func randomString() string {
+	id, _ := uuid.NewRandom()
+	return id.String()
 }
