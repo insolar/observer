@@ -31,6 +31,7 @@ type Member struct {
 	Status           string
 	WalletRef        insolar.Reference
 	AccountRef       insolar.Reference
+	PublicKey        string
 }
 
 type Balance struct {

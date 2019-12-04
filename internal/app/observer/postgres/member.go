@@ -36,6 +36,7 @@ type MemberSchema struct {
 	AccountState     []byte `sql:",notnull"`
 	Status           string
 	AccountRef       []byte
+	PublicKey        string `sql:",notnull"`
 }
 
 type MemberStorage struct {

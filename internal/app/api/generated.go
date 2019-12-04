@@ -5,9 +5,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 // ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
@@ -49,7 +50,7 @@ type ResponsesInvalidTransactionIdYaml struct {
 	Error []string `json:"error"`
 }
 
-// ResponsesIsMigrationAddressYaml defines model for responses-is-migration-address-yaml.
+// ResponsesIsMigrationAddressYaml defines model for responses-isMigrationAddress-yaml.
 type ResponsesIsMigrationAddressYaml struct {
 	IsMigrationAddress bool `json:"isMigrationAddress"`
 }
@@ -74,6 +75,7 @@ type ResponsesMemberYaml struct {
 	Balance          string           `json:"balance"`
 	Deposits         *[]SchemaDeposit `json:"deposits,omitempty"`
 	MigrationAddress *string          `json:"migrationAddress,omitempty"`
+	Reference        string           `json:"reference"`
 	WalletReference  string           `json:"walletReference"`
 }
 
@@ -239,6 +241,13 @@ type GetMigrationAddressesParams struct {
 	Limit int `json:"limit"`
 }
 
+// MemberByPublicKeyParams defines parameters for MemberByPublicKey.
+type MemberByPublicKeyParams struct {
+
+	// URL-encoded `publicKey` of the target `member` object. Either full or trimmed.
+	PublicKey string `json:"publicKey"`
+}
+
 // MemberTransactionsParams defines parameters for MemberTransactions.
 type MemberTransactionsParams struct {
 
@@ -298,7 +307,7 @@ type TransactionsSearchParams struct {
 	// Chronological `order` of the transaction list starting from a given `index`:
 	//
 	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	//   * `reverse` — get transactions that chronologically precede a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
@@ -331,7 +340,7 @@ type ClosedTransactionsParams struct {
 	// Chronological `order` of the transaction list starting from a given `index`:
 	//
 	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	//   * `reverse` — get transactions that chronologically precede a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 }
 
@@ -345,6 +354,8 @@ type ServerInterface interface {
 	GetMigrationAddressCount(ctx echo.Context) error
 	// fee// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
+	// member by public key// (GET /api/member/byPublicKey)
+	MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error
 	// member// (GET /api/member/{reference})
 	Member(ctx echo.Context, reference string) error
 	// member balance// (GET /api/member/{reference}/balance)
@@ -451,6 +462,29 @@ func (w *ServerInterfaceWrapper) Fee(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.Fee(ctx, amount)
+	return err
+}
+
+// MemberByPublicKey converts echo context to params.
+func (w *ServerInterfaceWrapper) MemberByPublicKey(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params MemberByPublicKeyParams
+	// ------------- Required query parameter "publicKey" -------------
+	if paramValue := ctx.QueryParam("publicKey"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument publicKey is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "publicKey", ctx.QueryParams(), &params.PublicKey)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter publicKey: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.MemberByPublicKey(ctx, params)
 	return err
 }
 
@@ -798,6 +832,7 @@ func RegisterHandlers(router interface {
 	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
 	router.GET("/api/fee/:amount", wrapper.Fee)
+	router.GET("/api/member/byPublicKey", wrapper.MemberByPublicKey)
 	router.GET("/api/member/:reference", wrapper.Member)
 	router.GET("/api/member/:reference/balance", wrapper.Balance)
 	router.GET("/api/member/:reference/transactions", wrapper.MemberTransactions)
@@ -814,4 +849,3 @@ func RegisterHandlers(router interface {
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 
 }
-

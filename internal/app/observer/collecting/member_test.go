@@ -71,9 +71,11 @@ func makeMemberActivate(
 	pulse insolar.PulseNumber,
 	walletRef insolar.Reference,
 	requestRef insolar.Reference,
+	publicKey string,
 ) (*observer.Record, *record.Activate) {
 	mbr := &member.Member{
-		Wallet: walletRef,
+		Wallet:    walletRef,
+		PublicKey: publicKey,
 	}
 	memory, err := insolar.Serialize(mbr)
 	if err != nil {
@@ -297,7 +299,12 @@ func TestMemberCollector_Collect(t *testing.T) {
 				// Member.new call (and it's satellite).
 				newMember, callNewMember := makeNewMemberRequest(pn, callRef)
 				newMemberRef := *insolar.NewReference(newMember.ID)
-				memberActivate, memberActivateSideEffect := makeMemberActivate(pn, newWalletRef, newMemberRef)
+				memberActivate, memberActivateSideEffect := makeMemberActivate(
+					pn,
+					newWalletRef,
+					newMemberRef,
+					"-----BEGIN PUBLIC KEY-----test_public_key-----END PUBLIC KEY-----",
+				)
 
 				records := []*observer.Record{
 					// Useless.
@@ -326,6 +333,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 					Status:           "SUCCESS",
 					AccountRef:       newAccountRef,
 					WalletRef:        newWalletRef,
+					PublicKey:        "test_public_key",
 				}
 
 				expectedContractStruct := tree.Structure{

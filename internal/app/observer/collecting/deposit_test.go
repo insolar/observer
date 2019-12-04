@@ -76,7 +76,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 
 	cache[*depositRef.GetLocal()] = makeDepositActivate(pn, dep, depositRef)
 	cache[*walletRef1.GetLocal()], _ = makeGenesisWalletActivate(pn, accountRef1, walletRef1, depositRef)
-	cache[*memberRef.GetLocal()], _ = makeMemberActivate(pn, walletRef1, memberRef)
+	cache[*memberRef.GetLocal()], _ = makeMemberActivate(pn, walletRef1, memberRef, "test_public_key")
 
 	fetcher.SideEffectMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
 		if rec, ok := cache[reqID]; ok == true {

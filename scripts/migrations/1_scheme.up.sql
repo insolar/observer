@@ -111,7 +111,10 @@ create table if not exists members
     status varchar(256),
     wallet_ref bytea,
     account_state bytea,
-    account_ref bytea
+    account_ref bytea,
+    public_key varchar(1024)
+        constraint members_public_key
+            unique
 );
 
 create type deposit_status as enum ('created', 'confirmed');

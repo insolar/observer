@@ -36,6 +36,7 @@ type Member struct {
 	MigrationAddress string `sql:"migration_address"`
 	Balance          string `sql:"balance"`
 	Status           string `sql:"status"`
+	PublicKey        string `sql:"public_key"`
 }
 
 type DepositStatus string
