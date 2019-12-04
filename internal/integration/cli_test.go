@@ -12,7 +12,10 @@ import (
 	"github.com/insolar/observer/internal/testutils"
 )
 
-var pgOptions pg.Options
+var (
+	db        *pg.DB
+	pgOptions pg.Options
+)
 
 func TestStatsCollector(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
@@ -36,7 +39,7 @@ func TestMain(m *testing.M) {
 	}
 
 	var dbCleaner func()
-	_, pgOptions, dbCleaner = testutils.SetupDB("./scripts/migrations/")
+	db, pgOptions, dbCleaner = testutils.SetupDB("./scripts/migrations/")
 
 	retCode := m.Run()
 	dbCleaner()

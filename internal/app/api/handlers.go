@@ -431,60 +431,17 @@ func (s *ObserverServer) TransactionsSearch(ctx echo.Context, params Transaction
 	return ctx.JSON(http.StatusOK, res)
 }
 
-func (s *ObserverServer) SupplyStats(ctx echo.Context) error {
-	s.setExpire(ctx, 10*time.Second)
-
-	repo := postgres.NewSupplyStatsRepository(s.db)
-	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Supply()
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "")
-	}
-
-	return ctx.JSON(http.StatusOK, ResponsesSupplyStatsYaml{
-		TotalSupply:       result.Total(),
-		MaxSupply:         result.Max(),
-		CirculatingSupply: result.Circulating(),
-	})
-}
-
-func (s *ObserverServer) SupplyStatsCirculating(ctx echo.Context) error {
-	s.setExpire(ctx, 10*time.Second)
-
-	repo := postgres.NewSupplyStatsRepository(s.db)
-	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Circulating()
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, "")
-	}
-
-	return ctx.String(http.StatusOK, result)
-}
-
-func (s *ObserverServer) SupplyStatsMax(ctx echo.Context) error {
-	s.setExpire(ctx, 10*time.Second)
-
-	repo := postgres.NewSupplyStatsRepository(s.db)
-	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Max()
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, "")
-	}
-
-	return ctx.String(http.StatusOK, result)
-}
-
 func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	s.setExpire(ctx, 10*time.Second)
 
 	repo := postgres.NewSupplyStatsRepository(s.db)
-	xr := component.NewStatsManager(s.log, repo)
-	result, err := xr.Total()
+	result, err := repo.LastStats()
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, "")
+		s.log.Error(errors.Wrap(err, "couldn't get last supply stats"))
+		return ctx.JSON(http.StatusInternalServerError, "")
 	}
 
-	return ctx.String(http.StatusOK, result)
+	return ctx.String(http.StatusOK, result.TotalInXNS())
 }
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {

@@ -18,8 +18,6 @@ package main
 
 import (
 	"context"
-	"flag"
-	"time"
 
 	"github.com/go-pg/pg"
 	insconf "github.com/insolar/insolar/configuration"
@@ -28,7 +26,6 @@ import (
 	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
@@ -45,36 +42,28 @@ func main() {
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 
-	collectDT := flag.String("time", "", "Historical request, format 2006-01-02 15:04:05")
-	flag.Parse()
-
 	db, err := dbconn.Connect(cfg.DB)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	var dt *time.Time
-	if *collectDT != "" {
-		layout := "2006-01-02 15:04:05"
-		tmp, err := time.Parse(layout, *collectDT)
-		if err != nil {
-			logger.Error("failed to parse time ", collectDT)
-		}
-		dt = &tmp
-	}
-
-	calcSupply(logger, db, dt)
+	calcSupply(logger, db)
 	calcNetwork(logger, db)
 }
 
-func calcSupply(log insolar.Logger, db *pg.DB, dt *time.Time) {
+func calcSupply(log insolar.Logger, db *pg.DB) {
 	repo := postgres.NewSupplyStatsRepository(db)
-	sr := component.NewStatsManager(log, repo)
 
-	command := component.NewCalculateStatsCommand(log, db, sr)
-	_, err := command.Run(dt)
+	stats, err := repo.CountStats()
 	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to run command"))
+		log.Fatal(errors.Wrapf(err, "failed to count supply stats"))
+	}
+
+	log.Debugf("collected supply stats: %+v", stats)
+
+	err = repo.InsertStats(stats)
+	if err != nil {
+		log.Fatal(errors.Wrapf(err, "failed to save supply stats"))
 	}
 }
 
@@ -86,7 +75,7 @@ func calcNetwork(log insolar.Logger, db *pg.DB) {
 		log.Fatal(errors.Wrapf(err, "failed to count network stats"))
 	}
 
-	log.Debugf("Collected stats: %+v", stats)
+	log.Debugf("Сollected stats: %+v", stats)
 
 	err = repo.InsertStats(stats)
 	if err != nil {

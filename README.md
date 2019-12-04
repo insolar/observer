@@ -100,6 +100,10 @@ Log level:
 Log format:
 `OBSERVERAPI_LOG_FORMAT=text`
 
+## Stats collector
+Command calculates, gathers and saves statistics, add to cron for 1/min execution.
+Uses replicator's config (see above).
+
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.
@@ -153,10 +157,3 @@ Generate types and API from observer API:
 ```
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
-
-## Stats collector
-Command calculates, gathers and saves statistics, add to cron for 1/min execution.
-Uses replicator's config (see above).
-
-`./bin/stats-collector` takes optional param -time, allows to calculate supply stats like it's a
-specified date/time. Example `-time="2006-01-02 15:04:05"`

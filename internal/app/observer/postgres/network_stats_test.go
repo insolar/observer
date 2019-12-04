@@ -32,7 +32,7 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
-func TestCountStats(t *testing.T) {
+func TestNetworkStats(t *testing.T) {
 	log := inslogger.FromContext(context.Background())
 	pulseRepo := postgres.NewPulseStorage(log, db)
 
@@ -95,7 +95,7 @@ func TestCountStats(t *testing.T) {
 	res, err := repo.CountStats()
 	require.NoError(t, err)
 	res.Created = now
-	require.Equal(t, postgres.NetworkStatsModel{
+	require.Equal(t, models.NetworkStats{
 		Created:           now,
 		PulseNumber:       int(insolar.GenesisPulse.PulseNumber + 3),
 		TotalTransactions: 2,

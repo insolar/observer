@@ -193,14 +193,12 @@ create index if not exists idx_network_stats_created
 
 create table if not exists supply_stats
 (
-    id          serial    not null
-        constraint xns_supply_stats_pk
-            primary key,
     created     timestamp not null,
-    total       numeric(24),
-    max         numeric(24),
-    circulating numeric(24)
+    total       numeric(24)
 );
+
+create index if not exists idx_supply_stats_created
+    on supply_stats (created);
 
 create table if not exists notifications
 (

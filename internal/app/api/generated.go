@@ -99,13 +99,6 @@ type ResponsesNotificationInfoYaml struct {
 	Notification string `json:"notification"`
 }
 
-// ResponsesSupplyStatsYaml defines model for responses-supplyStats-yaml.
-type ResponsesSupplyStatsYaml struct {
-	CirculatingSupply string `json:"circulatingSupply"`
-	MaxSupply         string `json:"maxSupply"`
-	TotalSupply       string `json:"totalSupply"`
-}
-
 // SchemaAcceptRefs defines model for schema-accept-refs.
 type SchemaAcceptRefs struct {
 	Account string `json:"account"`
@@ -368,12 +361,6 @@ type ServerInterface interface {
 	MarketStats(ctx echo.Context) error
 	// stats/network// (GET /api/stats/network)
 	NetworkStats(ctx echo.Context) error
-	// supply// (GET /api/stats/supply)
-	SupplyStats(ctx echo.Context) error
-	// supply/circulating// (GET /api/stats/supply/circulating)
-	SupplyStatsCirculating(ctx echo.Context) error
-	// supply/max// (GET /api/stats/supply/max)
-	SupplyStatsMax(ctx echo.Context) error
 	// supply/total// (GET /api/stats/supply/total)
 	SupplyStatsTotal(ctx echo.Context) error
 	// transaction// (GET /api/transaction/{txID})
@@ -627,33 +614,6 @@ func (w *ServerInterfaceWrapper) NetworkStats(ctx echo.Context) error {
 	return err
 }
 
-// SupplyStats converts echo context to params.
-func (w *ServerInterfaceWrapper) SupplyStats(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.SupplyStats(ctx)
-	return err
-}
-
-// SupplyStatsCirculating converts echo context to params.
-func (w *ServerInterfaceWrapper) SupplyStatsCirculating(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.SupplyStatsCirculating(ctx)
-	return err
-}
-
-// SupplyStatsMax converts echo context to params.
-func (w *ServerInterfaceWrapper) SupplyStatsMax(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.SupplyStatsMax(ctx)
-	return err
-}
-
 // SupplyStatsTotal converts echo context to params.
 func (w *ServerInterfaceWrapper) SupplyStatsTotal(ctx echo.Context) error {
 	var err error
@@ -812,17 +772,7 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 }
 
 // RegisterHandlers adds each server route to the EchoRouter.
-func RegisterHandlers(router interface {
-	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-}, si ServerInterface) {
+func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 
 	wrapper := ServerInterfaceWrapper{
 		Handler: si,
@@ -839,9 +789,6 @@ func RegisterHandlers(router interface {
 	router.GET("/api/notification", wrapper.Notification)
 	router.GET("/api/stats/market", wrapper.MarketStats)
 	router.GET("/api/stats/network", wrapper.NetworkStats)
-	router.GET("/api/stats/supply", wrapper.SupplyStats)
-	router.GET("/api/stats/supply/circulating", wrapper.SupplyStatsCirculating)
-	router.GET("/api/stats/supply/max", wrapper.SupplyStatsMax)
 	router.GET("/api/stats/supply/total", wrapper.SupplyStatsTotal)
 	router.GET("/api/transaction/:txID", wrapper.Transaction)
 	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
