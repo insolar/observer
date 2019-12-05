@@ -36,7 +36,7 @@ type MemberSchema struct {
 	AccountState     []byte `sql:",notnull"`
 	Status           string
 	AccountRef       []byte
-	// not null will be reverted in INS-3967
+	// not null will be reverted in  INS-3967
 	PublicKey string
 }
 
