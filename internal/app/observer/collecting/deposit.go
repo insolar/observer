@@ -200,6 +200,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
+				IsConfirmed:     true,
 			}
 
 			log.Debugf("New deposit ref %s, state %s, member %s, EthHash %s", d.Ref.String(),

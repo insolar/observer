@@ -98,6 +98,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		Vesting:         vPeriod,
 		VestingStep:     vStep,
 		HoldReleaseDate: 1546300920,
+		IsConfirmed:     true,
 	}}
 
 	require.Len(t, actual, 1)
