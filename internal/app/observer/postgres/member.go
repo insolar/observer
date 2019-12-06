@@ -52,10 +52,7 @@ func (s *MemberStorage) Insert(model *observer.Member) error {
 	}
 	row := memberSchema(model)
 	log := s.log.WithField("memberRef", model.MemberRef.String())
-	res, err := s.db.Model(row).
-		OnConflict("DO NOTHING").
-		Insert()
-
+	res, err := s.db.Model(row).Insert()
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert member %v", row)
 	}
