@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/google/uuid"
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
@@ -67,7 +68,15 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 		return nil
 	}
 
-	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "MemberCollector")
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "MemberCollector",
+			"record_id":          rec.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
+
+	log.Debug("received record")
+	defer log.Debug("record processed")
 
 	// genesis member records
 	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec, log) {
@@ -81,7 +90,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	}
 
 	if !result.IsSuccess(log) { // TODO: still observer.Result
-		// TODO: what should we do with bad result records?
+		log.Debug("skipping failed result")
 		return nil
 	}
 
@@ -97,6 +106,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	}
 
 	if !c.isMemberCreateRequest(originRequest) {
+		log.Debug("skipping member creation request")
 		return nil
 	}
 
