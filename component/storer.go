@@ -119,7 +119,6 @@ func makeStorer(
 				}
 
 				// new entities
-
 				members := postgres.NewMemberStorage(obs, tx)
 				for _, member := range b.members {
 					if member == nil {
