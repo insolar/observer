@@ -174,6 +174,11 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		activate := memberActivate.Virtual.GetActivate()
 		memberState = c.initialMemberState(activate)
 
+		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
+		if pubKey == "" {
+			pubKey = memberState.PublicKey
+		}
+
 		// Deposit migration members has no wallet
 		if memberState.Wallet.IsEmpty() {
 			c.log.Debug("Deposit migration member collected. ", memberRef)
@@ -181,6 +186,7 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 				MemberRef: *memberRef,
 				Balance:   "0",
 				Status:    "INTERNAL",
+				PublicKey: pubKey,
 			})
 			continue
 		}
@@ -214,10 +220,6 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 			activateID = accountActivate.ID
 			activate = accountActivate.Virtual.GetActivate()
 			balance = c.accountBalance(activate)
-		}
-		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
-		if pubKey == "" {
-			pubKey = memberState.PublicKey
 		}
 
 		members = append(members, &observer.Member{

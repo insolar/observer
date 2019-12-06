@@ -112,5 +112,6 @@ func memberSchema(model *observer.Member) *MemberSchema {
 		Status:           model.Status,
 		WalletRef:        model.WalletRef.Bytes(),
 		AccountRef:       model.AccountRef.Bytes(),
+		PublicKey:        model.PublicKey,
 	}
 }
