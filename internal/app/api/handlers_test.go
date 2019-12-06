@@ -17,6 +17,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,6 +34,7 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
+	"github.com/insolar/observer/observability"
 )
 
 const (
@@ -620,18 +622,19 @@ func insertTransactionForMembers(
 }
 
 func insertMember(t *testing.T, reference insolar.Reference, walletReference, accountReference *insolar.Reference, balance, publicKey string) {
-	member := models.Member{
-		Reference: reference.Bytes(),
+	member := &observer.Member{
+		MemberRef: reference,
 		Balance:   balance,
 		PublicKey: publicKey,
 	}
 	if walletReference != nil {
-		member.WalletReference = walletReference.Bytes()
+		member.WalletRef = *walletReference
 	}
 	if accountReference != nil {
-		member.AccountReference = accountReference.Bytes()
+		member.AccountRef = *accountReference
 	}
-	err := db.Insert(&member)
+	repo := postgres.NewMemberStorage(observability.Make(context.Background()), db)
+	err := repo.Insert(member)
 	require.NoError(t, err)
 }
 
@@ -837,8 +840,8 @@ func TestMemberBalance(t *testing.T) {
 	member2 := gen.Reference()
 	balance2 := "567890"
 
-	insertMember(t, member1, nil, nil, balance1, "")
-	insertMember(t, member2, nil, nil, balance2, "")
+	insertMember(t, member1, nil, nil, balance1, randomString())
+	insertMember(t, member2, nil, nil, balance2, randomString())
 
 	member1Str := url.QueryEscape(member1.String())
 	resp, err := http.Get("http://" + apihost + "/api/member/" + member1Str + "/balance")
@@ -1484,10 +1487,10 @@ func TestMemberTransactions(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000", "")
+	insertMember(t, member1, nil, nil, "10000", randomString())
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000", "")
+	insertMember(t, member2, nil, nil, "20000", randomString())
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	member1Str := url.QueryEscape(member1.String())
@@ -1555,10 +1558,10 @@ func TestMemberTransactions_Direction(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000", "")
+	insertMember(t, member1, nil, nil, "10000", randomString())
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000", "")
+	insertMember(t, member2, nil, nil, "20000", randomString())
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	resp, err := http.Get(
@@ -1591,10 +1594,10 @@ func TestMemberTransactions_OrderChronological(t *testing.T) {
 	txIDThird := gen.RecordReference()
 	pulseNumber := gen.PulseNumber()
 
-	insertMember(t, member1, nil, nil, "10000", "")
+	insertMember(t, member1, nil, nil, "10000", randomString())
 	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
 	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
-	insertMember(t, member2, nil, nil, "20000", "")
+	insertMember(t, member2, nil, nil, "20000", randomString())
 	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
 
 	resp, err := http.Get(

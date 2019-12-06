@@ -23,21 +23,9 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/models"
 	"github.com/insolar/observer/observability"
 )
-
-type MemberSchema struct {
-	tableName struct{} `sql:"members"` //nolint: unused,structcheck
-
-	MemberRef        []byte `sql:",pk"`
-	Balance          string `sql:",notnull"`
-	MigrationAddress string
-	WalletRef        []byte
-	AccountState     []byte `sql:",notnull"`
-	Status           string
-	AccountRef       []byte
-	PublicKey        string `sql:",notnull"`
-}
 
 type MemberStorage struct {
 	log          insolar.Logger
@@ -63,10 +51,8 @@ func (s *MemberStorage) Insert(model *observer.Member) error {
 		return nil
 	}
 	row := memberSchema(model)
-	res, err := s.db.Model(row).
-		OnConflict("DO NOTHING").
-		Insert()
-
+	log := s.log.WithField("memberRef", model.MemberRef.String())
+	res, err := s.db.Model(row).Insert()
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert member %v", row)
 	}
@@ -76,6 +62,9 @@ func (s *MemberStorage) Insert(model *observer.Member) error {
 		s.log.WithField("member_row", row).Errorf("failed to insert member")
 		return errors.New("failed to insert, affected is 0")
 	}
+
+	log.Debug("inserted member")
+
 	return nil
 }
 
@@ -85,7 +74,7 @@ func (s *MemberStorage) Update(model *observer.Balance) error {
 		return nil
 	}
 
-	res, err := s.db.Model(&MemberSchema{}).
+	res, err := s.db.Model(&observer.Member{}).
 		Where("account_state=?", model.PrevState.Bytes()).
 		Set("balance=?,account_state=?", model.Balance, model.AccountState.Bytes()).
 		Update()
@@ -103,14 +92,15 @@ func (s *MemberStorage) Update(model *observer.Balance) error {
 	return nil
 }
 
-func memberSchema(model *observer.Member) *MemberSchema {
-	return &MemberSchema{
-		MemberRef:        model.MemberRef.Bytes(),
+func memberSchema(model *observer.Member) *models.Member {
+	return &models.Member{
+		Reference:        model.MemberRef.Bytes(),
 		Balance:          model.Balance,
 		MigrationAddress: model.MigrationAddress,
 		AccountState:     model.AccountState.Bytes(),
 		Status:           model.Status,
-		WalletRef:        model.WalletRef.Bytes(),
-		AccountRef:       model.AccountRef.Bytes(),
+		WalletReference:  model.WalletRef.Bytes(),
+		AccountReference: model.AccountRef.Bytes(),
+		PublicKey:        model.PublicKey,
 	}
 }

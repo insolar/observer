@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/google/uuid"
 	"github.com/insolar/insolar/application/builtin/contract/account"
 	"github.com/insolar/insolar/application/builtin/contract/member"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
@@ -67,11 +68,19 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 		return nil
 	}
 
-	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "MemberCollector")
+	log := c.log.WithFields(
+		map[string]interface{}{
+			"collector":          "MemberCollector",
+			"record_id":          rec.ID.DebugString(),
+			"collect_process_id": uuid.New(),
+		})
+
+	log.Debug("received record")
+	defer log.Debug("record processed")
 
 	// genesis member records
 	if rec.ID.Pulse() == insolar.GenesisPulse.PulseNumber && isPKShardActivate(rec, log) {
-		return c.processGenesisRecord(ctx, rec)
+		return c.processGenesisRecord(ctx, log, rec)
 	}
 
 	result, err := observer.CastToResult(rec) // TODO: still observer.Result
@@ -81,7 +90,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	}
 
 	if !result.IsSuccess(log) { // TODO: still observer.Result
-		// TODO: what should we do with bad result records?
+		log.Debug("skipping failed result")
 		return nil
 	}
 
@@ -97,6 +106,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	}
 
 	if !c.isMemberCreateRequest(originRequest) {
+		log.Debug("skipping member creation request")
 		return nil
 	}
 
@@ -133,6 +143,8 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 		panic("invalid member reference")
 	}
 
+	log.WithField("member_ref", memberRef.String()).Debug("created member")
+
 	return []*observer.Member{{
 		MemberRef:        *memberRef,
 		WalletRef:        walletRef,
@@ -145,7 +157,7 @@ func (c *MemberCollector) Collect(ctx context.Context, rec *observer.Record) []*
 	}}
 }
 
-func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observer.Record) []*observer.Member {
+func (c *MemberCollector) processGenesisRecord(ctx context.Context, log insolar.Logger, rec *observer.Record) []*observer.Member {
 	var (
 		memberState      *member.Member
 		walletState      *wallet.Wallet
@@ -161,33 +173,39 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 	for _, memberRefStr := range shard.Map {
 		memberRef, err := insolar.NewReferenceFromString(memberRefStr)
 		if err != nil {
-			c.log.WithField("member_ref_str", memberRefStr).
+			log.WithField("member_ref_str", memberRefStr).
 				Error("failed to build reference from string")
 			continue
 		}
 		memberActivate, err := c.fetcher.SideEffect(ctx, *memberRef.GetLocal())
 		if err != nil {
-			c.log.WithField("member_ref", memberRef).
+			log.WithField("member_ref", memberRef).
 				Error("failed to find member activate record")
 			continue
 		}
 		activate := memberActivate.Virtual.GetActivate()
 		memberState = c.initialMemberState(activate)
 
+		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
+		if pubKey == "" {
+			pubKey = memberState.PublicKey
+		}
+
 		// Deposit migration members has no wallet
 		if memberState.Wallet.IsEmpty() {
-			c.log.Debug("Deposit migration member collected. ", memberRef)
+			log.Debug("Deposit migration member collected. ", memberRef)
 			members = append(members, &observer.Member{
 				MemberRef: *memberRef,
 				Balance:   "0",
 				Status:    "INTERNAL",
+				PublicKey: pubKey,
 			})
 			continue
 		}
 
 		walletActivate, err := c.fetcher.SideEffect(ctx, *memberState.Wallet.GetLocal())
 		if err != nil {
-			c.log.WithField("wallet_ref", memberState.Wallet).
+			log.WithField("wallet_ref", memberState.Wallet).
 				Warn("failed to find wallet activate record")
 			continue
 		}
@@ -200,14 +218,14 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 		}
 		accountRef, err := insolar.NewReferenceFromString(accountRefString)
 		if err != nil {
-			c.log.WithField("account_ref_str", accountRefString).
+			log.WithField("account_ref_str", accountRefString).
 				Warn("failed to build reference from string")
 			continue
 		}
 		if accountRef != nil {
 			accountActivate, err := c.fetcher.SideEffect(ctx, *accountRef.GetLocal())
 			if err != nil {
-				c.log.WithField("account_ref", accountRef).
+				log.WithField("account_ref", accountRef).
 					Error("failed to find account activate record")
 				continue
 			}
@@ -215,10 +233,8 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, rec *observe
 			activate = accountActivate.Virtual.GetActivate()
 			balance = c.accountBalance(activate)
 		}
-		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
-		if pubKey == "" {
-			pubKey = memberState.PublicKey
-		}
+
+		log.WithField("member_ref", memberRef.String()).Debug("created genesis member")
 
 		members = append(members, &observer.Member{
 			MemberRef:    *memberRef,
