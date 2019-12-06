@@ -857,57 +857,21 @@ func TestMemberBalance(t *testing.T) {
 func TestObserverServer_SupplyStats(t *testing.T) {
 	total := "1111111111111"
 	totalr := "111.1111111111"
-	max := "2222222222222"
-	maxr := "222.2222222222"
-	circ := "33333333333333"
-	circr := "3333.3333333333"
 
-	coins := postgres.SupplyStatsModel{
-		Created:     time.Time{},
+	coins := models.SupplyStats{
+		Created:     time.Now(),
 		Total:       total,
-		Max:         max,
-		Circulating: circ,
 	}
 
 	err := db.Insert(&coins)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://" + apihost + "/api/stats/supply")
+	resp, err := http.Get("http://" + apihost + "/api/stats/supply/total")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-
-	jsonResp := ResponsesSupplyStatsYaml{}
-	err = json.Unmarshal(bodyBytes, &jsonResp)
-	require.NoError(t, err)
-	expected := ResponsesSupplyStatsYaml{
-		TotalSupply:       total,
-		MaxSupply:         max,
-		CirculatingSupply: circ,
-	}
-	require.Equal(t, expected, jsonResp)
-
-	resp, err = http.Get("http://" + apihost + "/api/stats/supply/total")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err = ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
 	require.Equal(t, totalr, string(bodyBytes))
-
-	resp, err = http.Get("http://" + apihost + "/api/stats/supply/max")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err = ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, maxr, string(bodyBytes))
-
-	resp, err = http.Get("http://" + apihost + "/api/stats/supply/circulating")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-	bodyBytes, err = ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	require.Equal(t, circr, string(bodyBytes))
 }
 
 func TestMember_WrongFormat(t *testing.T) {
@@ -1728,7 +1692,7 @@ func TestFee(t *testing.T) {
 }
 
 func TestObserverServer_NetworkStats(t *testing.T) {
-	stats := postgres.NetworkStatsModel{
+	stats := models.NetworkStats{
 		Created:           time.Now(),
 		PulseNumber:       123,
 		TotalTransactions: 23,

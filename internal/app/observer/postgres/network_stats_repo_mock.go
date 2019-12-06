@@ -8,25 +8,26 @@ import (
 	mm_time "time"
 
 	"github.com/gojuno/minimock"
+	"github.com/insolar/observer/internal/models"
 )
 
 // NetworkStatsRepoMock implements NetworkStatsRepo
 type NetworkStatsRepoMock struct {
 	t minimock.Tester
 
-	funcCountStats          func() (n1 NetworkStatsModel, err error)
+	funcCountStats          func() (n1 models.NetworkStats, err error)
 	inspectFuncCountStats   func()
 	afterCountStatsCounter  uint64
 	beforeCountStatsCounter uint64
 	CountStatsMock          mNetworkStatsRepoMockCountStats
 
-	funcInsertStats          func(n1 NetworkStatsModel) (err error)
-	inspectFuncInsertStats   func(n1 NetworkStatsModel)
+	funcInsertStats          func(n1 models.NetworkStats) (err error)
+	inspectFuncInsertStats   func(n1 models.NetworkStats)
 	afterInsertStatsCounter  uint64
 	beforeInsertStatsCounter uint64
 	InsertStatsMock          mNetworkStatsRepoMockInsertStats
 
-	funcLastStats          func() (n1 NetworkStatsModel, err error)
+	funcLastStats          func() (n1 models.NetworkStats, err error)
 	inspectFuncLastStats   func()
 	afterLastStatsCounter  uint64
 	beforeLastStatsCounter uint64
@@ -66,7 +67,7 @@ type NetworkStatsRepoMockCountStatsExpectation struct {
 
 // NetworkStatsRepoMockCountStatsResults contains results of the NetworkStatsRepo.CountStats
 type NetworkStatsRepoMockCountStatsResults struct {
-	n1  NetworkStatsModel
+	n1  models.NetworkStats
 	err error
 }
 
@@ -95,7 +96,7 @@ func (mmCountStats *mNetworkStatsRepoMockCountStats) Inspect(f func()) *mNetwork
 }
 
 // Return sets up results that will be returned by NetworkStatsRepo.CountStats
-func (mmCountStats *mNetworkStatsRepoMockCountStats) Return(n1 NetworkStatsModel, err error) *NetworkStatsRepoMock {
+func (mmCountStats *mNetworkStatsRepoMockCountStats) Return(n1 models.NetworkStats, err error) *NetworkStatsRepoMock {
 	if mmCountStats.mock.funcCountStats != nil {
 		mmCountStats.mock.t.Fatalf("NetworkStatsRepoMock.CountStats mock is already set by Set")
 	}
@@ -108,7 +109,7 @@ func (mmCountStats *mNetworkStatsRepoMockCountStats) Return(n1 NetworkStatsModel
 }
 
 //Set uses given function f to mock the NetworkStatsRepo.CountStats method
-func (mmCountStats *mNetworkStatsRepoMockCountStats) Set(f func() (n1 NetworkStatsModel, err error)) *NetworkStatsRepoMock {
+func (mmCountStats *mNetworkStatsRepoMockCountStats) Set(f func() (n1 models.NetworkStats, err error)) *NetworkStatsRepoMock {
 	if mmCountStats.defaultExpectation != nil {
 		mmCountStats.mock.t.Fatalf("Default expectation is already set for the NetworkStatsRepo.CountStats method")
 	}
@@ -122,7 +123,7 @@ func (mmCountStats *mNetworkStatsRepoMockCountStats) Set(f func() (n1 NetworkSta
 }
 
 // CountStats implements NetworkStatsRepo
-func (mmCountStats *NetworkStatsRepoMock) CountStats() (n1 NetworkStatsModel, err error) {
+func (mmCountStats *NetworkStatsRepoMock) CountStats() (n1 models.NetworkStats, err error) {
 	mm_atomic.AddUint64(&mmCountStats.beforeCountStatsCounter, 1)
 	defer mm_atomic.AddUint64(&mmCountStats.afterCountStatsCounter, 1)
 
@@ -213,7 +214,7 @@ type NetworkStatsRepoMockInsertStatsExpectation struct {
 
 // NetworkStatsRepoMockInsertStatsParams contains parameters of the NetworkStatsRepo.InsertStats
 type NetworkStatsRepoMockInsertStatsParams struct {
-	n1 NetworkStatsModel
+	n1 models.NetworkStats
 }
 
 // NetworkStatsRepoMockInsertStatsResults contains results of the NetworkStatsRepo.InsertStats
@@ -222,7 +223,7 @@ type NetworkStatsRepoMockInsertStatsResults struct {
 }
 
 // Expect sets up expected params for NetworkStatsRepo.InsertStats
-func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Expect(n1 NetworkStatsModel) *mNetworkStatsRepoMockInsertStats {
+func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Expect(n1 models.NetworkStats) *mNetworkStatsRepoMockInsertStats {
 	if mmInsertStats.mock.funcInsertStats != nil {
 		mmInsertStats.mock.t.Fatalf("NetworkStatsRepoMock.InsertStats mock is already set by Set")
 	}
@@ -242,7 +243,7 @@ func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Expect(n1 NetworkStatsMod
 }
 
 // Inspect accepts an inspector function that has same arguments as the NetworkStatsRepo.InsertStats
-func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Inspect(f func(n1 NetworkStatsModel)) *mNetworkStatsRepoMockInsertStats {
+func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Inspect(f func(n1 models.NetworkStats)) *mNetworkStatsRepoMockInsertStats {
 	if mmInsertStats.mock.inspectFuncInsertStats != nil {
 		mmInsertStats.mock.t.Fatalf("Inspect function is already set for NetworkStatsRepoMock.InsertStats")
 	}
@@ -266,7 +267,7 @@ func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Return(err error) *Networ
 }
 
 //Set uses given function f to mock the NetworkStatsRepo.InsertStats method
-func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Set(f func(n1 NetworkStatsModel) (err error)) *NetworkStatsRepoMock {
+func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Set(f func(n1 models.NetworkStats) (err error)) *NetworkStatsRepoMock {
 	if mmInsertStats.defaultExpectation != nil {
 		mmInsertStats.mock.t.Fatalf("Default expectation is already set for the NetworkStatsRepo.InsertStats method")
 	}
@@ -281,7 +282,7 @@ func (mmInsertStats *mNetworkStatsRepoMockInsertStats) Set(f func(n1 NetworkStat
 
 // When sets expectation for the NetworkStatsRepo.InsertStats which will trigger the result defined by the following
 // Then helper
-func (mmInsertStats *mNetworkStatsRepoMockInsertStats) When(n1 NetworkStatsModel) *NetworkStatsRepoMockInsertStatsExpectation {
+func (mmInsertStats *mNetworkStatsRepoMockInsertStats) When(n1 models.NetworkStats) *NetworkStatsRepoMockInsertStatsExpectation {
 	if mmInsertStats.mock.funcInsertStats != nil {
 		mmInsertStats.mock.t.Fatalf("NetworkStatsRepoMock.InsertStats mock is already set by Set")
 	}
@@ -301,7 +302,7 @@ func (e *NetworkStatsRepoMockInsertStatsExpectation) Then(err error) *NetworkSta
 }
 
 // InsertStats implements NetworkStatsRepo
-func (mmInsertStats *NetworkStatsRepoMock) InsertStats(n1 NetworkStatsModel) (err error) {
+func (mmInsertStats *NetworkStatsRepoMock) InsertStats(n1 models.NetworkStats) (err error) {
 	mm_atomic.AddUint64(&mmInsertStats.beforeInsertStatsCounter, 1)
 	defer mm_atomic.AddUint64(&mmInsertStats.afterInsertStatsCounter, 1)
 
@@ -425,7 +426,7 @@ type NetworkStatsRepoMockLastStatsExpectation struct {
 
 // NetworkStatsRepoMockLastStatsResults contains results of the NetworkStatsRepo.LastStats
 type NetworkStatsRepoMockLastStatsResults struct {
-	n1  NetworkStatsModel
+	n1  models.NetworkStats
 	err error
 }
 
@@ -454,7 +455,7 @@ func (mmLastStats *mNetworkStatsRepoMockLastStats) Inspect(f func()) *mNetworkSt
 }
 
 // Return sets up results that will be returned by NetworkStatsRepo.LastStats
-func (mmLastStats *mNetworkStatsRepoMockLastStats) Return(n1 NetworkStatsModel, err error) *NetworkStatsRepoMock {
+func (mmLastStats *mNetworkStatsRepoMockLastStats) Return(n1 models.NetworkStats, err error) *NetworkStatsRepoMock {
 	if mmLastStats.mock.funcLastStats != nil {
 		mmLastStats.mock.t.Fatalf("NetworkStatsRepoMock.LastStats mock is already set by Set")
 	}
@@ -467,7 +468,7 @@ func (mmLastStats *mNetworkStatsRepoMockLastStats) Return(n1 NetworkStatsModel, 
 }
 
 //Set uses given function f to mock the NetworkStatsRepo.LastStats method
-func (mmLastStats *mNetworkStatsRepoMockLastStats) Set(f func() (n1 NetworkStatsModel, err error)) *NetworkStatsRepoMock {
+func (mmLastStats *mNetworkStatsRepoMockLastStats) Set(f func() (n1 models.NetworkStats, err error)) *NetworkStatsRepoMock {
 	if mmLastStats.defaultExpectation != nil {
 		mmLastStats.mock.t.Fatalf("Default expectation is already set for the NetworkStatsRepo.LastStats method")
 	}
@@ -481,7 +482,7 @@ func (mmLastStats *mNetworkStatsRepoMockLastStats) Set(f func() (n1 NetworkStats
 }
 
 // LastStats implements NetworkStatsRepo
-func (mmLastStats *NetworkStatsRepoMock) LastStats() (n1 NetworkStatsModel, err error) {
+func (mmLastStats *NetworkStatsRepoMock) LastStats() (n1 models.NetworkStats, err error) {
 	mm_atomic.AddUint64(&mmLastStats.beforeLastStatsCounter, 1)
 	defer mm_atomic.AddUint64(&mmLastStats.afterLastStatsCounter, 1)
 

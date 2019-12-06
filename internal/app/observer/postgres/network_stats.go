@@ -27,25 +27,12 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
-type NetworkStatsModel struct {
-	tableName struct{} `sql:"network_stats"` //nolint: unused,structcheck
-
-	Created           time.Time `sql:"created,pk,default:now(),notnull"`
-	PulseNumber       int       `sql:"pulse_number,notnull"`
-	TotalTransactions int       `sql:"total_transactions,notnull"`
-	MonthTransactions int       `sql:"month_transactions,notnull"`
-	TotalAccounts     int       `sql:"total_accounts,notnull"`
-	Nodes             int       `sql:"nodes,notnull"`
-	CurrentTPS        int       `sql:"current_tps,notnull"`
-	MaxTPS            int       `sql:"max_tps,notnull"`
-}
-
 //go:generate minimock -i NetworkStatsRepo -o ./ -s _mock.go -g
 
 type NetworkStatsRepo interface {
-	LastStats() (NetworkStatsModel, error)
-	InsertStats(NetworkStatsModel) error
-	CountStats() (NetworkStatsModel, error)
+	LastStats() (models.NetworkStats, error)
+	InsertStats(models.NetworkStats) error
+	CountStats() (models.NetworkStats, error)
 }
 
 type NetworkStatsRepository struct {
@@ -56,19 +43,19 @@ func NewNetworkStatsRepository(db orm.DB) NetworkStatsRepo {
 	return &NetworkStatsRepository{db: db}
 }
 
-func (s *NetworkStatsRepository) LastStats() (NetworkStatsModel, error) {
-	lastStats := &NetworkStatsModel{}
+func (s *NetworkStatsRepository) LastStats() (models.NetworkStats, error) {
+	lastStats := &models.NetworkStats{}
 	err := s.db.Model(lastStats).Last()
 	if err != nil && err != pg.ErrNoRows {
-		return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
+		return models.NetworkStats{}, errors.Wrap(err, "failed request to db")
 	}
 	if err == pg.ErrNoRows {
-		return NetworkStatsModel{}, errors.New("No data")
+		return models.NetworkStats{}, errors.New("No data")
 	}
 	return *lastStats, nil
 }
 
-func (s *NetworkStatsRepository) InsertStats(xcs NetworkStatsModel) error {
+func (s *NetworkStatsRepository) InsertStats(xcs models.NetworkStats) error {
 	err := s.db.Insert(&xcs)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert stats")
@@ -77,8 +64,8 @@ func (s *NetworkStatsRepository) InsertStats(xcs NetworkStatsModel) error {
 	return nil
 }
 
-func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
-	stats := NetworkStatsModel{
+func (s *NetworkStatsRepository) CountStats() (models.NetworkStats, error) {
+	stats := models.NetworkStats{
 		Created: time.Now(),
 	}
 
@@ -92,7 +79,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		if err == pg.ErrNoRows {
 			pulseSchema.Pulse = uint32(insolar.GenesisPulse.PulseNumber)
 		} else if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "couldn't get last pulse data")
+			return models.NetworkStats{}, errors.Wrap(err, "couldn't get last pulse data")
 		}
 		stats.PulseNumber = int(pulseSchema.Pulse)
 		stats.Nodes = int(pulseSchema.Nodes)
@@ -108,7 +95,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 			Limit(1).
 			Select()
 		if err != nil && err != pg.ErrNoRows {
-			return NetworkStatsModel{}, errors.Wrap(err, "couldn't get last pulse data")
+			return models.NetworkStats{}, errors.Wrap(err, "couldn't get last pulse data")
 		} else if err == nil {
 			monthAgoPulse = pulseSchema.Pulse
 		}
@@ -117,7 +104,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		_, err = s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM simple_transactions"+
 			" WHERE finish_pulse_record[1] >= ? AND status_registered", monthAgoPulse)
 		if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
+			return models.NetworkStats{}, errors.Wrap(err, "couldn't count total transactions")
 		}
 		stats.MonthTransactions = sqlRes.Count
 	}
@@ -130,7 +117,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 			"SELECT COUNT(1) AS Count FROM simple_transactions WHERE status_registered",
 		)
 		if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total transactions")
+			return models.NetworkStats{}, errors.Wrap(err, "couldn't count total transactions")
 		}
 		stats.TotalTransactions = sqlRes.Count
 	}
@@ -140,7 +127,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 		sqlRes := struct{ Count int }{}
 		_, err := s.db.QueryOne(&sqlRes, "SELECT COUNT(1) AS Count FROM members")
 		if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "couldn't count total accounts")
+			return models.NetworkStats{}, errors.Wrap(err, "couldn't count total accounts")
 		}
 		stats.TotalAccounts = sqlRes.Count
 	}
@@ -155,7 +142,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 			") AS t"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
+			return models.NetworkStats{}, errors.Wrap(err, "failed request to db")
 		}
 		stats.MaxTPS = sqlRes.Count
 	}
@@ -169,7 +156,7 @@ func (s *NetworkStatsRepository) CountStats() (NetworkStatsModel, error) {
 			" ) AND status_registered"
 		_, err := s.db.QueryOne(&sqlRes, sql)
 		if err != nil {
-			return NetworkStatsModel{}, errors.Wrap(err, "failed request to db")
+			return models.NetworkStats{}, errors.Wrap(err, "failed request to db")
 		}
 		stats.CurrentTPS = sqlRes.Count
 	}

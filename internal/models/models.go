@@ -143,6 +143,26 @@ type Pulse struct {
 	Nodes     uint32 `sql:"nodes"`
 }
 
+type NetworkStats struct {
+	tableName struct{} `sql:"network_stats"` //nolint: unused,structcheck
+
+	Created           time.Time `sql:"created,pk,default:now(),notnull"`
+	PulseNumber       int       `sql:"pulse_number,notnull"`
+	TotalTransactions int       `sql:"total_transactions,notnull"`
+	MonthTransactions int       `sql:"month_transactions,notnull"`
+	TotalAccounts     int       `sql:"total_accounts,notnull"`
+	Nodes             int       `sql:"nodes,notnull"`
+	CurrentTPS        int       `sql:"current_tps,notnull"`
+	MaxTPS            int       `sql:"max_tps,notnull"`
+}
+
+type SupplyStats struct {
+	tableName struct{} `sql:"supply_stats"` //nolint: unused,structcheck
+
+	Created time.Time `sql:"created,pk,default:now(),notnull"`
+	Total   string    `sql:"total"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string
@@ -306,4 +326,23 @@ func (d *Deposit) Status(currentTime int64) string {
 		return "LOCKED"
 	}
 	return "AVAILABLE"
+}
+
+func (s *SupplyStats) TotalInXNS() string {
+	return convertCoinsToXNS(s.Total)
+}
+
+// convertCoinsToXNS places decimal point correctly into string to convert
+// from coins to XNS
+func convertCoinsToXNS(str string) string {
+	l := len(str)
+
+	switch {
+	case l == 0:
+		return ""
+	case l <= 10:
+		return fmt.Sprintf("0.%010s", str)
+	default:
+		return str[:l-10] + "." + str[l-10:]
+	}
 }
