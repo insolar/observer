@@ -182,6 +182,77 @@ func TestNextRelease(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "4k in 7steps",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "4000",
+				Vesting:         70,
+				VestingStep:     10,
+			},
+			amount:      big.NewInt(4000),
+			variants: []variant{
+				{
+					currentTime: 90,
+					expectation: &SchemaNextRelease{
+						Amount:    "571",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 100,
+					expectation: &SchemaNextRelease{
+						Amount:    "571",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 110,
+					expectation: &SchemaNextRelease{
+						Amount:    "571",
+						Timestamp: 120,
+					},
+				},
+				{
+					currentTime: 120,
+					expectation: &SchemaNextRelease{
+						Amount:    "572",
+						Timestamp: 130,
+					},
+				},
+				{
+					currentTime: 130,
+					expectation: &SchemaNextRelease{
+						Amount:    "571",
+						Timestamp: 140,
+					},
+				},
+				{
+					currentTime: 140,
+					expectation: &SchemaNextRelease{
+						Amount:    "572",
+						Timestamp: 150,
+					},
+				},
+				{
+					currentTime: 150,
+					expectation: &SchemaNextRelease{
+						Amount:    "571",
+						Timestamp: 160,
+					},
+				},
+				{
+					currentTime: 160,
+					expectation: &SchemaNextRelease{
+						Amount:    "572",
+						Timestamp: 170,
+					},
+				},
+				{
+					currentTime: 170,
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, e := range tc.variants {

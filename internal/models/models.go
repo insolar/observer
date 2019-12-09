@@ -294,12 +294,11 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 	}
 
 	currentStep := (currentTime - d.HoldReleaseDate) / d.VestingStep
-	stepValue := float64(d.VestingStep) / float64(d.Vesting)
-	releasedCoef := float64(currentStep) * stepValue
-	amountFloat := big.NewFloat(0).SetInt(amount)
-	res := big.NewFloat(0).Mul(big.NewFloat(releasedCoef), amountFloat)
-	releaseAmount = big.NewInt(0)
-	res.Int(releaseAmount)
+	steps := d.Vesting / d.VestingStep
+	releaseAmount = big.NewInt(0).Quo(
+		big.NewInt(0).Mul(amount, big.NewInt(currentStep)),
+		big.NewInt(steps),
+	)
 
 	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
 

@@ -123,6 +123,19 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 			expectedHold:     big.NewInt(4450),
 			expectedReleased: big.NewInt(550),
 		},
+		{
+			name: "complex step",
+			deposit: Deposit{
+				Balance:         "70000",
+				Amount:          "70000",
+				Vesting:         70,
+				VestingStep:     10,
+				HoldReleaseDate: 1606435200,
+			},
+			currentTime:      1606435250,
+			expectedHold:     big.NewInt(20000),
+			expectedReleased: big.NewInt(50000),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			amount := new(big.Int)
