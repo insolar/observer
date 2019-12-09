@@ -26,19 +26,17 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/application/appfoundation"
-
-	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
-	"github.com/labstack/echo/v4"
-
+	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
-
-	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/models"
 )
 
@@ -206,7 +204,7 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error {
-	return s.getMember(ctx, getByPublicKey, params.PublicKey)
+	return s.getMember(ctx, getByPublicKey, foundation.TrimPublicKey(params.PublicKey))
 }
 
 const (

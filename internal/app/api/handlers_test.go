@@ -862,8 +862,8 @@ func TestObserverServer_SupplyStats(t *testing.T) {
 	totalr := "111.1111111111"
 
 	coins := models.SupplyStats{
-		Created:     time.Now(),
-		Total:       total,
+		Created: time.Now(),
+		Total:   total,
 	}
 
 	err := db.Insert(&coins)
@@ -977,6 +977,70 @@ func TestMemberByPublicKey(t *testing.T) {
 	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
 
 	pkStr := url.QueryEscape(publicKey)
+	resp, err := http.Get("http://" + apihost + "/api/member/byPublicKey?publicKey=" + pkStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		Reference:        memberStr,
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				MemberReference:  &memberStr,
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite1.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  0,
+				Index:            1,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+			{
+				MemberReference:  &memberStr,
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  0,
+				Index:            2,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   0,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMemberByPublicKeyWrapped(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberStr := member.String()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+	publicKey := randomString()
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, publicKey)
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
+
+	pkStr := url.QueryEscape("-----BEGIN RSA PUBLIC KEY-----\n" + publicKey + "\n-----END RSA PUBLIC KEY-----")
 	resp, err := http.Get("http://" + apihost + "/api/member/byPublicKey?publicKey=" + pkStr)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
