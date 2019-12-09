@@ -47,7 +47,7 @@ gobin: ## ensure gopath/bin
 
 .PHONY: minimock
 minimock: gobin
-	curl -sfL https://github.com/gojuno/minimock/releases/download/v2.1.9/minimock_2.1.9_${VERSION}.tar.gz | tar xzf - -C ${GOPATH}/bin/ minimock
+	curl -sfL https://github.com/gojuno/minimock/releases/download/v3.0.6/minimock_3.0.6_${VERSION}.tar.gz | tar xzf - -C ${GOPATH}/bin/ minimock
 
 golangci: $(BIN_DIR)
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${BIN_DIR} v1.21.0
