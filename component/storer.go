@@ -240,6 +240,18 @@ type Execer interface {
 	Exec(query interface{}, params ...interface{}) (pg.Result, error)
 }
 
+type Querier interface {
+	Query(model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
+}
+
+type ExecerQuerirer interface {
+	Execer
+	Querier
+}
+
 func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	if len(transactions) == 0 {
 		return nil
@@ -307,12 +319,13 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 	return nil
 }
 
-func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
+func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {
 	if len(transactions) == 0 {
 		return nil
 	}
 
 	existingTxIDs := map[insolar.Reference]struct{}{}
+	var txIDs []interface{}
 	for _, t := range transactions {
 		if _, ok := existingTxIDs[t.TransactionID]; ok {
 			return errors.New(fmt.Sprintf(
@@ -321,6 +334,37 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 			))
 		}
 		existingTxIDs[t.TransactionID] = struct{}{}
+		txIDs = append(txIDs, t.TransactionID.Bytes())
+	}
+
+	var badIDs []struct {
+		BinRef []byte `sql:"bad_id"`
+	}
+
+	_, err := tx.Query(
+		&badIDs,
+		fmt.Sprintf( // nolint: gosec
+			`
+				SELECT ids.bad_id::bytea FROM (VALUES %s) AS ids(bad_id)
+				LEFT JOIN simple_transactions st 
+					ON st.tx_id = ids.bad_id::bytea
+					WHERE st.tx_id ISNULL
+			`,
+			holderTemplate(len(txIDs)),
+		),
+		txIDs...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't execute query for getting missing tx_ids")
+	}
+
+	if len(badIDs) != 0 {
+		var ids []string
+		for _, badID := range badIDs {
+			ids = append(ids, insolar.NewReferenceFromBytes(badID.BinRef).String())
+		}
+		panic(fmt.Sprintf("tx_ids expected in base, but not found: %s", ids))
 	}
 
 	columns := []string{
@@ -337,7 +381,7 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 			t.Fee,
 		)
 	}
-	_, err := tx.Exec(
+	_, err = tx.Exec(
 		fmt.Sprintf( // nolint: gosec
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
@@ -353,12 +397,13 @@ func StoreTxResult(tx Execer, transactions []observer.TxResult) error {
 	return err
 }
 
-func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
+func StoreTxSagaResult(tx ExecerQuerirer, transactions []observer.TxSagaResult) error {
 	if len(transactions) == 0 {
 		return nil
 	}
 
 	existingTxIDs := map[insolar.Reference]struct{}{}
+	var txIDs []interface{}
 	for _, t := range transactions {
 		if _, ok := existingTxIDs[t.TransactionID]; ok {
 			return errors.New(fmt.Sprintf(
@@ -367,6 +412,37 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 			))
 		}
 		existingTxIDs[t.TransactionID] = struct{}{}
+		txIDs = append(txIDs, t.TransactionID.Bytes())
+	}
+
+	var badIDs []struct {
+		BinRef []byte `sql:"bad_id"`
+	}
+
+	_, err := tx.Query(
+		&badIDs,
+		fmt.Sprintf( // nolint: gosec
+			`
+				SELECT ids.bad_id::bytea FROM (VALUES %s) AS ids(bad_id)
+				LEFT JOIN simple_transactions st 
+					ON st.tx_id = ids.bad_id::bytea
+					WHERE st.tx_id ISNULL
+			`,
+			holderTemplate(len(txIDs)),
+		),
+		txIDs...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't execute query for getting missing tx_ids")
+	}
+
+	if len(badIDs) != 0 {
+		var ids []string
+		for _, badID := range badIDs {
+			ids = append(ids, insolar.NewReferenceFromBytes(badID.BinRef).String())
+		}
+		panic(fmt.Sprintf("tx_ids expected in base, but not found: %s", ids))
 	}
 
 	columns := []string{
@@ -385,7 +461,7 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 			pg.Array([2]int64{t.FinishPulseNumber, t.FinishRecordNumber}),
 		)
 	}
-	_, err := tx.Exec(
+	_, err = tx.Exec(
 		fmt.Sprintf( // nolint: gosec
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
@@ -400,12 +476,6 @@ func StoreTxSagaResult(tx Execer, transactions []observer.TxSagaResult) error {
 		values...,
 	)
 	return err
-}
-
-type Querier interface {
-	QueryOne(model, query interface{}, params ...interface{}) (pg.Result, error)
-	QueryOneContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
-	QueryContext(c context.Context, model, query interface{}, params ...interface{}) (pg.Result, error)
 }
 
 var (
@@ -614,6 +684,18 @@ func valuesTemplate(columns, rows int) string {
 			b.WriteString(",")
 		}
 	}
+	return b.String()
+}
+
+func holderTemplate(columns int) string {
+	b := strings.Builder{}
+	for c := 0; c < columns; c++ {
+		b.WriteString("(?)")
+		if c < columns-1 {
+			b.WriteString(",")
+		}
+	}
+
 	return b.String()
 }
 
