@@ -21,11 +21,10 @@ import (
 	"net"
 	"testing"
 
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-
-	"github.com/insolar/insolar/instrumentation/inslogger"
 
 	"github.com/insolar/observer/configuration"
 )

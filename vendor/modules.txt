@@ -98,8 +98,8 @@ github.com/insolar/insolar/log
 github.com/insolar/insolar/insolar/record
 github.com/insolar/insolar/ledger/heavy/exporter
 github.com/insolar/insolar/application/appfoundation
-github.com/insolar/insolar/application/builtin/contract/member
 github.com/insolar/insolar/logicrunner/builtin/foundation
+github.com/insolar/insolar/application/builtin/contract/member
 github.com/insolar/insolar/application/builtin/contract/account
 github.com/insolar/insolar/application/builtin/contract/deposit
 github.com/insolar/insolar/application/builtin/contract/migrationshard
@@ -130,10 +130,10 @@ github.com/insolar/insolar/ledger/object
 github.com/insolar/insolar/application/api/requester
 github.com/insolar/insolar/application/builtin/proxy/costcenter
 github.com/insolar/insolar/insolar/gen
+github.com/insolar/insolar/logicrunner/common
 github.com/insolar/insolar/application/builtin/proxy/migrationadmin
 github.com/insolar/insolar/application/builtin/proxy/nodedomain
 github.com/insolar/insolar/application/builtin/proxy/rootdomain
-github.com/insolar/insolar/logicrunner/common
 github.com/insolar/insolar/logicrunner/builtin/foundation/safemath
 github.com/insolar/insolar/application
 github.com/insolar/insolar/platformpolicy
