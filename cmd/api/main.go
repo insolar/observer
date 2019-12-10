@@ -38,11 +38,12 @@ import (
 func main() {
 	cfg := apiconfiguration.Load()
 	loggerConfig := insconf.Log{
-		Level:      cfg.Log.Level,
-		Formatter:  cfg.Log.Format,
-		Adapter:    "zerolog",
-		OutputType: cfg.Log.OutputType,
-		BufferSize: cfg.Log.Buffer,
+		Level:        cfg.Log.Level,
+		Formatter:    cfg.Log.Format,
+		Adapter:      "zerolog",
+		OutputType:   cfg.Log.OutputType,
+		OutputParams: cfg.Log.OutputParams,
+		BufferSize:   cfg.Log.Buffer,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 	db, err := dbconn.Connect(cfg.DB)
