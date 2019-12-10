@@ -48,11 +48,13 @@ DB connection:
 Heavy node replication API:
 `OBSERVER_REPLICATOR_ADDR=127.0.0.1:5678`
 
-Log level:
-`OBSERVER_LOG_LEVEL=info`
-
-Log format:
-`OBSERVER_LOG_FORMAT=text`
+Log params:
+```
+OBSERVER_LOG_LEVEL=info
+OBSERVER_LOG_FORMAT=text
+OBSERVER_LOG_OUTPUTTYPE=stderr
+OBSERVER_LOG_BUFFER=0
+```
 
 ### Metrics and health check
 
@@ -94,11 +96,13 @@ DB connection:
 Max number of connections to DB:
 `OBSERVERAPI_DB_POOLSIZE=20`
 
-Log level:
-`OBSERVERAPI_LOG_LEVEL=info`
-
-Log format:
-`OBSERVERAPI_LOG_FORMAT=text`
+Log params:
+```
+OBSERVERAPI_LOG_LEVEL=info
+OBSERVERAPI_LOG_FORMAT=text
+OBSERVERAPI_LOG_OUTPUTTYPE=stderr
+OBSERVERAPI_LOG_BUFFER=0
+```
 
 ## Stats collector
 Command calculates, gathers and saves statistics, add to cron for 1/min execution.

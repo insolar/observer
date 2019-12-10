@@ -51,8 +51,10 @@ type DB struct {
 }
 
 type Log struct {
-	Level  string
-	Format string
+	Level      string
+	Format     string
+	OutputType string
+	Buffer     int
 }
 
 func Default() *Configuration {
@@ -74,8 +76,10 @@ func Default() *Configuration {
 			AttemptInterval: 3 * time.Second,
 		},
 		Log: Log{
-			Level:  "debug",
-			Format: "text",
+			Level:      "debug",
+			Format:     "text",
+			OutputType: "stderr",
+			Buffer:     0,
 		},
 	}
 }

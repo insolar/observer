@@ -37,8 +37,8 @@ func main() {
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,
 		Adapter:    "zerolog",
-		OutputType: "stderr",
-		BufferSize: 0,
+		OutputType: cfg.Log.OutputType,
+		BufferSize: cfg.Log.Buffer,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 

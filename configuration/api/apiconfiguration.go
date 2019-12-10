@@ -32,8 +32,10 @@ type Configuration struct {
 }
 
 type Log struct {
-	Level  string
-	Format string
+	Level      string
+	Format     string
+	OutputType string
+	Buffer     int
 }
 
 func Default() *Configuration {
@@ -47,8 +49,10 @@ func Default() *Configuration {
 		FeeAmount: big.NewInt(1000000000),
 		Price:     "0.05",
 		Log: Log{
-			Level:  "debug",
-			Format: "text",
+			Level:      "debug",
+			Format:     "text",
+			OutputType: "stderr",
+			Buffer:     0,
 		},
 	}
 }
