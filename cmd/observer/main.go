@@ -37,11 +37,12 @@ var stop = make(chan os.Signal, 1)
 func main() {
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
-		Level:      cfg.Log.Level,
-		Formatter:  cfg.Log.Format,
-		Adapter:    "zerolog",
-		OutputType: cfg.Log.OutputType,
-		BufferSize: cfg.Log.Buffer,
+		Level:        cfg.Log.Level,
+		Formatter:    cfg.Log.Format,
+		Adapter:      "zerolog",
+		OutputType:   cfg.Log.OutputType,
+		OutputParams: cfg.Log.OutputParams,
+		BufferSize:   cfg.Log.Buffer,
 	}
 	ctx, logger := initGlobalLogger(context.Background(), loggerConfig)
 	manager := component.Prepare(ctx, cfg)
