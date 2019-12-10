@@ -17,6 +17,8 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -25,6 +27,24 @@ import (
 
 	"github.com/insolar/insolar/pulse"
 )
+
+type JSONMap map[string]interface{}
+
+func (m *JSONMap) Scan(b interface{}) error {
+	if b == nil {
+		*m = nil
+		return nil
+	}
+	return json.Unmarshal(b.([]byte), m)
+}
+
+func (m JSONMap) Value() (driver.Value, error) {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return string(b), nil
+}
 
 type Member struct {
 	tableName struct{} `sql:"members"` //nolint: unused,structcheck
@@ -107,6 +127,8 @@ type Transaction struct {
 	DepositFromReference []byte          `sql:"deposit_from_ref"`
 	Amount               string          `sql:"amount"`
 	Fee                  string          `sql:"fee"`
+
+	CallParams JSONMap `sql:"call_params"`
 
 	// Result received.
 	StatusSent bool `sql:"status_sent"`

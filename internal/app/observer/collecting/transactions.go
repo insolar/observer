@@ -135,21 +135,8 @@ func (c *TxRegisterCollector) fromTransfer(log insolar.Logger, rec exporter.Reco
 		log.Error(errors.Wrap(err, "failed to parse from reference"))
 		return nil
 	}
-	toMemberStr, ok := callParams[paramToMemberRef].(string)
-	if !ok {
-		log.Error(errors.Wrap(err, "failed to parse from reference"))
-		return nil
-	}
-	memberTo, err := insolar.NewObjectReferenceFromString(toMemberStr)
-	if err != nil {
-		log.Error(errors.Wrap(err, "failed to parse to reference"))
-		return nil
-	}
-	amount, ok := callParams[paramAmount].(string)
-	if !ok {
-		log.Error(errors.Wrap(err, "failed to parse from amount"))
-		return nil
-	}
+
+	memberTo, amount := processParams(log, callParams)
 
 	log.Debug("created TxRegister")
 	return &observer.TxRegister{
@@ -159,8 +146,29 @@ func (c *TxRegisterCollector) fromTransfer(log insolar.Logger, rec exporter.Reco
 		RecordNumber:        int64(rec.RecordNumber),
 		Amount:              amount,
 		MemberFromReference: memberFrom.Bytes(),
-		MemberToReference:   memberTo.Bytes(),
+		MemberToReference:   memberTo,
+
+		CallParams: callParams,
 	}
+}
+
+func processParams(log insolar.Logger, callParams map[string]interface{}) (memberTo []byte, amount string) {
+	toMemberStr, ok := callParams[paramToMemberRef].(string)
+	if !ok {
+		log.Error("param %s not found in transaction call params")
+	} else {
+		memberToRef, err := insolar.NewObjectReferenceFromString(toMemberStr)
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to parse to reference"))
+		} else {
+			memberTo = memberToRef.Bytes()
+		}
+	}
+	amount, ok = callParams[paramAmount].(string)
+	if !ok {
+		log.Error("param %s not found in transaction call params")
+	}
+	return memberTo, amount
 }
 
 func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Record) *observer.TxRegister {

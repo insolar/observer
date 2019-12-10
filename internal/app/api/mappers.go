@@ -69,6 +69,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 		res := SchemaTransfer{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),
+			CallParams:                 tx.CallParams,
 		}
 		if len(tx.MemberFromReference) > 0 {
 			ref := insolar.NewReferenceFromBytes(tx.MemberFromReference)

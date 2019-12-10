@@ -17,6 +17,8 @@ type TxRegister struct {
 	DepositToReference   []byte
 	DepositFromReference []byte
 	Amount               string
+
+	CallParams map[string]interface{}
 }
 
 func (t *TxRegister) Validate() error {

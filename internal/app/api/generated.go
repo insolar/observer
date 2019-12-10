@@ -185,6 +185,8 @@ type SchemaTransfer struct {
 	FromMemberReference string `json:"fromMemberReference"`
 	ToMemberReference   string `json:"toMemberReference"`
 	Type                string `json:"type"`
+
+	CallParams map[string]interface{} `json:"callParams"`
 }
 
 // SchemaTransferRefs defines model for schema-transfer-refs.

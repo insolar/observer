@@ -43,6 +43,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 			DepositToReference:   nil,
 			DepositFromReference: nil,
 			Amount:               "123",
+			CallParams:           map[string]interface{}{"amount": "123", "toMemberReference": memberTo.String()},
 		}
 		request := member.Request{
 			Params: member.Params{
