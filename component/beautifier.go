@@ -205,6 +205,7 @@ func makeBeautifier(
 			"balances":                  len(b.balances),
 			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.wastings),
+			"deposit_member_updates":    len(b.depositMembers),
 		}).Infof("collected depositUpdates")
 
 		metric.Transfers.Add(float64(len(b.txSagaResult)))

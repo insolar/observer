@@ -30,7 +30,6 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
-	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -236,31 +235,6 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 	return d, nil
 }
 
-func (c *DepositCollector) find(outs []tree.Outgoing, predicate func(*record.IncomingRequest) bool) (*tree.Structure, error) {
-	for _, req := range outs {
-		if req.Structure == nil {
-			continue
-		}
-
-		if predicate(&req.Structure.Request) {
-			return req.Structure, nil
-		}
-	}
-	return nil, errors.New("failed to find corresponding request in calls tree")
-}
-
-func (c *DepositCollector) isDepositMigrationCall(req *record.IncomingRequest) bool {
-	if req.Method != "DepositMigrationCall" {
-		return false
-	}
-
-	if req.Prototype == nil {
-		return false
-	}
-
-	return req.Prototype.Equal(*proxyDaemon.PrototypeReference)
-}
-
 func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
 	if req.Method != "New" {
 		return false
@@ -316,15 +290,4 @@ func (c *DepositCollector) initialDepositState(act *record.Activate) *deposit.De
 		c.log.Error(errors.New("failed to deserialize deposit contract state"))
 	}
 	return &d
-}
-
-func (c *DepositCollector) isDepositMigrationAPICallSite(rec *record.Material, logger insolar.Logger) bool {
-	request := observer.CastToRequest((*observer.Record)(rec), logger)
-
-	if !request.IsIncoming() || !request.IsMemberCall(logger) {
-		return false
-	}
-
-	args := request.ParseMemberCallArguments(logger)
-	return args.Params.CallSite == "deposit.migration"
 }

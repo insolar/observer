@@ -54,7 +54,7 @@ func (c *DepositMemberCollector) Collect(ctx context.Context, rec *observer.Reco
 		return nil
 	}
 
-	if req.Arguments == nil {
+	if len(req.Arguments) == 0 {
 		log.Panic("empty arguments for confirm call")
 	}
 

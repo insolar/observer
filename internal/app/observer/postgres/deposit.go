@@ -176,20 +176,20 @@ func (s *DepositStorage) SetMember(depositRef, memberRef insolar.Reference) erro
 
 	query := s.db.Model(&models.Deposit{}).
 		Where("deposit_ref=?", deposit.Reference).
-		Set(`member_ref`, memberRef.Bytes())
+		Set(`member_ref=?`, memberRef.Bytes())
 
 	res, err := query.Update()
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to update deposit %s", depositRef.String())
+		return errors.Wrapf(err, "failed to set deposit member %s", depositRef.String())
 	}
 
 	if res.RowsAffected() == 0 {
-		log.Errorf("failed to update deposit")
-		return errors.New("failed to update, affected is 0")
+		log.Errorf("failed to set deposit member")
+		return errors.New("failed to set deposit member, affected is 0")
 	}
 
-	log.Debug("updated")
+	log.Debug("member set")
 
 	return nil
 }
