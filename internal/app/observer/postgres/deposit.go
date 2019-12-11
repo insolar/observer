@@ -71,18 +71,37 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 			row.State,
 			row.Vesting,
 			row.VestingStep,
-			models.DepositStatusCreated,
 		}
 	)
-
-	if len(row.MemberReference) > 0 {
-		fields = append(fields, "member_ref")
-		values = append(values, row.MemberReference)
-	}
 
 	valuePlaces := make([]string, len(fields))
 	for i := range fields {
 		valuePlaces[i] = "?"
+	}
+
+	if model.IsConfirmed {
+		values = append(values, models.DepositStatusConfirmed)
+		if len(row.MemberReference) > 0 {
+			fields = append(fields, `deposit_number`)
+			valuePlaces = append(valuePlaces, `(select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			)`)
+			values = append(values, row.MemberReference, row.MemberReference)
+		}
+	} else {
+		values = append(values, models.DepositStatusCreated)
+	}
+
+	if len(row.MemberReference) > 0 {
+		fields = append(fields, "member_ref")
+		valuePlaces = append(valuePlaces, "?")
+		values = append(values, row.MemberReference)
 	}
 
 	res, err := s.db.Query(model, fmt.Sprintf( // nolint: gosec

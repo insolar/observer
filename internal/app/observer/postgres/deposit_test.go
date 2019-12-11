@@ -53,6 +53,20 @@ func TestDepositStorage_Insert(t *testing.T) {
 
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: deposit.Member.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusCreated,
+		}, res)
 	})
 
 	t.Run("confirmed", func(t *testing.T) {
@@ -72,6 +86,21 @@ func TestDepositStorage_Insert(t *testing.T) {
 
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: deposit.Member.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusConfirmed,
+			DepositNumber:   newInt(1),
+		}, res)
 	})
 }
 

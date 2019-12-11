@@ -40,7 +40,7 @@ type dbLogger struct {
 }
 
 func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
-	d.logger.Info(q.FormattedQuery())
+	d.logger.Debug(q.FormattedQuery())
 }
 
 func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
@@ -488,7 +488,7 @@ func GetDeposits(ctx context.Context, db Querier, memberReference []byte, onlyCo
 	deposits := make([]models.Deposit, 0)
 	whereCond := []string{"member_ref = ?0"}
 	if onlyConfirmed {
-		whereCond = append(whereCond, "status = 'confirmed'", "member_ref is not null")
+		whereCond = append(whereCond, "status = 'confirmed'")
 	}
 	_, err := db.QueryContext(ctx, &deposits,
 		fmt.Sprintf( // nolint: gosec
