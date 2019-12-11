@@ -61,6 +61,7 @@ func makeBeautifier(
 
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
+	depositMembers := collecting.NewDepositMemberCollector(log)
 	wastings := collecting.NewWastingCollector(log, cachedStore)
 
 	return func(ctx context.Context, r *raw) *beauty {
@@ -75,6 +76,7 @@ func makeBeautifier(
 			addresses:      make(map[string]*observer.MigrationAddress),
 			balances:       make(map[insolar.ID]*observer.Balance),
 			depositUpdates: make(map[insolar.ID]observer.DepositUpdate),
+			depositMembers: make(map[insolar.Reference]observer.DepositMemberUpdate),
 			wastings:       make(map[string]*observer.Wasting),
 		}
 
@@ -172,9 +174,14 @@ func makeBeautifier(
 				b.balances[balance.AccountState] = balance
 			}
 
-			update := depositUpdates.Collect(ctx, &obsRecord)
-			if update != nil {
-				b.depositUpdates[update.ID] = *update
+			depositUpdate := depositUpdates.Collect(ctx, &obsRecord)
+			if depositUpdate != nil {
+				b.depositUpdates[depositUpdate.ID] = *depositUpdate
+			}
+
+			depositMemberUpdate := depositMembers.Collect(ctx, &obsRecord)
+			if depositMemberUpdate != nil {
+				b.depositMembers[depositMemberUpdate.Ref] = *depositMemberUpdate
 			}
 
 			wasting := wastings.Collect(ctx, &obsRecord)
@@ -198,6 +205,7 @@ func makeBeautifier(
 			"balances":                  len(b.balances),
 			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.wastings),
+			"deposit_member_updates":    len(b.depositMembers),
 		}).Infof("collected depositUpdates")
 
 		metric.Transfers.Add(float64(len(b.txSagaResult)))
