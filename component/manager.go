@@ -110,7 +110,7 @@ func (m *Manager) run(s *state) {
 
 	tempTimer = time.Now()
 	beauty := m.beautify(ctx, raw)
-	m.log.Debug("Timer: beautifyed ", time.Since(tempTimer))
+	m.log.Debug("Timer: beautified ", time.Since(tempTimer))
 
 	tempTimer = time.Now()
 	collapsed := m.filter(beauty)
