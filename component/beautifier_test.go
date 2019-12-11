@@ -216,7 +216,6 @@ func TestBeautifier_Deposit(t *testing.T) {
 		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
 			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),
-			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 1546300810,
 			Amount:          amount,

@@ -178,6 +178,13 @@ func makeStorer(
 				}
 			}
 
+			for _, update := range b.depositMembers {
+				err := deposits.SetMember(update.Ref, update.Member)
+				if err != nil {
+					return errors.Wrap(err, "failed to insert deposit update")
+				}
+			}
+
 			for _, wasting := range b.wastings {
 				if wasting == nil {
 					continue
@@ -464,7 +471,7 @@ func GetDeposits(ctx context.Context, db Querier, memberReference []byte, onlyCo
 	deposits := make([]models.Deposit, 0)
 	whereCond := []string{"member_ref = ?0"}
 	if onlyConfirmed {
-		whereCond = append(whereCond, "status = 'confirmed'")
+		whereCond = append(whereCond, "status = 'confirmed'", "member_ref is not null")
 	}
 	_, err := db.QueryContext(ctx, &deposits,
 		fmt.Sprintf( // nolint: gosec

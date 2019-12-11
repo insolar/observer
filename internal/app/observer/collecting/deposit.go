@@ -118,8 +118,8 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		return nil
 	}
 
-	log.Debugf("New deposit ref %s, state %s, member %s, EthHash %s", d.Ref.String(),
-		d.DepositState.String(), d.Member.String(), d.EthHash)
+	log.Debugf("New deposit ref %s, state %s, EthHash %s", d.Ref.String(),
+		d.DepositState.String(), d.EthHash)
 
 	return []observer.Deposit{*d}
 }

@@ -36,8 +36,8 @@ type Deposit struct {
 }
 
 type DepositMemberUpdate struct {
-	Ref             insolar.Reference
-	Member          insolar.Reference
+	Ref    insolar.Reference
+	Member insolar.Reference
 }
 
 type DepositUpdate struct {
