@@ -19,6 +19,7 @@ package postgres
 import (
 	"time"
 
+	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/observer/internal/models"
 	"github.com/pkg/errors"
@@ -41,4 +42,16 @@ func (s *BinanceStatsRepository) InsertStats(stats *models.BinanceStats) error {
 	}
 
 	return nil
+}
+
+func (s *BinanceStatsRepository) LastStats() (models.BinanceStats, error) {
+	lastStats := &models.BinanceStats{}
+	err := s.db.Model(lastStats).Last()
+	if err != nil && err != pg.ErrNoRows {
+		return models.BinanceStats{}, errors.Wrap(err, "failed request to db")
+	}
+	if err == pg.ErrNoRows {
+		return models.BinanceStats{}, errors.New("no data")
+	}
+	return *lastStats, nil
 }
