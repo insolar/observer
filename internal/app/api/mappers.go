@@ -75,8 +75,9 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 			res.FromMemberReference = ref.String()
 		}
 		if len(tx.MemberToReference) > 0 {
-			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
-			res.ToMemberReference = ref.String()
+			refStr := insolar.NewReferenceFromBytes(tx.MemberToReference).String()
+			// ToMemberReference should remain ref, because it is nullable in spec, for now I manually edited generated.go
+			res.ToMemberReference = &refStr
 		}
 
 		return res

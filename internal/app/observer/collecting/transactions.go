@@ -155,13 +155,13 @@ func (c *TxRegisterCollector) fromTransfer(log insolar.Logger, rec exporter.Reco
 	if !ok {
 		log.Errorf("not found %s in transaction callParams", paramToMemberRef)
 		return nil
+	}
+
+	memberTo, err := insolar.NewObjectReferenceFromString(toMemberStr)
+	if err != nil {
+		log.Error(errors.Wrap(err, "failed to parse to reference"))
 	} else {
-		memberTo, err := insolar.NewObjectReferenceFromString(toMemberStr)
-		if err != nil {
-			log.Error(errors.Wrap(err, "failed to parse to reference"))
-		} else {
-			res.MemberToReference = memberTo.Bytes()
-		}
+		res.MemberToReference = memberTo.Bytes()
 	}
 
 	log.Debug("created TxRegister")

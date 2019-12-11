@@ -182,9 +182,9 @@ type SchemaTransfer struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromMemberReference string `json:"fromMemberReference"`
-	ToMemberReference   string `json:"toMemberReference"`
-	Type                string `json:"type"`
+	FromMemberReference string  `json:"fromMemberReference"`
+	ToMemberReference   *string `json:"toMemberReference"`
+	Type                string  `json:"type"`
 }
 
 // SchemaTransferRefs defines model for schema-transfer-refs.
@@ -237,7 +237,9 @@ type GetMigrationAddressesParams struct {
 // MemberByPublicKeyParams defines parameters for MemberByPublicKey.
 type MemberByPublicKeyParams struct {
 
-	// URL-encoded `publicKey` of the target `member` object. Either full or trimmed.
+	// Public key of the target `member` object. With or without `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----` delimiters.
+	//
+	// Note: since query parameters must be valid parts of URL, the `publicKey` value should be URL-encoded.
 	PublicKey string `json:"publicKey"`
 }
 
@@ -361,7 +363,7 @@ type ServerInterface interface {
 	MarketStats(ctx echo.Context) error
 	// stats/network// (GET /api/stats/network)
 	NetworkStats(ctx echo.Context) error
-	// supply/total// (GET /api/stats/supply/total)
+	// total supply// (GET /api/stats/supply/total)
 	SupplyStatsTotal(ctx echo.Context) error
 	// transaction// (GET /api/transaction/{txID})
 	Transaction(ctx echo.Context, txID string) error
