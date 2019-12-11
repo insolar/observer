@@ -258,7 +258,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		}
 
 		err = depositRepo.Update(update)
-		require.NoError(t, err, "update")
+		require.Error(t, err, "update")
 	})
 }
 

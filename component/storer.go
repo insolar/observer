@@ -35,6 +35,21 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
+type dbLogger struct {
+	logger insolar.Logger
+}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
+	d.logger.Info(q.FormattedQuery())
+}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+}
+
+func newLogWrapper(logger insolar.Logger) dbLogger {
+	return dbLogger{logger: logger}
+}
+
 func makeStorer(
 	cfg *configuration.Configuration,
 	obs *observability.Observability,
@@ -42,6 +57,8 @@ func makeStorer(
 ) func(*beauty, *state) *observer.Statistic {
 	log := obs.Log()
 	db := conn.PG()
+
+	db.AddQueryHook(newLogWrapper(log))
 
 	metric := observability.MakeBeautyMetrics(obs, "stored")
 	platformNodes := obs.Gauge(prometheus.GaugeOpts{

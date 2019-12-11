@@ -59,9 +59,13 @@ func (c *DepositMemberCollector) Collect(ctx context.Context, rec *observer.Reco
 	}
 
 	var memberRef insolar.Reference
-	err := insolar.Deserialize(req.Arguments, []interface{}{nil, nil, nil, nil, nil, &memberRef})
+	err := insolar.Deserialize(req.Arguments, []interface{}{nil, nil, nil, nil, &memberRef})
 	if err != nil {
 		panic(errors.Wrap(err, "couldn't parse arguments"))
+	}
+
+	if memberRef.IsEmpty() {
+		panic("empty member in Confirm call")
 	}
 
 	log.Debugf("update %s: member %s", req.Object.String(), memberRef.String())

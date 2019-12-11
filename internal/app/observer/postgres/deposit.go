@@ -130,7 +130,7 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 		if deposit.InnerStatus == models.DepositStatusCreated {
 			query.Set("status=?", models.DepositStatusConfirmed)
 		}
-		if deposit.DepositNumber == nil {
+		if deposit.DepositNumber == nil && len(deposit.MemberReference) > 0 {
 			query.Set(`deposit_number = (select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
@@ -167,16 +167,36 @@ func (s *DepositStorage) SetMember(depositRef, memberRef insolar.Reference) erro
 		return errors.Wrapf(err, "failed to find deposit = %s", depositRef.String())
 	}
 
-	log := s.log.WithField("deposit", depositRef.String()).WithField("setMember", memberRef)
+	log := s.log.WithField("deposit", depositRef.String()).WithField("setMember", memberRef.String())
 
 	if len(deposit.MemberReference) > 0 {
-		log.Errorf("Deposit member already set to %s", insolar.NewReferenceFromBytes(deposit.MemberReference).String())
-		return errors.Errorf("Trying to update member for deposit that already has member")
+		depositMemberRef := insolar.NewReferenceFromBytes(deposit.MemberReference)
+		if depositMemberRef.Equal(memberRef) {
+			// second of third deposit, nothing to do
+			return nil
+		}
+
+		log.Errorf("Deposit member already set to %s, %q", insolar.NewReferenceFromBytes(deposit.MemberReference).String(), deposit.MemberReference)
+		return errors.Errorf("Trying to update member for deposit that already has different member")
 	}
 
 	query := s.db.Model(&models.Deposit{}).
 		Where("deposit_ref=?", deposit.Reference).
 		Set(`member_ref=?`, memberRef.Bytes())
+
+	if deposit.InnerStatus == models.DepositStatusConfirmed && deposit.DepositNumber == nil {
+		if deposit.DepositNumber == nil {
+			query.Set(`deposit_number = (select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			)`, memberRef, memberRef)
+		}
+	}
 
 	res, err := query.Update()
 

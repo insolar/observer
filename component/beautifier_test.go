@@ -53,22 +53,12 @@ import (
 
 var db *pg.DB
 
-type dbLogger struct{}
-
-func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
-	return
-}
-
-func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
-	return
-}
-
 func TestMain(t *testing.M) {
 	var dbCleaner func()
 	db, _, dbCleaner = testutils.SetupDB("../scripts/migrations")
 
 	// for debug purposes print all queries
-	db.AddQueryHook(dbLogger{})
+	db.AddQueryHook(newLogWrapper(inslogger.FromContext(context.Background())))
 
 	retCode := t.Run()
 	dbCleaner()
@@ -486,7 +476,7 @@ func (t *treeDataGenerator) makeConfirmDepositCall(pn insolar.PulseNumber, reaso
 }
 
 func (t *treeDataGenerator) makeConfirmDepositCallIn(pn insolar.PulseNumber, reason insolar.Reference, depositRef, memberRef insolar.Reference) *exporter.Record {
-	raw, err := insolar.Serialize([]interface{}{nil, nil, nil, nil, nil, &memberRef})
+	raw, err := insolar.Serialize([]interface{}{nil, nil, nil, nil, &memberRef})
 	if err != nil {
 		panic("failed to serialize raw")
 	}
