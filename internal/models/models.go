@@ -163,6 +163,20 @@ type SupplyStats struct {
 	Total   string    `sql:"total"`
 }
 
+type BinanceStats struct {
+	tableName struct{} `sql:"binance_stats"` //nolint: unused,structcheck
+
+	Symbol string `sql:"symbol"`
+
+	SymbolPriceBTC string `sql:"symbol_price_btc"`
+	SymbolPriceUSD string `sql:"symbol_price_usd"`
+
+	BTCPriceUSD string `sql:"btc_price_usd"`
+
+	PriceChangePercent string    `sql:"price_change_percent"`
+	Created            time.Time `sql:"created,pk,default:now(),notnull"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string

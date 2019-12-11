@@ -19,10 +19,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	insconf "github.com/insolar/insolar/configuration"
@@ -30,7 +32,10 @@ import (
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
+	"github.com/insolar/observer/internal/models"
+	"github.com/pkg/errors"
 )
 
 const BinanceAPIUrl = "https://api.binance.com/api/v3/"
@@ -51,17 +56,27 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	btcPrice, err := getPrice("BTCUSDT")
+	btcPrice, err := getPrice(logger, "BTCUSDT")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	symbolPrice, err := getPrice(*symbol + "BTC")
+	symbolPrice, err := getPrice(logger, *symbol+"BTC")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	symbolStats, err := getStats(*symbol)
+	symbolStats, err := getStats(logger, *symbol+"BTC")
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	err = insertStats(
+		logger,
+		postgres.NewBinanceStatsRepository(db),
+		btcPrice,
+		symbolPrice,
+		symbolStats)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -84,7 +99,7 @@ type price struct {
 	Mins  int    `json:"mins"`
 }
 
-func getPrice(symbol string) (string, error) {
+func getPrice(log insolar.Logger, symbol string) (string, error) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -117,7 +132,7 @@ type symbolDayStat struct {
 	PriceChangePercent string `json:"priceChangePercent"`
 }
 
-func getStats(symbol string) (symbolDayStat, error) {
+func getStats(log insolar.Logger, symbol string) (symbolDayStat, error) {
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -142,4 +157,37 @@ func getStats(symbol string) (symbolDayStat, error) {
 	log.Debugf("get 24hrs stats for symbol:" + symbol + " result:" + string(body))
 
 	return stats, nil
+}
+
+func insertStats(
+	log insolar.Logger,
+	repo *postgres.BinanceStatsRepository,
+	btcUsdtPrice string,
+	symbolBtcPrice string,
+	stats symbolDayStat,
+) error {
+	btcUsdtConverted, err := strconv.ParseFloat(btcUsdtPrice, 64)
+	if err != nil {
+		return errors.Wrap(err, "btc price can't be casted")
+	}
+
+	symbolBtcConverted, err := strconv.ParseFloat(symbolBtcPrice, 64)
+	if err != nil {
+		return errors.Wrap(err, "symbol price can't be casted")
+	}
+
+	symbolPriceUsd := btcUsdtConverted * symbolBtcConverted
+	// cut numbers after 2 place
+	symbolPriceUsd = math.Floor(symbolPriceUsd*100) / 100
+
+	newStats := &models.BinanceStats{
+		Symbol:             stats.Symbol,
+		SymbolPriceBTC:     symbolBtcPrice,
+		SymbolPriceUSD:     fmt.Sprintf("%v", symbolPriceUsd),
+		BTCPriceUSD:        btcUsdtPrice,
+		PriceChangePercent: stats.PriceChangePercent,
+	}
+
+	log.Debugf("collected binance stats: %+v", newStats)
+	return repo.InsertStats(newStats)
 }
