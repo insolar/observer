@@ -77,6 +77,51 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 	return res
 }
 
+type DepositMemberCollector struct {
+	log insolar.Logger
+}
+
+func NewDepositMemberCollector(log insolar.Logger) *DepositMemberCollector {
+	return &DepositMemberCollector{
+		log: log,
+	}
+}
+
+func (c *DepositMemberCollector) Collect(ctx context.Context, rec *observer.Record) *observer.DepositMemberUpdate {
+	if rec == nil {
+		return nil
+	}
+
+	log := c.log.WithField("collector", "DepositMemberCollector")
+
+	req := rec.Virtual.GetIncomingRequest()
+	if req == nil {
+		log.Debug("not an incoming request, skipping")
+		return nil
+	}
+	if req.Method != "Confirm" || req.CallType != record.CTMethod {
+		log.Debug("not 'Confirm' method, skipping")
+		return nil
+	}
+	if !req.Prototype.Equal(*proxyDeposit.PrototypeReference) {
+		log.Debug("not on Deposit, skipping")
+		return nil
+	}
+
+	var memberRef insolar.Reference
+	err := insolar.Deserialize(req.Arguments, []interface{}{nil, nil, nil, nil, nil, &memberRef})
+	if err != nil {
+		panic(errors.Wrap(err, "couldn't parse arguments"))
+	}
+
+	log.Debugf("update %s: member %s", req.Object.String(), memberRef.String())
+
+	return &observer.DepositMemberUpdate{
+		Ref:    *req.Object,
+		Member: memberRef,
+	}
+}
+
 func isDepositAmend(rec *observer.Record) bool {
 	amd := rec.Virtual.GetAmend()
 	if amd == nil {

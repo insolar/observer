@@ -154,6 +154,7 @@ type beauty struct {
 	balances       map[insolar.ID]*observer.Balance
 	deposits       map[insolar.ID]observer.Deposit
 	depositUpdates map[insolar.ID]observer.DepositUpdate
+	depositMembers map[insolar.ID]observer.DepositMemberUpdate
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
 

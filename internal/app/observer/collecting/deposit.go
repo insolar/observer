@@ -30,7 +30,6 @@ import (
 
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
-	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	proxyDaemon "github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
 	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
 	"github.com/insolar/insolar/insolar"
@@ -73,34 +72,29 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		return nil
 	}
 
-	if !res.IsResult() || !res.IsSuccess(log) {
+	if !res.IsResult() {
 		return nil
 	}
 
-	req, err := c.fetcher.Request(ctx, res.Request())
+	reqMaterial, err := c.fetcher.Request(ctx, res.Request())
 	if err != nil {
 		panic(errors.Wrap(err, "failed to fetch request"))
 	}
 
-	if !c.isDepositMigrationAPICallSite(&req, log) {
+	req := reqMaterial.Virtual.GetIncomingRequest()
+	if req == nil {
+		log.Debug("not incoming request, skipping")
 		return nil
 	}
 
-	migrationTree, err := c.builder.Build(ctx, req.ID)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to build tree"))
-	}
-
-	daemonCall, err := c.find(migrationTree.Outgoings, c.isDepositMigrationCall)
-	if err != nil {
-		log.Error("deposit.migration call site didn't result in DepositMigration call")
+	if !c.isDepositNew(req) {
+		log.Debug("not deposit.New call, skipping")
 		return nil
 	}
 
-	newCall, err := c.find(daemonCall.Outgoings, c.isDepositNew)
+	newCall, err := c.builder.Build(ctx, reqMaterial.ID)
 	if err != nil {
-		log.Debug("no deposit constructor call, probably second or third confirmation, skipping")
-		return nil
+		panic(errors.Wrap(err, "failed to build tree of request with result"))
 	}
 
 	var (
@@ -118,9 +112,9 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 		return nil
 	}
 
-	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, res, log)
+	d, err := c.build(activateID, newCall.RequestID.Pulse(), activate, log)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to build member"))
+		log.Error(errors.Wrapf(err, "failed to build deposit"))
 		return nil
 	}
 
@@ -212,27 +206,16 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 	return deposits
 }
 
-func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *record.Activate, res *observer.Result, log insolar.Logger) (*observer.Deposit, error) {
-	callResult := migrationdaemon.DepositMigrationResult{}
-	res.ParseFirstPayloadValue(&callResult, log)
-	if !res.IsSuccess(log) {
-		return nil, errors.New("invalid create deposit result payload")
-	}
+func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *record.Activate, log insolar.Logger) (*observer.Deposit, error) {
 	transferDate, err := pn.AsApproximateTime()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert deposit create pulse (%d) to time", id.Pulse())
-	}
-
-	memberRef, err := insolar.NewReferenceFromString(callResult.Reference)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to make memberRef from base58 string")
 	}
 
 	state := c.initialDepositState(activate)
 	d := &observer.Deposit{
 		EthHash:      strings.ToLower(state.TxHash),
 		Ref:          *insolar.NewReference(*activate.Request.GetLocal()),
-		Member:       *memberRef,
 		Timestamp:    transferDate.Unix(),
 		Amount:       state.Amount,
 		Balance:      state.Balance,
