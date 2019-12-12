@@ -53,6 +53,20 @@ func TestDepositStorage_Insert(t *testing.T) {
 
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: deposit.Member.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusCreated,
+		}, res)
 	})
 
 	t.Run("confirmed", func(t *testing.T) {
@@ -72,6 +86,21 @@ func TestDepositStorage_Insert(t *testing.T) {
 
 		err := depositRepo.Insert(deposit)
 		require.NoError(t, err, "insert")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: deposit.Member.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusConfirmed,
+			DepositNumber:   newInt(1),
+		}, res)
 	})
 }
 
@@ -259,5 +288,154 @@ func TestDepositStorage_Update(t *testing.T) {
 
 		err = depositRepo.Update(update)
 		require.Error(t, err, "update")
+	})
+}
+
+func TestMemberSet(t *testing.T) {
+	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
+
+	t.Run("ok", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+		}
+
+		memberRef := gen.Reference()
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+
+		err = depositRepo.SetMember(deposit.Ref, memberRef)
+		require.NoError(t, err, "SetMember")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusCreated,
+		}, res)
+	})
+
+	t.Run("updated before", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+		}
+
+		memberRef := gen.Reference()
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+
+		newState := gen.ID()
+
+		update := observer.DepositUpdate{
+			ID:              newState,
+			HoldReleaseDate: now + 1,
+			Amount:          "100",
+			Balance:         "20",
+			PrevState:       deposit.DepositState,
+			TxHash:          "123",
+			IsConfirmed:     true,
+		}
+
+		err = depositRepo.Update(update)
+		require.NoError(t, err, "update")
+
+		err = depositRepo.SetMember(deposit.Ref, memberRef)
+		require.NoError(t, err, "SetMember")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           newState.Bytes(),
+			HoldReleaseDate: now + 1,
+			Amount:          "100",
+			Balance:         "20",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusConfirmed,
+			DepositNumber:   newInt(1),
+		}, res)
+	})
+
+	t.Run("updated after", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+		}
+
+		memberRef := gen.Reference()
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+
+		err = depositRepo.SetMember(deposit.Ref, memberRef)
+		require.NoError(t, err, "SetMember")
+
+		newState := gen.ID()
+
+		update := observer.DepositUpdate{
+			ID:              newState,
+			HoldReleaseDate: now + 1,
+			Amount:          "100",
+			Balance:         "100",
+			PrevState:       deposit.DepositState,
+			TxHash:          "123",
+			IsConfirmed:     true,
+		}
+
+		err = depositRepo.Update(update)
+		require.NoError(t, err, "update")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           newState.Bytes(),
+			HoldReleaseDate: now + 1,
+			Amount:          "100",
+			Balance:         "100",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusConfirmed,
+			DepositNumber:   newInt(1),
+		}, res)
+	})
+
+	t.Run("lost deposit", func(t *testing.T) {
+		err := depositRepo.SetMember(gen.Reference(), gen.Reference())
+		require.Error(t, err, "SetMember")
 	})
 }

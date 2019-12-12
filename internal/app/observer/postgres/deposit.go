@@ -55,7 +55,7 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 
 	var (
 		fields = []string{
-			"eth_hash", "deposit_ref", "member_ref",
+			"eth_hash", "deposit_ref",
 			"transfer_date", "hold_release_date",
 			"amount", "balance", "deposit_state",
 			"vesting", "vesting_step",
@@ -64,7 +64,6 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 		values = []interface{}{
 			row.EtheriumHash,
 			row.Reference,
-			row.MemberReference,
 			row.Timestamp,
 			row.HoldReleaseDate,
 			row.Amount,
@@ -81,8 +80,10 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 	}
 
 	if model.IsConfirmed {
-		fields = append(fields, `deposit_number`)
-		valuePlaces = append(valuePlaces, `(select
+		values = append(values, models.DepositStatusConfirmed)
+		if len(row.MemberReference) > 0 {
+			fields = append(fields, `deposit_number`)
+			valuePlaces = append(valuePlaces, `(select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
 						then 1
@@ -91,9 +92,16 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 					end
 				)
 			)`)
-		values = append(values, models.DepositStatusConfirmed, row.MemberReference, row.MemberReference)
+			values = append(values, row.MemberReference, row.MemberReference)
+		}
 	} else {
 		values = append(values, models.DepositStatusCreated)
+	}
+
+	if len(row.MemberReference) > 0 {
+		fields = append(fields, "member_ref")
+		valuePlaces = append(valuePlaces, "?")
+		values = append(values, row.MemberReference)
 	}
 
 	res, err := s.db.Query(model, fmt.Sprintf( // nolint: gosec
@@ -141,7 +149,7 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 		if deposit.InnerStatus == models.DepositStatusCreated {
 			query.Set("status=?", models.DepositStatusConfirmed)
 		}
-		if deposit.DepositNumber == nil {
+		if deposit.DepositNumber == nil && len(deposit.MemberReference) > 0 {
 			query.Set(`deposit_number = (select
 				(case
 					when (select max(deposit_number) from deposits where member_ref=?) isnull
@@ -171,6 +179,60 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 	return nil
 }
 
+func (s *DepositStorage) SetMember(depositRef, memberRef insolar.Reference) error {
+	deposit := new(models.Deposit)
+	err := s.db.Model(deposit).Where("deposit_ref=?", depositRef.Bytes()).Select()
+	if err != nil {
+		return errors.Wrapf(err, "failed to find deposit = %s", depositRef.String())
+	}
+
+	log := s.log.WithField("deposit", depositRef.String()).WithField("setMember", memberRef.String())
+
+	if len(deposit.MemberReference) > 0 {
+		depositMemberRef := insolar.NewReferenceFromBytes(deposit.MemberReference)
+		if depositMemberRef.Equal(memberRef) {
+			// second of third deposit, nothing to do
+			return nil
+		}
+
+		log.Errorf("Deposit member already set to %s, %q", insolar.NewReferenceFromBytes(deposit.MemberReference).String(), deposit.MemberReference)
+		return errors.Errorf("Trying to update member for deposit that already has different member")
+	}
+
+	query := s.db.Model(&models.Deposit{}).
+		Where("deposit_ref=?", deposit.Reference).
+		Set(`member_ref=?`, memberRef.Bytes())
+
+	if deposit.InnerStatus == models.DepositStatusConfirmed && deposit.DepositNumber == nil {
+		if deposit.DepositNumber == nil {
+			query.Set(`deposit_number = (select
+				(case
+					when (select max(deposit_number) from deposits where member_ref=?) isnull
+						then 1
+					else
+						(select (max(deposit_number) + 1) from deposits where member_ref=?)
+					end
+				)
+			)`, memberRef, memberRef)
+		}
+	}
+
+	res, err := query.Update()
+
+	if err != nil {
+		return errors.Wrapf(err, "failed to set deposit member %s", depositRef.String())
+	}
+
+	if res.RowsAffected() == 0 {
+		log.Errorf("failed to set deposit member")
+		return errors.New("failed to set deposit member, affected is 0")
+	}
+
+	log.Debug("member set")
+
+	return nil
+}
+
 func (s *DepositStorage) GetDeposit(ref []byte) (*models.Deposit, error) {
 	deposit := new(models.Deposit)
 	err := s.db.Model(deposit).Where("deposit_ref=?", ref).Select()
@@ -181,10 +243,14 @@ func (s *DepositStorage) GetDeposit(ref []byte) (*models.Deposit, error) {
 }
 
 func depositSchema(model observer.Deposit) models.Deposit {
+	var memberRefBytes []byte
+	if !model.Member.IsEmpty() {
+		memberRefBytes = model.Member.Bytes()
+	}
 	return models.Deposit{
 		EtheriumHash:    model.EthHash,
 		Reference:       model.Ref.Bytes(),
-		MemberReference: model.Member.Bytes(),
+		MemberReference: memberRefBytes,
 		Timestamp:       model.Timestamp,
 		HoldReleaseDate: model.HoldReleaseDate,
 		Amount:          model.Amount,
