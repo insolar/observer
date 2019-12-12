@@ -104,6 +104,21 @@ Log format:
 Command calculates, gathers and saves statistics, add to cron for 1/min execution.
 Uses replicator's config (see above).
 
+## Binance collector
+Binance gathers info about the exchange rate of the INS/USD pair (could be calculated like a XNS/USD)
+
+Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
+```
+    make build
+    ./bin/binance-collector
+```
+
+If you want to fetch information not about INS-symbol, just put `-symbol` in the call
+```
+    ./bin/binance-collector -symbol=XNS
+```
+Config is being taken from `.artifacts`.
+
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.
