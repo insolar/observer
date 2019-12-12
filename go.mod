@@ -13,7 +13,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
-	github.com/insolar/insolar v1.1.0
+	github.com/insolar/insolar v1.1.1-0.20191212121813-875aa88491c1
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2

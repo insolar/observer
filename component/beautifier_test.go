@@ -53,6 +53,21 @@ import (
 
 var db *pg.DB
 
+type dbLogger struct {
+	logger insolar.Logger
+}
+
+func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
+	d.logger.Debug(q.FormattedQuery())
+}
+
+func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
+}
+
+func newLogWrapper(logger insolar.Logger) dbLogger {
+	return dbLogger{logger: logger}
+}
+
 func TestMain(t *testing.M) {
 	var dbCleaner func()
 	db, _, dbCleaner = testutils.SetupDB("../scripts/migrations")
