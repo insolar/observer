@@ -79,7 +79,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 		Timestamp: resp.PulseTimestamp,
 		Nodes:     resp.Nodes,
 	}
-	f.log.Debug("Received pulse ", model)
+	f.log.Debug("Received pulse ", model.Number)
 	return model, nil
 }
 
