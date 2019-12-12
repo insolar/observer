@@ -30,11 +30,9 @@ var db *pg.DB
 type dbLogger struct{}
 
 func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
-	return
 }
 
 func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
-	return
 }
 
 func TestMain(t *testing.M) {

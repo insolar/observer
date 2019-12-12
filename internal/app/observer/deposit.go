@@ -35,6 +35,11 @@ type Deposit struct {
 	IsConfirmed     bool
 }
 
+type DepositMemberUpdate struct {
+	Ref    insolar.Reference
+	Member insolar.Reference
+}
+
 type DepositUpdate struct {
 	ID              insolar.ID
 	Timestamp       int64

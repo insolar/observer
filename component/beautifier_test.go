@@ -27,10 +27,13 @@ import (
 	"github.com/insolar/insolar/application/api/requester"
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/application/builtin/proxy/migrationdaemon"
+	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
+	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,22 +53,12 @@ import (
 
 var db *pg.DB
 
-type dbLogger struct{}
-
-func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
-	return
-}
-
-func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
-	return
-}
-
 func TestMain(t *testing.M) {
 	var dbCleaner func()
 	db, _, dbCleaner = testutils.SetupDB("../scripts/migrations")
 
 	// for debug purposes print all queries
-	db.AddQueryHook(dbLogger{})
+	db.AddQueryHook(newLogWrapper(inslogger.FromContext(context.Background())))
 
 	retCode := t.Run()
 	dbCleaner()
@@ -148,8 +141,23 @@ func TestBeautifier_Deposit(t *testing.T) {
 		Replicator: configuration.Replicator{
 			CacheSize: 100000,
 		},
+		Log: configuration.Log{
+			Level:  "Debug",
+			Format: "json",
+		},
 	}
 	ctx := context.Background()
+	inslog, err := log.NewGlobalLogger(insconf.Log{Level: cfg.Log.Level,
+		Formatter:  cfg.Log.Format,
+		Adapter:    "zerolog",
+		OutputType: "stderr",
+		BufferSize: 0})
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = inslogger.SetLogger(ctx, inslog)
+
 	beautifier := makeBeautifier(cfg, observability.Make(ctx), fakeConn{})
 	pn := insolar.GenesisPulse.PulseNumber
 	tdg := NewTreeDataGenerator()
@@ -187,6 +195,9 @@ func TestBeautifier_Deposit(t *testing.T) {
 		memory,
 	)
 
+	confirmCall := tdg.makeConfirmDepositCall(pn, *insolar.NewReference(call.Record.ID))
+	confirmCallIn := tdg.makeConfirmDepositCallIn(pn, *insolar.NewReference(confirmCall.Record.ID), *insolar.NewReference(newDepositCallIn.Record.ID), memberRef)
+
 	raw := &raw{
 		batch: map[uint32]*exporter.Record{
 			0: call,
@@ -198,12 +209,10 @@ func TestBeautifier_Deposit(t *testing.T) {
 			6: tdg.makeResultWith(newDepositCall.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
 			7: newDepositCallIn,
 
-			8: tdg.makeResultWith(newDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
-			9: act,
-			10: tdg.makeResultWith(call.Record.ID, &foundation.Result{Returns: []interface{}{
-				migrationdaemon.DepositMigrationResult{Reference: memberRef.String()},
-				nil,
-			}}),
+			8:  tdg.makeResultWith(newDepositCallIn.Record.ID, &foundation.Result{Returns: []interface{}{nil, nil}}),
+			9:  act,
+			10: confirmCall,
+			11: confirmCallIn,
 		},
 	}
 	transferDate, err := newDepositCall.Record.ID.Pulse().AsApproximateTime()
@@ -216,7 +225,6 @@ func TestBeautifier_Deposit(t *testing.T) {
 		act.Record.ID: {
 			EthHash:         strings.ToLower(txHash),
 			Ref:             *insolar.NewReference(newDepositCallIn.Record.ID),
-			Member:          memberRef,
 			Timestamp:       transferDate.Unix(),
 			HoldReleaseDate: 1546300810,
 			Amount:          amount,
@@ -226,6 +234,12 @@ func TestBeautifier_Deposit(t *testing.T) {
 			VestingStep:     10,
 		},
 	}, res.deposits)
+	assert.Equal(t, map[insolar.Reference]observer.DepositMemberUpdate{
+		*insolar.NewReference(newDepositCallIn.Record.ID): {
+			Ref:    *insolar.NewReference(newDepositCallIn.Record.ID),
+			Member: memberRef,
+		},
+	}, res.depositMembers)
 }
 
 type treeDataGenerator struct {
@@ -452,6 +466,31 @@ func (t *treeDataGenerator) makeConfirmDepositCall(pn insolar.PulseNumber, reaso
 					Object:    insolar.NewReference(gen.IDWithPulse(pn)),
 					Method:    "Confirm",
 					Arguments: []byte{},
+					Prototype: proxyDeposit.PrototypeReference,
+					Reason:    reason,
+				},
+			},
+		},
+	}}
+	return rec
+}
+
+func (t *treeDataGenerator) makeConfirmDepositCallIn(pn insolar.PulseNumber, reason insolar.Reference, depositRef, memberRef insolar.Reference) *exporter.Record {
+	raw, err := insolar.Serialize([]interface{}{nil, nil, nil, nil, &memberRef})
+	if err != nil {
+		panic("failed to serialize raw")
+	}
+
+	rec := &exporter.Record{Record: record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					CallType:  record.CTMethod,
+					Nonce:     t.GetNonce(),
+					Object:    &depositRef,
+					Method:    "Confirm",
+					Arguments: raw,
 					Prototype: proxyDeposit.PrototypeReference,
 					Reason:    reason,
 				},

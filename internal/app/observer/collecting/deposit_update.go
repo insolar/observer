@@ -43,7 +43,7 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 		return nil
 	}
 
-	log := c.log.WithField("collector", "DepositUpdateCollector")
+	log := c.log.WithField("recordID", rec.ID.String()).WithField("collector", "DepositUpdateCollector")
 
 	if !isDepositAmend(rec) {
 		return nil

@@ -28,7 +28,9 @@ func NewDepositUpdateFilter() *DepositUpdateFilter {
 	return &DepositUpdateFilter{}
 }
 
-func (*DepositUpdateFilter) Filter(updates map[insolar.ID]observer.DepositUpdate, deposits map[insolar.ID]observer.Deposit) {
+func (*DepositUpdateFilter) Filter(
+	updates map[insolar.ID]observer.DepositUpdate,
+	deposits map[insolar.ID]observer.Deposit) {
 	// This code block collapses the deposit update sequence.
 	for state, update := range updates {
 		upd, ok := updates[update.PrevState]
