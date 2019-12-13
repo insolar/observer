@@ -18,7 +18,6 @@ package api
 
 import (
 	"fmt"
-	"math/big"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,6 +30,7 @@ import (
 	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -44,12 +44,11 @@ type ObserverServer struct {
 	db       *pg.DB
 	log      insolar.Logger
 	pStorage observer.PulseStorage
-	fee      *big.Int
-	price    string
+	config   apiconfiguration.Configuration
 }
 
-func NewObserverServer(db *pg.DB, log insolar.Logger, fee *big.Int, pStorage observer.PulseStorage, price string) *ObserverServer {
-	return &ObserverServer{db: db, log: log, pStorage: pStorage, fee: fee, price: price}
+func NewObserverServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config apiconfiguration.Configuration) *ObserverServer {
+	return &ObserverServer{db: db, log: log, pStorage: pStorage, config: config}
 }
 
 func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress string) error {
@@ -189,7 +188,7 @@ func (s *ObserverServer) Fee(ctx echo.Context, amount string) error {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("negative amount"))
 	}
 
-	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.fee.String()})
+	return ctx.JSON(http.StatusOK, ResponsesFeeYaml{Fee: s.config.FeeAmount.String()})
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
@@ -440,9 +439,23 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Hour)
-	return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
-		Price: s.price,
-	})
+	switch s.config.PriceOrigin {
+	case "binance":
+		repo := postgres.NewBinanceStatsRepository(s.db)
+		stats, err := repo.LastStats()
+		if err != nil {
+			s.log.Error(errors.Wrap(err, "couldn't get last binance supply stats"))
+			return ctx.JSON(http.StatusInternalServerError, "")
+		}
+		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+			Price:       stats.SymbolPriceUSD,
+			DailyChange: NullableString(stats.PriceChangePercent),
+		})
+	default:
+		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+			Price: s.config.Price,
+		})
+	}
 }
 
 func (s *ObserverServer) NetworkStats(ctx echo.Context) error {

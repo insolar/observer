@@ -60,7 +60,7 @@ func main() {
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	pStorage := postgres.NewPulseStorage(logger, db)
-	observerAPI := api.NewObserverServer(db, logger, cfg.FeeAmount, pStorage, cfg.Price)
+	observerAPI := api.NewObserverServer(db, logger, pStorage, *cfg)
 	api.RegisterHandlers(e, observerAPI)
 
 	e.Logger.Fatal(e.Start(cfg.Listen))

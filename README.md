@@ -109,6 +109,19 @@ OBSERVERAPI_LOG_BUFFER=0
 Command calculates, gathers and saves statistics, add to cron for 1/min execution.
 Uses replicator's config (see above).
 
+## Binance collector
+Binance gathers info about the exchange rate of the INS/USD pair (could be calculated like a XNS/USD)
+
+Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
+```
+    make build
+    ./bin/binance-collector -symbol=XNS
+```
+
+ `-symbol` is used for providing symbol to the stats collector. 
+
+Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
+
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.

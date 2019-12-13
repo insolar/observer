@@ -24,11 +24,12 @@ import (
 )
 
 type Configuration struct {
-	Listen    string
-	DB        configuration.DB
-	FeeAmount *big.Int
-	Price     string
-	Log       Log
+	Listen      string
+	DB          configuration.DB
+	FeeAmount   *big.Int
+	PriceOrigin string
+	Price       string
+	Log         Log
 }
 
 type Log struct {
@@ -47,8 +48,9 @@ func Default() *Configuration {
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 		},
-		FeeAmount: big.NewInt(1000000000),
-		Price:     "0.05",
+		FeeAmount:   big.NewInt(1000000000),
+		Price:       "0.05",
+		PriceOrigin: "const", //const|binance
 		Log: Log{
 			Level:        "debug",
 			Format:       "text",
