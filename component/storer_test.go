@@ -69,29 +69,29 @@ func TestStoreSimpleTransactions(t *testing.T) {
 		},
 	}
 	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+		err := StoreTxRegister(tx, []observer.TxRegister{
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				Type:                expectedTransactions[0].Type,
+				PulseNumber:         expectedTransactions[0].PulseRecord[0],
+				RecordNumber:        expectedTransactions[0].PulseRecord[1],
+				MemberFromReference: expectedTransactions[0].MemberFromReference,
+				MemberToReference:   expectedTransactions[0].MemberToReference,
+				Amount:              expectedTransactions[0].Amount,
+			},
+			{
+				TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+				Type:               expectedTransactions[1].Type,
+				PulseNumber:        expectedTransactions[1].PulseRecord[0],
+				RecordNumber:       expectedTransactions[1].PulseRecord[1],
+				DepositToReference: expectedTransactions[1].DepositToReference,
+				Amount:             expectedTransactions[1].Amount,
+			},
+		})
+		require.NoError(t, err)
+
 		// Create different update functions.
 		funcs := []func() error{
-			func() error {
-				return StoreTxRegister(tx, []observer.TxRegister{
-					{
-						TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
-						Type:                expectedTransactions[0].Type,
-						PulseNumber:         expectedTransactions[0].PulseRecord[0],
-						RecordNumber:        expectedTransactions[0].PulseRecord[1],
-						MemberFromReference: expectedTransactions[0].MemberFromReference,
-						MemberToReference:   expectedTransactions[0].MemberToReference,
-						Amount:              expectedTransactions[0].Amount,
-					},
-					{
-						TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
-						Type:               expectedTransactions[1].Type,
-						PulseNumber:        expectedTransactions[1].PulseRecord[0],
-						RecordNumber:       expectedTransactions[1].PulseRecord[1],
-						DepositToReference: expectedTransactions[1].DepositToReference,
-						Amount:             expectedTransactions[1].Amount,
-					},
-				})
-			},
 			func() error {
 				return StoreTxResult(tx, []observer.TxResult{
 					{
@@ -118,9 +118,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 
 		// Run functions in random order.
 		rand.Shuffle(len(funcs), func(i, j int) {
-			t := funcs[i]
-			funcs[i] = funcs[j]
-			funcs[j] = t
+			funcs[i], funcs[j] = funcs[j], funcs[i]
 		})
 		for _, f := range funcs {
 			err := f()
