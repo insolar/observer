@@ -1530,7 +1530,15 @@ func TestMemberTransaction_NoContent(t *testing.T) {
 	member := gen.Reference()
 	resp, err := http.Get("http://" + apihost + fmt.Sprintf("/api/member/%s/transactions?limit=15", member.String()))
 	require.NoError(t, err)
-	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 0)
 }
 
 func TestMemberTransaction_Empty(t *testing.T) {
@@ -1538,7 +1546,15 @@ func TestMemberTransaction_Empty(t *testing.T) {
 	insertMember(t, member, nil, nil, "10000", "")
 	resp, err := http.Get("http://" + apihost + fmt.Sprintf("/api/member/%s/transactions?limit=15", member.String()))
 	require.NoError(t, err)
-	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 0)
 }
 
 func TestMemberTransactions(t *testing.T) {
