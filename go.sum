@@ -69,6 +69,7 @@ github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHqu
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/getkin/kin-openapi v0.2.0/go.mod h1:V1z9xl9oF5Wt7v32ne4FmiF1alpS4dM6mNzoywPOXlk=
+github.com/getkin/kin-openapi v0.2.1-0.20191211203508-0d9caf80ada6/go.mod h1:8hr1ZT9XxXHCLcD+I0ow6wOKn6ljqk04N+xEMS2BILY=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/globocom/echo-prometheus v0.1.2 h1:tyusm7z6+873CHVhnl6QN8VOaKvNVgWfbNaiELkTRGc=
 github.com/globocom/echo-prometheus v0.1.2/go.mod h1:3oQLuoG5ZI5nufWK0ILpMl4vmw1q9OIPe2iy+ToRE+A=
@@ -147,6 +148,8 @@ github.com/insolar/insolar v1.1.1-0.20191212121813-875aa88491c1 h1:6kbH3/bFvkpTM
 github.com/insolar/insolar v1.1.1-0.20191212121813-875aa88491c1/go.mod h1:w/Akp0hPuTlI/aCaairv9km3BEmeWiFK1cm4tsMe17g=
 github.com/insolar/insolar v1.1.1 h1:s0hlmYNylBUk6hoqK+UhpKNUICZJX/voBa4F9vBkGv0=
 github.com/insolar/insolar v1.1.1/go.mod h1:w/Akp0hPuTlI/aCaairv9km3BEmeWiFK1cm4tsMe17g=
+github.com/insolar/insolar v1.1.2 h1:GFjt6jwhlRzV4ayc5c2wARaC3DGdNBzHM4MwminXfVY=
+github.com/insolar/insolar v1.1.2/go.mod h1:7EPa+CiRL0lsyzoeuA/+SS6oFnlNLRBlXSyC92fzpvU=
 github.com/insolar/rpc v1.2.2-0.20190812143745-c27e1d218f1f/go.mod h1:BZcTsPtQu8QG8RqqQdAnuNAG8n6TOrdNxIHro0h99Ik=
 github.com/insolar/x-crypto v0.0.0-20191031140942-75fab8a325f6 h1:WS4a7qw+P1pcnviyxyMTA/aR+T51wJok1IC9rJkHrTg=
 github.com/insolar/x-crypto v0.0.0-20191031140942-75fab8a325f6/go.mod h1:9mvKFD2wFLEGmK8pNFIowmGRTjfyn3YHtr10s7DHpBY=
@@ -447,6 +450,8 @@ gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.4 h1:/eiJrUcujPVeJ3xlSWaiNi3uSVmDGBK1pDHUHAnao1I=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.7 h1:VUgggvou5XRW9mHwD/yXxIYSMtY0zoKQf/v226p2nyo=
+gopkg.in/yaml.v2 v2.2.7/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 mellium.im/sasl v0.2.1 h1:nspKSRg7/SyO0cRGY71OkfHab8tf9kCts6a6oTDut0w=
 mellium.im/sasl v0.2.1/go.mod h1:ROaEDLQNuf9vjKqE1SrAfnsobm2YKXT1gnN1uDp1PjQ=
