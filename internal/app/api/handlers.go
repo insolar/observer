@@ -452,7 +452,8 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
-			Price: stats.SymbolPriceUSD,
+			Price:       stats.SymbolPriceUSD,
+			DailyChange: NullableString(stats.PriceChangePercent),
 		})
 	default:
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
