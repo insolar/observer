@@ -326,10 +326,6 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	if len(txs) == 0 {
-		return ctx.NoContent(http.StatusNoContent)
-	}
-
 	res := SchemasTransactions{}
 	for _, t := range txs {
 		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
