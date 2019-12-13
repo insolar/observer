@@ -157,6 +157,152 @@ func TestStoreSimpleTransactions(t *testing.T) {
 	})
 }
 
+func TestPanicSimpleTransactionsWithResults(t *testing.T) {
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+		expectedTransactions := []models.Transaction{
+			{
+				TransactionID:       gen.RecordReference().Bytes(),
+				Type:                models.TTypeTransfer,
+				PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+				MemberFromReference: gen.Reference().Bytes(),
+				MemberToReference:   gen.Reference().Bytes(),
+				Amount:              strconv.Itoa(rand.Int()),
+				Fee:                 strconv.Itoa(rand.Int()),
+				FinishSuccess:       rand.Int()/2 == 0,
+				FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+				StatusRegistered:    true,
+				StatusSent:          true,
+				StatusFinished:      true,
+			},
+			{
+				TransactionID:      gen.RecordReference().Bytes(),
+				Type:               models.TTypeMigration,
+				PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
+				DepositToReference: gen.Reference().Bytes(),
+				Amount:             strconv.Itoa(rand.Int()),
+				Fee:                strconv.Itoa(rand.Int()),
+				StatusRegistered:   true,
+				StatusSent:         true,
+				StatusFinished:     false,
+			},
+		}
+
+		err := StoreTxRegister(db, []observer.TxRegister{
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				Type:                expectedTransactions[0].Type,
+				PulseNumber:         expectedTransactions[0].PulseRecord[0],
+				RecordNumber:        expectedTransactions[0].PulseRecord[1],
+				MemberFromReference: expectedTransactions[0].MemberFromReference,
+				MemberToReference:   expectedTransactions[0].MemberToReference,
+				Amount:              expectedTransactions[0].Amount,
+			},
+			{
+				TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+				Type:               expectedTransactions[1].Type,
+				PulseNumber:        expectedTransactions[1].PulseRecord[0],
+				RecordNumber:       expectedTransactions[1].PulseRecord[1],
+				DepositToReference: expectedTransactions[1].DepositToReference,
+				Amount:             expectedTransactions[1].Amount,
+			},
+		})
+
+		require.NoError(t, err)
+
+		require.Panics(t, func() {
+			_ = StoreTxResult(db, []observer.TxResult{
+				{
+					TransactionID: gen.Reference(), // This ID does not exists in db, so we should panic for this.
+					Fee:           expectedTransactions[0].Fee,
+				},
+				{
+					TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+					Fee:           expectedTransactions[0].Fee,
+				},
+				{
+					TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+					Fee:           expectedTransactions[1].Fee,
+				},
+			})
+		})
+
+		return tx.Rollback()
+	})
+}
+
+func TestPanicSimpleTransactionsWithSagaResults(t *testing.T) {
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+		expectedTransactions := []models.Transaction{
+			{
+				TransactionID:       gen.RecordReference().Bytes(),
+				Type:                models.TTypeTransfer,
+				PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+				MemberFromReference: gen.Reference().Bytes(),
+				MemberToReference:   gen.Reference().Bytes(),
+				Amount:              strconv.Itoa(rand.Int()),
+				Fee:                 strconv.Itoa(rand.Int()),
+				FinishSuccess:       rand.Int()/2 == 0,
+				FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+				StatusRegistered:    true,
+				StatusSent:          true,
+				StatusFinished:      true,
+			},
+			{
+				TransactionID:      gen.RecordReference().Bytes(),
+				Type:               models.TTypeMigration,
+				PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
+				DepositToReference: gen.Reference().Bytes(),
+				Amount:             strconv.Itoa(rand.Int()),
+				Fee:                strconv.Itoa(rand.Int()),
+				StatusRegistered:   true,
+				StatusSent:         true,
+				StatusFinished:     false,
+			},
+		}
+
+		err := StoreTxRegister(db, []observer.TxRegister{
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				Type:                expectedTransactions[0].Type,
+				PulseNumber:         expectedTransactions[0].PulseRecord[0],
+				RecordNumber:        expectedTransactions[0].PulseRecord[1],
+				MemberFromReference: expectedTransactions[0].MemberFromReference,
+				MemberToReference:   expectedTransactions[0].MemberToReference,
+				Amount:              expectedTransactions[0].Amount,
+			},
+			{
+				TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+				Type:               expectedTransactions[1].Type,
+				PulseNumber:        expectedTransactions[1].PulseRecord[0],
+				RecordNumber:       expectedTransactions[1].PulseRecord[1],
+				DepositToReference: expectedTransactions[1].DepositToReference,
+				Amount:             expectedTransactions[1].Amount,
+			},
+		})
+
+		require.NoError(t, err)
+
+		require.Panics(t, func() {
+			_ = StoreTxSagaResult(db, []observer.TxSagaResult{
+				{
+					TransactionID:      gen.Reference(), // This ID does not exists in db, so we should panic for this.
+					FinishSuccess:      expectedTransactions[0].FinishSuccess,
+					FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+					FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
+				},
+				{
+					TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+					FinishSuccess:      expectedTransactions[0].FinishSuccess,
+					FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+					FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
+				},
+			})
+		})
+
+		return tx.Rollback()
+	})
+}
+
 func TestStoreSimpleDeposit(t *testing.T) {
 	obs := observability.Make(context.Background())
 
