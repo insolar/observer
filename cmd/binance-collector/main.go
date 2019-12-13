@@ -25,6 +25,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	insconf "github.com/insolar/insolar/configuration"
@@ -38,10 +39,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+// BinanceAPIUrl stores Binance url
 const BinanceAPIUrl = "https://api.binance.com/api/v3/"
 
 func main() {
-	symbol := flag.String("symbol", "INS", "token symbol")
+	symbol := flag.String("symbol", "", "token symbol")
+	flag.Parse()
+
+	if symbol == nil || len(*symbol) == 0 || len(strings.TrimSpace(*symbol)) == 0 {
+		panic("symbol should be provided")
+	}
+
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,

@@ -110,14 +110,12 @@ Binance gathers info about the exchange rate of the INS/USD pair (could be calcu
 Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
 ```
     make build
-    ./bin/binance-collector
-```
-
-If you want to fetch information not about INS-symbol, just put `-symbol` in the call
-```
     ./bin/binance-collector -symbol=XNS
 ```
-Config is being taken from `.artifacts`.
+
+ `-symbol` is used for providing symbol to the stats collector. 
+
+Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
 
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
