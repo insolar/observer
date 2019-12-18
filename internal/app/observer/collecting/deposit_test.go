@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/application/builtin/contract/pkshard"
 	"github.com/insolar/insolar/application/builtin/contract/wallet"
+	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyPKShard "github.com/insolar/insolar/application/builtin/proxy/pkshard"
 	proxyWallet "github.com/insolar/insolar/application/builtin/proxy/wallet"
 	"github.com/insolar/insolar/application/genesisrefs"
@@ -105,6 +106,66 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
+func TestDepositCollector_CollectDeposit(t *testing.T) {
+	log := inslogger.FromContext(inslogger.TestContext(t))
+	fetcher := store.NewRecordFetcherMock(t)
+	collector := NewDepositCollector(log, fetcher)
+	ctx := context.Background()
+
+	pn := insolar.GenesisPulse.PulseNumber + 1
+	amount := "42"
+	balance := "0"
+	txHash := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
+	lockup := int64(120)
+	vPeriod := int64(3 * 24 * 60 * 60)
+	vStep := int64(24 * 60 * 60)
+	dep := deposit.Deposit{
+		Balance:            balance,
+		Amount:             amount,
+		TxHash:             txHash,
+		PulseDepositUnHold: pn + insolar.PulseNumber(lockup),
+		Vesting:            vPeriod,
+		VestingStep:        vStep,
+		Lockup:             lockup,
+	}
+
+	depositRef := gen.ReferenceWithPulse(pn)
+
+	rec := makeDepositResult(pn)
+	incRequest := makeIncRequest(pn)
+	activationRecord := makeDepositActivate(pn, dep, depositRef)
+
+	fetcher.SideEffectMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		return *(*record.Material)(activationRecord), nil
+	})
+	fetcher.RequestMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		return *(*record.Material)(incRequest), nil
+	})
+	fetcher.ResultMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
+		return *(*record.Material)(rec), nil
+	})
+	fetcher.CalledRequestsMock.Set(func(ctx context.Context, reqID insolar.ID) (ma1 []record.Material, err error) {
+		return []record.Material{}, nil
+	})
+
+	actual := collector.Collect(ctx, rec)
+
+	expected := []observer.Deposit{{
+		EthHash:         txHash,
+		Ref:             depositRef,
+		Timestamp:       1546300801,
+		Balance:         balance,
+		Amount:          amount,
+		DepositState: activationRecord.ID,
+		Vesting:         vPeriod,
+		VestingStep:     vStep,
+		HoldReleaseDate: 1546300921,
+		IsConfirmed:     false,
+	}}
+	require.Len(t, actual, 1)
+	require.Equal(t, expected, actual)
+}
+
 func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef insolar.Reference) *observer.Record {
 	memory, err := insolar.Serialize(&dep)
 	if err != nil {
@@ -117,6 +178,33 @@ func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef
 			Memory:  memory,
 			Image:   proxyPKShard.GetPrototype(),
 		}),
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeIncRequest(pn insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_IncomingRequest{
+				IncomingRequest: &record.IncomingRequest{
+					Method: "New",
+					Prototype: proxyDeposit.PrototypeReference,
+				},
+			},
+		},
+	}
+	return (*observer.Record)(rec)
+}
+
+func makeDepositResult(pn insolar.PulseNumber) *observer.Record {
+	rec := &record.Material{
+		ID: gen.IDWithPulse(pn),
+		Virtual: record.Virtual{
+			Union: &record.Virtual_Result{
+				Result: &record.Result{},
+			},
+		},
 	}
 	return (*observer.Record)(rec)
 }
