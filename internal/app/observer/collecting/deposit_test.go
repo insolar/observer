@@ -132,7 +132,7 @@ func TestDepositCollector_CollectDeposit(t *testing.T) {
 	depositRef := gen.ReferenceWithPulse(pn)
 
 	rec := makeDepositResult(pn)
-	incRequest := makeIncRequest(pn)
+	incRequest := makeNewDepositIncRequest(pn)
 	activationRecord := makeDepositActivate(pn, dep, depositRef)
 
 	fetcher.SideEffectMock.Set(func(ctx context.Context, reqID insolar.ID) (m1 record.Material, err error) {
@@ -182,7 +182,7 @@ func makeDepositActivate(pn insolar.PulseNumber, dep deposit.Deposit, requestRef
 	return (*observer.Record)(rec)
 }
 
-func makeIncRequest(pn insolar.PulseNumber) *observer.Record {
+func makeNewDepositIncRequest(pn insolar.PulseNumber) *observer.Record {
 	rec := &record.Material{
 		ID: gen.IDWithPulse(pn),
 		Virtual: record.Virtual{
