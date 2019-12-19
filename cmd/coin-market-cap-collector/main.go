@@ -30,12 +30,18 @@ import (
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer/postgres"
+	"github.com/insolar/observer/internal/dbconn"
+	"github.com/insolar/observer/internal/models"
 	"github.com/pkg/errors"
 )
 
+// CMCUrl holds cmc-api url
 const CMCUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
 
 func main() {
+	log.Info("finish fetching from cmc-api")
+
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
@@ -45,12 +51,27 @@ func main() {
 		BufferSize: 0,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
-	// db, err := dbconn.Connect(cfg.DB)
-	// if err != nil {
-	// 	logger.Fatal(err.Error())
-	// }
+	db, err := dbconn.Connect(cfg.DB)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
-	getStats(logger)
+	stats := getStats(logger)
+	err = repo.InsertStats(&models.CoinMarketCapStats{
+		Price:                stats.Data.Info.Quote.USD.Price,
+		PercentChange24Hours: stats.Data.Info.Quote.USD.PercentChange24Hours,
+		Rank:                 stats.Data.Info.Rank,
+		MarketCap:            stats.Data.Info.Quote.USD.MarketCap,
+		Volume24Hours:        stats.Data.Info.Quote.USD.Volume24Hours,
+		CirculatingSupply:    stats.Data.Info.CirculatingSupply,
+		Created:              time.Now().UTC(),
+	})
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Info("finish fetching from cmc-api successfully")
 }
 
 func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
