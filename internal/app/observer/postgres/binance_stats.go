@@ -34,7 +34,7 @@ func NewBinanceStatsRepository(db orm.DB) *BinanceStatsRepository {
 }
 
 func (s *BinanceStatsRepository) InsertStats(stats *models.BinanceStats) error {
-	stats.Created = time.Now()
+	stats.Created = time.Now().UTC()
 
 	err := s.db.Insert(stats)
 	if err != nil {

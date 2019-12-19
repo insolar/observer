@@ -19,10 +19,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	insconf "github.com/insolar/insolar/configuration"
@@ -40,7 +42,13 @@ import (
 const CMCUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
 
 func main() {
-	log.Info("finish fetching from cmc-api")
+	log.Info("start fetching from cmc-api")
+	cmcApiToken := flag.String("cmc-token", "", "api token for coin market cap")
+	flag.Parse()
+
+	if cmcApiToken == nil || len(*cmcApiToken) == 0 || len(strings.TrimSpace(*cmcApiToken)) == 0 {
+		panic("cmc-token should be provided")
+	}
 
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
@@ -57,7 +65,7 @@ func main() {
 	}
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
-	stats := getStats(logger)
+	stats := getStats(*cmcApiToken, logger)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
 		Price:                stats.Data.Info.Quote.USD.Price,
 		PercentChange24Hours: stats.Data.Info.Quote.USD.PercentChange24Hours,
@@ -86,7 +94,7 @@ func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, in
 	return ctx, inslog
 }
 
-func getStats(logger insolar.Logger) *CMCResponse {
+func getStats(token string, logger insolar.Logger) *CMCResponse {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -100,7 +108,7 @@ func getStats(logger insolar.Logger) *CMCResponse {
 	q.Add("convert", "USD")
 
 	req.Header.Set("Accepts", "application/json")
-	req.Header.Add("X-CMC_PRO_API_KEY", "5534c2ba-af9f-4021-8340-a8e418236d14")
+	req.Header.Add("X-CMC_PRO_API_KEY", token)
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)

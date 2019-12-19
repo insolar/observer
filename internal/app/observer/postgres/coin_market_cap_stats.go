@@ -34,7 +34,7 @@ func NewCoinMarketCapStatsRepository(db orm.DB) *CoinMarketCapStatsRepository {
 }
 
 func (s *CoinMarketCapStatsRepository) InsertStats(stats *models.CoinMarketCapStats) error {
-	stats.Created = time.Now()
+	stats.Created = time.Now().UTC()
 
 	err := s.db.Insert(stats)
 	if err != nil {
