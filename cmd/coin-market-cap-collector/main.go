@@ -43,10 +43,10 @@ const CMCUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/lates
 
 func main() {
 	log.Info("start fetching from cmc-api")
-	cmcApiToken := flag.String("cmc-token", "", "api token for coin market cap")
+	cmcAPIToken := flag.String("cmc-token", "", "api token for coin market cap")
 	flag.Parse()
 
-	if cmcApiToken == nil || len(*cmcApiToken) == 0 || len(strings.TrimSpace(*cmcApiToken)) == 0 {
+	if cmcAPIToken == nil || len(*cmcAPIToken) == 0 || len(strings.TrimSpace(*cmcAPIToken)) == 0 {
 		panic("cmc-token should be provided")
 	}
 
@@ -65,7 +65,7 @@ func main() {
 	}
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
-	stats := getStats(*cmcApiToken, logger)
+	stats := getStats(*cmcAPIToken, logger)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
 		Price:                stats.Data.Info.Quote.USD.Price,
 		PercentChange24Hours: stats.Data.Info.Quote.USD.PercentChange24Hours,

@@ -122,6 +122,19 @@ Collector should be run every **hour** (it mustn't be run more than 1 time per 5
 
 Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
 
+## Coin market cap collector
+Binance gathers info about the exchange rate of the INS/USD pair (could be calculated like a XNS/USD)
+
+Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
+```
+    make build
+    ./bin/coin-market-cap-collector -cmc-token={CMC_API_TOKEN}
+```
+
+ `-cmc-token` is used for providing `Coin market cap` api token. That will be using for an every request.
+
+Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
+
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.
