@@ -434,6 +434,48 @@ func TestMemberSet(t *testing.T) {
 		}, res)
 	})
 
+	t.Run("member already set", func(t *testing.T) {
+		now := time.Now().Unix()
+
+		deposit := observer.Deposit{
+			EthHash:         "123",
+			Ref:             gen.Reference(),
+			Timestamp:       now,
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			DepositState:    gen.ID(),
+		}
+
+		err := depositRepo.Insert(deposit)
+		require.NoError(t, err, "insert")
+
+		memberRef := gen.Reference()
+
+		err = depositRepo.SetMember(deposit.Ref, memberRef)
+		require.NoError(t, err, "SetMember")
+
+		newMemberRef := gen.Reference()
+
+		err = depositRepo.SetMember(deposit.Ref, newMemberRef)
+		require.Error(t, err, "SetMember")
+		require.Contains(t, err.Error(), "Trying to update member for deposit that already has different member")
+
+		res, err := depositRepo.GetDeposit(deposit.Ref.Bytes())
+		require.NoError(t, err, "get deposit")
+		require.Equal(t, &models.Deposit{
+			Reference:       deposit.Ref.Bytes(),
+			MemberReference: memberRef.Bytes(),
+			EtheriumHash:    deposit.EthHash,
+			State:           deposit.DepositState.Bytes(),
+			HoldReleaseDate: now,
+			Amount:          "100",
+			Balance:         "0",
+			Timestamp:       now,
+			InnerStatus:     models.DepositStatusCreated,
+		}, res)
+	})
+
 	t.Run("lost deposit", func(t *testing.T) {
 		err := depositRepo.SetMember(gen.Reference(), gen.Reference())
 		require.Error(t, err, "SetMember")
