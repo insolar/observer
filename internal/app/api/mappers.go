@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
+	depositContract "github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 
@@ -200,14 +201,14 @@ func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int
 		sinceRelease = 0
 	}
 	step := sinceRelease / deposit.VestingStep
-	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step)), big.NewInt(steps))
-	willReleaseAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(step+1)), big.NewInt(steps))
+	releasedAmount := depositContract.VestedByNow(amount, uint64(step), uint64(steps))
+	willReleaseAmount := depositContract.VestedByNow(amount, uint64(step+1), uint64(steps))
 
 	return new(big.Int).Sub(willReleaseAmount, releasedAmount).Text(10)
 }
 
 func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	steps := deposit.Vesting / deposit.VestingStep
-	releasedAmount := new(big.Int).Quo(new(big.Int).Mul(amount, big.NewInt(steps-1)), big.NewInt(steps))
+	releasedAmount := depositContract.VestedByNow(amount, uint64(steps-1), uint64(steps))
 	return new(big.Int).Sub(amount, releasedAmount).Text(10)
 }
