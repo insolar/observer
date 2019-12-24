@@ -300,7 +300,7 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 		return big.NewInt(0), amount
 	}
 
-	if currentTime <= d.HoldReleaseDate {
+	if currentTime < d.HoldReleaseDate {
 		return amount, big.NewInt(0)
 	}
 
