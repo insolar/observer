@@ -118,21 +118,21 @@ func TestNextRelease(t *testing.T) {
 					currentTime: 10,
 					expectation: &SchemaNextRelease{
 						Amount:    "1",
-						Timestamp: 110,
+						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 20,
 					expectation: &SchemaNextRelease{
 						Amount:    "1",
-						Timestamp: 110,
+						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 90,
 					expectation: &SchemaNextRelease{
 						Amount:    "1",
-						Timestamp: 110,
+						Timestamp: 100,
 					},
 				},
 				{
@@ -196,7 +196,7 @@ func TestNextRelease(t *testing.T) {
 					currentTime: 90,
 					expectation: &SchemaNextRelease{
 						Amount:    "4",
-						Timestamp: 110,
+						Timestamp: 100,
 					},
 				},
 				{

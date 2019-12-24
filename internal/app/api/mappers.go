@@ -183,8 +183,8 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 	}
 
 	var timestamp int64
-	if currentTime <= deposit.HoldReleaseDate {
-		timestamp = deposit.HoldReleaseDate + deposit.VestingStep
+	if currentTime < deposit.HoldReleaseDate {
+		timestamp = deposit.HoldReleaseDate
 	} else {
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
 		if timestamp >= vestingEnd {

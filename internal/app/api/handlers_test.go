@@ -1300,7 +1300,7 @@ func TestMember_Hold(t *testing.T) {
 				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
 					Amount:    "11539",
-					Timestamp: currentTime + deposit.VestingStep,
+					Timestamp: currentTime,
 				},
 			},
 		},
