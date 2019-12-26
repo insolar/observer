@@ -90,7 +90,7 @@ github.com/hashicorp/hcl/hcl/scanner
 github.com/hashicorp/hcl/hcl/strconv
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/insolar/insolar v1.1.2
+# github.com/insolar/insolar v1.0.1-0.20191225164044-167ca7e576db
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
 github.com/insolar/insolar/instrumentation/inslogger
@@ -98,10 +98,10 @@ github.com/insolar/insolar/log
 github.com/insolar/insolar/insolar/record
 github.com/insolar/insolar/ledger/heavy/exporter
 github.com/insolar/insolar/application/appfoundation
+github.com/insolar/insolar/application/builtin/contract/deposit
 github.com/insolar/insolar/logicrunner/builtin/foundation
 github.com/insolar/insolar/application/builtin/contract/member
 github.com/insolar/insolar/application/builtin/contract/account
-github.com/insolar/insolar/application/builtin/contract/deposit
 github.com/insolar/insolar/application/builtin/contract/migrationshard
 github.com/insolar/insolar/application/builtin/contract/pkshard
 github.com/insolar/insolar/application/builtin/contract/wallet
@@ -130,11 +130,11 @@ github.com/insolar/insolar/application/api/requester
 github.com/insolar/insolar/application/builtin/proxy/costcenter
 github.com/insolar/insolar/application/builtin/proxy/migrationdaemon
 github.com/insolar/insolar/insolar/gen
+github.com/insolar/insolar/logicrunner/builtin/foundation/safemath
 github.com/insolar/insolar/logicrunner/common
 github.com/insolar/insolar/application/builtin/proxy/migrationadmin
 github.com/insolar/insolar/application/builtin/proxy/nodedomain
 github.com/insolar/insolar/application/builtin/proxy/rootdomain
-github.com/insolar/insolar/logicrunner/builtin/foundation/safemath
 github.com/insolar/insolar/application
 github.com/insolar/insolar/platformpolicy
 github.com/insolar/insolar/network/consensus/common/cryptkit

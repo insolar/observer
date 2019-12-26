@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,61 +36,61 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 		{
 			name: "HoldReleaseDate = 0",
 			deposit: Deposit{
-				Balance:         "400",
-				Amount:          "400",
-				Vesting:         31636000,
+				Balance:         "400000000",
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 0,
 			},
 			currentTime:      1574159397,
 			expectedHold:     big.NewInt(0),
-			expectedReleased: big.NewInt(400),
+			expectedReleased: big.NewInt(400000000),
 		},
 		{
 			name: "currentTime <= d.HoldReleaseDate",
 			deposit: Deposit{
-				Balance:         "400",
-				Amount:          "400",
-				Vesting:         31636000,
+				Balance:         "400000000",
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 1574072996,
 			},
 			currentTime:      1574072995,
-			expectedHold:     big.NewInt(400),
+			expectedHold:     big.NewInt(400000000),
 			expectedReleased: big.NewInt(0),
 		},
 		{
 			name: "currentTime >= (d.Vesting + d.HoldReleaseDate)",
 			deposit: Deposit{
-				Balance:         "400",
-				Amount:          "400",
-				Vesting:         31636000,
+				Balance:         "400000000",
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 1574072996,
 			},
-			currentTime:      1605708997,
+			currentTime:      1574072996 + 86400*2000,
 			expectedHold:     big.NewInt(0),
-			expectedReleased: big.NewInt(400),
+			expectedReleased: big.NewInt(400000000),
 		},
 		{
 			name: "step 0",
 			deposit: Deposit{
-				Balance:         "400",
-				Amount:          "400",
-				Vesting:         31636000,
+				Balance:         "400000000",
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 1574072996,
 			},
 			currentTime:      1574072997,
-			expectedHold:     big.NewInt(400),
-			expectedReleased: big.NewInt(0),
+			expectedHold:     big.NewInt(399999098),
+			expectedReleased: big.NewInt(902),
 		},
 		{
 			name: "step 0 with 0 balance",
 			deposit: Deposit{
 				Balance:         "0",
-				Amount:          "400",
-				Vesting:         31636000,
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 1574072996,
 			},
@@ -100,41 +101,41 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 		{
 			name: "step 1",
 			deposit: Deposit{
-				Balance:         "400",
-				Amount:          "400",
-				Vesting:         31636000,
+				Balance:         "400000000",
+				Amount:          "400000000",
+				Vesting:         86400 * 1826,
 				VestingStep:     86400,
 				HoldReleaseDate: 1574072996,
 			},
 			currentTime:      1574159397,
-			expectedHold:     big.NewInt(399),
-			expectedReleased: big.NewInt(1),
+			expectedHold:     big.NewInt(399998192),
+			expectedReleased: big.NewInt(1808),
 		},
 		{
-			name: "complex step",
+			name: "complex step 1",
 			deposit: Deposit{
-				Balance:         "4500",
-				Amount:          "5000",
-				Vesting:         1000,
+				Balance:         "499995000",
+				Amount:          "500000000",
+				Vesting:         18260,
 				VestingStep:     10,
 				HoldReleaseDate: 1606435200,
 			},
 			currentTime:      1606435311,
-			expectedHold:     big.NewInt(4450),
-			expectedReleased: big.NewInt(550),
+			expectedHold:     big.NewInt(499986154),
+			expectedReleased: big.NewInt(13846),
 		},
 		{
-			name: "complex step",
+			name: "complex step 2",
 			deposit: Deposit{
-				Balance:         "70000",
-				Amount:          "70000",
-				Vesting:         70,
+				Balance:         "70000000",
+				Amount:          "70000000",
+				Vesting:         18260,
 				VestingStep:     10,
 				HoldReleaseDate: 1606435200,
 			},
 			currentTime:      1606435250,
-			expectedHold:     big.NewInt(20000),
-			expectedReleased: big.NewInt(50000),
+			expectedHold:     big.NewInt(69999043),
+			expectedReleased: big.NewInt(957),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -145,8 +146,8 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 			_, err = fmt.Sscan(tc.deposit.Balance, balance)
 			require.NoError(t, err)
 			hold, release := tc.deposit.ReleaseAmount(balance, amount, tc.currentTime)
-			require.Equal(t, tc.expectedHold, hold)
-			require.Equal(t, tc.expectedReleased, release)
+			assert.Equal(t, tc.expectedHold, hold)
+			assert.Equal(t, tc.expectedReleased, release)
 		})
 	}
 }

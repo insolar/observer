@@ -1257,11 +1257,11 @@ func TestMember_Hold(t *testing.T) {
 	deposit := models.Deposit{
 		Reference:       deposite.Bytes(),
 		MemberReference: member.Bytes(),
-		Amount:          "5000",
+		Amount:          "500000000",
 		Balance:         balance,
 		EtheriumHash:    "eth_hash_1",
 		HoldReleaseDate: currentTime,
-		Vesting:         1000,
+		Vesting:         1826,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		Timestamp:       currentTime - 10,
@@ -1288,7 +1288,7 @@ func TestMember_Hold(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "5000",
+				AmountOnHold:     "500000000",
 				AvailableAmount:  "0",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
@@ -1299,8 +1299,8 @@ func TestMember_Hold(t *testing.T) {
 				Status:           "LOCKED",
 				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
-					Amount:    "50",
-					Timestamp: currentTime + deposit.VestingStep,
+					Amount:    "11539",
+					Timestamp: currentTime,
 				},
 			},
 		},
@@ -1314,7 +1314,7 @@ func TestMember_Vesting(t *testing.T) {
 	member := gen.Reference()
 	memberWalletReference := gen.Reference()
 	memberAccountReference := gen.Reference()
-	balance := "5000"
+	balance := "500000000"
 
 	deposite := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
@@ -1358,18 +1358,18 @@ func TestMember_Vesting(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "4950",
-				AvailableAmount:  "50",
+				AmountOnHold:     "499977756",
+				AvailableAmount:  "22244",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
 				Index:            200,
-				ReleasedAmount:   "50",
+				ReleasedAmount:   "22244",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
-					Amount:    "50",
+					Amount:    "22738",
 					Timestamp: currentTime + 2*deposit.VestingStep,
 				},
 			},
@@ -1450,8 +1450,8 @@ func TestMember_VestingAndSpent(t *testing.T) {
 	member := gen.Reference()
 	memberWalletReference := gen.Reference()
 	memberAccountReference := gen.Reference()
-	amount := "5000"
-	balance := "4500"
+	amount := "500000000"
+	balance := "499995000"
 
 	deposite := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
@@ -1463,7 +1463,7 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		Balance:         balance,
 		EtheriumHash:    "eth_hash_1",
 		HoldReleaseDate: currentTime,
-		Vesting:         1000,
+		Vesting:         18260,
 		VestingStep:     10,
 		State:           gen.RecordReference().GetLocal().Bytes(),
 		Timestamp:       currentTime - 10,
@@ -1495,18 +1495,18 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "4450",
-				AvailableAmount:  "50",
+				AmountOnHold:     "499986154",
+				AvailableAmount:  "8846",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
 				HoldReleaseDate:  currentTime,
 				Index:            500,
-				ReleasedAmount:   "550",
+				ReleasedAmount:   "13846",
 				ReleaseEndDate:   currentTime + deposit.Vesting,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
-					Amount:    "50",
+					Amount:    "1185",
 					Timestamp: currentTime + 12*deposit.VestingStep,
 				},
 			},
