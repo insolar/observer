@@ -44,10 +44,14 @@ const CMCUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/lates
 func main() {
 	log.Info("start fetching from cmc-api")
 	cmcAPIToken := flag.String("cmc-token", "", "api token for coin market cap")
+	symbol := flag.String("symbol", "", "symbol for fetching from coin market cap stats")
 	flag.Parse()
 
 	if cmcAPIToken == nil || len(*cmcAPIToken) == 0 || len(strings.TrimSpace(*cmcAPIToken)) == 0 {
 		panic("cmc-token should be provided")
+	}
+	if symbol == nil || len(*symbol) == 0 || len(strings.TrimSpace(*symbol)) == 0 {
+		panic("symbol should be provided")
 	}
 
 	cfg := configuration.Load()
@@ -65,7 +69,7 @@ func main() {
 	}
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
-	stats := getStats(*cmcAPIToken, logger)
+	stats := getStats(*cmcAPIToken, *symbol, logger)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
 		Price:                stats.Data.Info.Quote.USD.Price,
 		PercentChange24Hours: stats.Data.Info.Quote.USD.PercentChange24Hours,
@@ -94,7 +98,7 @@ func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, in
 	return ctx, inslog
 }
 
-func getStats(token string, logger insolar.Logger) *CMCResponse {
+func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -104,7 +108,7 @@ func getStats(token string, logger insolar.Logger) *CMCResponse {
 	}
 
 	q := url.Values{}
-	q.Add("symbol", "INS")
+	q.Add("symbol", symbol)
 	q.Add("convert", "USD")
 
 	req.Header.Set("Accepts", "application/json")

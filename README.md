@@ -128,10 +128,11 @@ Binance gathers info about the exchange rate of the INS/USD pair (could be calcu
 Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
 ```
     make build
-    ./bin/coin-market-cap-collector -cmc-token={CMC_API_TOKEN}
+    ./bin/coin-market-cap-collector -cmc-token={CMC_API_TOKEN} -symbol={XNS|INS}
 ```
 
  `-cmc-token` is used for providing `Coin market cap` api token. That will be using for an every request.
+  `-symbol` is used for providing symbol to the stats collector. 
 
 Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
 
