@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -124,7 +123,6 @@ func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 		logger.Fatal(errors.Wrap(err, "can't read the response body"))
 	}
 
-	fmt.Println(string(respBody))
 	cmcResp := &CMCResponse{}
 	err = json.Unmarshal(respBody, cmcResp)
 	if err != nil {
