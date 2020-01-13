@@ -50,7 +50,7 @@ func Default() *Configuration {
 		},
 		FeeAmount:   big.NewInt(1000000000),
 		Price:       "0.05",
-		PriceOrigin: "const", //const|binance
+		PriceOrigin: "const", //const|binance|coin_market_cap
 		Log: Log{
 			Level:        "debug",
 			Format:       "text",
