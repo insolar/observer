@@ -80,8 +80,5 @@ func isConfirmCall(req *record.IncomingRequest) bool {
 	if req.Method != "Confirm" || req.CallType != record.CTMethod {
 		return false
 	}
-	if !req.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-		return false
-	}
-	return true
+	return req.Prototype.Equal(*proxyDeposit.PrototypeReference)
 }

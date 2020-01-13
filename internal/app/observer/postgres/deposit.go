@@ -195,7 +195,7 @@ func (s *DepositStorage) SetMember(depositRef, memberRef insolar.Reference) erro
 			return nil
 		}
 
-		log.Errorf("Deposit member already set to %s, %q", insolar.NewReferenceFromBytes(deposit.MemberReference).String(), deposit.MemberReference)
+		log.Errorf("Deposit member already set to %s", insolar.NewReferenceFromBytes(deposit.MemberReference).String())
 		return errors.Errorf("Trying to update member for deposit that already has different member")
 	}
 
@@ -213,7 +213,7 @@ func (s *DepositStorage) SetMember(depositRef, memberRef insolar.Reference) erro
 						(select (max(deposit_number) + 1) from deposits where member_ref=?)
 					end
 				)
-			)`, memberRef, memberRef)
+			)`, memberRef.Bytes(), memberRef.Bytes())
 		}
 	}
 

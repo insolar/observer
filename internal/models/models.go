@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/pulse"
 )
 
@@ -312,7 +313,7 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 		return big.NewInt(0), amount
 	}
 
-	if currentTime <= d.HoldReleaseDate {
+	if currentTime < d.HoldReleaseDate {
 		return amount, big.NewInt(0)
 	}
 
@@ -322,10 +323,7 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 
 	currentStep := (currentTime - d.HoldReleaseDate) / d.VestingStep
 	steps := d.Vesting / d.VestingStep
-	releaseAmount = big.NewInt(0).Quo(
-		big.NewInt(0).Mul(amount, big.NewInt(currentStep)),
-		big.NewInt(steps),
-	)
+	releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
 
 	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
 

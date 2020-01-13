@@ -181,7 +181,7 @@ func makeStorer(
 			for _, update := range b.depositMembers {
 				err := deposits.SetMember(update.Ref, update.Member)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert deposit update")
+					return errors.Wrap(err, "failed to insert deposit member update")
 				}
 			}
 
