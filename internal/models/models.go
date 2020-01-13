@@ -178,6 +178,19 @@ type BinanceStats struct {
 	Created            time.Time `sql:"created,pk,default:now(),notnull"`
 }
 
+type CoinMarketCapStats struct {
+	tableName struct{} `sql:"coin_market_cap_stats"` //nolint: unused,structcheck
+
+	Price                float64 `sql:"price"`
+	PercentChange24Hours float64 `sql:"percent_change_24_hours"`
+	Rank                 int     `sql:"rank"`
+	MarketCap            float64 `sql:"market_cap"`
+	Volume24Hours        float64 `sql:"volume_24_hours"`
+	CirculatingSupply    float64 `json:"circulating_supply"`
+
+	Created time.Time `sql:"created,pk,default:now(),notnull"`
+}
+
 type fieldCache struct {
 	sync.Mutex
 	cache map[reflect.Type][]string

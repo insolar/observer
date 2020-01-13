@@ -25,15 +25,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type BinanceStatsRepository struct {
+type CoinMarketCapStatsRepository struct {
 	db orm.DB
 }
 
-func NewBinanceStatsRepository(db orm.DB) *BinanceStatsRepository {
-	return &BinanceStatsRepository{db: db}
+func NewCoinMarketCapStatsRepository(db orm.DB) *CoinMarketCapStatsRepository {
+	return &CoinMarketCapStatsRepository{db: db}
 }
 
-func (s *BinanceStatsRepository) InsertStats(stats *models.BinanceStats) error {
+func (s *CoinMarketCapStatsRepository) InsertStats(stats *models.CoinMarketCapStats) error {
 	stats.Created = time.Now().UTC()
 
 	err := s.db.Insert(stats)
@@ -44,14 +44,14 @@ func (s *BinanceStatsRepository) InsertStats(stats *models.BinanceStats) error {
 	return nil
 }
 
-func (s *BinanceStatsRepository) LastStats() (models.BinanceStats, error) {
-	lastStats := &models.BinanceStats{}
+func (s *CoinMarketCapStatsRepository) LastStats() (models.CoinMarketCapStats, error) {
+	lastStats := &models.CoinMarketCapStats{}
 	err := s.db.Model(lastStats).Last()
 	if err != nil && err != pg.ErrNoRows {
-		return models.BinanceStats{}, errors.Wrap(err, "failed request to db")
+		return models.CoinMarketCapStats{}, errors.Wrap(err, "failed request to db")
 	}
 	if err == pg.ErrNoRows {
-		return models.BinanceStats{}, errors.New("no data")
+		return models.CoinMarketCapStats{}, errors.New("no data")
 	}
 	return *lastStats, nil
 }
