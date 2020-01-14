@@ -50,10 +50,8 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
-		require.Panics(t, func() {
-			_, _ = fetcher.Fetch(ctx, 0)
-		})
-
+		_, err := fetcher.Fetch(ctx, 0)
+		require.Equal(t, ErrNoPulseReceived, err)
 	})
 
 	t.Run("one_pulse", func(t *testing.T) {
@@ -117,7 +115,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		obs := observability.Make(ctx)
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
-			return nil, io.EOF
+			return nil, errors.New("failed to get pulse")
 		}
 		client := &pulseClient{}
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
