@@ -8,15 +8,14 @@ import (
 )
 
 type TxRegister struct {
-	TransactionID        insolar.Reference
-	Type                 models.TransactionType
-	PulseNumber          int64
-	RecordNumber         int64
-	MemberFromReference  []byte
-	MemberToReference    []byte
-	DepositToReference   []byte
-	DepositFromReference []byte
-	Amount               string
+	TransactionID       insolar.Reference
+	Type                models.TransactionType
+	PulseNumber         int64
+	RecordNumber        int64
+	MemberFromReference []byte
+	MemberToReference   []byte
+	DepositToReference  []byte
+	Amount              string
 }
 
 func (t *TxRegister) Validate() error {
@@ -66,6 +65,21 @@ func (t *TxSagaResult) Validate() error {
 	}
 	if t.FinishPulseNumber == 0 {
 		return errors.New("FinishPulseNumber should not be zero")
+	}
+	return nil
+}
+
+type TxDepositTransferUpdate struct {
+	TransactionID        insolar.Reference
+	DepositFromReference []byte
+}
+
+func (t *TxDepositTransferUpdate) Validate() error {
+	if t.TransactionID.IsEmpty() {
+		return errors.New("TransactionID should not be empty")
+	}
+	if len(t.DepositFromReference) == 0 {
+		return errors.New("DepositFromReference should not be empty")
 	}
 	return nil
 }

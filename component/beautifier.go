@@ -55,6 +55,7 @@ func makeBeautifier(
 	members := collecting.NewMemberCollector(log, cachedStore, treeBuilder)
 	txRegisters := collecting.NewTxRegisterCollector(log)
 	txResults := collecting.NewTxResultCollector(log, cachedStore)
+	txDepositTransfers := collecting.NewTxDepositTransferCollector(log)
 	txSagaResults := collecting.NewTxSagaResultCollector(log, cachedStore)
 	deposits := collecting.NewDepositCollector(log, cachedStore)
 	addresses := collecting.NewMigrationAddressesCollector(log, cachedStore)
@@ -156,6 +157,10 @@ func makeBeautifier(
 			sagRes := txSagaResults.Collect(ctx, *rec)
 			if sagRes != nil {
 				b.txSagaResult = append(b.txSagaResult, *sagRes)
+			}
+			txDepositTransferUpdate := txDepositTransfers.Collect(ctx, *rec)
+			if txDepositTransferUpdate != nil {
+				b.txDepositTransfers = append(b.txDepositTransfers, *txDepositTransferUpdate)
 			}
 
 			deposits := deposits.Collect(ctx, &obsRecord)
