@@ -451,6 +451,22 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			Price:       stats.SymbolPriceUSD,
 			DailyChange: NullableString(stats.PriceChangePercent),
 		})
+	case "coin_market_cap":
+		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
+		stats, err := repo.LastStats()
+		if err != nil {
+			s.log.Error(errors.Wrap(err, "couldn't get last coin market cap supply stats"))
+			return ctx.JSON(http.StatusInternalServerError, "")
+		}
+		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+			CirculatingSupply: NullableString(fmt.Sprintf("%v", stats.CirculatingSupply)),
+			DailyChange:       NullableString(fmt.Sprintf("%v", stats.PercentChange24Hours)),
+			MarketCap:         NullableString(fmt.Sprintf("%v", stats.MarketCap)),
+			Price:             fmt.Sprintf("%v", stats.Price),
+			PriceHistory:      nil,
+			Rank:              NullableString(fmt.Sprintf("%v", stats.Rank)),
+			Volume:            NullableString(fmt.Sprintf("%v", stats.Volume24Hours)),
+		})
 	default:
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
 			Price: s.config.Price,
