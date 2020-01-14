@@ -142,7 +142,7 @@ func (s *DepositStorage) Update(model observer.DepositUpdate) error {
 		Set(`amount=?,deposit_state=?,balance=?,hold_release_date=?`, model.Amount, model.ID.Bytes(), model.Balance, model.HoldReleaseDate)
 
 	if model.Timestamp > 0 {
-		query.Set("transfer_date=?", model.Timestamp)
+		query.Set(`transfer_date=?`, model.Timestamp)
 	}
 
 	if model.IsConfirmed {

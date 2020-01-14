@@ -62,6 +62,7 @@ func (c *DepositUpdateCollector) Collect(ctx context.Context, rec *observer.Reco
 		PrevState:   amd.PrevState,
 		TxHash:      d.TxHash,
 		IsConfirmed: d.IsConfirmed,
+		Lockup:      d.Lockup,
 	}
 
 	if d.PulseDepositUnHold > 0 {

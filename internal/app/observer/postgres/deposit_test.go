@@ -128,7 +128,7 @@ func TestDepositStorage_Update(t *testing.T) {
 		update := observer.DepositUpdate{
 			ID:              gen.ID(),
 			HoldReleaseDate: now + 1,
-			Timestamp:       now,
+			Timestamp:       now - 10,
 			Amount:          "100",
 			Balance:         "100",
 			PrevState:       deposit.DepositState,
@@ -149,7 +149,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			HoldReleaseDate: now + 1,
 			Amount:          "100",
 			Balance:         "100",
-			Timestamp:       now,
+			Timestamp:       now - 10,
 			DepositNumber:   newInt(1),
 			InnerStatus:     models.DepositStatusConfirmed,
 		}, res)
