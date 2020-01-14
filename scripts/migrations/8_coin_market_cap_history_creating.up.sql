@@ -1,19 +1,19 @@
 create table coin_market_cap_stats_aggregate
 (
-    interval  timestamp primary key,
-    price_sum numeric not null,
-    count     int     not null
+    interval_time timestamp primary key,
+    price_sum     numeric not null,
+    count         int     not null
 );
 
 
 CREATE OR REPLACE FUNCTION update_coin_market_cap_stats_aggregate() RETURNS TRIGGER AS
 $$
 BEGIN
-    insert into coin_market_cap_stats_aggregate (interval, price_sum, count)
-    -- group date by 3 hour intervals 00 - 08, 08 - 16, 16 - 23.59
+    insert into coin_market_cap_stats_aggregate (interval_time, price_sum, count)
+        -- group date by 3 hour intervals 00 - 08, 08 - 16, 16 - 23.59
     values (new.created :: date + concat(floor(extract(hour from new.created) / 8) * 8, ':00:00') :: time, new.price, 1)
-    on conflict (interval) do update set price_sum = coin_market_cap_stats_aggregate.price_sum + excluded.price_sum,
-                                         count     = coin_market_cap_stats_aggregate.count + 1;
+    on conflict (interval_time) do update set price_sum = coin_market_cap_stats_aggregate.price_sum + excluded.price_sum,
+                                              count     = coin_market_cap_stats_aggregate.count + 1;
     return null;
 END
 $$ LANGUAGE 'plpgsql';
