@@ -18,6 +18,7 @@ package grpc
 
 import (
 	"context"
+	"io"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
@@ -28,6 +29,10 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
+)
+
+var (
+	ErrNoPulseReceived = errors.New("No pulse received")
 )
 
 type PulseFetcher struct {
@@ -52,12 +57,13 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
 	f.log.Infof("Fetching %d pulses from %s", request.Count, last)
 	var (
-		err  error
 		resp *exporter.Pulse
 	)
+
+	requestCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	cycle.UntilError(func() error {
-		var stream exporter.PulseExporter_ExportClient
-		stream, err = client.Export(ctx, request)
+		stream, err := client.Export(requestCtx, request)
 		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
@@ -66,12 +72,21 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 
 		resp, err = stream.Recv()
 		if err != nil {
+			// stream is closed, no point of retrying
+			if err == io.EOF {
+				f.log.Debug("EOF received, quit")
+				return nil
+			}
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
 		}
 
 		return err
 	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+
+	if resp == nil {
+		return nil, ErrNoPulseReceived
+	}
 
 	model := &observer.Pulse{
 		Number:    resp.PulseNumber,
