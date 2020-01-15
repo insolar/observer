@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Insolar Technologies GmbH
+// Copyright 2020 Insolar Technologies GmbH
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -158,9 +158,10 @@ type beauty struct {
 	addresses      map[string]*observer.MigrationAddress
 	wastings       map[string]*observer.Wasting
 
-	txRegister   []observer.TxRegister
-	txResult     []observer.TxResult
-	txSagaResult []observer.TxSagaResult
+	txRegister         []observer.TxRegister
+	txResult           []observer.TxResult
+	txSagaResult       []observer.TxSagaResult
+	txDepositTransfers []observer.TxDepositTransferUpdate
 }
 
 type state struct {

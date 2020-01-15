@@ -1,3 +1,19 @@
+//
+// Copyright 2020 Insolar Technologies GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package collecting
 
 import (
@@ -35,15 +51,14 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:        txID,
-			Type:                 models.TTypeTransfer,
-			PulseNumber:          int64(txID.GetLocal().Pulse()),
-			RecordNumber:         int64(rand.Int31()),
-			MemberFromReference:  memberFrom.Bytes(),
-			MemberToReference:    memberTo.Bytes(),
-			DepositToReference:   nil,
-			DepositFromReference: nil,
-			Amount:               "123",
+			TransactionID:       txID,
+			Type:                models.TTypeTransfer,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  nil,
+			Amount:              "123",
 		}
 		request := member.Request{
 			Params: member.Params{
@@ -86,14 +101,13 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := uuid.New()
 		expectedTx := observer.TxRegister{
-			TransactionID:        txID,
-			Type:                 models.TTypeTransfer,
-			PulseNumber:          int64(txID.GetLocal().Pulse()),
-			RecordNumber:         int64(rand.Int31()),
-			MemberFromReference:  memberFrom.Bytes(),
-			DepositToReference:   nil,
-			DepositFromReference: nil,
-			Amount:               "123",
+			TransactionID:       txID,
+			Type:                models.TTypeTransfer,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			DepositToReference:  nil,
+			Amount:              "123",
 		}
 		request := member.Request{
 			Params: member.Params{
@@ -137,15 +151,14 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:        txID,
-			Type:                 models.TTypeMigration,
-			PulseNumber:          int64(txID.GetLocal().Pulse()),
-			RecordNumber:         int64(rand.Int31()),
-			MemberFromReference:  memberFrom.Bytes(),
-			MemberToReference:    memberTo.Bytes(),
-			DepositToReference:   depositTo.Bytes(),
-			DepositFromReference: nil,
-			Amount:               "123",
+			TransactionID:       txID,
+			Type:                models.TTypeMigration,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  depositTo.Bytes(),
+			Amount:              "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
@@ -178,21 +191,71 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 	t.Run("release happy path", func(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
 		memberTo := gen.Reference()
-		depositFrom := insolar.NewReference(gen.ID())
 		expectedTx := observer.TxRegister{
+			TransactionID:       txID,
+			Type:                models.TTypeRelease,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: nil,
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  nil,
+			Amount:              "123",
+		}
+
+		request := member.Request{
+			Params: member.Params{
+				Reference: memberTo.String(),
+				CallSite:  callSiteRelease,
+				CallParams: map[string]interface{}{
+					paramAmount: expectedTx.Amount,
+				},
+			},
+		}
+		encodedRequest, err := json.Marshal(&request)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodCall,
+					APINode:    gen.Reference(),
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Prototype:  proxyMember.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+}
+
+func TestTxDepositTransferCollector_Collect(t *testing.T) {
+	ctx := context.Background()
+	log := inslogger.FromContext(ctx)
+
+	t.Run("deposit.transfer happy path", func(t *testing.T) {
+		collector := NewTxDepositTransferCollector(log)
+
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberTo := gen.Reference()
+		depositFrom := insolar.NewReference(gen.ID())
+
+		expectedTx := observer.TxDepositTransferUpdate{
 			TransactionID:        txID,
-			Type:                 models.TTypeRelease,
-			PulseNumber:          int64(txID.GetLocal().Pulse()),
-			RecordNumber:         int64(rand.Int31()),
-			MemberFromReference:  nil,
-			MemberToReference:    memberTo.Bytes(),
 			DepositFromReference: depositFrom.Bytes(),
-			DepositToReference:   nil,
-			Amount:               "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
-			expectedTx.Amount,
+			"100",
 			memberTo,
 			txID,
 		})
@@ -209,9 +272,9 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 				ID:       *txID.GetLocal(),
 				ObjectID: *depositFrom.GetLocal(),
 			},
-			RecordNumber: uint32(expectedTx.RecordNumber),
+			RecordNumber: uint32(rand.Int31()),
 		}
-		tx := c.Collect(ctx, rec)
+		tx := collector.Collect(ctx, rec)
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		assert.Equal(t, &expectedTx, tx)
