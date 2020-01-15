@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -29,6 +30,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
+	"github.com/insolar/insolar/instrumentation/inslogger"
+	apiconfiguration "github.com/insolar/observer/configuration/api"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -1918,6 +1922,106 @@ func TestIsMigrationAddressFailed(t *testing.T) {
 		require.Equal(t, expected, jsonResp)
 	}
 
+}
+
+func TestObserverServer_CMC_Price(t *testing.T) {
+	// first interval
+	statsTime := time.Date(2020, 1, 3, 6, 0, 0, 0, time.UTC)
+	err := db.Insert(&models.CoinMarketCapStats{
+		Price:                100,
+		PercentChange24Hours: 1,
+		Rank:                 2,
+		MarketCap:            3,
+		Volume24Hours:        4,
+		CirculatingSupply:    5,
+		Created:              statsTime,
+	})
+	require.NoError(t, err)
+
+	statsTime = time.Date(2020, 1, 3, 7, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.CoinMarketCapStats{
+		Price:                200,
+		PercentChange24Hours: 11,
+		Rank:                 22,
+		MarketCap:            33,
+		Volume24Hours:        44,
+		CirculatingSupply:    55,
+		Created:              statsTime,
+	})
+	require.NoError(t, err)
+
+	// second interval
+	statsTime = time.Date(2020, 1, 3, 14, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.CoinMarketCapStats{
+		Price:                300,
+		PercentChange24Hours: 111,
+		Rank:                 222,
+		MarketCap:            333,
+		Volume24Hours:        444,
+		CirculatingSupply:    555,
+		Created:              statsTime,
+	})
+	require.NoError(t, err)
+
+	// third interval
+	statsTime = time.Date(2020, 1, 3, 23, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.CoinMarketCapStats{
+		Price:                400,
+		PercentChange24Hours: 1111,
+		Rank:                 2222,
+		MarketCap:            3333,
+		Volume24Hours:        4444,
+		CirculatingSupply:    5555,
+		Created:              statsTime,
+	})
+	require.NoError(t, err)
+
+	logger := inslogger.FromContext(context.Background())
+	observerAPI := NewObserverServer(db, logger, pStorage, apiconfiguration.Configuration{
+		FeeAmount:   testFee,
+		Price:       testPrice,
+		PriceOrigin: "coin_market_cap",
+	})
+
+	e := echo.New()
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	mockCtx := e.NewContext(req, res)
+
+	err = observerAPI.MarketStats(mockCtx)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, res.Code)
+
+	bodyBytes, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+	received := ResponsesMarketStatsYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, "400", received.Price)
+	require.Equal(t, "3333", *received.MarketCap)
+	require.Equal(t, "2222", *received.Rank)
+	require.Equal(t, "5555", *received.CirculatingSupply)
+	require.Equal(t, "1111", *received.DailyChange)
+	require.Equal(t, "4444", *received.Volume)
+
+	points := *received.PriceHistory
+	require.Equal(t, 3, len(points))
+
+	require.Equal(t,
+		time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC).Unix(),
+		points[0].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 3, 8, 0, 0, 0, time.UTC).Unix(),
+		points[1].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 3, 16, 0, 0, 0, time.UTC).Unix(),
+		points[2].Timestamp)
+
+	require.Equal(t, "150", points[0].Price)
+	require.Equal(t, "300", points[1].Price)
+	require.Equal(t, "400", points[2].Price)
 }
 
 func newInt(val int64) *int64 {
