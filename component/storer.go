@@ -371,7 +371,7 @@ func StoreTxDepositData(tx ExecerQuerirer, transactions []observer.TxDepositTran
 
 	columns := []string{
 		"tx_id",
-		"fee",
+		"deposit_from_ref",
 	}
 	var values []interface{}
 	for _, t := range transactions {
@@ -386,7 +386,7 @@ func StoreTxDepositData(tx ExecerQuerirer, transactions []observer.TxDepositTran
 			`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET
-					deposit_from_ref = EXCLUDED.fee
+					deposit_from_ref = EXCLUDED.deposit_from_ref
 			`,
 			strings.Join(columns, ","),
 			valuesTemplate(len(columns), len(transactions)),
