@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Insolar Technologies GmbH
+// Copyright 2020 Insolar Technologies GmbH
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,6 +130,10 @@ func makeStorer(
 			err = StoreTxRegister(tx, b.txRegister)
 			if err != nil {
 				return errors.Wrap(err, "failed to insert txRegister")
+			}
+			err = StoreTxDepositData(tx, b.txDepositTransfers)
+			if err != nil {
+				return errors.Wrap(err, "failed to update txDepositTrasfers")
 			}
 			err = StoreTxResult(tx, b.txResult)
 			if err != nil {
@@ -276,7 +280,6 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		"member_from_ref",
 		"member_to_ref",
 		"deposit_to_ref",
-		"deposit_from_ref",
 		"amount",
 	}
 	var values []interface{}
@@ -290,7 +293,6 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 			t.MemberFromReference,
 			t.MemberToReference,
 			t.DepositToReference,
-			t.DepositFromReference,
 			t.Amount,
 		)
 	}
@@ -317,6 +319,81 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		return errors.Wrap(err, "failed to store TxRegister")
 	}
 	return nil
+}
+
+func StoreTxDepositData(tx ExecerQuerirer, transactions []observer.TxDepositTransferUpdate) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	existingTxIDs := map[insolar.Reference]struct{}{}
+	var txIDs []interface{}
+	for _, t := range transactions {
+		if _, ok := existingTxIDs[t.TransactionID]; ok {
+			return errors.New(fmt.Sprintf(
+				"duplicate transaction in batch (tx_id = %s)",
+				t.TransactionID.GetLocal().DebugString(),
+			))
+		}
+		existingTxIDs[t.TransactionID] = struct{}{}
+		txIDs = append(txIDs, t.TransactionID.Bytes())
+	}
+
+	var badIDs []struct {
+		BinRef []byte `sql:"bad_id"`
+	}
+
+	_, err := tx.Query(
+		&badIDs,
+		fmt.Sprintf( // nolint: gosec
+			`
+				SELECT ids.bad_id::bytea FROM (VALUES %s) AS ids(bad_id)
+				LEFT JOIN simple_transactions st 
+					ON st.tx_id = ids.bad_id::bytea
+					WHERE st.tx_id ISNULL
+			`,
+			holderTemplate(len(txIDs)),
+		),
+		txIDs...,
+	)
+
+	if err != nil {
+		return errors.Wrap(err, "can't execute query for getting missing tx_ids")
+	}
+
+	if len(badIDs) != 0 {
+		var ids []string
+		for _, badID := range badIDs {
+			ids = append(ids, insolar.NewReferenceFromBytes(badID.BinRef).String())
+		}
+		panic(fmt.Sprintf("tx_ids expected in base, but not found: %s", ids))
+	}
+
+	columns := []string{
+		"tx_id",
+		"deposit_from_ref",
+	}
+	var values []interface{}
+	for _, t := range transactions {
+		values = append(
+			values,
+			t.TransactionID.Bytes(),
+			t.DepositFromReference,
+		)
+	}
+	_, err = tx.Exec(
+		fmt.Sprintf( // nolint: gosec
+			`
+				INSERT INTO simple_transactions (%s) VALUES %s
+				ON CONFLICT (tx_id) DO UPDATE SET
+					deposit_from_ref = EXCLUDED.deposit_from_ref
+			`,
+			strings.Join(columns, ","),
+			valuesTemplate(len(columns), len(transactions)),
+		),
+		values...,
+	)
+	return err
 }
 
 func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {

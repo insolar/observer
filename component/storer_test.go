@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Insolar Technologies GmbH
+// Copyright 2020 Insolar Technologies GmbH
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -454,6 +454,58 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 
 		return tx.Rollback()
 	})
+}
+
+func TestStoreTxDepositData(t *testing.T) {
+	require.NoError(t, db.RunInTransaction(func(tx *pg.Tx) error {
+		expectedTransactions := []models.Transaction{
+			{
+				ID:                   1,
+				TransactionID:        gen.RecordReference().Bytes(),
+				Type:                 models.TTypeRelease,
+				PulseRecord:          [2]int64{rand.Int63(), rand.Int63()},
+				MemberFromReference:  gen.Reference().Bytes(),
+				MemberToReference:    gen.Reference().Bytes(),
+				DepositFromReference: gen.Reference().Bytes(),
+				Amount:               strconv.Itoa(rand.Int()),
+				StatusRegistered:     true,
+			},
+		}
+
+		err := StoreTxRegister(tx, []observer.TxRegister{
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				Type:                expectedTransactions[0].Type,
+				PulseNumber:         expectedTransactions[0].PulseRecord[0],
+				RecordNumber:        expectedTransactions[0].PulseRecord[1],
+				MemberFromReference: expectedTransactions[0].MemberFromReference,
+				MemberToReference:   expectedTransactions[0].MemberToReference,
+				Amount:              expectedTransactions[0].Amount,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		err = StoreTxDepositData(tx, []observer.TxDepositTransferUpdate{
+			{
+				TransactionID:        *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				DepositFromReference: expectedTransactions[0].DepositFromReference,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		res, err := GetTx(context.Background(), tx, expectedTransactions[0].TransactionID)
+		if err != nil {
+			return err
+		}
+
+		res.ID = 1
+
+		require.Equal(t, expectedTransactions[0], *res)
+
+		return nil
+	}))
 }
 
 func TestStorerOK(t *testing.T) {

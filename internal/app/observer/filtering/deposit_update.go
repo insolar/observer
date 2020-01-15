@@ -53,6 +53,9 @@ func (*DepositUpdateFilter) Filter(
 		d.Balance = update.Balance
 		d.Amount = update.Amount
 		d.HoldReleaseDate = update.HoldReleaseDate
+		if update.HoldReleaseDate > update.Lockup {
+			d.Timestamp = update.HoldReleaseDate - update.Lockup
+		}
 		d.DepositState = update.ID
 		d.IsConfirmed = update.IsConfirmed
 		deposits[update.ID] = d
