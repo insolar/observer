@@ -500,6 +500,8 @@ func TestStoreTxDepositData(t *testing.T) {
 			return err
 		}
 
+		res.ID = 1
+
 		require.Equal(t, expectedTransactions[0], *res)
 
 		return nil
