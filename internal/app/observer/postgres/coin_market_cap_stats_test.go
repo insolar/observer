@@ -55,8 +55,10 @@ func TestCoinMarketCapStats(t *testing.T) {
 }
 
 func TestCoinMarketCapStats_AverageCalculation(t *testing.T) {
+	_, err := db.Exec("DELETE FROM coin_market_cap_stats_aggregate")
+	require.NoError(t, err)
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
-	saveTime := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	saveTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// 24 hours
 	for i := 0; i < 1339; i++ {
@@ -79,13 +81,13 @@ func TestCoinMarketCapStats_AverageCalculation(t *testing.T) {
 	require.Equal(t, 3, len(points))
 
 	require.Equal(t,
-		time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		points[0].Timestamp)
 	require.Equal(t,
-		time.Date(2030, 1, 1, 8, 0, 0, 0, time.UTC),
+		time.Date(2020, 1, 1, 8, 0, 0, 0, time.UTC),
 		points[1].Timestamp)
 	require.Equal(t,
-		time.Date(2030, 1, 1, 16, 0, 0, 0, time.UTC),
+		time.Date(2020, 1, 1, 16, 0, 0, 0, time.UTC),
 		points[2].Timestamp)
 
 	require.Equal(t, float64(1), points[0].Price)
