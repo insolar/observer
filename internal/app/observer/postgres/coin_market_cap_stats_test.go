@@ -22,10 +22,13 @@ import (
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
+	"github.com/insolar/observer/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCoinMarketCapStats(t *testing.T) {
+	db, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	defer dbCleaner()
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
 	_, err := repo.LastStats()
@@ -55,8 +58,9 @@ func TestCoinMarketCapStats(t *testing.T) {
 }
 
 func TestCoinMarketCapStats_AverageCalculation(t *testing.T) {
-	_, err := db.Exec("DELETE FROM coin_market_cap_stats_aggregate")
-	require.NoError(t, err)
+	db, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	defer dbCleaner()
+
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 	saveTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 

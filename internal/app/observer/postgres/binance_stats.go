@@ -62,7 +62,7 @@ func (s *BinanceStatsRepository) PriceHistory(pointsCount int) ([]models.PriceHi
 	_, err := s.db.Query(&history,
 		`
 				select interval_time as timestamp, price_sum / count as price
-				from coin_market_cap_stats_aggregate
+				from binance_stats_aggregate
 				order by interval_time
 				limit ?;
 	`, pointsCount)

@@ -40,7 +40,7 @@ execute procedure coin_market_cap_stats_insert_only();
 
 
 ALTER TABLE binance_stats
-    ALTER COLUMN symbol_price_usd TYPE NUMERIC;
+    ALTER COLUMN symbol_price_usd TYPE NUMERIC USING cast(symbol_price_usd as NUMERIC);;
 
 -- Binance
 create table binance_stats_aggregate

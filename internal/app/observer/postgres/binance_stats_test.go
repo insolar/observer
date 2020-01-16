@@ -22,10 +22,13 @@ import (
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
+	"github.com/insolar/observer/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBinanceStats(t *testing.T) {
+	db, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	defer dbCleaner()
 	repo := postgres.NewBinanceStatsRepository(db)
 
 	_, err := repo.LastStats()
@@ -53,9 +56,10 @@ func TestBinanceStats(t *testing.T) {
 }
 
 func TestBinanceStats_AverageCalculation(t *testing.T) {
-	repo := postgres.NewBinanceStatsRepository(db)
-	_, err := db.Exec("DELETE FROM binance_stats")
-	require.NoError(t, err)
+	mockDB, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	defer dbCleaner()
+	repo := postgres.NewBinanceStatsRepository(mockDB)
+
 	saveTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// 24 hours
@@ -69,7 +73,7 @@ func TestBinanceStats_AverageCalculation(t *testing.T) {
 			PriceChangePercent: "4",
 			Created:            saveTime,
 		}
-		err := db.Insert(&stat)
+		err := mockDB.Insert(&stat)
 		require.NoError(t, err)
 	}
 
