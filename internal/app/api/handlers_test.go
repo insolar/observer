@@ -2024,6 +2024,98 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 	require.Equal(t, "400", points[2].Price)
 }
 
+func TestObserverServer_Binance_Price(t *testing.T) {
+	// first interval
+	statsTime := time.Date(2020, 1, 3, 6, 0, 0, 0, time.UTC)
+	err := db.Insert(&models.BinanceStats{
+		SymbolPriceUSD:     100,
+		Symbol:             "1",
+		SymbolPriceBTC:     "2",
+		BTCPriceUSD:        "3",
+		PriceChangePercent: "4",
+		Created:            statsTime,
+	})
+	require.NoError(t, err)
+
+	statsTime = time.Date(2020, 1, 3, 7, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.BinanceStats{
+		SymbolPriceUSD:     200,
+		Symbol:             "11",
+		SymbolPriceBTC:     "22",
+		BTCPriceUSD:        "33",
+		PriceChangePercent: "44",
+		Created:            statsTime,
+	})
+	require.NoError(t, err)
+
+	// second interval
+	statsTime = time.Date(2020, 1, 3, 14, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.BinanceStats{
+		SymbolPriceUSD:     300,
+		Symbol:             "111",
+		SymbolPriceBTC:     "222",
+		BTCPriceUSD:        "333",
+		PriceChangePercent: "444",
+		Created:            statsTime,
+	})
+	require.NoError(t, err)
+
+	// third interval
+	statsTime = time.Date(2020, 1, 3, 23, 0, 0, 0, time.UTC)
+	err = db.Insert(&models.BinanceStats{
+		SymbolPriceUSD:     400,
+		Symbol:             "1111",
+		SymbolPriceBTC:     "2222",
+		BTCPriceUSD:        "3333",
+		PriceChangePercent: "4444",
+		Created:            statsTime,
+	})
+	require.NoError(t, err)
+
+	logger := inslogger.FromContext(context.Background())
+	observerAPI := NewObserverServer(db, logger, pStorage, apiconfiguration.Configuration{
+		FeeAmount:   testFee,
+		Price:       testPrice,
+		PriceOrigin: "binance",
+	})
+
+	e := echo.New()
+	res := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	mockCtx := e.NewContext(req, res)
+
+	err = observerAPI.MarketStats(mockCtx)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, res.Code)
+
+	bodyBytes, err := ioutil.ReadAll(res.Body)
+	require.NoError(t, err)
+	received := ResponsesMarketStatsYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, "400", received.Price)
+	require.Equal(t, "4444", *received.DailyChange)
+
+	points := *received.PriceHistory
+	require.Equal(t, 3, len(points))
+
+	require.Equal(t,
+		time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC).Unix(),
+		points[0].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 3, 8, 0, 0, 0, time.UTC).Unix(),
+		points[1].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 3, 16, 0, 0, 0, time.UTC).Unix(),
+		points[2].Timestamp)
+
+	require.Equal(t, "150", points[0].Price)
+	require.Equal(t, "300", points[1].Price)
+	require.Equal(t, "400", points[2].Price)
+}
+
 func newInt(val int64) *int64 {
 	return &val
 }

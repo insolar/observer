@@ -447,10 +447,19 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			s.log.Error(errors.Wrap(err, "couldn't get last binance supply stats"))
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
-		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+
+		history, err := repo.PriceHistory(21)
+		if err != nil {
+			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
+			return ctx.JSON(http.StatusInternalServerError, "")
+		}
+		response := ResponsesMarketStatsYaml{
 			Price:       fmt.Sprintf("%v", stats.SymbolPriceUSD),
 			DailyChange: NullableString(stats.PriceChangePercent),
-		})
+		}
+		response.addHistoryPoints(history)
+
+		return ctx.JSON(http.StatusOK, response)
 	case "coin_market_cap":
 		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
 		stats, err := repo.LastStats()
@@ -471,7 +480,7 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			Rank:              NullableString(fmt.Sprintf("%v", stats.Rank)),
 			Volume:            NullableString(fmt.Sprintf("%v", stats.Volume24Hours)),
 		}
-		response = addHistoryPoints(response, history)
+		response.addHistoryPoints(history)
 		return ctx.JSON(http.StatusOK, response)
 	default:
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{

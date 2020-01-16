@@ -210,7 +210,7 @@ func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	return new(big.Int).Sub(amount, releasedAmount).Text(10)
 }
 
-func addHistoryPoints(response ResponsesMarketStatsYaml, points []models.PriceHistory) ResponsesMarketStatsYaml {
+func (response *ResponsesMarketStatsYaml) addHistoryPoints(points []models.PriceHistory) {
 	var parsedPoints []struct {
 		Price     string `json:"price"`
 		Timestamp int64  `json:"timestamp"`
@@ -223,8 +223,6 @@ func addHistoryPoints(response ResponsesMarketStatsYaml, points []models.PriceHi
 			fmt.Sprintf("%v", point.Price),
 			point.Timestamp.Unix(),
 		})
-		response.PriceHistory = &parsedPoints
 	}
 	response.PriceHistory = &parsedPoints
-	return response
 }
