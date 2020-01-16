@@ -56,13 +56,13 @@ func (s *CoinMarketCapStatsRepository) LastStats() (models.CoinMarketCapStats, e
 	return *lastStats, nil
 }
 
-func (s *CoinMarketCapStatsRepository) PriceHistory(pointsCount int) ([]models.CoinMarketCapPriceHistory, error) {
-	history := []models.CoinMarketCapPriceHistory{}
+func (s *CoinMarketCapStatsRepository) PriceHistory(pointsCount int) ([]models.PriceHistory, error) {
+	history := []models.PriceHistory{}
 
 	_, err := s.db.Query(&history,
 		`
 				select interval_time as timestamp, price_sum / count as price
-				from coin_market_cap_stats_aggregate
+				from binance_stats_aggregate
 				order by interval_time
 				limit ?;
 	`, pointsCount)

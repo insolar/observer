@@ -39,6 +39,9 @@ create trigger coin_market_cap_stats_ins_only
 execute procedure coin_market_cap_stats_insert_only();
 
 
+ALTER TABLE binance_stats
+    ALTER COLUMN symbol_price_usd TYPE NUMERIC;
+
 -- Binance
 create table binance_stats_aggregate
 (
@@ -52,7 +55,7 @@ $$
 BEGIN
     insert into binance_stats_aggregate (interval_time, price_sum, count)
         -- group date by 3 hour intervals 00 - 08, 08 - 16, 16 - 23.59
-    values (new.created :: date + concat(floor(extract(hour from new.created) / 8) * 8, ':00:00') :: time, new.price, 1)
+    values (new.created :: date + concat(floor(extract(hour from new.created) / 8) * 8, ':00:00') :: time, new.symbol_price_usd, 1)
     on conflict (interval_time) do update set price_sum = binance_stats_aggregate.price_sum + excluded.price_sum,
                                               count     = binance_stats_aggregate.count + 1;
     return null;

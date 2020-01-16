@@ -169,8 +169,8 @@ type BinanceStats struct {
 
 	Symbol string `sql:"symbol"`
 
-	SymbolPriceBTC string `sql:"symbol_price_btc"`
-	SymbolPriceUSD string `sql:"symbol_price_usd"`
+	SymbolPriceBTC string  `sql:"symbol_price_btc"`
+	SymbolPriceUSD float64 `sql:"symbol_price_usd"`
 
 	BTCPriceUSD string `sql:"btc_price_usd"`
 
@@ -191,9 +191,7 @@ type CoinMarketCapStats struct {
 	Created time.Time `sql:"created,pk,default:now(),notnull"`
 }
 
-type CoinMarketCapPriceHistory struct {
-	tableName struct{} `sql:"coin_market_cap_stats_aggregate"` // nolint: unused,structcheck
-
+type PriceHistory struct {
 	Timestamp time.Time `sql:"timestamp"`
 	Price     float64   `sql:"price"`
 }

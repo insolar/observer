@@ -210,7 +210,7 @@ func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	return new(big.Int).Sub(amount, releasedAmount).Text(10)
 }
 
-func addHistoryPoints(response ResponsesMarketStatsYaml, points []models.CoinMarketCapPriceHistory) ResponsesMarketStatsYaml {
+func addHistoryPoints(response ResponsesMarketStatsYaml, points []models.PriceHistory) ResponsesMarketStatsYaml {
 	var parsedPoints []struct {
 		Price     string `json:"price"`
 		Timestamp int64  `json:"timestamp"`
