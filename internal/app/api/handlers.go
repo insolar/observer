@@ -437,6 +437,10 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result.TotalInXNS())
 }
 
+// PointsCount holds count of history points. Max count is 21
+// https://insolar.atlassian.net/browse/INS-4049
+const PointsCount = 21
+
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Hour)
 	switch s.config.PriceOrigin {
@@ -448,7 +452,7 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 
-		history, err := repo.PriceHistory(21)
+		history, err := repo.PriceHistory(PointsCount)
 		if err != nil {
 			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
 			return ctx.JSON(http.StatusInternalServerError, "")
@@ -467,7 +471,7 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			s.log.Error(errors.Wrap(err, "couldn't get last coin market cap supply stats"))
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
-		history, err := repo.PriceHistory(21)
+		history, err := repo.PriceHistory(PointsCount)
 		if err != nil {
 			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
 			return ctx.JSON(http.StatusInternalServerError, "")
