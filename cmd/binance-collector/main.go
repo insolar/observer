@@ -20,9 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -185,13 +183,10 @@ func insertStats(
 	}
 
 	symbolPriceUsd := btcUsdtConverted * symbolBtcConverted
-	// cut numbers after 2 place
-	symbolPriceUsd = math.Floor(symbolPriceUsd*100) / 100
-
 	newStats := &models.BinanceStats{
 		Symbol:             stats.Symbol,
 		SymbolPriceBTC:     symbolBtcPrice,
-		SymbolPriceUSD:     fmt.Sprintf("%v", symbolPriceUsd),
+		SymbolPriceUSD:     symbolPriceUsd,
 		BTCPriceUSD:        btcUsdtPrice,
 		PriceChangePercent: stats.PriceChangePercent,
 	}

@@ -55,3 +55,20 @@ func (s *BinanceStatsRepository) LastStats() (models.BinanceStats, error) {
 	}
 	return *lastStats, nil
 }
+
+func (s *BinanceStatsRepository) PriceHistory(pointsCount int) ([]models.PriceHistory, error) {
+	history := []models.PriceHistory{}
+
+	_, err := s.db.Query(&history,
+		`
+				select interval_time as timestamp, price_sum / count as price
+				from binance_stats_aggregate
+				order by interval_time
+				limit ?;
+	`, pointsCount)
+	if err != nil {
+		return nil, err
+	}
+
+	return history, nil
+}
