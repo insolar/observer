@@ -30,9 +30,6 @@ import (
 func NullableString(s string) *string {
 	return &s
 }
-func NullableInterface(i interface{}) *interface{} {
-	return &i
-}
 
 func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} {
 	internalTx := SchemasTransactionAbstract{
@@ -211,4 +208,21 @@ func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
 	steps := deposit.Vesting / deposit.VestingStep
 	releasedAmount := depositContract.VestedByNow(amount, uint64(steps-1), uint64(steps))
 	return new(big.Int).Sub(amount, releasedAmount).Text(10)
+}
+
+func (response *ResponsesMarketStatsYaml) addHistoryPoints(points []models.PriceHistory) {
+	var parsedPoints []struct {
+		Price     string `json:"price"`
+		Timestamp int64  `json:"timestamp"`
+	}
+	for _, point := range points {
+		parsedPoints = append(parsedPoints, struct {
+			Price     string `json:"price"`
+			Timestamp int64  `json:"timestamp"`
+		}{
+			fmt.Sprintf("%v", point.Price),
+			point.Timestamp.Unix(),
+		})
+	}
+	response.PriceHistory = &parsedPoints
 }
