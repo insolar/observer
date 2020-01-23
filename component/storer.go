@@ -481,7 +481,7 @@ func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {
 					fee = EXCLUDED.fee
 			`,
 				strings.Join(columns, ","),
-				valuesTemplate(len(columns), len(transactions)),
+				valuesTemplate(len(columns), len(successTx)),
 			),
 			values...,
 		)
@@ -501,7 +501,7 @@ func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {
 			"finish_pulse_record",
 		}
 		var values []interface{}
-		for _, t := range transactions {
+		for _, t := range failedTx {
 			values = append(
 				values,
 				t.TransactionID.Bytes(), // tx_id
@@ -524,7 +524,7 @@ func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {
 					finish_pulse_record = COALESCE(simple_transactions.finish_pulse_record, EXCLUDED.finish_pulse_record)
 			`,
 				strings.Join(columns, ","),
-				valuesTemplate(len(columns), len(transactions)),
+				valuesTemplate(len(columns), len(failedTx)),
 			),
 			values...,
 		)
