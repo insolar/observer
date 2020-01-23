@@ -53,16 +53,22 @@ func (t *TxRegister) Validate() error {
 	return nil
 }
 
+type TxFailed struct {
+	FinishPulseNumber  int64
+	FinishRecordNumber int64
+}
+
 type TxResult struct {
 	TransactionID insolar.Reference
 	Fee           string
+	Failed        *TxFailed
 }
 
 func (t *TxResult) Validate() error {
 	if t.TransactionID.IsEmpty() {
 		return errors.New("TransactionID should not be empty")
 	}
-	if len(t.Fee) == 0 {
+	if t.Failed == nil && len(t.Fee) == 0 {
 		return errors.New("Fee should not be empty")
 	}
 	return nil

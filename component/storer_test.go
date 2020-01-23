@@ -549,3 +549,115 @@ func TestStorerOK(t *testing.T) {
 func newInt(val int64) *int64 {
 	return &val
 }
+
+func TestStoreFailedTransactions(t *testing.T) {
+	expectedTransactions := []models.Transaction{
+		{
+			TransactionID:       gen.RecordReference().Bytes(),
+			Type:                models.TTypeTransfer,
+			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+			MemberFromReference: gen.Reference().Bytes(),
+			MemberToReference:   gen.Reference().Bytes(),
+			Amount:              strconv.Itoa(rand.Int()),
+			Fee:                 strconv.Itoa(rand.Int()),
+			FinishSuccess:       false,
+			FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+			StatusRegistered:    true,
+			StatusSent:          true,
+			StatusFinished:      true,
+		},
+		{
+			TransactionID:       gen.RecordReference().Bytes(),
+			Type:                models.TTypeTransfer,
+			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+			MemberFromReference: gen.Reference().Bytes(),
+			MemberToReference:   gen.Reference().Bytes(),
+			Amount:              strconv.Itoa(rand.Int()),
+			Fee:                 strconv.Itoa(rand.Int()),
+			FinishSuccess:       false,
+			FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+			StatusRegistered:    true,
+			StatusSent:          true,
+			StatusFinished:      true,
+		},
+	}
+	_ = db.RunInTransaction(func(tx *pg.Tx) error {
+		err := StoreTxRegister(tx, []observer.TxRegister{
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+				Type:                expectedTransactions[0].Type,
+				PulseNumber:         expectedTransactions[0].PulseRecord[0],
+				RecordNumber:        expectedTransactions[0].PulseRecord[1],
+				MemberFromReference: expectedTransactions[0].MemberFromReference,
+				MemberToReference:   expectedTransactions[0].MemberToReference,
+				Amount:              expectedTransactions[0].Amount,
+			},
+			{
+				TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+				Type:                expectedTransactions[1].Type,
+				PulseNumber:         expectedTransactions[1].PulseRecord[0],
+				RecordNumber:        expectedTransactions[1].PulseRecord[1],
+				MemberFromReference: expectedTransactions[1].MemberFromReference,
+				MemberToReference:   expectedTransactions[1].MemberToReference,
+				Amount:              expectedTransactions[1].Amount,
+			},
+		})
+		require.NoError(t, err)
+
+		t.Run("with saga", func(t *testing.T) {
+			err = StoreTxSagaResult(tx, []observer.TxSagaResult{
+				{
+					TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+					FinishSuccess:      expectedTransactions[0].FinishSuccess,
+					FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+					FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
+				},
+			})
+			require.NoError(t, err)
+
+			err = StoreTxResult(tx, []observer.TxResult{
+				{
+					TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+					Fee:           expectedTransactions[0].Fee,
+					Failed: &observer.TxFailed{
+						FinishPulseNumber:  expectedTransactions[0].FinishPulseRecord[0],
+						FinishRecordNumber: expectedTransactions[0].FinishPulseRecord[1],
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ctx := context.Background()
+
+			txID := insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID)
+			res, err := GetTx(ctx, tx, txID.Bytes())
+			require.NoError(t, err)
+			res.ID = 0
+			assert.Equal(t, &expectedTransactions[0], res)
+		})
+
+		t.Run("without saga", func(t *testing.T) {
+			err = StoreTxResult(tx, []observer.TxResult{
+				{
+					TransactionID: *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+					Fee:           expectedTransactions[1].Fee,
+					Failed: &observer.TxFailed{
+						FinishPulseNumber:  expectedTransactions[1].FinishPulseRecord[0],
+						FinishRecordNumber: expectedTransactions[1].FinishPulseRecord[1],
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			ctx := context.Background()
+
+			txID := insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID)
+			res, err := GetTx(ctx, tx, txID.Bytes())
+			require.NoError(t, err)
+			res.ID = 0
+			assert.Equal(t, &expectedTransactions[1], res)
+		})
+
+		return tx.Rollback()
+	})
+}

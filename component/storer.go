@@ -444,34 +444,93 @@ func StoreTxResult(tx ExecerQuerirer, transactions []observer.TxResult) error {
 		panic(fmt.Sprintf("tx_ids expected in base, but not found: %s", ids))
 	}
 
-	columns := []string{
-		"tx_id",
-		"status_sent",
-		"fee",
-	}
-	var values []interface{}
+	var (
+		successTx, failedTx []observer.TxResult
+	)
+
 	for _, t := range transactions {
-		values = append(
-			values,
-			t.TransactionID.Bytes(),
-			true,
-			t.Fee,
-		)
+		if t.Failed != nil {
+			failedTx = append(failedTx, t)
+		} else {
+			successTx = append(successTx, t)
+		}
 	}
-	_, err = tx.Exec(
-		fmt.Sprintf( // nolint: gosec
-			`
+
+	// successTx
+	if len(successTx) > 0 {
+		columns := []string{
+			"tx_id",
+			"status_sent",
+			"fee",
+		}
+		var values []interface{}
+		for _, t := range successTx {
+			values = append(
+				values,
+				t.TransactionID.Bytes(),
+				true,
+				t.Fee,
+			)
+		}
+		_, err = tx.Exec(
+			fmt.Sprintf( // nolint: gosec
+				`
 				INSERT INTO simple_transactions (%s) VALUES %s
 				ON CONFLICT (tx_id) DO UPDATE SET
 					status_sent = EXCLUDED.status_sent,
 					fee = EXCLUDED.fee
 			`,
-			strings.Join(columns, ","),
-			valuesTemplate(len(columns), len(transactions)),
-		),
-		values...,
-	)
-	return err
+				strings.Join(columns, ","),
+				valuesTemplate(len(columns), len(transactions)),
+			),
+			values...,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	// failedTx
+	if len(failedTx) > 0 {
+		columns := []string{
+			"tx_id",
+			"status_sent",
+			"fee",
+			"status_finished",
+			"finish_success",
+			"finish_pulse_record",
+		}
+		var values []interface{}
+		for _, t := range transactions {
+			values = append(
+				values,
+				t.TransactionID.Bytes(), // tx_id
+				true,                    // status_sent
+				t.Fee,                   // fee
+				true,                    // status_finished
+				false,                   // finish_success
+				pg.Array([2]int64{t.Failed.FinishPulseNumber, t.Failed.FinishRecordNumber}), // finish_pulse_record
+			)
+		}
+		_, err = tx.Exec(
+			fmt.Sprintf( // nolint: gosec
+				`
+				INSERT INTO simple_transactions (%s) VALUES %s
+				ON CONFLICT (tx_id) DO UPDATE SET
+					status_sent = EXCLUDED.status_sent,
+					fee = EXCLUDED.fee,
+					status_finished = EXCLUDED.status_finished,
+					finish_success = COALESCE(simple_transactions.finish_success, EXCLUDED.finish_success),
+					finish_pulse_record = COALESCE(simple_transactions.finish_pulse_record, EXCLUDED.finish_pulse_record)
+			`,
+				strings.Join(columns, ","),
+				valuesTemplate(len(columns), len(transactions)),
+			),
+			values...,
+		)
+		return err
+	}
+	return nil
 }
 
 func StoreTxSagaResult(tx ExecerQuerirer, transactions []observer.TxSagaResult) error {
