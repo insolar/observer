@@ -1,5 +1,4 @@
-//
-// Copyright 2019 Insolar Technologies GmbH
+// Copyright 2020 Insolar Network Ltd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package store
 
@@ -23,8 +21,9 @@ import (
 	"sync/atomic"
 
 	"github.com/dgraph-io/badger"
-	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
+
+	"github.com/insolar/insolar/instrumentation/inslogger"
 )
 
 // BadgerDB is a badger DB implementation.
@@ -63,7 +62,10 @@ func OpenAndCloseBadgerOnStart(doOpenCLose bool) BadgerOption {
 
 // we do it to correctly close badger, since every time heavy falls down it doesn't do close it gracefully
 func openAndCloseBadger(badgerDir string) error {
-	db, err := badger.Open(badger.DefaultOptions(badgerDir))
+	opts := badger.DefaultOptions(badgerDir)
+	opts.Truncate = true
+	db, err := badger.Open(opts)
+
 	if err != nil {
 		return err
 	}

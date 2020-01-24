@@ -108,8 +108,8 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 				HoldReleaseDate: 1574072996,
 			},
 			currentTime:      1574159397,
-			expectedHold:     big.NewInt(399998192),
-			expectedReleased: big.NewInt(1808),
+			expectedHold:     big.NewInt(399999098),
+			expectedReleased: big.NewInt(902),
 		},
 		{
 			name: "complex step 1",
@@ -121,8 +121,8 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 				HoldReleaseDate: 1606435200,
 			},
 			currentTime:      1606435311,
-			expectedHold:     big.NewInt(499986154),
-			expectedReleased: big.NewInt(13846),
+			expectedHold:     big.NewInt(499991926),
+			expectedReleased: big.NewInt(8074),
 		},
 		{
 			name: "complex step 2",
@@ -134,8 +134,8 @@ func TestDeposit_ReleaseAmount(t *testing.T) {
 				HoldReleaseDate: 1606435200,
 			},
 			currentTime:      1606435250,
-			expectedHold:     big.NewInt(69999043),
-			expectedReleased: big.NewInt(957),
+			expectedHold:     big.NewInt(69999362),
+			expectedReleased: big.NewInt(638),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
