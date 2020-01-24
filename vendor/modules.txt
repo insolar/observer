@@ -147,6 +147,7 @@ github.com/insolar/insolar/insolar/store
 github.com/insolar/insolar/insolar/jet
 github.com/insolar/insolar/insolar/payload
 github.com/insolar/insolar/ledger/drop
+github.com/insolar/insolar/insolar/secrets
 github.com/insolar/insolar/instrumentation/instracer
 github.com/insolar/insolar/logicrunner/artifacts
 github.com/insolar/insolar/logicrunner/goplugin/rpctypes
