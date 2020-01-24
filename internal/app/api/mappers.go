@@ -123,7 +123,7 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			AvailableAmount: available.Text(10),
 			EthTxHash:       d.EtheriumHash,
 			HoldReleaseDate: d.HoldReleaseDate,
-			NextRelease:     NextRelease(currentTime, amount, d),
+			NextRelease:     NextRelease(currentTime, amount, balance, d),
 			ReleasedAmount:  releaseAmount.Text(10),
 			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
 			Status:          d.Status(currentTime),
@@ -165,12 +165,16 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 	return res, nil
 }
 
-func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *SchemaNextRelease {
+func NextRelease(currentTime int64, amount *big.Int, balance *big.Int, deposit models.Deposit) *SchemaNextRelease {
 	if deposit.HoldReleaseDate == 0 {
 		return nil
 	}
 
 	if deposit.Vesting == 0 {
+		return nil
+	}
+
+	if balance.Cmp(big.NewInt(0)) <= 0 {
 		return nil
 	}
 
@@ -185,30 +189,38 @@ func NextRelease(currentTime int64, amount *big.Int, deposit models.Deposit) *Sc
 	} else {
 		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
 		if timestamp >= vestingEnd {
-			return &SchemaNextRelease{Timestamp: vestingEnd, Amount: lastReleaseAmount(amount, &deposit)}
+			return checkAgainstBalance(vestingEnd, balance, lastReleaseAmount(amount, &deposit))
 		}
 	}
-	return &SchemaNextRelease{Timestamp: timestamp, Amount: nextReleaseAmount(amount, &deposit, currentTime)}
+
+	return checkAgainstBalance(timestamp, balance, nextReleaseAmount(amount, &deposit, currentTime))
 }
 
-func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) string {
+func checkAgainstBalance(ts int64, balance *big.Int, next *big.Int) *SchemaNextRelease {
+	if balance.Cmp(next) == -1 {
+		next = balance
+	}
+	return &SchemaNextRelease{Timestamp: ts, Amount: next.Text(10)}
+}
+
+func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) *big.Int {
 	steps := deposit.Vesting / deposit.VestingStep
 	sinceRelease := currentTime - deposit.HoldReleaseDate
 	if sinceRelease < 0 {
-		return depositContract.VestedByNow(amount, 0, uint64(steps)).Text(10)
+		return depositContract.VestedByNow(amount, 0, uint64(steps))
 	}
 
 	step := sinceRelease / deposit.VestingStep
 	releasedAmount := depositContract.VestedByNow(amount, uint64(step), uint64(steps))
 	willReleaseAmount := depositContract.VestedByNow(amount, uint64(step+1), uint64(steps))
 
-	return new(big.Int).Sub(willReleaseAmount, releasedAmount).Text(10)
+	return new(big.Int).Sub(willReleaseAmount, releasedAmount)
 }
 
-func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) string {
+func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) *big.Int {
 	steps := deposit.Vesting / deposit.VestingStep
 	releasedAmount := depositContract.VestedByNow(amount, uint64(steps-1), uint64(steps))
-	return new(big.Int).Sub(amount, releasedAmount).Text(10)
+	return new(big.Int).Sub(amount, releasedAmount)
 }
 
 func (response *ResponsesMarketStatsYaml) addHistoryPoints(points []models.PriceHistory) {
