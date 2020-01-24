@@ -105,75 +105,75 @@ func TestNextRelease(t *testing.T) {
 			},
 		},
 		{
-			name: "jumping sum",
+			name: "no scaling, 1826 points",
 			deposit: models.Deposit{
 				HoldReleaseDate: 100,
-				Amount:          "500000",
+				Amount:          "5000000000",
 				Vesting:         18260,
 				VestingStep:     10,
 			},
-			amount: big.NewInt(500000),
+			amount: big.NewInt(5000000000),
 			variants: []variant{
 				{
 					currentTime: 10,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11279",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 20,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11279",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 90,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11279",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 100,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11326",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 109,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11326",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 110,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11372",
 						Timestamp: 120,
 					},
 				},
 				{
 					currentTime: 119,
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
+						Amount:    "11372",
 						Timestamp: 120,
 					},
 				},
 				{
 					currentTime: 14850,
 					expectation: &SchemaNextRelease{
-						Amount:    "487",
+						Amount:    "4868415",
 						Timestamp: 14860,
 					},
 				},
 				{
 					currentTime: 18350,
 					expectation: &SchemaNextRelease{
-						Amount:    "2053",
+						Amount:    "20523042",
 						Timestamp: 18360,
 					},
 				},
@@ -195,7 +195,7 @@ func TestNextRelease(t *testing.T) {
 				{
 					currentTime: 90,
 					expectation: &SchemaNextRelease{
-						Amount:    "4",
+						Amount:    "0",
 						Timestamp: 100,
 					},
 				},

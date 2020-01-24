@@ -1303,7 +1303,7 @@ func TestMember_Hold(t *testing.T) {
 				Status:           "LOCKED",
 				Timestamp:        currentTime - 10,
 				NextRelease: &SchemaNextRelease{
-					Amount:    "11539",
+					Amount:    "1127",
 					Timestamp: currentTime,
 				},
 			},

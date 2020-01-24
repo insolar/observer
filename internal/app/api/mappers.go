@@ -195,8 +195,9 @@ func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int
 	steps := deposit.Vesting / deposit.VestingStep
 	sinceRelease := currentTime - deposit.HoldReleaseDate
 	if sinceRelease < 0 {
-		sinceRelease = 0
+		return depositContract.VestedByNow(amount, 0, uint64(steps)).Text(10)
 	}
+
 	step := sinceRelease / deposit.VestingStep
 	releasedAmount := depositContract.VestedByNow(amount, uint64(step), uint64(steps))
 	willReleaseAmount := depositContract.VestedByNow(amount, uint64(step+1), uint64(steps))
