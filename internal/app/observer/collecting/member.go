@@ -186,7 +186,11 @@ func (c *MemberCollector) processGenesisRecord(ctx context.Context, log insolar.
 		activate := memberActivate.Virtual.GetActivate()
 		memberState = c.initialMemberState(activate)
 
-		pubKey := foundation.TrimPublicKey(memberState.PublicKey)
+		pubKey, err := foundation.ExtractCanonicalPublicKey(memberState.PublicKey)
+		if err != nil {
+			log.WithField("member_ref", memberRef).
+				Error("extracting canonical pk failed, current value %v, error: %s", memberState.PublicKey, err.Error())
+		}
 		if pubKey == "" {
 			pubKey = memberState.PublicKey
 		}
@@ -348,7 +352,10 @@ func (c *MemberCollector) publicKey(act *record.Activate) string {
 		return ""
 	}
 
-	pubKey := foundation.TrimPublicKey(mbr.PublicKey)
+	pubKey, err := foundation.ExtractCanonicalPublicKey(mbr.PublicKey)
+	if err != nil {
+		c.log.Errorf("extracting canonical pk failed, current value %v, error: %s", mbr.PublicKey, err.Error())
+	}
 	if pubKey == "" {
 		return mbr.PublicKey
 	}

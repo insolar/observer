@@ -203,7 +203,12 @@ func (s *ObserverServer) Member(ctx echo.Context, reference string) error {
 }
 
 func (s *ObserverServer) MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error {
-	return s.getMember(ctx, getByPublicKey, foundation.TrimPublicKey(params.PublicKey))
+	publicKey, err := foundation.ExtractCanonicalPublicKey(params.PublicKey)
+	if err != nil {
+		s.log.Error(errors.Wrap(err, fmt.Sprintf("extracting canonical pk failed, current value %v", publicKey)))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+	return s.getMember(ctx, getByPublicKey, publicKey)
 }
 
 const (
