@@ -299,11 +299,13 @@ func TestMemberCollector_Collect(t *testing.T) {
 				// Member.new call (and it's satellite).
 				newMember, callNewMember := makeNewMemberRequest(pn, callRef)
 				newMemberRef := *insolar.NewReference(newMember.ID)
+				publicKey := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwDcgWZ1SbG+nbiXZkmYUZEfk2nkk\n1PEmEWoj4g6DLEkdaQVorOkqlloEz1zXclQaAE1S8i3F7OFNrNxLkm34ow==\n-----END PUBLIC KEY-----\n"
+
 				memberActivate, memberActivateSideEffect := makeMemberActivate(
 					pn,
 					newWalletRef,
 					newMemberRef,
-					"-----BEGIN PUBLIC KEY-----test_public_key-----END PUBLIC KEY-----",
+					publicKey,
 				)
 
 				records := []*observer.Record{
@@ -333,7 +335,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 					Status:           "SUCCESS",
 					AccountRef:       newAccountRef,
 					WalletRef:        newWalletRef,
-					PublicKey:        "test_public_key",
+					PublicKey:        "A8A3IFmdUmxvp24l2ZJmFGRH5Np5JNTxJhFqI+IOgyxJ",
 				}
 
 				expectedContractStruct := tree.Structure{

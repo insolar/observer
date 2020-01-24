@@ -139,6 +139,12 @@ github.com/insolar/component-manager v0.2.1-0.20191028200619-751a91771d2f/go.mod
 github.com/insolar/go-actors v0.0.0-20190805151516-2fcc7bfc8ff9/go.mod h1:vh6gyvTJhKxCMROgV7ADLE1jS19NAd6gIaHCjHgVWKQ=
 github.com/insolar/insolar v1.3.0 h1:+QGiZ6c3GFkADYZ3Tk/UTC7qPlchf86/CartoEdeh88=
 github.com/insolar/insolar v1.3.0/go.mod h1:7EPa+CiRL0lsyzoeuA/+SS6oFnlNLRBlXSyC92fzpvU=
+github.com/insolar/insolar v1.3.1-0.20200124134737-710074e0fc9a h1:4FQ80wW0vk+X9gyTnkjmUyIealHNVEAS0QPY+wKvs7g=
+github.com/insolar/insolar v1.3.1-0.20200124134737-710074e0fc9a/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
+github.com/insolar/insolar v1.3.1-0.20200124152321-69043c6e9461 h1:tqibGR5OCu+2Aj9c7BWpRjpASXZEuwtJ5xvTR4tY+uc=
+github.com/insolar/insolar v1.3.1-0.20200124152321-69043c6e9461/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
+github.com/insolar/insolar v1.3.1-0.20200124160757-f8924b7467b6 h1:1P8oYvQ8LF7YewZbhVjPPUGiqjTEpFMufqr3jZC5s84=
+github.com/insolar/insolar v1.3.1-0.20200124160757-f8924b7467b6/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
 github.com/insolar/insolar v1.3.1-0.20200124132620-48a4a451e60a h1:0S7EPsKjsCFpKJy8dz+LRCt8Pnuh2yZmH/6kX3lO0AU=
 github.com/insolar/insolar v1.3.1-0.20200124132620-48a4a451e60a/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
 github.com/insolar/rpc v1.2.2-0.20190812143745-c27e1d218f1f/go.mod h1:BZcTsPtQu8QG8RqqQdAnuNAG8n6TOrdNxIHro0h99Ik=
