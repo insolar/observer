@@ -28,7 +28,7 @@ import (
 )
 
 type Member struct {
-	tableName struct{} `sql:"members"` //nolint: unused,structcheck
+	tableName struct{} `sql:"members"` // nolint: unused,structcheck
 
 	Reference        []byte `sql:"member_ref"`
 	WalletReference  []byte `sql:"wallet_ref"`
@@ -48,7 +48,7 @@ const (
 )
 
 type Deposit struct {
-	tableName struct{} `sql:"deposits"` //nolint: unused,structcheck
+	tableName struct{} `sql:"deposits"` // nolint: unused,structcheck
 
 	Reference       []byte `sql:"deposit_ref"`
 	MemberReference []byte `sql:"member_ref"`
@@ -92,7 +92,7 @@ const (
 )
 
 type Transaction struct {
-	tableName struct{} `sql:"simple_transactions"` //nolint: unused,structcheck
+	tableName struct{} `sql:"simple_transactions"` // nolint: unused,structcheck
 
 	// Indexes.
 	ID            int64  `sql:"id"`
@@ -119,7 +119,7 @@ type Transaction struct {
 }
 
 type MigrationAddress struct {
-	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
+	tableName struct{} `sql:"migration_addresses"` // nolint: unused,structcheck
 
 	ID        int64  `sql:"id,notnull"`
 	Addr      string `sql:"addr,notnull"`
@@ -128,7 +128,7 @@ type MigrationAddress struct {
 }
 
 type Notification struct {
-	tableName struct{} `sql:"notifications"` //nolint: unused,structcheck
+	tableName struct{} `sql:"notifications"` // nolint: unused,structcheck
 
 	Message string    `sql:"message,notnull"`
 	Start   time.Time `sql:"start,notnull"`
@@ -136,7 +136,7 @@ type Notification struct {
 }
 
 type Pulse struct {
-	tableName struct{} `sql:"pulses"` //nolint: unused,structcheck
+	tableName struct{} `sql:"pulses"` // nolint: unused,structcheck
 
 	Pulse     uint32 `sql:"pulse,notnull"`
 	PulseDate int64  `sql:"pulse_date"`
@@ -145,7 +145,7 @@ type Pulse struct {
 }
 
 type NetworkStats struct {
-	tableName struct{} `sql:"network_stats"` //nolint: unused,structcheck
+	tableName struct{} `sql:"network_stats"` // nolint: unused,structcheck
 
 	Created           time.Time `sql:"created,pk,default:now(),notnull"`
 	PulseNumber       int       `sql:"pulse_number,notnull"`
@@ -158,19 +158,19 @@ type NetworkStats struct {
 }
 
 type SupplyStats struct {
-	tableName struct{} `sql:"supply_stats"` //nolint: unused,structcheck
+	tableName struct{} `sql:"supply_stats"` // nolint: unused,structcheck
 
 	Created time.Time `sql:"created,pk,default:now(),notnull"`
 	Total   string    `sql:"total"`
 }
 
 type BinanceStats struct {
-	tableName struct{} `sql:"binance_stats"` //nolint: unused,structcheck
+	tableName struct{} `sql:"binance_stats"` // nolint: unused,structcheck
 
 	Symbol string `sql:"symbol"`
 
-	SymbolPriceBTC string `sql:"symbol_price_btc"`
-	SymbolPriceUSD string `sql:"symbol_price_usd"`
+	SymbolPriceBTC string  `sql:"symbol_price_btc"`
+	SymbolPriceUSD float64 `sql:"symbol_price_usd"`
 
 	BTCPriceUSD string `sql:"btc_price_usd"`
 
@@ -179,7 +179,7 @@ type BinanceStats struct {
 }
 
 type CoinMarketCapStats struct {
-	tableName struct{} `sql:"coin_market_cap_stats"` //nolint: unused,structcheck
+	tableName struct{} `sql:"coin_market_cap_stats"` // nolint: unused,structcheck
 
 	Price                float64 `sql:"price"`
 	PercentChange24Hours float64 `sql:"percent_change_24_hours"`
@@ -189,6 +189,11 @@ type CoinMarketCapStats struct {
 	CirculatingSupply    float64 `json:"circulating_supply"`
 
 	Created time.Time `sql:"created,pk,default:now(),notnull"`
+}
+
+type PriceHistory struct {
+	Timestamp time.Time `sql:"timestamp"`
+	Price     float64   `sql:"price"`
 }
 
 type fieldCache struct {

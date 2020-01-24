@@ -19,6 +19,7 @@ package collecting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/rand"
 	"testing"
 
@@ -410,6 +411,57 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
+	})
+
+	t.Run("transfer with error", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteTransfer}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		txID := *insolar.NewRecordReference(gen.ID())
+		resultID := gen.ID()
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{member.TransferResponse{
+				Fee: "123",
+			}, errors.New("failed")},
+		})
+		require.NoError(t, err)
+		rec := exporter.Record{
+			RecordNumber: 11,
+			Record: record.Material{
+				ID: resultID,
+				Virtual: record.Wrap(&record.Result{
+					Request: txID,
+					Payload: resultPayload,
+				}),
+			},
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *txID.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "123", Failed: &observer.TxFailed{
+			FinishPulseNumber:  int64(rec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(rec.RecordNumber),
+		}}, tx)
 	})
 }
 

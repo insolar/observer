@@ -437,6 +437,10 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, result.TotalInXNS())
 }
 
+// PointsCount holds count of history points. Max count is 21
+// https://insolar.atlassian.net/browse/INS-4049
+const PointsCount = 21
+
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Hour)
 	switch s.config.PriceOrigin {
@@ -447,10 +451,19 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			s.log.Error(errors.Wrap(err, "couldn't get last binance supply stats"))
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
-		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
-			Price:       stats.SymbolPriceUSD,
+
+		history, err := repo.PriceHistory(PointsCount)
+		if err != nil {
+			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
+			return ctx.JSON(http.StatusInternalServerError, "")
+		}
+		response := ResponsesMarketStatsYaml{
+			Price:       fmt.Sprintf("%v", stats.SymbolPriceUSD),
 			DailyChange: NullableString(stats.PriceChangePercent),
-		})
+		}
+		response.addHistoryPoints(history)
+
+		return ctx.JSON(http.StatusOK, response)
 	case "coin_market_cap":
 		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
 		stats, err := repo.LastStats()
@@ -458,15 +471,21 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			s.log.Error(errors.Wrap(err, "couldn't get last coin market cap supply stats"))
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
-		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
+		history, err := repo.PriceHistory(PointsCount)
+		if err != nil {
+			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
+			return ctx.JSON(http.StatusInternalServerError, "")
+		}
+		response := ResponsesMarketStatsYaml{
 			CirculatingSupply: NullableString(fmt.Sprintf("%v", stats.CirculatingSupply)),
 			DailyChange:       NullableString(fmt.Sprintf("%v", stats.PercentChange24Hours)),
 			MarketCap:         NullableString(fmt.Sprintf("%v", stats.MarketCap)),
 			Price:             fmt.Sprintf("%v", stats.Price),
-			PriceHistory:      nil,
 			Rank:              NullableString(fmt.Sprintf("%v", stats.Rank)),
 			Volume:            NullableString(fmt.Sprintf("%v", stats.Volume24Hours)),
-		})
+		}
+		response.addHistoryPoints(history)
+		return ctx.JSON(http.StatusOK, response)
 	default:
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
 			Price: s.config.Price,

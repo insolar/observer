@@ -464,12 +464,28 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 		return nil
 	}
 
-	log = log.WithField("tx_id", txID.GetLocal().DebugString())
-	log.Debug("created TxResult")
-	tx := &observer.TxResult{
-		TransactionID: txID,
-		Fee:           response.Fee,
+	var tx *observer.TxResult
+	resultWrapper := observer.Result(rec.Record)
+	if !resultWrapper.IsSuccess(log) {
+		// failed tx
+		// we need to write finish pulse because there could be no saga
+		log.Debug("created failed TxResult")
+		tx = &observer.TxResult{
+			TransactionID: txID,
+			Fee:           response.Fee,
+			Failed: &observer.TxFailed{
+				FinishPulseNumber:  int64(rec.Record.ID.Pulse()),
+				FinishRecordNumber: int64(rec.RecordNumber),
+			},
+		}
+	} else {
+		log.Debug("created TxResult")
+		tx = &observer.TxResult{
+			TransactionID: txID,
+			Fee:           response.Fee,
+		}
 	}
+
 	if err = tx.Validate(); err != nil {
 		log.Error(errors.Wrap(err, "failed to validate transaction"))
 		return nil
