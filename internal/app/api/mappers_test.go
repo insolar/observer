@@ -74,43 +74,43 @@ func TestNextRelease(t *testing.T) {
 			deposit: models.Deposit{
 				HoldReleaseDate: 1573823965,
 				Amount:          "4000",
-				Vesting:         86400 * 1826,
+				Vesting:         86400 * 1096,
 				VestingStep:     86400,
 			},
 			amount: big.NewInt(4000),
 			variants: []variant{
 				{
-					currentTime: 1573823965 + 86400*1030, // 1 662 815 965
+					currentTime: 1573823965 + 86400*750, // 1 638 623 965
 					expectation: &SchemaNextRelease{
-						Amount:    "1",
-						Timestamp: 1573823965 + 86400*1031, // 1 662 902 365
+						Amount:    "2",
+						Timestamp: 1573823965 + 86400*751, // 1 638 710 365
 					},
 				},
 				{
-					currentTime: 1573823965 + 86400*1583, // 1 710 595 165
+					currentTime: 1573823965 + 86400*850, // 1 647 263 965
 					expectation: &SchemaNextRelease{
-						Amount:    "6",
-						Timestamp: 1573823965 + 86400*1584, // 1 710 681 565
+						Amount:    "5",
+						Timestamp: 1573823965 + 86400*851, // 1 647 350 365
 					},
 				},
 				{
-					currentTime: 1573823965 + 86400*1798, // 1 729 171 165
+					currentTime: 1573823965 + 86400*1090, // 1 667 999 965
 					expectation: &SchemaNextRelease{
-						Amount:    "15",
-						Timestamp: 1573823965 + 86400*1799, // 1 729 257 565
+						Amount:    "29",
+						Timestamp: 1573823965 + 86400*1091, // 1 668 086 365
 					},
 				},
 				{
-					currentTime: 1573823965 + 86400*2000,
+					currentTime: 1573823965 + 86400*1097,
 				},
 			},
 		},
 		{
-			name: "no scaling, 1826 points",
+			name: "no scaling, 1096 points",
 			deposit: models.Deposit{
 				HoldReleaseDate: 100,
 				Amount:          "5000000000",
-				Vesting:         18260,
+				Vesting:         10960,
 				VestingStep:     10,
 			},
 			amount: big.NewInt(5000000000),
@@ -118,68 +118,68 @@ func TestNextRelease(t *testing.T) {
 				{
 					currentTime: 10,
 					expectation: &SchemaNextRelease{
-						Amount:    "11279",
+						Amount:    "11280",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 20,
 					expectation: &SchemaNextRelease{
-						Amount:    "11279",
+						Amount:    "11280",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 90,
 					expectation: &SchemaNextRelease{
-						Amount:    "11279",
+						Amount:    "11280",
 						Timestamp: 100,
 					},
 				},
 				{
 					currentTime: 100,
 					expectation: &SchemaNextRelease{
-						Amount:    "11326",
+						Amount:    "11365",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 109,
 					expectation: &SchemaNextRelease{
-						Amount:    "11326",
+						Amount:    "11365",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 110,
 					expectation: &SchemaNextRelease{
-						Amount:    "11372",
+						Amount:    "11449",
 						Timestamp: 120,
 					},
 				},
 				{
 					currentTime: 119,
 					expectation: &SchemaNextRelease{
-						Amount:    "11372",
+						Amount:    "11449",
 						Timestamp: 120,
 					},
 				},
 				{
-					currentTime: 14850,
+					currentTime: 9850,
 					expectation: &SchemaNextRelease{
-						Amount:    "4868415",
-						Timestamp: 14860,
+						Amount:    "15283088",
+						Timestamp: 9860,
 					},
 				},
 				{
-					currentTime: 18350,
+					currentTime: 10350,
 					expectation: &SchemaNextRelease{
-						Amount:    "20523042",
-						Timestamp: 18360,
+						Amount:    "22113376",
+						Timestamp: 10360,
 					},
 				},
 				{
-					currentTime: 18360,
+					currentTime: 11350,
 				},
 			},
 		},
@@ -203,49 +203,49 @@ func TestNextRelease(t *testing.T) {
 				{
 					currentTime: 100,
 					expectation: &SchemaNextRelease{
-						Amount:    "4",
+						Amount:    "2",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 110,
 					expectation: &SchemaNextRelease{
-						Amount:    "12",
+						Amount:    "9",
 						Timestamp: 120,
 					},
 				},
 				{
 					currentTime: 120,
 					expectation: &SchemaNextRelease{
-						Amount:    "36",
+						Amount:    "26",
 						Timestamp: 130,
 					},
 				},
 				{
 					currentTime: 130,
 					expectation: &SchemaNextRelease{
-						Amount:    "106",
+						Amount:    "86",
 						Timestamp: 140,
 					},
 				},
 				{
 					currentTime: 140,
 					expectation: &SchemaNextRelease{
-						Amount:    "309",
+						Amount:    "271",
 						Timestamp: 150,
 					},
 				},
 				{
 					currentTime: 150,
 					expectation: &SchemaNextRelease{
-						Amount:    "905",
+						Amount:    "868",
 						Timestamp: 160,
 					},
 				},
 				{
 					currentTime: 160,
 					expectation: &SchemaNextRelease{
-						Amount:    "2628",
+						Amount:    "2738",
 						Timestamp: 170,
 					},
 				},
@@ -262,7 +262,7 @@ func TestNextRelease(t *testing.T) {
 				Vesting:         70,
 				VestingStep:     10,
 			},
-			amount: big.NewInt(4000),
+			amount:  big.NewInt(4000),
 			balance: big.NewInt(0),
 			variants: []variant{
 				{currentTime: 90, expectation: nil},
@@ -278,27 +278,27 @@ func TestNextRelease(t *testing.T) {
 				Vesting:         70,
 				VestingStep:     10,
 			},
-			amount: big.NewInt(4000),
+			amount:  big.NewInt(4000),
 			balance: big.NewInt(16),
 			variants: []variant{
 				{
 					currentTime: 100,
 					expectation: &SchemaNextRelease{
-						Amount:    "4",
+						Amount:    "2",
 						Timestamp: 110,
 					},
 				},
 				{
 					currentTime: 110,
 					expectation: &SchemaNextRelease{
-						Amount:    "12",
+						Amount:    "9",
 						Timestamp: 120,
 					},
 				},
 				{
 					currentTime: 120,
 					expectation: &SchemaNextRelease{
-						Amount:    "16", // not 36
+						Amount:    "16",
 						Timestamp: 130,
 					},
 				},
