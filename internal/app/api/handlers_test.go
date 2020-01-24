@@ -19,7 +19,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -35,7 +34,6 @@ import (
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	apiconfiguration "github.com/insolar/observer/configuration/api"
-	"github.com/insolar/x-crypto/x509"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 
@@ -1044,9 +1042,7 @@ func TestMemberByPublicKeyDifferentPEM(t *testing.T) {
 	memberWalletReference := gen.Reference()
 	memberAccountReference := gen.Reference()
 	balance := "1010101"
-	privateKey, err := secrets.GeneratePrivateKeyEthereum()
-	publicKeyPEM, err := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
-	publicKey := string(publicKeyPEM)
+	publicKey := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwDcgWZ1SbG+nbiXZkmYUZEfk2nkk\n1PEmEWoj4g6DLEkdaQVorOkqlloEz1zXclQaAE1S8i3F7OFNrNxLkm34ow==\n-----END PUBLIC KEY-----\n"
 
 	deposite1 := gen.Reference()
 	deposite2 := gen.Reference()
@@ -1056,13 +1052,7 @@ func TestMemberByPublicKeyDifferentPEM(t *testing.T) {
 	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
 	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
 
-	ecdsaPublicKey := secrets.MustConvertPublicKeyToEcdsa(secrets.ExtractPublicKey(privateKey))
-	x509EncodedPub, err := x509.MarshalPKIXPublicKey(ecdsaPublicKey)
-	require.NoError(t, err)
-	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub, Headers: map[string]string{"lol": "kek"}})
-	publicKeyDifferentPEM := string(pemEncoded)
-	require.NotEqual(t, publicKey, publicKeyDifferentPEM, "two PEM for one pk in this test must be different")
-
+	publicKeyDifferentPEM := "-----BEGIN PUBLIC KEY-----\nThisIsNewField:testvalue\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwDcgWZ1SbG+nbiXZkmYUZEfk2nkk\n1PEmEWoj4g6DLEkdaQVorOkqlloEz1zXclQaAE1S8i3F7OFNrNxLkm34ow==\n-----END PUBLIC KEY-----\n"
 	pkStr := url.QueryEscape(publicKeyDifferentPEM)
 	resp, err := http.Get("http://" + apihost + "/api/member/byPublicKey?publicKey=" + pkStr)
 	require.NoError(t, err)

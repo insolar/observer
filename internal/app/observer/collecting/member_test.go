@@ -32,7 +32,6 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
-	"github.com/insolar/insolar/insolar/secrets"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/stretchr/testify/require"
@@ -300,9 +299,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 				// Member.new call (and it's satellite).
 				newMember, callNewMember := makeNewMemberRequest(pn, callRef)
 				newMemberRef := *insolar.NewReference(newMember.ID)
-				privateKey, _ := secrets.GeneratePrivateKeyEthereum()
-				publicKeyPEM, _ := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
-				publicKey := string(publicKeyPEM)
+				publicKey := "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEwDcgWZ1SbG+nbiXZkmYUZEfk2nkk\n1PEmEWoj4g6DLEkdaQVorOkqlloEz1zXclQaAE1S8i3F7OFNrNxLkm34ow==\n-----END PUBLIC KEY-----\n"
 
 				memberActivate, memberActivateSideEffect := makeMemberActivate(
 					pn,
@@ -330,7 +327,6 @@ func TestMemberCollector_Collect(t *testing.T) {
 					memberActivate,
 				}
 
-				canonicakPK, _ := foundation.ExtractCanonicalPublicKey(publicKey)
 				expectedMember := &observer.Member{
 					MemberRef:        memberRef,
 					Balance:          balance,
@@ -339,7 +335,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 					Status:           "SUCCESS",
 					AccountRef:       newAccountRef,
 					WalletRef:        newWalletRef,
-					PublicKey:        canonicakPK,
+					PublicKey:        "A8A3IFmdUmxvp24l2ZJmFGRH5Np5JNTxJhFqI+IOgyxJ",
 				}
 
 				expectedContractStruct := tree.Structure{
