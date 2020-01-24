@@ -36,6 +36,7 @@ func TestNextRelease(t *testing.T) {
 		name     string
 		deposit  models.Deposit
 		amount   *big.Int
+		balance  *big.Int
 		variants []variant
 	}{
 		{
@@ -253,10 +254,64 @@ func TestNextRelease(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "no balance",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "4000",
+				Vesting:         70,
+				VestingStep:     10,
+			},
+			amount: big.NewInt(4000),
+			balance: big.NewInt(0),
+			variants: []variant{
+				{currentTime: 90, expectation: nil},
+				{currentTime: 100, expectation: nil},
+				{currentTime: 110, expectation: nil},
+			},
+		},
+		{
+			name: "not enough balance for next release",
+			deposit: models.Deposit{
+				HoldReleaseDate: 100,
+				Amount:          "4000",
+				Vesting:         70,
+				VestingStep:     10,
+			},
+			amount: big.NewInt(4000),
+			balance: big.NewInt(16),
+			variants: []variant{
+				{
+					currentTime: 100,
+					expectation: &SchemaNextRelease{
+						Amount:    "4",
+						Timestamp: 110,
+					},
+				},
+				{
+					currentTime: 110,
+					expectation: &SchemaNextRelease{
+						Amount:    "12",
+						Timestamp: 120,
+					},
+				},
+				{
+					currentTime: 120,
+					expectation: &SchemaNextRelease{
+						Amount:    "16", // not 36
+						Timestamp: 130,
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, e := range tc.variants {
-				res := NextRelease(e.currentTime, tc.amount, tc.deposit)
+				balance := tc.balance
+				if balance == nil {
+					balance = tc.amount
+				}
+				res := NextRelease(e.currentTime, tc.amount, balance, tc.deposit)
 				assert.Equal(t, e.expectation, res)
 			}
 		})
