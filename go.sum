@@ -136,8 +136,6 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/insolar/component-manager v0.2.1-0.20191028200619-751a91771d2f h1:06p+6HGiIraHhZ2Bmya40d8+TPiwEe/ftgb46XC9B0Q=
 github.com/insolar/component-manager v0.2.1-0.20191028200619-751a91771d2f/go.mod h1:pyNB4e1NrTdT7BJJGMedR5OYIa6+zHLpak2Jwk9Aj88=
 github.com/insolar/go-actors v0.0.0-20190805151516-2fcc7bfc8ff9/go.mod h1:vh6gyvTJhKxCMROgV7ADLE1jS19NAd6gIaHCjHgVWKQ=
-github.com/insolar/insolar v1.3.2 h1:8IQYvEIeV4uIe176fFPh/Izk1IhmKZ0hXZx/Ms1rUvU=
-github.com/insolar/insolar v1.3.2/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
 github.com/insolar/insolar v1.3.3-0.20200128163853-7d246b07ace4 h1:khBBMXkhVEVwe4aFo3SYXvNvhtGTCvQ1vePjZ6rIGZc=
 github.com/insolar/insolar v1.3.3-0.20200128163853-7d246b07ace4/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
 github.com/insolar/rpc v1.2.2-0.20190812143745-c27e1d218f1f/go.mod h1:BZcTsPtQu8QG8RqqQdAnuNAG8n6TOrdNxIHro0h99Ik=
