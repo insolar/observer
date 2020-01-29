@@ -335,7 +335,7 @@ func TestMemberCollector_Collect(t *testing.T) {
 					Status:           "SUCCESS",
 					AccountRef:       newAccountRef,
 					WalletRef:        newWalletRef,
-					PublicKey:        "A8A3IFmdUmxvp24l2ZJmFGRH5Np5JNTxJhFqI+IOgyxJ",
+					PublicKey:        "A8A3IFmdUmxvp24l2ZJmFGRH5Np5JNTxJhFqI-IOgyxJ",
 				}
 
 				expectedContractStruct := tree.Structure{
