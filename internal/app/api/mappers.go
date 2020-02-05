@@ -112,6 +112,11 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
 		}
 		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
+
+		if amountOnHold.Cmp(balance) == 1 {
+			amountOnHold = balance
+		}
+
 		available := big.NewInt(0).Sub(balance, amountOnHold)
 		// if partially vested and partially transferred to wallet
 		if available.Cmp(big.NewInt(0)) == -1 {
