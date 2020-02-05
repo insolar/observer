@@ -105,6 +105,15 @@ OBSERVERAPI_LOG_OUTPUTTYPE=stderr
 OBSERVERAPI_LOG_BUFFER=0
 ```
 
+Coin statistic api:
+You need to chose an origin of coin statistic.
+
+```
+PriceOrigin = const|binance|coin_market_cap
+const - By default it's taken from values from config (somekind of hardcode)
+binance - get data gathered by binance collector
+coin_market_cap - get data gathered by cmc collector
+
 ## Stats collector
 Command calculates, gathers and saves statistics, add to cron for 1/min execution.
 Uses replicator's config (see above).
