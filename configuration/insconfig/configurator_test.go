@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package configuration
+package insconfig
 
 import (
 	"testing"
@@ -29,12 +29,12 @@ func Test_replacePassword(t *testing.T) {
 
 	t.Run("replaced", func(t *testing.T) {
 		require.Contains(t, with, password)
-		require.NotContains(t, replacePassword(with), password)
+		require.NotContains(t, replaceDBPassword(with), password)
 	})
 
 	t.Run("not_replaced", func(t *testing.T) {
 		require.NotContains(t, without, password)
-		require.NotContains(t, replacePassword(without), password)
-		require.Equal(t, without, replacePassword(without))
+		require.NotContains(t, replaceDBPassword(without), password)
+		require.Equal(t, without, replaceDBPassword(without))
 	})
 }

@@ -30,12 +30,25 @@ import (
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/configuration/insconfig"
 )
 
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	cfg := configuration.Load()
+	newConfig := configuration.Configuration{}
+	// cs, _ := newConfig.GetConfig()
+	prms := insconfig.Params{
+		ConfigStruct: newConfig,
+		EnvPrefix:    "observer",
+	}
+	parsedConf, err := insconfig.Load(prms)
+	if err != nil {
+		panic(err)
+	}
+	// ccc := parsedConf
+	cfg := parsedConf.(*configuration.Configuration)
+	insconfig.PrintConfig(cfg)
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

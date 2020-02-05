@@ -26,13 +26,20 @@ import (
 	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 
-	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/configuration/insconfig"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 )
 
 func main() {
-	cfg := configuration.Load()
+	prms := insconfig.Params{
+		EnvPrefix: "stats-collector",
+	}
+	cfg, err := insconfig.Load(prms)
+	if err != nil {
+		panic(err)
+	}
+	insconfig.PrintConfig(cfg)
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

@@ -30,11 +30,12 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
-	"github.com/insolar/observer/configuration"
+	"github.com/pkg/errors"
+
+	"github.com/insolar/observer/configuration/insconfig"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 	"github.com/insolar/observer/internal/models"
-	"github.com/pkg/errors"
 )
 
 // BinanceAPIUrl stores Binance url
@@ -42,13 +43,20 @@ const BinanceAPIUrl = "https://api.binance.com/api/v3/"
 
 func main() {
 	symbol := flag.String("symbol", "", "token symbol")
-	flag.Parse()
+	prms := insconfig.Params{
+		EnvPrefix: "binance-collector",
+		GoFlags:   flag.CommandLine,
+	}
+	cfg, err := insconfig.Load(prms)
+	if err != nil {
+		panic(err)
+	}
+	insconfig.PrintConfig(cfg)
 
 	if symbol == nil || len(*symbol) == 0 || len(strings.TrimSpace(*symbol)) == 0 {
 		panic("symbol should be provided")
 	}
 
-	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,

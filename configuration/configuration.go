@@ -28,6 +28,10 @@ type Configuration struct {
 	Log        Log
 }
 
+func (c Configuration) GetConfig() interface{} {
+	return &c
+}
+
 type Replicator struct {
 	Addr            string
 	MaxTransportMsg int

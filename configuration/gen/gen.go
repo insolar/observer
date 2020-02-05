@@ -31,7 +31,7 @@ import (
 func main() {
 	cfgs := make(map[string]interface{})
 	cfgs[api.ConfigFilePath] = api.Default()
-	cfgs[configuration.ConfigFilePath] = configuration.Default()
+	cfgs[configuration.ConfigFile] = configuration.Default()
 
 	for filePath, cfg := range cfgs {
 		out, _ := yaml.Marshal(cfg)
