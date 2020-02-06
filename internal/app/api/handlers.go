@@ -434,6 +434,9 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 
 	repo := postgres.NewSupplyStatsRepository(s.db)
 	result, err := repo.LastStats()
+	if err != nil && err == postgres.ErrNoStats {
+		return ctx.JSON(http.StatusNoContent, "")
+	}
 	if err != nil {
 		s.log.Error(errors.Wrap(err, "couldn't get last supply stats"))
 		return ctx.JSON(http.StatusInternalServerError, "")
