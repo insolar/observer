@@ -7,4 +7,4 @@ RUN make build
 
 FROM debian:buster-slim as app
 COPY $PWD/scripts/migrations /migrations
-COPY --from=build /observer/bin/observer /observer/bin/api /observer/bin/stats-collector /observer/bin/migrate  /usr/local/bin/
+COPY --from=build /observer/bin/observer /observer/bin/api /observer/bin/stats-collector /observer/bin/migrate /observer/bin/binance-collector /observer/bin/coin-market-cap-collector /usr/local/bin/
