@@ -19,6 +19,7 @@ package insconfig
 import (
 	goflag "flag"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -80,21 +81,47 @@ func load(params Params, path *string) (ConfigStruct, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal config file into configuration structure")
 	}
-	if err := checkAllValuesIsSet(v, params.ConfigStruct); err != nil {
+	configStructKeys, err := checkAllValuesIsSet(v, params.ConfigStruct)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkNoExtraENVValues(configStructKeys, params.EnvPrefix); err != nil {
 		return nil, err
 	}
 
 	return actual.(ConfigStruct), nil
 }
 
-func checkAllValuesIsSet(v *viper.Viper, c interface{}) error {
-	names := deepFieldNames(c, "")
-	for _, val := range names {
-		if !v.IsSet(val) {
-			return errors.New(fmt.Sprintf("Value not found in config: %s", val))
+func checkNoExtraENVValues(structKeys []string, prefix string) error {
+	prefixLen := len(prefix)
+	for _, e := range os.Environ() {
+		if len(e) > prefixLen && e[0:prefixLen]+"_" == strings.ToUpper(prefix)+"_" {
+			kv := strings.SplitN(e, "=", 2)
+			key := strings.ReplaceAll(strings.Replace(strings.ToLower(kv[0]), prefix+"_", "", 1), "_", ".")
+			found := false
+			for _, val := range structKeys {
+				if strings.ToLower(val) == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return errors.New(fmt.Sprintf("Value not found in config: %s", key))
+			}
 		}
 	}
 	return nil
+}
+
+func checkAllValuesIsSet(v *viper.Viper, c interface{}) ([]string, error) {
+	names := deepFieldNames(c, "")
+	for _, val := range names {
+		if !v.IsSet(val) {
+			return nil, errors.New(fmt.Sprintf("Value not found in config: %s", val))
+		}
+	}
+	return names, nil
 }
 
 func deepFieldNames(iface interface{}, prefix string) []string {
