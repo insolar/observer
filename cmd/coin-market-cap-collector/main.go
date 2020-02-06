@@ -55,11 +55,12 @@ func main() {
 
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
-		Level:      cfg.Log.Level,
-		Formatter:  cfg.Log.Format,
-		Adapter:    "zerolog",
-		OutputType: "stderr",
-		BufferSize: 0,
+		Level:        cfg.Log.Level,
+		Formatter:    cfg.Log.Format,
+		Adapter:      "zerolog",
+		OutputType:   cfg.Log.OutputType,
+		OutputParams: cfg.Log.OutputParams,
+		BufferSize:   cfg.Log.Buffer,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 	db, err := dbconn.Connect(cfg.DB)
@@ -68,6 +69,7 @@ func main() {
 	}
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
+	logger.Debug("Getting stats for " + *symbol)
 	stats := getStats(*cmcAPIToken, *symbol, logger)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
 		Price:                stats.Data.Info.Quote.USD.Price,

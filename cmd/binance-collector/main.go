@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -41,6 +42,7 @@ import (
 const BinanceAPIUrl = "https://api.binance.com/api/v3/"
 
 func main() {
+	fmt.Println("binance-collector stars to work")
 	symbol := flag.String("symbol", "", "token symbol")
 	flag.Parse()
 
@@ -50,11 +52,12 @@ func main() {
 
 	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
-		Level:      cfg.Log.Level,
-		Formatter:  cfg.Log.Format,
-		Adapter:    "zerolog",
-		OutputType: "stderr",
-		BufferSize: 0,
+		Level:        cfg.Log.Level,
+		Formatter:    cfg.Log.Format,
+		Adapter:      "zerolog",
+		OutputType:   cfg.Log.OutputType,
+		OutputParams: cfg.Log.OutputParams,
+		BufferSize:   cfg.Log.Buffer,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
 	db, err := dbconn.Connect(cfg.DB)
@@ -62,21 +65,25 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
+	logger.Debug("Getting price for BTCUSDT")
 	btcPrice, err := getPrice(logger, "BTCUSDT")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
+	logger.Debug("Getting price for " + *symbol + "BTC")
 	symbolPrice, err := getPrice(logger, *symbol+"BTC")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
+	logger.Debug("Getting stats for " + *symbol + "BTC")
 	symbolStats, err := getStats(logger, *symbol+"BTC")
 	if err != nil {
 		logger.Fatal(err)
 	}
 
+	logger.Debug("Inserting stats")
 	err = insertStats(
 		logger,
 		postgres.NewBinanceStatsRepository(db),
@@ -86,6 +93,8 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	logger.Info("Binance collector finished")
 }
 
 func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
@@ -127,7 +136,7 @@ func getPrice(log insolar.Logger, symbol string) (string, error) {
 		return "", err
 	}
 
-	log.Debugf("get price for symbol:" + symbol + " result:" + string(body))
+	log.Debugf("got price for symbol:" + symbol + " result:" + string(body))
 
 	return price.Price, nil
 }
