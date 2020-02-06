@@ -1304,7 +1304,7 @@ func TestMember_Hold(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "500000000",
+				AmountOnHold:     "5000",
 				AvailableAmount:  "0",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
