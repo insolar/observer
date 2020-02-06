@@ -113,8 +113,9 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		}
 		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
 
-		// it's a hack - special case for deposits from which we transfer money for migration
-		// (work for migration_admin_member's deposit)
+		// In a few cases we can have deposit
+		// where balance is actually lower than amountOnHold,
+		// in such cases old API couldn't show the fact.
 		if currentTime < d.HoldReleaseDate && amountOnHold.Cmp(balance) == 1 {
 			amountOnHold = balance
 		}
