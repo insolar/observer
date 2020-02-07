@@ -27,6 +27,8 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
+var ErrNoStats = errors.New("No stats")
+
 type SupplyStatsRepository struct {
 	db orm.DB
 }
@@ -36,13 +38,14 @@ func NewSupplyStatsRepository(db orm.DB) *SupplyStatsRepository {
 }
 
 func (s *SupplyStatsRepository) LastStats() (models.SupplyStats, error) {
+	sql := fmt.Sprintf(`select * from supply_stats where now() > created order by created DESC limit 1`)
 	lastStats := &models.SupplyStats{}
-	err := s.db.Model(lastStats).Last()
+	_, err := s.db.QueryOne(lastStats, sql)
 	if err != nil && err != pg.ErrNoRows {
 		return models.SupplyStats{}, errors.Wrap(err, "failed request to db")
 	}
 	if err == pg.ErrNoRows {
-		return models.SupplyStats{}, errors.New("No data")
+		return models.SupplyStats{}, ErrNoStats
 	}
 	return *lastStats, nil
 }
