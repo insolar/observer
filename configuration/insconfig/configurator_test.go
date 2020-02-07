@@ -14,27 +14,109 @@
 // limitations under the License.
 //
 
-package insconfig
+package insconfig_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/insolar/observer/configuration/insconfig"
 )
 
-func Test_replacePassword(t *testing.T) {
-	const password = "super_secret_password"
-	const with = "postgresql://observer:" + password + "@127.0.0.1:5432/dev-observer?sslmode=disable"
-	const without = "postgres://postgres@localhost/postgres?sslmode=disable"
+type Level3 struct {
+	Level3text string
+}
+type Level2 struct {
+	Level2text string
+	Level3     Level3
+}
+type cfgStruct struct {
+	Level1text string
+	Level2     Level2
+}
 
-	t.Run("replaced", func(t *testing.T) {
-		require.Contains(t, with, password)
-		require.NotContains(t, replaceDBPassword(with), password)
+func (c cfgStruct) GetConfig() interface{} {
+	return &c
+}
+
+type testPathGetter struct {
+	Path string
+}
+
+func (g testPathGetter) GetConfigPath() string {
+	return g.Path
+}
+
+func Test_Load(t *testing.T) {
+	t.Run("happy", func(t *testing.T) {
+		params := insconfig.Params{
+			ConfigStruct: cfgStruct{},
+			EnvPrefix:    "textprefix",
+		}
+
+		insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"test_config.yaml"})
+		parsedConf, err := insConfigurator.Load()
+		require.NoError(t, err)
+		cfg := parsedConf.(*cfgStruct)
+		insConfigurator.PrintConfig(cfg)
+		require.Equal(t, cfg.Level1text, "text1")
+		require.Equal(t, cfg.Level2.Level2text, "text2")
+		require.Equal(t, cfg.Level2.Level3.Level3text, "text3")
 	})
 
-	t.Run("not_replaced", func(t *testing.T) {
-		require.NotContains(t, without, password)
-		require.NotContains(t, replaceDBPassword(without), password)
-		require.Equal(t, without, replaceDBPassword(without))
+	t.Run("ENV overriding", func(t *testing.T) {
+		_ = os.Setenv("TESTPREFIX_LEVEL2_LEVEL2TEXT", "newTextValue")
+		params := insconfig.Params{
+			ConfigStruct: cfgStruct{},
+			EnvPrefix:    "testprefix",
+		}
+
+		insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"test_config.yaml"})
+		parsedConf, err := insConfigurator.Load()
+		require.NoError(t, err)
+		cfg := parsedConf.(*cfgStruct)
+		insConfigurator.PrintConfig(cfg)
+		require.Equal(t, cfg.Level1text, "text1")
+		require.Equal(t, cfg.Level2.Level2text, "newTextValue")
+		require.Equal(t, cfg.Level2.Level3.Level3text, "text3")
+	})
+
+	t.Run("extra env fail", func(t *testing.T) {
+		_ = os.Setenv("TESTPREFIX_NONEXISTENT_VALUE", "123")
+		params := insconfig.Params{
+			ConfigStruct: cfgStruct{},
+			EnvPrefix:    "testprefix",
+		}
+
+		insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"test_config.yaml"})
+		_, err := insConfigurator.Load()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "nonexistent")
+	})
+
+	t.Run("extra in file fail", func(t *testing.T) {
+		params := insconfig.Params{
+			ConfigStruct: cfgStruct{},
+			EnvPrefix:    "testprefix",
+		}
+
+		insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"test_config_wrong.yaml"})
+		_, err := insConfigurator.Load()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "nonexistent")
+	})
+
+	t.Run("not set in file fail", func(t *testing.T) {
+		params := insconfig.Params{
+			ConfigStruct: cfgStruct{},
+			EnvPrefix:    "testprefix",
+		}
+
+		insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"test_config_wrong2.yaml"})
+		_, err := insConfigurator.Load()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "Level1text")
 	})
 }

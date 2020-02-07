@@ -8,6 +8,7 @@ import (
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/configuration/insconfig"
 	"github.com/insolar/observer/internal/dbconn"
 )
@@ -16,15 +17,20 @@ var migrationDir = flag.String("dir", "", "directory with migrations")
 var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
-	prms := insconfig.Params{
-		EnvPrefix: "migrate",
-		GoFlags:   flag.CommandLine,
+	params := insconfig.Params{
+		ConfigStruct: configuration.Configuration{},
+		EnvPrefix:    "observer",
 	}
-	cfg, err := insconfig.Load(prms)
+	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{
+		GoFlags: flag.CommandLine,
+	})
+	parsedConf, err := insConfigurator.Load()
 	if err != nil {
 		panic(err)
 	}
-	insconfig.PrintConfig(cfg)
+	cfg := parsedConf.(*configuration.Configuration)
+	insConfigurator.PrintConfig(cfg)
+
 	ctx := context.Background()
 	log := inslogger.FromContext(ctx)
 

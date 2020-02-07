@@ -32,73 +32,103 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// this should be implemented by local config struct
 type ConfigStruct interface {
 	GetConfig() interface{}
 }
 
 type Params struct {
 	ConfigStruct ConfigStruct
-	EnvPrefix    string
-	// For go flags compatibility
-	GoFlags *goflag.FlagSet
-	// For spf13/pflags compatibility
-	PFlags     *flag.FlagSet
+	// Prefix for environment variables
+	EnvPrefix string
+	// Custom viper decoding hooks
 	ViperHooks []mapstructure.DecodeHookFunc
 }
 
-func Load(params Params) (ConfigStruct, error) {
-	if params.EnvPrefix == "" {
-		return nil, errors.New("EnvPrefix should be defined")
-	}
-	if params.GoFlags != nil {
-		flag.CommandLine.AddGoFlagSet(params.GoFlags)
-	}
-	if params.PFlags != nil {
-		flag.CommandLine.AddFlagSet(params.PFlags)
-	}
-	var configPath = flag.String("config", "", "path to config")
-	flag.Parse()
-
-	return load(params, configPath)
+type ConfigPathGetter interface {
+	GetConfigPath() string
 }
 
-func load(params Params, path *string) (ConfigStruct, error) {
+// Adds "--config" flag and read path from it
+type DefaultConfigPathGetter struct {
+	// For go flags compatibility
+	GoFlags *goflag.FlagSet
+	// For spf13/pflags compatibility
+	PFlags *flag.FlagSet
+}
+
+func (g DefaultConfigPathGetter) GetConfigPath() string {
+	if g.GoFlags != nil {
+		flag.CommandLine.AddGoFlagSet(g.GoFlags)
+	}
+	if g.PFlags != nil {
+		flag.CommandLine.AddFlagSet(g.PFlags)
+	}
+	configPath := flag.String("config", "", "path to config")
+	flag.Parse()
+	return *configPath
+}
+
+type insConfigurator struct {
+	params           Params
+	configPathGetter ConfigPathGetter
+}
+
+func NewInsConfigurator(params Params, getter ConfigPathGetter) insConfigurator {
+	return insConfigurator{
+		params:           params,
+		configPathGetter: getter,
+	}
+}
+
+// Loads configuration from path and making checks
+func (i *insConfigurator) Load() (ConfigStruct, error) {
+	if i.params.EnvPrefix == "" {
+		return nil, errors.New("EnvPrefix should be defined")
+	}
+
+	configPath := i.configPathGetter.GetConfigPath()
+	return i.load(configPath)
+}
+
+func (i *insConfigurator) load(path string) (ConfigStruct, error) {
+	// todo extract viper
 	v := viper.New()
 
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.SetEnvPrefix(params.EnvPrefix)
+	v.SetEnvPrefix(i.params.EnvPrefix)
 
-	v.SetConfigFile(*path)
+	v.SetConfigFile(path)
 	if err := v.ReadInConfig(); err != nil {
 		return nil, errors.Wrapf(err, "failed to load config")
 	}
-	actual := params.ConfigStruct.GetConfig()
-	params.ViperHooks = append(params.ViperHooks, mapstructure.StringToTimeDurationHookFunc(), mapstructure.StringToSliceHookFunc(","))
+	actual := i.params.ConfigStruct.GetConfig()
+	i.params.ViperHooks = append(i.params.ViperHooks, mapstructure.StringToTimeDurationHookFunc(), mapstructure.StringToSliceHookFunc(","))
 	err := v.UnmarshalExact(actual, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
-		params.ViperHooks...,
+		i.params.ViperHooks...,
 	)))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal config file into configuration structure")
 	}
-	configStructKeys, err := checkAllValuesIsSet(v, params.ConfigStruct)
+	configStructKeys, err := i.checkAllValuesIsSet(v)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := checkNoExtraENVValues(configStructKeys, params.EnvPrefix); err != nil {
+	if err := i.checkNoExtraENVValues(configStructKeys); err != nil {
 		return nil, err
 	}
 
 	return actual.(ConfigStruct), nil
 }
 
-func checkNoExtraENVValues(structKeys []string, prefix string) error {
-	prefixLen := len(prefix)
+func (i *insConfigurator) checkNoExtraENVValues(structKeys []string) error {
+	prefixLen := len(i.params.EnvPrefix)
 	for _, e := range os.Environ() {
-		if len(e) > prefixLen && e[0:prefixLen]+"_" == strings.ToUpper(prefix)+"_" {
+		if len(e) > prefixLen && e[0:prefixLen]+"_" == strings.ToUpper(i.params.EnvPrefix)+"_" {
 			kv := strings.SplitN(e, "=", 2)
-			key := strings.ReplaceAll(strings.Replace(strings.ToLower(kv[0]), prefix+"_", "", 1), "_", ".")
+			key := strings.ReplaceAll(strings.Replace(strings.ToLower(kv[0]), i.params.EnvPrefix+"_", "", 1), "_", ".")
 			found := false
 			for _, val := range structKeys {
 				if strings.ToLower(val) == key {
@@ -114,8 +144,8 @@ func checkNoExtraENVValues(structKeys []string, prefix string) error {
 	return nil
 }
 
-func checkAllValuesIsSet(v *viper.Viper, c interface{}) ([]string, error) {
-	names := deepFieldNames(c, "")
+func (i *insConfigurator) checkAllValuesIsSet(v *viper.Viper) ([]string, error) {
+	names := deepFieldNames(i.params.ConfigStruct, "")
 	for _, val := range names {
 		if !v.IsSet(val) {
 			return nil, errors.New(fmt.Sprintf("Value not found in config: %s", val))
@@ -139,7 +169,11 @@ func deepFieldNames(iface interface{}, prefix string) []string {
 			}
 			names = append(names, deepFieldNames(v.Interface(), subPrefix+ifv.Type().Field(i).Name)...)
 		default:
-			names = append(names, prefix+"."+ifv.Type().Field(i).Name)
+			prefWithPoint := ""
+			if prefix != "" {
+				prefWithPoint = prefix + "."
+			}
+			names = append(names, prefWithPoint+ifv.Type().Field(i).Name)
 		}
 	}
 
@@ -147,7 +181,7 @@ func deepFieldNames(iface interface{}, prefix string) []string {
 }
 
 // todo clean password
-func PrintConfig(c ConfigStruct) {
+func (i *insConfigurator) PrintConfig(c ConfigStruct) {
 	cc := &c
 	out, err := yaml.Marshal(cc)
 	if err != nil {
