@@ -863,6 +863,12 @@ func TestMemberBalance(t *testing.T) {
 	require.Equal(t, balance1, received.Balance)
 }
 
+func TestObserverServer_SupplyStatsEmpty(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/stats/supply/total")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
 func TestObserverServer_SupplyStats(t *testing.T) {
 	total := "1111111111111"
 	totalr := "111.1111111111"
