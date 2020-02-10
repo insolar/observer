@@ -13,6 +13,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
+	github.com/insolar/insconfig v0.0.0-20200207153855-060941a34119
 	github.com/insolar/insolar v1.3.3
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
@@ -23,11 +24,10 @@ require (
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/ory/dockertest/v3 v3.5.1
 	github.com/pelletier/go-toml v1.5.0 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
-	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.1 // indirect
@@ -38,7 +38,7 @@ require (
 	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect
 	google.golang.org/grpc v1.21.0
-	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v2 v2.2.8
 	mellium.im/sasl v0.2.1 // indirect
 )
 

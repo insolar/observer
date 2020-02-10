@@ -26,7 +26,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	flag "github.com/spf13/pflag"
 
-	"github.com/insolar/insolar/log"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -185,25 +184,7 @@ func (i *insConfigurator) PrintConfig(c ConfigStruct) {
 	cc := &c
 	out, err := yaml.Marshal(cc)
 	if err != nil {
-		log.Error(errors.Wrapf(err, "failed to marshal default config structure"))
+		fmt.Println("failed to marshal default config structure")
 	}
-	log.Infof("Loaded configuration: \n %s \n", string(out))
+	fmt.Printf("Loaded configuration: \n %s \n", string(out))
 }
-
-// func cleanSecrets(c *ConfigStruct) *ConfigStruct {
-// 	cleanedConfig := *c
-// 	cleanedConfig.DB.URL = replaceDBPassword(cleanedConfig.DB.URL)
-// 	return &cleanedConfig
-// }
-
-// func replaceDBPassword(url string) string {
-// 	re := regexp.MustCompile(`^(?P<start>.*)(:(?P<pass>[^@\/:?]+)@)(?P<end>.*)$`)
-// 	var result []byte
-// 	if re.MatchString(url) {
-// 		for _, submatches := range re.FindAllStringSubmatchIndex(url, -1) {
-// 			result = re.ExpandString(result, `$start:<masked>@$end`, url, submatches)
-// 		}
-// 		return string(result)
-// 	}
-// 	return url
-// }

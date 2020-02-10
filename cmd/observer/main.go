@@ -22,6 +22,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/insolar/insconfig"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
@@ -30,7 +31,6 @@ import (
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/configuration/insconfig"
 )
 
 var stop = make(chan os.Signal, 1)

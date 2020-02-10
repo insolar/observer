@@ -5,11 +5,11 @@ import (
 	"flag"
 
 	"github.com/go-pg/migrations"
+	"github.com/insolar/insconfig"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/configuration/insconfig"
 	"github.com/insolar/observer/internal/dbconn"
 )
 

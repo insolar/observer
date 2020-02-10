@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insconfig"
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
@@ -27,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/configuration/insconfig"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 )
