@@ -30,8 +30,8 @@ import (
 
 func main() {
 	cfgs := make(map[string]interface{})
-	cfgs[api.ConfigFilePath] = api.Default()
-	cfgs[configuration.ConfigFile] = configuration.Default()
+	cfgs["observerapi.yaml"] = api.Default()
+	cfgs["observer.yaml"] = configuration.Default()
 
 	for filePath, cfg := range cfgs {
 		out, _ := yaml.Marshal(cfg)
