@@ -17,19 +17,18 @@ var migrationDir = flag.String("dir", "", "directory with migrations")
 var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
+	cfg := &configuration.Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: configuration.Configuration{},
-		EnvPrefix:    "observer",
+		EnvPrefix: "observer",
+		ConfigPathGetter: &insconfig.FlagPathGetter{
+			GoFlags: flag.CommandLine,
+		},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{
-		GoFlags: flag.CommandLine,
-	})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*configuration.Configuration)
-	insConfigurator.PrintConfig(cfg)
+	insConfigurator.ToYaml(cfg)
 
 	ctx := context.Background()
 	log := inslogger.FromContext(ctx)

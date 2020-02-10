@@ -38,18 +38,17 @@ import (
 )
 
 func main() {
+	cfg := &apiconfiguration.Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: apiconfiguration.Configuration{},
-		EnvPrefix:    "observerapi",
-		ViperHooks:   []mapstructure.DecodeHookFunc{apiconfiguration.ToBigIntHookFunc()},
+		EnvPrefix:        "observerapi",
+		ViperHooks:       []mapstructure.DecodeHookFunc{apiconfiguration.ToBigIntHookFunc()},
+		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*apiconfiguration.Configuration)
-	insConfigurator.PrintConfig(cfg)
+	insConfigurator.ToYaml(cfg)
 
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,

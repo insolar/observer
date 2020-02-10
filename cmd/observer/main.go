@@ -36,17 +36,16 @@ import (
 var stop = make(chan os.Signal, 1)
 
 func main() {
+	cfg := &configuration.Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: configuration.Configuration{},
-		EnvPrefix:    "observer",
+		EnvPrefix:        "observer",
+		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*configuration.Configuration)
-	insConfigurator.PrintConfig(cfg)
+	insConfigurator.ToYaml(cfg)
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

@@ -35,17 +35,16 @@ func (g testPathGetter) GetConfigPath() string {
 }
 
 func TestConfigLoad(t *testing.T) {
+	cfg := Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: Configuration{},
-		EnvPrefix:    "observerapi",
-		ViperHooks:   []mapstructure.DecodeHookFunc{ToBigIntHookFunc()},
+		EnvPrefix:        "observerapi",
+		ViperHooks:       []mapstructure.DecodeHookFunc{ToBigIntHookFunc()},
+		ConfigPathGetter: testPathGetter{"./testdata/observerapi.yaml"},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, testPathGetter{"./testdata/observerapi.yaml"})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(&cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*Configuration)
 
 	require.Equal(t, big.NewInt(2000000000), cfg.FeeAmount)
 	require.Equal(t, time.Second*3, cfg.DB.AttemptInterval)

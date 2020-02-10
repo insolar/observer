@@ -31,7 +31,7 @@ import (
 func main() {
 	cfg := apiconfiguration.Default()
 	out, _ := yaml.Marshal(cfg)
-	err := ioutil.WriteFile(apiconfiguration.ConfigFilePath, out, 0644)
+	err := ioutil.WriteFile("observerapi.yaml", out, 0644)
 	if err != nil {
 		log := inslogger.FromContext(context.Background())
 		log.Error(errors.Wrapf(err, "failed to write config file"))

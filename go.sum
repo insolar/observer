@@ -138,9 +138,14 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/insolar/component-manager v0.2.1-0.20191028200619-751a91771d2f h1:06p+6HGiIraHhZ2Bmya40d8+TPiwEe/ftgb46XC9B0Q=
 github.com/insolar/component-manager v0.2.1-0.20191028200619-751a91771d2f/go.mod h1:pyNB4e1NrTdT7BJJGMedR5OYIa6+zHLpak2Jwk9Aj88=
 github.com/insolar/go-actors v0.0.0-20190805151516-2fcc7bfc8ff9/go.mod h1:vh6gyvTJhKxCMROgV7ADLE1jS19NAd6gIaHCjHgVWKQ=
-github.com/insolar/insconfig v0.0.0-20200207142510-1ca566993671 h1:o9N+pusldzqlsaNhhjWaHGlV6SgdExqOQcqyWBnySFk=
 github.com/insolar/insconfig v0.0.0-20200207153855-060941a34119 h1:JdklI5KezgGEKi+ynXGyd8i2UEO64qh/Mxi2JfOw3Ak=
 github.com/insolar/insconfig v0.0.0-20200207153855-060941a34119/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
+github.com/insolar/insconfig v0.0.0-20200210163034-a6baa77238c3 h1:O1Fha4E9FyXL2+eluBoYcdxQ3iQDeyFalM9FLTuONkg=
+github.com/insolar/insconfig v0.0.0-20200210163034-a6baa77238c3/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
+github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866 h1:821agB4jwkceJbV2lniBH3/mGLqSaHPhmurMfeGZAVg=
+github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
+github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227 h1:7HDa+yqK5YPI0JP7OauFlZ11hlveeQyx71WevxGiK/s=
+github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
 github.com/insolar/insolar v1.3.3 h1:TZD8y2AaYIsN0KHMF5PyFPj+R339R/4pNrfZ3iv7D/o=
 github.com/insolar/insolar v1.3.3/go.mod h1:Edh/KeqnQvvnUUeNuwNWhOvF0errbZN65r2jmqs+F3k=
 github.com/insolar/rpc v1.2.2-0.20190812143745-c27e1d218f1f/go.mod h1:BZcTsPtQu8QG8RqqQdAnuNAG8n6TOrdNxIHro0h99Ik=
@@ -288,6 +293,7 @@ github.com/spf13/cobra v0.0.5/go.mod h1:3K3wKZymM7VvHMDS9+Akkh4K60UwM26emMESw8tL
 github.com/spf13/jwalterweatherman v1.0.0/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
 github.com/spf13/jwalterweatherman v1.1.0 h1:ue6voC5bR5F8YxI5S67j9i582FU4Qvo2bmqnqMYADFk=
 github.com/spf13/jwalterweatherman v1.1.0/go.mod h1:aNWZUN0dPAAO/Ljvb5BEdw96iTZ0EXowPYD95IqWIGo=
+github.com/spf13/pflag v1.0.3 h1:zPAT6CGy6wXeQ7NtTnaTerfKOsV6V6F8agHXFiazDkg=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=

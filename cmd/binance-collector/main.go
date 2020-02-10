@@ -45,19 +45,18 @@ const BinanceAPIUrl = "https://api.binance.com/api/v3/"
 var symbol = flag.String("symbol", "", "token symbol")
 
 func main() {
+	cfg := &configuration.Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: configuration.Configuration{},
-		EnvPrefix:    "observer",
+		EnvPrefix: "observer",
+		ConfigPathGetter: &insconfig.FlagPathGetter{
+			GoFlags: flag.CommandLine,
+		},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{
-		GoFlags: flag.CommandLine,
-	})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*configuration.Configuration)
-	insConfigurator.PrintConfig(cfg)
+	insConfigurator.ToYaml(cfg)
 
 	if symbol == nil || len(*symbol) == 0 || len(strings.TrimSpace(*symbol)) == 0 {
 		panic("symbol should be provided")

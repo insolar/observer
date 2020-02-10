@@ -46,19 +46,18 @@ var cmcAPIToken = flag.String("cmc-token", "", "api token for coin market cap")
 var symbol = flag.String("symbol", "", "symbol for fetching from coin market cap stats")
 
 func main() {
+	cfg := &configuration.Configuration{}
 	params := insconfig.Params{
-		ConfigStruct: configuration.Configuration{},
-		EnvPrefix:    "observer",
+		EnvPrefix: "observer",
+		ConfigPathGetter: &insconfig.FlagPathGetter{
+			GoFlags: flag.CommandLine,
+		},
 	}
-	insConfigurator := insconfig.NewInsConfigurator(params, insconfig.DefaultConfigPathGetter{
-		GoFlags: flag.CommandLine,
-	})
-	parsedConf, err := insConfigurator.Load()
-	if err != nil {
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
 		panic(err)
 	}
-	cfg := parsedConf.(*configuration.Configuration)
-	insConfigurator.PrintConfig(cfg)
+	insConfigurator.ToYaml(cfg)
 
 	if cmcAPIToken == nil || len(*cmcAPIToken) == 0 || len(strings.TrimSpace(*cmcAPIToken)) == 0 {
 		panic("cmc-token should be provided")

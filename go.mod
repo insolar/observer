@@ -13,7 +13,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
-	github.com/insolar/insconfig v0.0.0-20200207153855-060941a34119
+	github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227
 	github.com/insolar/insolar v1.3.3
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
@@ -28,7 +28,6 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
-	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect

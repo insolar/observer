@@ -4,4 +4,4 @@ level2:
   level3:
     level3text: text3
     nullstring: text
-nonexistent: value
+level4: text4
