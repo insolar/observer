@@ -1,5 +1,6 @@
 name: observer
-on: [push]
+on:
+  pull_request:
 env:
   GO_VERSION: 1.12.15
 jobs:
@@ -87,17 +88,3 @@ jobs:
     - name: Run linter
       continue-on-error: false
       run: make lint
-  pack:
-    name: pack
-    needs: [build,test,integration,mocks,lint]
-    if: contains(github.ref, '/tags/')
-    runs-on: ubuntu-latest
-    steps:
-    - name: checkout code
-      uses: actions/checkout@master
-    - name: pack project
-      run: |
-        docker build -t ${{github.workflow}}:$(git describe --tags) --pull --build-arg "GOLANG_VERSION=${{env.GO_VERSION}}" .
-        docker tag ${{github.workflow}}:$(git describe --tags) ${{secrets.REGISTRY_URL}}/${{github.workflow}}:$(git describe --tags)
-        docker login -u ${{secrets.REGISTRY_USERNAME}} -p ${{secrets.REGISTRY_PASSWORD}} https://${{secrets.REGISTRY_URL}}
-        docker push ${{secrets.REGISTRY_URL}}/${{github.workflow}}:$(git describe --tags)
