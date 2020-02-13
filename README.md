@@ -199,3 +199,7 @@ Generate types and API from observer API:
 ```
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
+
+# License
+
+This project is licensed under the terms of the [Insolar License 1.0](LICENSE.md).
