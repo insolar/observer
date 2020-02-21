@@ -87,6 +87,7 @@ func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, in
 }
 
 func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
+	logger.Info("getStats for symbol %v", symbol)
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -111,6 +112,7 @@ func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 	if err != nil {
 		logger.Fatal(errors.Wrap(err, "can't read the response body"))
 	}
+	logger.Debugf("response body - %v", string(respBody))
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Fatalf("request failed. %v", string(respBody))
@@ -122,7 +124,6 @@ func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 		logger.Fatal(errors.Wrap(err, "failed to unmarshal body"))
 	}
 
-	logger.Debugf("response body - %v", string(respBody))
 	logger.Debugf("response - %#v", cmcResp)
 
 	return cmcResp
