@@ -112,17 +112,18 @@ func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 		logger.Fatal(errors.Wrap(err, "can't read the response body"))
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		logger.Fatalf("request failed. %v", string(respBody))
+	}
+
 	cmcResp := &CMCResponse{}
 	err = json.Unmarshal(respBody, cmcResp)
 	if err != nil {
 		logger.Fatal(errors.Wrap(err, "failed to unmarshal body"))
 	}
 
+	logger.Debugf("response body - %v", string(respBody))
 	logger.Debugf("response - %#v", cmcResp)
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Fatalf("request failed with %v", cmcResp.Status)
-	}
 
 	return cmcResp
 }
