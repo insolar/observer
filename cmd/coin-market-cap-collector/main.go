@@ -59,12 +59,12 @@ func main() {
 
 	stats := getStats(*cmcAPIToken, *symbol, logger)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
-		Price:                stats.Data.Info.Quote.USD.Price,
-		PercentChange24Hours: stats.Data.Info.Quote.USD.PercentChange24Hours,
-		Rank:                 stats.Data.Info.Rank,
-		MarketCap:            stats.Data.Info.Quote.USD.MarketCap,
-		Volume24Hours:        stats.Data.Info.Quote.USD.Volume24Hours,
-		CirculatingSupply:    stats.Data.Info.CirculatingSupply,
+		Price:                stats.Quote.USD.Price,
+		PercentChange24Hours: stats.Quote.USD.PercentChange24Hours,
+		Rank:                 stats.Rank,
+		MarketCap:            stats.Quote.USD.MarketCap,
+		Volume24Hours:        stats.Quote.USD.Volume24Hours,
+		CirculatingSupply:    stats.CirculatingSupply,
 		Created:              time.Now().UTC(),
 	})
 	if err != nil {
@@ -86,7 +86,7 @@ func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, in
 	return ctx, inslog
 }
 
-func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
+func getStats(token string, symbol string, logger insolar.Logger) *CmcInfo {
 	logger.Info("getStats for symbol %v", symbol)
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -118,46 +118,47 @@ func getStats(token string, symbol string, logger insolar.Logger) *CMCResponse {
 		logger.Fatalf("request failed. %v", string(respBody))
 	}
 
-	cmcResp := &CMCResponse{}
-	err = json.Unmarshal(respBody, cmcResp)
+	var respMap map[string]*json.RawMessage
+	err = json.Unmarshal(respBody, &respMap)
 	if err != nil {
-		logger.Fatal(errors.Wrap(err, "failed to unmarshal body"))
+		logger.Fatal(errors.Wrap(err, "can't parse the response body"))
+	}
+	err = json.Unmarshal(*respMap["data"], &respMap)
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "can't parse the data field"))
 	}
 
-	logger.Debugf("response - %#v", cmcResp)
+	info := &CmcInfo{}
+	err = json.Unmarshal(*respMap[symbol], &info)
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "can't parse symbol field into struct"))
+	}
 
-	return cmcResp
+	logger.Debugf("response - %#v", info)
+
+	return info
 }
 
-type CMCResponse struct {
-	Data struct {
-		Info *struct {
-			ID                int       `json:"id"`
-			Name              string    `json:"name"`
-			Symbol            string    `json:"symbol"`
-			Slug              string    `json:"slug"`
-			Rank              int       `json:"cmc_rank"`
-			CirculatingSupply float64   `json:"circulating_supply"`
-			TotalSupply       float64   `json:"total_supply"`
-			MaxSupply         float64   `json:"max_supply"`
-			LastUpdated       time.Time `json:"last_updated"`
-			DateAdded         time.Time `json:"date_added"`
-			Quote             struct {
-				USD struct {
-					Price                float64   `json:"price"`
-					Volume24Hours        float64   `json:"volume_24h"`
-					PercentChange1Hour   float64   `json:"percent_change_1h"`
-					PercentChange24Hours float64   `json:"percent_change_24h"`
-					PercentChange7Days   float64   `json:"percent_change_7d"`
-					MarketCap            float64   `json:"market_cap"`
-					LastUpdated          time.Time `json:"last_updated"`
-				} `json:"usd"`
-			} `json:"quote"`
-		} `json:"INS"`
-	} `json:"data"`
-	Status *struct {
-		Timestamp    time.Time `json:"timestamp"`
-		ErrorCode    int       `json:"error_code"`
-		ErrorMessage string    `json:"error_message"`
-	} `json:"status"`
+type CmcInfo struct {
+	ID                int       `json:"id"`
+	Name              string    `json:"name"`
+	Symbol            string    `json:"symbol"`
+	Slug              string    `json:"slug"`
+	Rank              int       `json:"cmc_rank"`
+	CirculatingSupply float64   `json:"circulating_supply"`
+	TotalSupply       float64   `json:"total_supply"`
+	MaxSupply         float64   `json:"max_supply"`
+	LastUpdated       time.Time `json:"last_updated"`
+	DateAdded         time.Time `json:"date_added"`
+	Quote             struct {
+		USD struct {
+			Price                float64   `json:"price"`
+			Volume24Hours        float64   `json:"volume_24h"`
+			PercentChange1Hour   float64   `json:"percent_change_1h"`
+			PercentChange24Hours float64   `json:"percent_change_24h"`
+			PercentChange7Days   float64   `json:"percent_change_7d"`
+			MarketCap            float64   `json:"market_cap"`
+			LastUpdated          time.Time `json:"last_updated"`
+		} `json:"usd"`
+	} `json:"quote"`
 }
