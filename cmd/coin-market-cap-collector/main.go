@@ -162,38 +162,3 @@ type CmcInfo struct {
 		} `json:"usd"`
 	} `json:"quote"`
 }
-
-// type CMCResponse struct {
-// 	Data struct {
-// 		CmcInfo *struct {
-// 			ID                int       `json:"id"`
-// 			Name              string    `json:"name"`
-// 			Symbol            string    `json:"symbol"`
-// 			Slug              string    `json:"slug"`
-// 			Rank              int       `json:"cmc_rank"`
-// 			CirculatingSupply float64   `json:"circulating_supply"`
-// 			TotalSupply       float64   `json:"total_supply"`
-// 			MaxSupply         float64   `json:"max_supply"`
-// 			LastUpdated       time.Time `json:"last_updated"`
-// 			DateAdded         time.Time `json:"date_added"`
-// 			Quote             struct {
-// 				USD struct {
-// 					Price                float64   `json:"price"`
-// 					Volume24Hours        float64   `json:"volume_24h"`
-// 					PercentChange1Hour   float64   `json:"percent_change_1h"`
-// 					PercentChange24Hours float64   `json:"percent_change_24h"`
-// 					PercentChange7Days   float64   `json:"percent_change_7d"`
-// 					MarketCap            float64   `json:"market_cap"`
-// 					LastUpdated          time.Time `json:"last_updated"`
-// 				} `json:"usd"`
-// 			} `json:"quote"`
-// 		} `json:"INS"`
-// 	} `json:"data"`
-//
-// }
-//
-// type Status struct {
-// 	Timestamp    time.Time `json:"timestamp"`
-// 	ErrorCode    int       `json:"error_code"`
-// 	ErrorMessage string    `json:"error_message"`
-// }
