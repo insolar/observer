@@ -1,18 +1,7 @@
-//
-// Copyright 2019 Insolar Technologies GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// Copyright 2020 Insolar Network Ltd.
+// All rights reserved.
+// This material is licensed under the Insolar License version 1.0,
+// available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
 package api
 
@@ -863,6 +852,12 @@ func TestMemberBalance(t *testing.T) {
 	require.Equal(t, balance1, received.Balance)
 }
 
+func TestObserverServer_SupplyStatsEmpty(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/stats/supply/total")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
 func TestObserverServer_SupplyStats(t *testing.T) {
 	total := "1111111111111"
 	totalr := "111.1111111111"
@@ -1265,7 +1260,7 @@ func TestMember_Hold(t *testing.T) {
 	member := gen.Reference()
 	memberWalletReference := gen.Reference()
 	memberAccountReference := gen.Reference()
-	balance := "5000"
+	balance := "500000000"
 
 	deposite := gen.Reference()
 	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
@@ -1305,6 +1300,71 @@ func TestMember_Hold(t *testing.T) {
 		Deposits: &[]SchemaDeposit{
 			{
 				AmountOnHold:     "500000000",
+				AvailableAmount:  "0",
+				DepositReference: deposite.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime,
+				Index:            100,
+				ReleasedAmount:   "0",
+				ReleaseEndDate:   currentTime + deposit.Vesting,
+				Status:           "LOCKED",
+				Timestamp:        currentTime - 10,
+				NextRelease: &SchemaNextRelease{
+					Amount:    "1128",
+					Timestamp: currentTime,
+				},
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_Hold_When_Balance_Smaller_than_Amount_For_Holded_Deposit(t *testing.T) {
+	defer truncateDB(t)
+
+	member := gen.Reference()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "5000"
+
+	deposite := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
+
+	deposit := models.Deposit{
+		Reference:       deposite.Bytes(),
+		MemberReference: member.Bytes(),
+		Amount:          "500000000",
+		Balance:         balance,
+		EtheriumHash:    "eth_hash_1",
+		HoldReleaseDate: currentTime,
+		Vesting:         1826,
+		VestingStep:     10,
+		State:           gen.RecordReference().GetLocal().Bytes(),
+		Timestamp:       currentTime - 10,
+		DepositNumber:   newInt(100),
+		InnerStatus:     models.DepositStatusConfirmed,
+	}
+	err := db.Insert(&deposit)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/member/" + member.String())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "5000",
 				AvailableAmount:  "0",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",

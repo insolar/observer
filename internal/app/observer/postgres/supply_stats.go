@@ -1,18 +1,7 @@
-//
-// Copyright 2019 Insolar Technologies GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// Copyright 2020 Insolar Network Ltd.
+// All rights reserved.
+// This material is licensed under the Insolar License version 1.0,
+// available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
 package postgres
 
@@ -27,6 +16,8 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
+var ErrNoStats = errors.New("No stats")
+
 type SupplyStatsRepository struct {
 	db orm.DB
 }
@@ -36,13 +27,14 @@ func NewSupplyStatsRepository(db orm.DB) *SupplyStatsRepository {
 }
 
 func (s *SupplyStatsRepository) LastStats() (models.SupplyStats, error) {
+	sql := fmt.Sprintf(`select * from supply_stats where now() > created order by created DESC limit 1`)
 	lastStats := &models.SupplyStats{}
-	err := s.db.Model(lastStats).Last()
+	_, err := s.db.QueryOne(lastStats, sql)
 	if err != nil && err != pg.ErrNoRows {
 		return models.SupplyStats{}, errors.Wrap(err, "failed request to db")
 	}
 	if err == pg.ErrNoRows {
-		return models.SupplyStats{}, errors.New("No data")
+		return models.SupplyStats{}, ErrNoStats
 	}
 	return *lastStats, nil
 }

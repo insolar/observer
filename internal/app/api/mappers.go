@@ -1,18 +1,7 @@
-//
-// Copyright 2019 Insolar Technologies GmbH
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// Copyright 2020 Insolar Network Ltd.
+// All rights reserved.
+// This material is licensed under the Insolar License version 1.0,
+// available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
 package api
 
@@ -112,6 +101,14 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
 		}
 		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
+
+		// In a few cases we can have deposit
+		// where balance is actually lower than amountOnHold,
+		// in such cases old API couldn't show the fact.
+		if currentTime < d.HoldReleaseDate && amountOnHold.Cmp(balance) == 1 {
+			amountOnHold = balance
+		}
+
 		available := big.NewInt(0).Sub(balance, amountOnHold)
 		// if partially vested and partially transferred to wallet
 		if available.Cmp(big.NewInt(0)) == -1 {
