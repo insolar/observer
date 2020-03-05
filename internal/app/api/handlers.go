@@ -462,6 +462,12 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 
 		return ctx.JSON(http.StatusOK, response)
 	case "coin_market_cap":
+		checkEnabled := func(enabled bool, value float64) *string {
+			if enabled {
+				return NullableString(fmt.Sprintf("%v", value))
+			}
+			return nil
+		}
 		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
 		stats, err := repo.LastStats()
 		if err != nil {
@@ -474,12 +480,12 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 		response := ResponsesMarketStatsYaml{
-			CirculatingSupply: NullableString(fmt.Sprintf("%v", stats.CirculatingSupply)),
-			DailyChange:       NullableString(fmt.Sprintf("%v", stats.PercentChange24Hours)),
-			MarketCap:         NullableString(fmt.Sprintf("%v", stats.MarketCap)),
+			CirculatingSupply: checkEnabled(s.config.CMCMarketStatsParams.CirculatingSupply, stats.CirculatingSupply),
+			DailyChange:       checkEnabled(s.config.CMCMarketStatsParams.DailyChange, stats.PercentChange24Hours),
+			MarketCap:         checkEnabled(s.config.CMCMarketStatsParams.MarketCap, stats.MarketCap),
 			Price:             fmt.Sprintf("%v", stats.Price),
-			Rank:              NullableString(fmt.Sprintf("%v", stats.Rank)),
-			Volume:            NullableString(fmt.Sprintf("%v", stats.Volume24Hours)),
+			Rank:              checkEnabled(s.config.CMCMarketStatsParams.Rank, float64(stats.Rank)),
+			Volume:            checkEnabled(s.config.CMCMarketStatsParams.Volume, stats.Volume24Hours),
 		}
 		response.addHistoryPoints(history)
 		return ctx.JSON(http.StatusOK, response)

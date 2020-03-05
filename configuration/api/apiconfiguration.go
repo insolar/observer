@@ -13,12 +13,13 @@ import (
 )
 
 type Configuration struct {
-	Listen      string
-	DB          configuration.DB
-	FeeAmount   *big.Int
-	PriceOrigin string
-	Price       string
-	Log         Log
+	Listen               string
+	DB                   configuration.DB
+	FeeAmount            *big.Int
+	PriceOrigin          string
+	Price                string
+	CMCMarketStatsParams CMCMarketStatsParamsEnabled
+	Log                  Log
 }
 
 type Log struct {
@@ -27,6 +28,14 @@ type Log struct {
 	OutputType   string
 	OutputParams string
 	Buffer       int
+}
+
+type CMCMarketStatsParamsEnabled struct {
+	CirculatingSupply bool
+	DailyChange       bool
+	MarketCap         bool
+	Rank              bool
+	Volume            bool
 }
 
 func Default() *Configuration {
@@ -40,6 +49,13 @@ func Default() *Configuration {
 		FeeAmount:   big.NewInt(1000000000),
 		Price:       "0.05",
 		PriceOrigin: "const", //const|binance|coin_market_cap
+		CMCMarketStatsParams: CMCMarketStatsParamsEnabled{
+			CirculatingSupply: true,
+			DailyChange:       true,
+			MarketCap:         true,
+			Rank:              true,
+			Volume:            true,
+		},
 		Log: Log{
 			Level:        "debug",
 			Format:       "text",

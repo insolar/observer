@@ -1,6 +1,21 @@
 listen: 0.0.0.0:8090
 db:
   url: postgres://observer:observer@localhost/observer?sslmode=disable
+  poolsize: 0
   attempts: 5
   attemptinterval: 3s
 feeamount: 2000000000
+priceorigin: const
+price: "0.05"
+cmcmarketstatsparams:
+  circulatingsupply: false
+  dailychange: false
+  marketcap: false
+  rank: false
+  volume: false
+log:
+  level: debug
+  format: text
+  outputtype: stderr
+  outputparams: ""
+  buffer: 0
