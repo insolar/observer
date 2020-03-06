@@ -90,6 +90,7 @@ func replaceStats(stats *CmcInfo, db orm.DB) {
 			circulatingFloat = 0
 		}
 	}
+	circulatingFloat /= 10000000000
 	stats.CirculatingSupply = circulatingFloat
 	stats.Quote.USD.MarketCap = circulatingFloat * stats.Quote.USD.Price
 }
