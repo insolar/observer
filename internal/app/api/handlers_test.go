@@ -2182,17 +2182,17 @@ func TestObserverServer_Binance_Price(t *testing.T) {
 
 	require.Equal(t,
 		time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC).Unix(),
-		points[0].Timestamp)
+		points[2].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 3, 8, 0, 0, 0, time.UTC).Unix(),
 		points[1].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 3, 16, 0, 0, 0, time.UTC).Unix(),
-		points[2].Timestamp)
+		points[0].Timestamp)
 
-	require.Equal(t, "150", points[0].Price)
+	require.Equal(t, "150", points[2].Price)
 	require.Equal(t, "300", points[1].Price)
-	require.Equal(t, "400", points[2].Price)
+	require.Equal(t, "400", points[0].Price)
 }
 
 func newInt(val int64) *int64 {
