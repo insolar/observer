@@ -2053,6 +2053,13 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		FeeAmount:   testFee,
 		Price:       testPrice,
 		PriceOrigin: "coin_market_cap",
+		CMCMarketStatsParams: apiconfiguration.CMCMarketStatsParamsEnabled{
+			CirculatingSupply: true,
+			DailyChange:       true,
+			MarketCap:         true,
+			Rank:              true,
+			Volume:            true,
+		},
 	})
 
 	e := echo.New()
