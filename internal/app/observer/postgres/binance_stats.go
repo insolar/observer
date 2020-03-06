@@ -52,7 +52,7 @@ func (s *BinanceStatsRepository) PriceHistory(pointsCount int) ([]models.PriceHi
 		`
 				select interval_time as timestamp, price_sum / count as price
 				from binance_stats_aggregate
-				order by interval_time
+				order by interval_time desc
 				limit ?;
 	`, pointsCount)
 	if err != nil {
