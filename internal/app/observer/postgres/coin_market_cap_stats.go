@@ -55,7 +55,7 @@ func (s *CoinMarketCapStatsRepository) PriceHistory(pointsCount int) ([]models.P
 				 select interval_time as timestamp, price_sum / count as price
 				 from coin_market_cap_stats_aggregate
 				 order by interval_time desc
-				 limit 3
+				 limit ?
 			 ) as res
 			order by res.timestamp asc
 	`, pointsCount)
