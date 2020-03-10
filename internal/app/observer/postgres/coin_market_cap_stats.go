@@ -50,10 +50,14 @@ func (s *CoinMarketCapStatsRepository) PriceHistory(pointsCount int) ([]models.P
 
 	_, err := s.db.Query(&history,
 		`
-				select interval_time as timestamp, price_sum / count as price
-				from coin_market_cap_stats_aggregate
-				order by interval_time
-				limit ?;
+			select *
+			from (
+				 select interval_time as timestamp, price_sum / count as price
+				 from coin_market_cap_stats_aggregate
+				 order by interval_time desc
+				 limit 3
+			 ) as res
+			order by res.timestamp asc
 	`, pointsCount)
 	if err != nil {
 		return nil, err
