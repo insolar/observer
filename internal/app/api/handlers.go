@@ -370,6 +370,9 @@ func (s *ObserverServer) TransactionsByPulseNumberRange(ctx echo.Context, params
 	}
 
 	query, err = component.FilterByPulse(query, params.FromPulseNumber, params.ToPulseNumber)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
 
 	order := "chronological"
 	s.getTransactionsOrderByIndex(query, errMsg, params.Index, &order)
