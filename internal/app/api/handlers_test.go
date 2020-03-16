@@ -2203,3 +2203,29 @@ func randomString() string {
 	id, _ := uuid.NewRandom()
 	return id.String()
 }
+
+func TestPulseNumber(t *testing.T) {
+	err := pStorage.Insert(&observer.Pulse{
+		Number: 60199947,
+	})
+	require.NoError(t, err)
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60199957,
+	})
+	require.NoError(t, err)
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60199937,
+	})
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/number")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received map[string]int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, int64(60199957), received["pulseNumber"])
+}

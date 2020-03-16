@@ -99,6 +99,11 @@ type ResponsesNotificationInfoYaml struct {
 	Notification string `json:"notification"`
 }
 
+// ResponsesPulseNumberYaml defines model for responses-pulse-number-yaml.
+type ResponsesPulseNumberYaml struct {
+	PulseNumber int64 `json:"pulseNumber"`
+}
+
 // SchemaAcceptRefs defines model for schema-accept-refs.
 type SchemaAcceptRefs struct {
 	Account string `json:"account"`
@@ -359,6 +364,8 @@ type ServerInterface interface {
 	MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error
 	// notification// (GET /api/notification)
 	Notification(ctx echo.Context) error
+	// pulse number// (GET /api/pulse/number)
+	PulseNumber(ctx echo.Context) error
 	// stats/market// (GET /api/stats/market)
 	MarketStats(ctx echo.Context) error
 	// stats/network// (GET /api/stats/network)
@@ -598,6 +605,15 @@ func (w *ServerInterfaceWrapper) Notification(ctx echo.Context) error {
 	return err
 }
 
+// PulseNumber converts echo context to params.
+func (w *ServerInterfaceWrapper) PulseNumber(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.PulseNumber(ctx)
+	return err
+}
+
 // MarketStats converts echo context to params.
 func (w *ServerInterfaceWrapper) MarketStats(ctx echo.Context) error {
 	var err error
@@ -789,6 +805,7 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/member/:reference/balance", wrapper.Balance)
 	router.GET("/api/member/:reference/transactions", wrapper.MemberTransactions)
 	router.GET("/api/notification", wrapper.Notification)
+	router.GET("/api/pulse/number", wrapper.PulseNumber)
 	router.GET("/api/stats/market", wrapper.MarketStats)
 	router.GET("/api/stats/network", wrapper.NetworkStats)
 	router.GET("/api/stats/supply/total", wrapper.SupplyStatsTotal)

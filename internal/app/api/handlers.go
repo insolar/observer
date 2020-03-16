@@ -57,6 +57,18 @@ func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress st
 	})
 }
 
+func (s *ObserverServer) PulseNumber(ctx echo.Context) error {
+	pulse, err := s.pStorage.Last()
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "couldn't load last pulse"))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesPulseNumberYaml{
+		PulseNumber: int64(pulse.Number),
+	})
+}
+
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
