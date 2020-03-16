@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -2228,4 +2229,114 @@ func TestPulseNumber(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, int64(60199957), received["pulseNumber"])
+}
+
+func TestTransactionsByPulseNumberRange_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransactionsByPulseNumberRange_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=10&toPulseNumber=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestTransactionsByPulseNumberRange(t *testing.T) {
+	defer truncateDB(t)
+
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	txIDFourth := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertTransaction(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234)
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+	insertTransaction(t, txIDThird.Bytes(), int64(pulseNumber)+20, int64(pulseNumber)+30, 1236)
+	insertTransaction(t, txIDFourth.Bytes(), int64(pulseNumber)+30, int64(pulseNumber)+40, 1237)
+
+	fromPulseNumber := pulseNumber.String()
+	toPulseNumber := strconv.Itoa(int(pulseNumber) + 20)
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=10" +
+			"&fromPulseNumber=" + fromPulseNumber +
+			"&toPulseNumber=" + toPulseNumber +
+			"&index=" + pulseNumber.String() + "%3A1234")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
+	require.Equal(t, txIDThird.String(), received[1].TxID)
+}
+
+func TestTransactionsByPulseNumberRange_WithMemberReference(t *testing.T) {
+	defer truncateDB(t)
+
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	member1 := gen.Reference()
+	member2 := gen.Reference()
+
+	insertMember(t, member1, nil, nil, "10000", randomString())
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "10000", randomString())
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	fromPulseNumber := pulseNumber.String()
+	toPulseNumber := strconv.Itoa(int(pulseNumber) + 20)
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=10" +
+			"&memberReference=" + member1.String() +
+			"&fromPulseNumber=" + fromPulseNumber +
+			"&toPulseNumber=" + toPulseNumber)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDFirst.String(), received[0].TxID)
+	require.Equal(t, txIDSecond.String(), received[1].TxID)
+}
+
+func TestTransactionsByPulseNumberRange_WrongEverything(t *testing.T) {
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=15&" +
+			"memberReference=some_not_valid_reference&" +
+			"fromPulseNumber=1&" +
+			"toPulseNumber=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	expected := ErrorMessage{
+		Error: []string{
+			"reference wrong format",
+		},
+	}
+	received := ErrorMessage{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, expected, received)
 }

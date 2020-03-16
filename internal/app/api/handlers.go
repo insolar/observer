@@ -338,6 +338,64 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	return ctx.JSON(http.StatusOK, res)
 }
 
+func (s *ObserverServer) TransactionsByPulseNumberRange(ctx echo.Context, params TransactionsByPulseNumberRangeParams) error {
+	s.setExpire(ctx, 10*time.Second)
+	var ref *insolar.Reference
+	var errMsg *ErrorMessage
+
+	if params.MemberReference != nil {
+		ref, errMsg = s.checkReference(*params.MemberReference)
+		if errMsg != nil {
+			return ctx.JSON(http.StatusBadRequest, *errMsg)
+		}
+	}
+
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	var errorMsg ErrorMessage
+
+	var txs []models.Transaction
+	var err error
+	query := s.db.Model(&txs)
+
+	if ref != nil {
+		direction := "all"
+		query, err = component.FilterByMemberReferenceAndDirection(query, ref, &direction)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	query, err = component.FilterByPulse(query, params.FromPulseNumber, params.ToPulseNumber)
+
+	order := "chronological"
+	s.getTransactionsOrderByIndex(query, errMsg, params.Index, &order)
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.NoContent(http.StatusNoContent)
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
 func (s *ObserverServer) Notification(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Minute)
 
@@ -565,6 +623,13 @@ func (s *ObserverServer) getTransactions(
 		}
 	}
 
+	return s.getTransactionsOrderByIndex(query, errorMsg, index, order)
+}
+
+func (s *ObserverServer) getTransactionsOrderByIndex(
+	query *orm.Query, errorMsg *ErrorMessage, index, order *string,
+) *orm.Query {
+	var err error
 	var pulseNumber int64
 	var sequenceNumber int64
 	byIndex := false
