@@ -90,10 +90,11 @@ func (s *PulseStorage) GetRange(fromTimestamp, toTimestamp int64, limit int, pul
 	if pulseNumber != nil {
 		query = query.Where("pulse > ?", uint32(*pulseNumber))
 	}
+	// we store pulse date as UnixNano, so we multiply timestamp to 10^9
 	err = query.
 		Order("pulse_date ASC").
-		Where("pulse_date >= ?", fromTimestamp).
-		Where("pulse_date <= ?", toTimestamp).
+		Where("pulse_date >= ?", fromTimestamp*1000000000).
+		Where("pulse_date <= ?", toTimestamp*1000000000).
 		Limit(limit).
 		Select()
 	if err == pg.ErrNoRows {

@@ -41,6 +41,7 @@ const (
 	fee                        = "178"
 	currentTime                = int64(1606435200)
 	notExistedMigrationAddress = "0x35567Abc4Fa54fe30d200F76A4868A70383e7938"
+	nano                       = 1000000000
 )
 
 func requireEqualResponse(t *testing.T, resp *http.Response, received interface{}, expected interface{}) {
@@ -2350,7 +2351,7 @@ func createPulse(pulseNumber uint32) (*observer.Pulse, error) {
 	if err != nil {
 		return nil, err
 	}
-	pulse.Timestamp = pTime.Unix()
+	pulse.Timestamp = pTime.UnixNano()
 	return &pulse, err
 }
 
@@ -2382,8 +2383,8 @@ func TestPulseRange(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
-		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
-		"&toTimestamp=" + strconv.FormatInt(secondPulse.Timestamp, 10))
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/nano, 10) +
+		"&toTimestamp=" + strconv.FormatInt(secondPulse.Timestamp/nano, 10))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -2413,8 +2414,8 @@ func TestPulseRange_Limit(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=1" +
-		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
-		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp+20, 10))
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/nano, 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp/nano+20, 10))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
@@ -2444,8 +2445,8 @@ func TestPulseRange_PulseNumber(t *testing.T) {
 
 	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
 		"&pulseNumber=" + firstPulse.Number.String() +
-		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
-		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp+20, 10))
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/nano, 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp/nano+20, 10))
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
