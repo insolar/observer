@@ -6,6 +6,8 @@
 package postgres
 
 import (
+	"time"
+
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
@@ -90,11 +92,11 @@ func (s *PulseStorage) GetRange(fromTimestamp, toTimestamp int64, limit int, pul
 	if pulseNumber != nil {
 		query = query.Where("pulse > ?", uint32(*pulseNumber))
 	}
-	// we store pulse date as UnixNano, so we multiply timestamp to 10^9
+	// we store pulse date as UnixNano, so we multiply timestamp to seconds
 	err = query.
 		Order("pulse_date ASC").
-		Where("pulse_date >= ?", fromTimestamp*1000000000).
-		Where("pulse_date <= ?", toTimestamp*1000000000).
+		Where("pulse_date >= ?", fromTimestamp*time.Second.Nanoseconds()).
+		Where("pulse_date <= ?", toTimestamp*time.Second.Nanoseconds()).
 		Limit(limit).
 		Select()
 	if err == pg.ErrNoRows {
