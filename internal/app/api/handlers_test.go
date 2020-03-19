@@ -23,9 +23,10 @@ import (
 	"github.com/insolar/insolar/insolar/secrets"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
+
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -2339,4 +2340,121 @@ func TestTransactionsByPulseNumberRange_WrongEverything(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &received)
 	require.NoError(t, err)
 	require.Equal(t, expected, received)
+}
+
+func createPulse(pulseNumber uint32) (*observer.Pulse, error) {
+	pulse := observer.Pulse{
+		Number: insolar.PulseNumber(pulseNumber),
+	}
+	pTime, err := pulse.Number.AsApproximateTime()
+	if err != nil {
+		return nil, err
+	}
+	pulse.Timestamp = pTime.Unix()
+	return &pulse, err
+}
+
+func TestPulseRange_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestPulseRange_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=10&toTimestamp=1&limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestPulseRange(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
+		"&toTimestamp=" + strconv.FormatInt(secondPulse.Timestamp, 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, int64(firstPulse.Number), received[0])
+	require.Equal(t, int64(secondPulse.Number), received[1])
+}
+
+func TestPulseRange_Limit(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=1" +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp+20, 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, int64(firstPulse.Number), received[0])
+}
+
+func TestPulseRange_PulseNumber(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
+		"&pulseNumber=" + firstPulse.Number.String() +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp, 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp+20, 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, int64(secondPulse.Number), received[0])
+	require.Equal(t, int64(thirdPulse.Number), received[1])
 }

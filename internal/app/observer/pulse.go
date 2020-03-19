@@ -21,6 +21,7 @@ type Pulse struct {
 type PulseStorage interface {
 	Insert(*Pulse) error
 	Last() (*Pulse, error)
+	GetRange(fromTimestamp, toTimestamp int64, limit int, pulseNumber *int64) ([]uint32, error)
 }
 
 //go:generate minimock -i github.com/insolar/observer/internal/app/observer.PulseFetcher -o ./ -s _mock.go -g
