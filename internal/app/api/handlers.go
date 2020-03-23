@@ -76,6 +76,10 @@ func (s *ObserverServer) PulseRange(ctx echo.Context, params PulseRangeParams) e
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
 	}
 
+	if params.FromTimestamp > params.ToTimestamp {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("Invalid input range: fromTimestamp must chronologically precede toTimestamp"))
+	}
+
 	pulses, err := s.pStorage.GetRange(params.FromTimestamp, params.ToTimestamp, limit, params.PulseNumber)
 	if err != nil {
 		s.log.Error(errors.Wrap(err, "couldn't load pulses in range"))
@@ -377,6 +381,10 @@ func (s *ObserverServer) TransactionsByPulseNumberRange(ctx echo.Context, params
 	limit := params.Limit
 	if limit <= 0 || limit > 1000 {
 		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	if params.FromPulseNumber > params.ToPulseNumber {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("Invalid input range: fromPulseNumber must chronologically precede toPulseNumber"))
 	}
 
 	var errorMsg ErrorMessage

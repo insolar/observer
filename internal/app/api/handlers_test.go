@@ -2239,9 +2239,25 @@ func TestTransactionsByPulseNumberRange_WrongFormat(t *testing.T) {
 }
 
 func TestTransactionsByPulseNumberRange_NoContent(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=10&toPulseNumber=1")
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=0&toPulseNumber=1")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestTransactionsByPulseNumberRange_InvalidRange(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=10&toPulseNumber=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	received := struct {
+		Error []string `json:"error"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"Invalid input range: fromPulseNumber must chronologically precede toPulseNumber"}, received.Error)
 }
 
 func TestTransactionsByPulseNumberRange(t *testing.T) {
@@ -2361,9 +2377,25 @@ func TestPulseRange_WrongFormat(t *testing.T) {
 }
 
 func TestPulseRange_NoContent(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=10&toTimestamp=1&limit=10")
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=0&toTimestamp=1&limit=10")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestPulseRange_InvalidRange(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=10&toTimestamp=1&limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	received := struct {
+		Error []string `json:"error"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"Invalid input range: fromTimestamp must chronologically precede toTimestamp"}, received.Error)
 }
 
 func TestPulseRange(t *testing.T) {
