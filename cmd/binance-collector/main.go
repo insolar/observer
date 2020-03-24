@@ -34,7 +34,7 @@ const BinanceAPIUrl = "https://api.binance.com/api/v3/"
 var symbol = flag.String("symbol", "", "token symbol")
 
 func main() {
-	cfg := &configuration.Configuration{}
+	cfg := &configuration.CollectorBinance{}
 	params := insconfig.Params{
 		EnvPrefix: "observer",
 		ConfigPathGetter: &insconfig.FlagPathGetter{

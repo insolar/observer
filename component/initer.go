@@ -16,7 +16,7 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
-func makeInitter(cfg *configuration.Configuration, obs *observability.Observability, conn PGer) func() *state {
+func makeInitter(cfg *configuration.Observer, obs *observability.Observability, conn PGer) func() *state {
 	logger := obs.Log()
 	last := MustKnowPulse(obs, conn.PG())
 	metricState := getMetricState(cfg, obs, conn.PG())
@@ -53,8 +53,8 @@ func (ms *metricState) Reset() {
 	ms.totalMigrationAddresses = 0
 }
 
-func getMetricState(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) metricState {
-	ma := postgres.NewMigrationAddressStorage(cfg, obs, db)
+func getMetricState(cfg *configuration.Observer, obs *observability.Observability, db orm.DB) metricState {
+	ma := postgres.NewMigrationAddressStorage(&cfg.DB, obs, db)
 	return metricState{
 		totalWasting:            ma.Wasted(),
 		totalMigrationAddresses: ma.TotalMigrationAddresses(),

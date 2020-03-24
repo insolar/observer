@@ -28,7 +28,7 @@ type RecordFetcher struct {
 }
 
 func NewRecordFetcher(
-	cfg *configuration.Configuration,
+	cfg *configuration.Observer,
 	obs *observability.Observability,
 	client exporter.RecordExporterClient,
 ) *RecordFetcher {

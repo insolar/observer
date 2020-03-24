@@ -20,7 +20,7 @@ import (
 func TestSleepManager_Count(t *testing.T) {
 	mc := minimock.NewController(t)
 	ctx := context.Background()
-	var cfg *configuration.Configuration
+	var cfg *configuration.Observer
 
 	resetComponents := func() {
 		cfg = configuration.Default()

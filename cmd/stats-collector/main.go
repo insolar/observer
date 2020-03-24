@@ -22,9 +22,9 @@ import (
 )
 
 func main() {
-	cfg := &configuration.Configuration{}
+	cfg := &configuration.StatsCollector{}
 	params := insconfig.Params{
-		EnvPrefix:        "observer",
+		EnvPrefix:        "stats-collector",
 		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
 	insConfigurator := insconfig.New(params)

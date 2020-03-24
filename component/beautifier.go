@@ -28,7 +28,7 @@ type PGer interface {
 }
 
 func makeBeautifier(
-	cfg *configuration.Configuration,
+	cfg *configuration.Observer,
 	obs *observability.Observability,
 	conn PGer,
 ) func(context.Context, *raw) *beauty {
