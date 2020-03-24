@@ -68,9 +68,8 @@ $(BIN_DIR): ## create bin dir
 .PHONY: config
 config: ## generate configs
 	mkdir -p $(ARTIFACTS_DIR)
-	go run ./configuration/gen/gen.go
-	for f in observer observerapi stats-collector; do \
-  		mv ./$$f.yaml $(ARTIFACTS_DIR)/$$f.yaml      ;\
+	for f in `go run ./configuration/gen/gen.go`; do \
+  		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
 ci_test: ## run tests with coverage

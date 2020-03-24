@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
@@ -31,5 +32,6 @@ func main() {
 			log.Error(errors.Wrapf(err, "failed to write config file"))
 			return
 		}
+		fmt.Println(filePath)
 	}
 }
