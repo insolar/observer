@@ -24,7 +24,7 @@ var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 func main() {
 	cfg := &configuration.Migrate{}
 	params := insconfig.Params{
-		EnvPrefix: "observer",
+		EnvPrefix: "migrate",
 		ConfigPathGetter: &insconfig.FlagPathGetter{
 			GoFlags: flag.CommandLine,
 		},
