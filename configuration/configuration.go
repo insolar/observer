@@ -103,3 +103,10 @@ func Default() *Observer {
 		},
 	}
 }
+
+func (StatsCollector) Default() StatsCollector {
+	return StatsCollector{
+		DB:  Default().DB,
+		Log: Default().Log,
+	}
+}

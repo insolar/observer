@@ -21,6 +21,7 @@ func main() {
 	cfgs := make(map[string]interface{})
 	cfgs["observerapi.yaml"] = api.Default()
 	cfgs["observer.yaml"] = configuration.Default()
+	cfgs["stats-collector.yaml"] = configuration.StatsCollector{}.Default()
 
 	for filePath, cfg := range cfgs {
 		out, _ := yaml.Marshal(cfg)

@@ -69,8 +69,9 @@ $(BIN_DIR): ## create bin dir
 config: ## generate configs
 	mkdir -p $(ARTIFACTS_DIR)
 	go run ./configuration/gen/gen.go
-	mv ./observer.yaml $(ARTIFACTS_DIR)/observer.yaml
-	mv ./observerapi.yaml $(ARTIFACTS_DIR)/observerapi.yaml
+	for f in observer observerapi stats-collector; do \
+  		mv ./$$f.yaml $(ARTIFACTS_DIR)/$$f.yaml      ;\
+  	done
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json

@@ -24,7 +24,7 @@ var (
 
 func TestStatsCollector(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		output, err := runCommand("stats-collector", "--config=./.artifacts/observer.yaml")
+		output, err := runCommand("stats-collector", "--config=./.artifacts/stats-collector.yaml")
 		require.NotContains(t, output, "error")
 		require.NoError(t, err, "error with output: %s", output)
 	})
