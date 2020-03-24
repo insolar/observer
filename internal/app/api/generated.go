@@ -104,6 +104,9 @@ type ResponsesPulseNumberYaml struct {
 	PulseNumber int64 `json:"pulseNumber"`
 }
 
+// ResponsesPulseRangeYaml defines model for responses-pulse-range-yaml.
+type ResponsesPulseRangeYaml []int64
+
 // SchemaAcceptRefs defines model for schema-accept-refs.
 type SchemaAcceptRefs struct {
 	Account string `json:"account"`
@@ -256,7 +259,9 @@ type MemberTransactionsParams struct {
 
 	// Index of the last known transaction to start the list from the next one.
 	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	// Each returned transaction has an `index` that can be specified as the value of this parameter.
+	//
+	// To get the list of most recent or old (depending on the `order` value) transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
 	// Transaction's direction:
@@ -288,6 +293,26 @@ type MemberTransactionsParams struct {
 	Status *string `json:"status,omitempty"`
 }
 
+// PulseRangeParams defines parameters for PulseRange.
+type PulseRangeParams struct {
+
+	// Unix timestamp to start the finalized pulse number range from. Must chronologically precede the `toTimestamp` parameter.
+	FromTimestamp int64 `json:"fromTimestamp"`
+
+	// Unix timestamp to end the finalized pulse number range at. Must chronologically succeed the `fromTimestamp` parameter.
+	ToTimestamp int64 `json:"toTimestamp"`
+
+	// Number of integers in the returned array.
+	Limit int `json:"limit"`
+
+	// Last known `pulseNumber` to start the array from the next one.
+	//
+	// Each returned `pulseNumber` can be specified as the value of this parameter in subsequent requests.
+	//
+	// To get a `pulseNumber` array that starts from the nearest pulse after the `fromTimestamp` value, omit this parameter.
+	PulseNumber *int64 `json:"pulseNumber,omitempty"`
+}
+
 // TransactionsSearchParams defines parameters for TransactionsSearch.
 type TransactionsSearchParams struct {
 
@@ -301,7 +326,9 @@ type TransactionsSearchParams struct {
 
 	// Index of the last known transaction to start the list from the next one.
 	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	// Each returned transaction has an `index` that can be specified as the value of this parameter.
+	//
+	// To get the list of most recent or old (depending on the `order` value) transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
 	// Chronological `order` of the transaction list starting from a given `index`:
@@ -334,7 +361,9 @@ type ClosedTransactionsParams struct {
 
 	// Index of the last known transaction to start the list from the next one.
 	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	// Each returned transaction has an `index` that can be specified as the value of this parameter.
+	//
+	// To get the list of most recent or old (depending on the `order` value) transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
 	// Chronological `order` of the transaction list starting from a given `index`:
@@ -363,7 +392,9 @@ type TransactionsByPulseNumberRangeParams struct {
 
 	// Index of the last known transaction to start the list from the next one.
 	//
-	// Each returned transaction has an `index` that can be specified as the value of this parameter. To get the list of most recent transactions, omit the index.
+	// Each returned transaction has an `index` that can be specified as the value of this parameter.
+	//
+	// To get the list transactions with a pulse number starting from the value of `fromPulseNumber`, omit the index.
 	Index *string `json:"index,omitempty"`
 }
 
@@ -389,6 +420,8 @@ type ServerInterface interface {
 	Notification(ctx echo.Context) error
 	// pulse number// (GET /api/pulse/number)
 	PulseNumber(ctx echo.Context) error
+	// pulse number range// (GET /api/pulse/range)
+	PulseRange(ctx echo.Context, params PulseRangeParams) error
 	// stats/market// (GET /api/stats/market)
 	MarketStats(ctx echo.Context) error
 	// stats/network// (GET /api/stats/network)
@@ -636,6 +669,63 @@ func (w *ServerInterfaceWrapper) PulseNumber(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.PulseNumber(ctx)
+	return err
+}
+
+// PulseRange converts echo context to params.
+func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PulseRangeParams
+	// ------------- Required query parameter "fromTimestamp" -------------
+	if paramValue := ctx.QueryParam("fromTimestamp"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument fromTimestamp is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "fromTimestamp", ctx.QueryParams(), &params.FromTimestamp)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter fromTimestamp: %s", err))
+	}
+
+	// ------------- Required query parameter "toTimestamp" -------------
+	if paramValue := ctx.QueryParam("toTimestamp"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument toTimestamp is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "toTimestamp", ctx.QueryParams(), &params.ToTimestamp)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter toTimestamp: %s", err))
+	}
+
+	// ------------- Required query parameter "limit" -------------
+	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
+
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "pulseNumber" -------------
+	if paramValue := ctx.QueryParam("pulseNumber"); paramValue != "" {
+
+	}
+
+	err = runtime.BindQueryParameter("form", true, false, "pulseNumber", ctx.QueryParams(), &params.PulseNumber)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter pulseNumber: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.PulseRange(ctx, params)
 	return err
 }
 
@@ -898,6 +988,7 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/member/:reference/transactions", wrapper.MemberTransactions)
 	router.GET("/api/notification", wrapper.Notification)
 	router.GET("/api/pulse/number", wrapper.PulseNumber)
+	router.GET("/api/pulse/range", wrapper.PulseRange)
 	router.GET("/api/stats/market", wrapper.MarketStats)
 	router.GET("/api/stats/network", wrapper.NetworkStats)
 	router.GET("/api/stats/supply/total", wrapper.SupplyStatsTotal)

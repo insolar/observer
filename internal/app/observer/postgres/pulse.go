@@ -6,6 +6,8 @@
 package postgres
 
 import (
+	"time"
+
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
@@ -79,6 +81,38 @@ func (s *PulseStorage) Last() (*observer.Pulse, error) {
 	}
 
 	return model, nil
+}
+
+func (s *PulseStorage) GetRange(fromTimestamp, toTimestamp int64, limit int, pulseNumber *int64) ([]uint32, error) {
+	var err error
+	var pulses []models.Pulse
+
+	s.log.Info("trying to get range of pulses from db")
+	query := s.db.Model(&pulses)
+	if pulseNumber != nil {
+		query = query.Where("pulse > ?", uint32(*pulseNumber))
+	}
+	// we store pulse date as UnixNano, so we multiply timestamp to seconds
+	err = query.
+		Order("pulse_date ASC").
+		Where("pulse_date >= ?", fromTimestamp*time.Second.Nanoseconds()).
+		Where("pulse_date <= ?", toTimestamp*time.Second.Nanoseconds()).
+		Limit(limit).
+		Select()
+	if err == pg.ErrNoRows {
+		s.log.Warnf("no pulses in timestamp range %d - %d in db", fromTimestamp, toTimestamp)
+		return nil, store.ErrNotFound
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed request to db")
+	}
+
+	var res []uint32
+	for _, p := range pulses {
+		res = append(res, p.Pulse)
+	}
+
+	return res, nil
 }
 
 func pulseSchema(model *observer.Pulse) *models.Pulse {
