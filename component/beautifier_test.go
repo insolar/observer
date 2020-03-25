@@ -78,7 +78,7 @@ func (f fakeConn) PG() *pg.DB {
 
 func TestBeautifier_Run(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
-		cfg := &configuration.Configuration{
+		cfg := &configuration.Observer{
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
@@ -90,7 +90,7 @@ func TestBeautifier_Run(t *testing.T) {
 	})
 
 	t.Run("happy path", func(t *testing.T) {
-		cfg := &configuration.Configuration{
+		cfg := &configuration.Observer{
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
@@ -109,7 +109,7 @@ func TestBeautifier_Run(t *testing.T) {
 	})
 
 	t.Run("wastings", func(t *testing.T) {
-		cfg := &configuration.Configuration{
+		cfg := &configuration.Observer{
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
 			},
@@ -141,7 +141,7 @@ func TestBeautifier_Run(t *testing.T) {
 }
 
 func TestBeautifier_Deposit(t *testing.T) {
-	cfg := &configuration.Configuration{
+	cfg := &configuration.Observer{
 		Replicator: configuration.Replicator{
 			CacheSize: 100000,
 		},

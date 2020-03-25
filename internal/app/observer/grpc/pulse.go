@@ -25,13 +25,13 @@ var (
 )
 
 type PulseFetcher struct {
-	cfg    *configuration.Configuration
+	cfg    *configuration.Observer
 	log    insolar.Logger
 	client exporter.PulseExporterClient
 }
 
 func NewPulseFetcher(
-	cfg *configuration.Configuration,
+	cfg *configuration.Observer,
 	obs *observability.Observability,
 	client exporter.PulseExporterClient) *PulseFetcher {
 	return &PulseFetcher{

@@ -22,9 +22,9 @@ var migrationDir = flag.String("dir", "", "directory with migrations")
 var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
-	cfg := &configuration.Configuration{}
+	cfg := &configuration.Migrate{}
 	params := insconfig.Params{
-		EnvPrefix: "observer",
+		EnvPrefix: "migrate",
 		ConfigPathGetter: &insconfig.FlagPathGetter{
 			GoFlags: flag.CommandLine,
 		},

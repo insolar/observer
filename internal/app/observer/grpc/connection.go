@@ -16,7 +16,7 @@ type ConnectionHolder struct {
 	conn *grpc.ClientConn
 }
 
-func NewConnectionHolder(cfg *configuration.Configuration, log insolar.Logger) *ConnectionHolder {
+func NewConnectionHolder(cfg *configuration.Observer, log insolar.Logger) *ConnectionHolder {
 	limits := grpc.WithDefaultCallOptions(
 		grpc.MaxCallRecvMsgSize(cfg.Replicator.MaxTransportMsg),
 		grpc.MaxCallSendMsgSize(cfg.Replicator.MaxTransportMsg),

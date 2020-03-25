@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/go-pg/pg"
@@ -24,7 +25,7 @@ var (
 
 func TestStatsCollector(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		output, err := runCommand("stats-collector", "--config=./.artifacts/observer.yaml")
+		output, err := runCommand("stats-collector", "--config=./.artifacts/stats-collector.yaml")
 		require.NotContains(t, output, "error")
 		require.NoError(t, err, "error with output: %s", output)
 	})
@@ -55,7 +56,7 @@ func runCommand(cmdName string, args ...string) (string, error) {
 	cmd := exec.Command("./bin/"+cmdName, args...)
 	cmd.Env = append(
 		os.Environ(),
-		"OBSERVER_DB_URL=postgres://"+pgOptions.User+":"+pgOptions.Password+"@"+
+		strings.ToUpper(cmdName)+"_DB_URL=postgres://"+pgOptions.User+":"+pgOptions.Password+"@"+
 			pgOptions.Addr+"/"+pgOptions.Database+"?sslmode=disable",
 	)
 	output, err := cmd.CombinedOutput()

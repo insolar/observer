@@ -68,18 +68,18 @@ $(BIN_DIR): ## create bin dir
 .PHONY: config
 config: ## generate configs
 	mkdir -p $(ARTIFACTS_DIR)
-	go run ./configuration/gen/gen.go
-	mv ./observer.yaml $(ARTIFACTS_DIR)/observer.yaml
-	mv ./observerapi.yaml $(ARTIFACTS_DIR)/observerapi.yaml
+	for f in `go run ./configuration/gen/gen.go`; do \
+  		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
+  	done
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: test
-test: ## tests
+test: config ## tests
 	go test ./... -v
 
-integration: ## integration tests
+integration: config ## integration tests
 	go test ./... -tags=integration -v
 
 .PHONY: all

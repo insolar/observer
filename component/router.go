@@ -19,7 +19,7 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
-func NewRouter(cfg *configuration.Configuration, obs *observability.Observability) *Router {
+func NewRouter(cfg *configuration.Observer, obs *observability.Observability) *Router {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthcheck", func(w http.ResponseWriter, _ *http.Request) {

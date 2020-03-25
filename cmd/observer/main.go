@@ -25,7 +25,7 @@ import (
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	cfg := &configuration.Configuration{}
+	cfg := &configuration.Observer{}
 	params := insconfig.Params{
 		EnvPrefix:        "observer",
 		ConfigPathGetter: &insconfig.DefaultPathGetter{},

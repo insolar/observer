@@ -11,10 +11,35 @@ import (
 	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
+type StatsCollector struct {
+	Log Log
+	DB  DB
+}
+
+type Observer struct {
+	Log        Log
+	DB         DB
+	Replicator Replicator
+}
+
 type Configuration struct {
 	Replicator Replicator
 	DB         DB
 	Log        Log
+}
+
+type Migrate struct {
+	DB DB
+}
+
+type CollectorCoinMarketCap struct {
+	Log Log
+	DB  DB
+}
+
+type CollectorBinance struct {
+	Log Log
+	DB  DB
 }
 
 func (c Configuration) GetConfig() interface{} {
@@ -51,8 +76,8 @@ type Log struct {
 	Buffer       int
 }
 
-func Default() *Configuration {
-	return &Configuration{
+func Default() *Observer {
+	return &Observer{
 		Replicator: Replicator{
 			Addr:                "127.0.0.1:5678",
 			MaxTransportMsg:     1073741824,
@@ -76,5 +101,12 @@ func Default() *Configuration {
 			OutputParams: "",
 			Buffer:       0,
 		},
+	}
+}
+
+func (StatsCollector) Default() StatsCollector {
+	return StatsCollector{
+		DB:  Default().DB,
+		Log: Default().Log,
 	}
 }

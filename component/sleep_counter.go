@@ -17,10 +17,10 @@ type sleepCounter interface {
 }
 
 type SleepManager struct {
-	cfg *configuration.Configuration
+	cfg *configuration.Observer
 }
 
-func NewSleepManager(cfg *configuration.Configuration) *SleepManager {
+func NewSleepManager(cfg *configuration.Observer) *SleepManager {
 	return &SleepManager{
 		cfg: cfg,
 	}

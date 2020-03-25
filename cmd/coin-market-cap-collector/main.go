@@ -35,9 +35,9 @@ var cmcAPIToken = flag.String("cmc-token", "", "api token for coin market cap")
 var symbol = flag.String("symbol", "", "symbol for fetching from coin market cap stats")
 
 func main() {
-	cfg := &configuration.Configuration{}
+	cfg := &configuration.CollectorCoinMarketCap{}
 	params := insconfig.Params{
-		EnvPrefix: "observer",
+		EnvPrefix: "coin-market-cap-collector",
 		ConfigPathGetter: &insconfig.FlagPathGetter{
 			GoFlags: flag.CommandLine,
 		},
