@@ -7,6 +7,12 @@ db:
 feeamount: 2000000000
 priceorigin: const
 price: "0.05"
+cmcmarketstatsparams:
+  circulatingsupply: false
+  dailychange: false
+  marketcap: false
+  rank: false
+  volume: false
 log:
   level: debug
   format: text

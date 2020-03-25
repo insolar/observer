@@ -12,9 +12,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insconfig"
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
@@ -71,6 +73,7 @@ func main() {
 
 	logger.Info("start fetching from cmc-api")
 	stats := getStats(*cmcAPIToken, *symbol, logger)
+	replaceStats(stats, db)
 	err = repo.InsertStats(&models.CoinMarketCapStats{
 		Price:                stats.Quote.USD.Price,
 		PercentChange24Hours: stats.Quote.USD.PercentChange24Hours,
@@ -85,6 +88,24 @@ func main() {
 	}
 
 	logger.Info("finish fetching from cmc-api successfully")
+}
+
+// Calculates and replaces stats params
+func replaceStats(stats *CmcInfo, db orm.DB) {
+	var circulatingFloat float64
+	supplyStatsRepo := postgres.NewSupplyStatsRepository(db)
+	result, err := supplyStatsRepo.LastStats()
+	if err != nil {
+		circulatingFloat = 0
+	} else {
+		circulatingFloat, err = strconv.ParseFloat(result.Total, 64)
+		if err != nil {
+			circulatingFloat = 0
+		}
+	}
+	circulatingFloat /= 10000000000
+	stats.CirculatingSupply = circulatingFloat
+	stats.Quote.USD.MarketCap = circulatingFloat * stats.Quote.USD.Price
 }
 
 func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {

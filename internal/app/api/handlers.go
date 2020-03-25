@@ -19,9 +19,10 @@ import (
 	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 
 	"github.com/insolar/observer/component"
 	"github.com/insolar/observer/internal/app/observer"
@@ -55,6 +56,45 @@ func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress st
 	return ctx.JSON(http.StatusOK, ResponsesIsMigrationAddressYaml{
 		IsMigrationAddress: count > 0,
 	})
+}
+
+func (s *ObserverServer) PulseNumber(ctx echo.Context) error {
+	pulse, err := s.pStorage.Last()
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "couldn't load last pulse"))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesPulseNumberYaml{
+		PulseNumber: int64(pulse.Number),
+	})
+}
+
+func (s *ObserverServer) PulseRange(ctx echo.Context, params PulseRangeParams) error {
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	if params.FromTimestamp > params.ToTimestamp {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("Invalid input range: fromTimestamp must chronologically precede toTimestamp"))
+	}
+
+	pulses, err := s.pStorage.GetRange(params.FromTimestamp, params.ToTimestamp, limit, params.PulseNumber)
+	if err != nil {
+		s.log.Error(errors.Wrap(err, "couldn't load pulses in range"))
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if pulses == nil {
+		return ctx.NoContent(http.StatusNoContent)
+	}
+
+	var res ResponsesPulseRangeYaml
+	for _, p := range pulses {
+		res = append(res, int64(p))
+	}
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
@@ -326,6 +366,71 @@ func (s *ObserverServer) MemberTransactions(ctx echo.Context, reference string, 
 	return ctx.JSON(http.StatusOK, res)
 }
 
+func (s *ObserverServer) TransactionsByPulseNumberRange(ctx echo.Context, params TransactionsByPulseNumberRangeParams) error {
+	s.setExpire(ctx, 10*time.Second)
+	var ref *insolar.Reference
+	var errMsg *ErrorMessage
+
+	if params.MemberReference != nil {
+		ref, errMsg = s.checkReference(*params.MemberReference)
+		if errMsg != nil {
+			return ctx.JSON(http.StatusBadRequest, *errMsg)
+		}
+	}
+
+	limit := params.Limit
+	if limit <= 0 || limit > 1000 {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
+	}
+
+	if params.FromPulseNumber > params.ToPulseNumber {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("Invalid input range: fromPulseNumber must chronologically precede toPulseNumber"))
+	}
+
+	var errorMsg ErrorMessage
+
+	var txs []models.Transaction
+	var err error
+	query := s.db.Model(&txs)
+
+	if ref != nil {
+		direction := "all"
+		query, err = component.FilterByMemberReferenceAndDirection(query, ref, &direction)
+		if err != nil {
+			errorMsg.Error = append(errorMsg.Error, err.Error())
+		}
+	}
+
+	query, err = component.FilterByPulse(query, params.FromPulseNumber, params.ToPulseNumber)
+	if err != nil {
+		errorMsg.Error = append(errorMsg.Error, err.Error())
+	}
+
+	order := "chronological"
+	s.getTransactionsOrderByIndex(query, errMsg, params.Index, &order)
+
+	if len(errorMsg.Error) > 0 {
+		return ctx.JSON(http.StatusBadRequest, errorMsg)
+	}
+
+	err = query.Limit(limit).Select()
+
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	if len(txs) == 0 {
+		return ctx.NoContent(http.StatusNoContent)
+	}
+
+	res := SchemasTransactions{}
+	for _, t := range txs {
+		res = append(res, TxToAPITx(t, models.TxIndexTypePulseRecord))
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
 func (s *ObserverServer) Notification(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Minute)
 
@@ -462,6 +567,12 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 
 		return ctx.JSON(http.StatusOK, response)
 	case "coin_market_cap":
+		checkEnabled := func(enabled bool, value float64) *string {
+			if enabled {
+				return NullableString(fmt.Sprintf("%v", value))
+			}
+			return nil
+		}
 		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
 		stats, err := repo.LastStats()
 		if err != nil {
@@ -474,12 +585,12 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 		response := ResponsesMarketStatsYaml{
-			CirculatingSupply: NullableString(fmt.Sprintf("%v", stats.CirculatingSupply)),
-			DailyChange:       NullableString(fmt.Sprintf("%v", stats.PercentChange24Hours)),
-			MarketCap:         NullableString(fmt.Sprintf("%v", stats.MarketCap)),
+			CirculatingSupply: checkEnabled(s.config.CMCMarketStatsParams.CirculatingSupply, stats.CirculatingSupply),
+			DailyChange:       checkEnabled(s.config.CMCMarketStatsParams.DailyChange, stats.PercentChange24Hours),
+			MarketCap:         checkEnabled(s.config.CMCMarketStatsParams.MarketCap, stats.MarketCap),
 			Price:             fmt.Sprintf("%v", stats.Price),
-			Rank:              NullableString(fmt.Sprintf("%v", stats.Rank)),
-			Volume:            NullableString(fmt.Sprintf("%v", stats.Volume24Hours)),
+			Rank:              checkEnabled(s.config.CMCMarketStatsParams.Rank, float64(stats.Rank)),
+			Volume:            checkEnabled(s.config.CMCMarketStatsParams.Volume, stats.Volume24Hours),
 		}
 		response.addHistoryPoints(history)
 		return ctx.JSON(http.StatusOK, response)
@@ -547,6 +658,13 @@ func (s *ObserverServer) getTransactions(
 		}
 	}
 
+	return s.getTransactionsOrderByIndex(query, errorMsg, index, order)
+}
+
+func (s *ObserverServer) getTransactionsOrderByIndex(
+	query *orm.Query, errorMsg *ErrorMessage, index, order *string,
+) *orm.Query {
+	var err error
 	var pulseNumber int64
 	var sequenceNumber int64
 	byIndex := false

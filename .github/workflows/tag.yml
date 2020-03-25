@@ -1,0 +1,37 @@
+name: observer
+on:
+  push:
+    tags:
+      - '*'
+env:
+  GO_VERSION: 1.12.15
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: set up go ${{env.GO_VERSION}}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{env.GO_VERSION}}
+      id: go
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - name: Generate config
+      run: make config
+    - name: Build
+      run: make build
+  pack:
+    name: pack
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@master
+    - name: pack project
+      run: |
+        docker build -t ${{github.workflow}}:$(git describe --tags) --pull --build-arg "GOLANG_VERSION=${{env.GO_VERSION}}" .
+        docker tag ${{github.workflow}}:$(git describe --tags) ${{secrets.REGISTRY_URL}}/${{github.workflow}}:$(git describe --tags)
+        docker login -u ${{secrets.REGISTRY_USERNAME}} -p ${{secrets.REGISTRY_PASSWORD}} https://${{secrets.REGISTRY_URL}}
+        docker push ${{secrets.REGISTRY_URL}}/${{github.workflow}}:$(git describe --tags)

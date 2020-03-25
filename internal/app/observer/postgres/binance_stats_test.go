@@ -72,16 +72,87 @@ func TestBinanceStats_AverageCalculation(t *testing.T) {
 
 	require.Equal(t,
 		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
-		points[0].Timestamp)
+		points[2].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 1, 8, 0, 0, 0, time.UTC),
 		points[1].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 1, 16, 0, 0, 0, time.UTC),
-		points[2].Timestamp)
+		points[0].Timestamp)
 
 	require.Equal(t, float64(1), points[0].Price)
 	require.Equal(t, float64(1), points[1].Price)
 	require.Equal(t, float64(1), points[2].Price)
 
+}
+
+func TestBinanceStats_AverageCalculation_TwoDays(t *testing.T) {
+	mockDB, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	defer dbCleaner()
+	repo := postgres.NewBinanceStatsRepository(mockDB)
+
+	saveTimeFirst := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	saveTimeSecond := time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC)
+
+	// 24 hours
+	for i := 0; i < 1339; i++ {
+		saveTimeFirst = saveTimeFirst.Add(1 * time.Minute)
+		stat := models.BinanceStats{
+			Symbol:             "TEST",
+			SymbolPriceBTC:     "1",
+			SymbolPriceUSD:     1,
+			BTCPriceUSD:        "3",
+			PriceChangePercent: "4",
+			Created:            saveTimeFirst,
+		}
+		err := mockDB.Insert(&stat)
+		require.NoError(t, err)
+	}
+
+	// 24 hours
+	for i := 0; i < 1339; i++ {
+		saveTimeSecond = saveTimeSecond.Add(1 * time.Minute)
+		stat := models.BinanceStats{
+			Symbol:             "TEST",
+			SymbolPriceBTC:     "1",
+			SymbolPriceUSD:     1,
+			BTCPriceUSD:        "3",
+			PriceChangePercent: "4",
+			Created:            saveTimeSecond,
+		}
+		err := mockDB.Insert(&stat)
+		require.NoError(t, err)
+	}
+
+	points, err := repo.PriceHistory(24)
+	require.NoError(t, err)
+	require.Equal(t, 6, len(points))
+
+	require.Equal(t,
+		time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC),
+		points[2].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 2, 8, 0, 0, 0, time.UTC),
+		points[1].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 2, 16, 0, 0, 0, time.UTC),
+		points[0].Timestamp)
+
+	require.Equal(t,
+		time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		points[5].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 1, 8, 0, 0, 0, time.UTC),
+		points[4].Timestamp)
+	require.Equal(t,
+		time.Date(2020, 1, 1, 16, 0, 0, 0, time.UTC),
+		points[3].Timestamp)
+
+	require.Equal(t, float64(1), points[0].Price)
+	require.Equal(t, float64(1), points[1].Price)
+	require.Equal(t, float64(1), points[2].Price)
+
+	require.Equal(t, float64(1), points[3].Price)
+	require.Equal(t, float64(1), points[4].Price)
+	require.Equal(t, float64(1), points[5].Price)
 }

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -22,9 +23,10 @@ import (
 	"github.com/insolar/insolar/insolar/secrets"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
+
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
@@ -2053,6 +2055,13 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		FeeAmount:   testFee,
 		Price:       testPrice,
 		PriceOrigin: "coin_market_cap",
+		CMCMarketStatsParams: apiconfiguration.CMCMarketStatsParamsEnabled{
+			CirculatingSupply: true,
+			DailyChange:       true,
+			MarketCap:         true,
+			Rank:              true,
+			Volume:            true,
+		},
 	})
 
 	e := echo.New()
@@ -2175,17 +2184,17 @@ func TestObserverServer_Binance_Price(t *testing.T) {
 
 	require.Equal(t,
 		time.Date(2020, 1, 3, 0, 0, 0, 0, time.UTC).Unix(),
-		points[0].Timestamp)
+		points[2].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 3, 8, 0, 0, 0, time.UTC).Unix(),
 		points[1].Timestamp)
 	require.Equal(t,
 		time.Date(2020, 1, 3, 16, 0, 0, 0, time.UTC).Unix(),
-		points[2].Timestamp)
+		points[0].Timestamp)
 
-	require.Equal(t, "150", points[0].Price)
+	require.Equal(t, "150", points[2].Price)
 	require.Equal(t, "300", points[1].Price)
-	require.Equal(t, "400", points[2].Price)
+	require.Equal(t, "400", points[0].Price)
 }
 
 func newInt(val int64) *int64 {
@@ -2195,4 +2204,289 @@ func newInt(val int64) *int64 {
 func randomString() string {
 	id, _ := uuid.NewRandom()
 	return id.String()
+}
+
+func TestPulseNumber(t *testing.T) {
+	err := pStorage.Insert(&observer.Pulse{
+		Number: 60199947,
+	})
+	require.NoError(t, err)
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60199957,
+	})
+	require.NoError(t, err)
+	err = pStorage.Insert(&observer.Pulse{
+		Number: 60199937,
+	})
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/number")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received map[string]int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, int64(60199957), received["pulseNumber"])
+}
+
+func TestTransactionsByPulseNumberRange_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestTransactionsByPulseNumberRange_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=0&toPulseNumber=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestTransactionsByPulseNumberRange_InvalidRange(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/transactions/inPulseNumberRange?limit=15&fromPulseNumber=10&toPulseNumber=1")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	received := struct {
+		Error []string `json:"error"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"Invalid input range: fromPulseNumber must chronologically precede toPulseNumber"}, received.Error)
+}
+
+func TestTransactionsByPulseNumberRange(t *testing.T) {
+	defer truncateDB(t)
+
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	txIDFourth := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+
+	insertTransaction(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234)
+	insertTransaction(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235)
+	insertTransaction(t, txIDThird.Bytes(), int64(pulseNumber)+20, int64(pulseNumber)+30, 1236)
+	insertTransaction(t, txIDFourth.Bytes(), int64(pulseNumber)+30, int64(pulseNumber)+40, 1237)
+
+	fromPulseNumber := pulseNumber.String()
+	toPulseNumber := strconv.Itoa(int(pulseNumber) + 20)
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=10" +
+			"&fromPulseNumber=" + fromPulseNumber +
+			"&toPulseNumber=" + toPulseNumber +
+			"&index=" + pulseNumber.String() + "%3A1234")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDSecond.String(), received[0].TxID)
+	require.Equal(t, txIDThird.String(), received[1].TxID)
+}
+
+func TestTransactionsByPulseNumberRange_WithMemberReference(t *testing.T) {
+	defer truncateDB(t)
+
+	txIDFirst := gen.RecordReference()
+	txIDSecond := gen.RecordReference()
+	txIDThird := gen.RecordReference()
+	pulseNumber := gen.PulseNumber()
+	member1 := gen.Reference()
+	member2 := gen.Reference()
+
+	insertMember(t, member1, nil, nil, "10000", randomString())
+	insertTransactionForMembers(t, txIDFirst.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1234, member1, member2)
+	insertTransactionForMembers(t, txIDSecond.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1235, member2, member1)
+	insertMember(t, member2, nil, nil, "10000", randomString())
+	insertTransactionForMembers(t, txIDThird.Bytes(), int64(pulseNumber), int64(pulseNumber)+10, 1236, member2, member2)
+
+	fromPulseNumber := pulseNumber.String()
+	toPulseNumber := strconv.Itoa(int(pulseNumber) + 20)
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=10" +
+			"&memberReference=" + member1.String() +
+			"&fromPulseNumber=" + fromPulseNumber +
+			"&toPulseNumber=" + toPulseNumber)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := []SchemasTransactionAbstract{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, txIDFirst.String(), received[0].TxID)
+	require.Equal(t, txIDSecond.String(), received[1].TxID)
+}
+
+func TestTransactionsByPulseNumberRange_WrongEverything(t *testing.T) {
+	resp, err := http.Get(
+		"http://" + apihost + "/api/transactions/inPulseNumberRange?" +
+			"limit=15&" +
+			"memberReference=some_not_valid_reference&" +
+			"fromPulseNumber=1&" +
+			"toPulseNumber=2")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	expected := ErrorMessage{
+		Error: []string{
+			"reference wrong format",
+		},
+	}
+	received := ErrorMessage{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Equal(t, expected, received)
+}
+
+func createPulse(pulseNumber uint32) (*observer.Pulse, error) {
+	pulse := observer.Pulse{
+		Number: insolar.PulseNumber(pulseNumber),
+	}
+	pTime, err := pulse.Number.AsApproximateTime()
+	if err != nil {
+		return nil, err
+	}
+	pulse.Timestamp = pTime.UnixNano()
+	return &pulse, err
+}
+
+func TestPulseRange_WrongFormat(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestPulseRange_NoContent(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=0&toTimestamp=1&limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestPulseRange_InvalidRange(t *testing.T) {
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?fromTimestamp=10&toTimestamp=1&limit=10")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	received := struct {
+		Error []string `json:"error"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"Invalid input range: fromTimestamp must chronologically precede toTimestamp"}, received.Error)
+}
+
+func TestPulseRange(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/time.Second.Nanoseconds(), 10) +
+		"&toTimestamp=" + strconv.FormatInt(secondPulse.Timestamp/time.Second.Nanoseconds(), 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, int64(firstPulse.Number), received[0])
+	require.Equal(t, int64(secondPulse.Number), received[1])
+}
+
+func TestPulseRange_Limit(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=1" +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/time.Second.Nanoseconds(), 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp/time.Second.Nanoseconds()+20, 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 1)
+	require.Equal(t, int64(firstPulse.Number), received[0])
+}
+
+func TestPulseRange_PulseNumber(t *testing.T) {
+	firstPulse, err := createPulse(60209957)
+	require.NoError(t, err)
+	secondPulse, err := createPulse(60209967)
+	require.NoError(t, err)
+	thirdPulse, err := createPulse(60209977)
+	require.NoError(t, err)
+
+	err = pStorage.Insert(firstPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(secondPulse)
+	require.NoError(t, err)
+	err = pStorage.Insert(thirdPulse)
+	require.NoError(t, err)
+
+	resp, err := http.Get("http://" + apihost + "/api/pulse/range?limit=10" +
+		"&pulseNumber=" + firstPulse.Number.String() +
+		"&fromTimestamp=" + strconv.FormatInt(firstPulse.Timestamp/time.Second.Nanoseconds(), 10) +
+		"&toTimestamp=" + strconv.FormatInt(thirdPulse.Timestamp/time.Second.Nanoseconds()+20, 10))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var received []int64
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	require.Len(t, received, 2)
+	require.Equal(t, int64(secondPulse.Number), received[0])
+	require.Equal(t, int64(thirdPulse.Number), received[1])
 }

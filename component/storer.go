@@ -717,6 +717,12 @@ func FilterByType(query *orm.Query, t string) (*orm.Query, error) {
 	return query, nil
 }
 
+func FilterByPulse(query *orm.Query, fromPulse, toPulse int64) (*orm.Query, error) {
+	query = query.Where("pulse_record[1] >= ?", fromPulse)
+	query = query.Where("pulse_record[1] <= ?", toPulse)
+	return query, nil
+}
+
 func FilterByMemberReferenceAndDirection(query *orm.Query, ref *insolar.Reference, d *string) (*orm.Query, error) {
 	direction := "all"
 	if d != nil {
