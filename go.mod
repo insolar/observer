@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227
-	github.com/insolar/insolar v1.3.3
+	github.com/insolar/insolar v1.4.2
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
@@ -22,7 +22,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
-	github.com/ory/dockertest/v3 v3.5.1
+	github.com/ory/dockertest/v3 v3.5.2
 	github.com/pelletier/go-toml v1.5.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
