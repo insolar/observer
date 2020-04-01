@@ -91,4 +91,4 @@ help: ## Display this help screen
 
 .PHONY: migrate
 migrate: ## migrate
-	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --init --config=.artifacts/observer.yaml
+	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --init --config=.artifacts/migrate.yaml

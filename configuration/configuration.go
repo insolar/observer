@@ -110,3 +110,7 @@ func (StatsCollector) Default() StatsCollector {
 		Log: Default().Log,
 	}
 }
+
+func (Migrate) Default() Migrate {
+	return Migrate{DB: Default().DB}
+}
