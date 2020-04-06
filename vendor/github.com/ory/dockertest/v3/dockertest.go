@@ -12,6 +12,7 @@ import (
 
 	"github.com/cenkalti/backoff/v3"
 	dc "github.com/ory/dockertest/v3/docker"
+	options "github.com/ory/dockertest/v3/docker/opts"
 	"github.com/pkg/errors"
 )
 
@@ -237,13 +238,13 @@ func (d *Pool) RunWithOptions(opts *RunOptions, hcOpts ...func(*dc.HostConfig)) 
 	mounts := []dc.Mount{}
 
 	for _, m := range opts.Mounts {
-		sd := strings.Split(m, ":")
-		if len(sd) != 2 {
-			return nil, errors.Wrap(fmt.Errorf("invalid mount format: got %s, expected <src>:<dst>", m), "")
+		s, d, err := options.MountParser(m)
+		if err != nil {
+			return nil, err
 		}
 		mounts = append(mounts, dc.Mount{
-			Source:      sd[0],
-			Destination: sd[1],
+			Source:      s,
+			Destination: d,
 			RW:          true,
 		})
 	}
@@ -326,6 +327,34 @@ func (d *Pool) RunWithOptions(opts *RunOptions, hcOpts ...func(*dc.HostConfig)) 
 //  pool.Run("mysql", "5.3", []string{"FOO=BAR", "BAR=BAZ"})
 func (d *Pool) Run(repository, tag string, env []string) (*Resource, error) {
 	return d.RunWithOptions(&RunOptions{Repository: repository, Tag: tag, Env: env})
+}
+
+// ContainerByName finds a container with the given name and returns it if present
+func (d *Pool) ContainerByName(containerName string) (*Resource, bool) {
+	containers, err := d.Client.ListContainers(dc.ListContainersOptions{
+		All: true,
+		Filters: map[string][]string{
+			"name": {containerName},
+		},
+	})
+
+	if err != nil {
+		return nil, false
+	}
+
+	if len(containers) == 0 {
+		return nil, false
+	}
+
+	c, err := d.Client.InspectContainer(containers[0].ID)
+	if err != nil {
+		return nil, false
+	}
+
+	return &Resource{
+		pool:      d,
+		Container: c,
+	}, true
 }
 
 // RemoveContainerByName find a container with the given name and removes it if present
