@@ -10,11 +10,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/insolar/insconfig"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 )
 
+type testPathGetter struct {
+	Path string
+}
+
+func (g testPathGetter) GetConfigPath() string {
+	return g.Path
+}
+
 func TestConfigLoad(t *testing.T) {
-	actual := load("./testdata")
-	require.Equal(t, big.NewInt(2000000000), actual.FeeAmount)
-	require.Equal(t, time.Second*3, actual.DB.AttemptInterval)
+	cfg := Configuration{}
+	params := insconfig.Params{
+		EnvPrefix:        "observerapi",
+		ViperHooks:       []mapstructure.DecodeHookFunc{ToBigIntHookFunc()},
+		ConfigPathGetter: testPathGetter{"./testdata/observerapi.yaml"},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(&cfg); err != nil {
+		panic(err)
+	}
+
+	require.Equal(t, big.NewInt(2000000000), cfg.FeeAmount)
+	require.Equal(t, time.Second*3, cfg.DB.AttemptInterval)
 }

@@ -22,7 +22,7 @@ import (
 type Manager struct {
 	stopSignal chan bool
 
-	cfg           *configuration.Configuration
+	cfg           *configuration.Observer
 	log           insolar.Logger
 	init          func() *state
 	commonMetrics *observability.CommonObserverMetrics
@@ -36,7 +36,7 @@ type Manager struct {
 	sleepCounter sleepCounter
 }
 
-func Prepare(ctx context.Context, cfg *configuration.Configuration) *Manager {
+func Prepare(ctx context.Context, cfg *configuration.Observer) *Manager {
 	obs := observability.Make(ctx)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)

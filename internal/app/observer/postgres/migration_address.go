@@ -27,13 +27,13 @@ type MigrationAddressSchema struct {
 }
 
 type MigrationAddressStorage struct {
-	cfg          *configuration.Configuration
+	cfg          *configuration.DB
 	log          insolar.Logger
 	errorCounter prometheus.Counter
 	db           orm.DB
 }
 
-func NewMigrationAddressStorage(cfg *configuration.Configuration, obs *observability.Observability, db orm.DB) *MigrationAddressStorage {
+func NewMigrationAddressStorage(cfg *configuration.DB, obs *observability.Observability, db orm.DB) *MigrationAddressStorage {
 	errorCounter := obs.Counter(prometheus.CounterOpts{
 		Name: "observer_migration_address_storage_error_counter",
 		Help: "",
@@ -107,7 +107,7 @@ func (s *MigrationAddressStorage) Wasted() int {
 			return nil
 		}
 		return err
-	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find wasted addresses from db")
@@ -136,7 +136,7 @@ func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
 			return nil
 		}
 		return err
-	}, s.cfg.DB.AttemptInterval, s.cfg.DB.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find active addresses from db")

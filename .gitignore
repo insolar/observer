@@ -41,6 +41,7 @@ coverage.txt
 # deploy stuff
 /ci/local-dev/logs
 /ci/local-dev/manifests/ks/lib
+/ci_test_with_coverage.json
 
 # network tests artifacts
 network/servicenetwork/network_cache

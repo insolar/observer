@@ -7,6 +7,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
@@ -19,8 +20,10 @@ import (
 
 func main() {
 	cfgs := make(map[string]interface{})
-	cfgs[api.ConfigFilePath] = api.Default()
-	cfgs[configuration.ConfigFilePath] = configuration.Default()
+	cfgs["observerapi.yaml"] = api.Default()
+	cfgs["observer.yaml"] = configuration.Default()
+	cfgs["stats-collector.yaml"] = configuration.StatsCollector{}.Default()
+	cfgs["migrate.yaml"] = configuration.Migrate{}.Default()
 
 	for filePath, cfg := range cfgs {
 		out, _ := yaml.Marshal(cfg)
@@ -30,5 +33,6 @@ func main() {
 			log.Error(errors.Wrapf(err, "failed to write config file"))
 			return
 		}
+		fmt.Println(filePath)
 	}
 }

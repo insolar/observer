@@ -49,15 +49,15 @@ github.com/globocom/echo-prometheus
 # github.com/go-pg/migrations v6.7.3+incompatible
 github.com/go-pg/migrations
 # github.com/go-pg/pg v8.0.6+incompatible
-github.com/go-pg/pg
 github.com/go-pg/pg/orm
+github.com/go-pg/pg
 github.com/go-pg/pg/internal
-github.com/go-pg/pg/internal/pool
-github.com/go-pg/pg/types
 github.com/go-pg/pg/internal/iszero
 github.com/go-pg/pg/internal/parser
 github.com/go-pg/pg/internal/struct_filter
 github.com/go-pg/pg/internal/tag
+github.com/go-pg/pg/types
+github.com/go-pg/pg/internal/pool
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -90,7 +90,9 @@ github.com/hashicorp/hcl/hcl/scanner
 github.com/hashicorp/hcl/hcl/strconv
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/insolar/insolar v1.3.3
+# github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227
+github.com/insolar/insconfig
+# github.com/insolar/insolar v1.4.2
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
 github.com/insolar/insolar/instrumentation/inslogger
@@ -163,8 +165,8 @@ github.com/insolar/x-crypto/ecdsa
 github.com/insolar/x-crypto/elliptic
 github.com/insolar/x-crypto/sha256
 github.com/insolar/x-crypto/x509
-github.com/insolar/x-crypto
 github.com/insolar/x-crypto/rand
+github.com/insolar/x-crypto
 github.com/insolar/x-crypto/internal/randutil
 github.com/insolar/x-crypto/sha512
 github.com/insolar/x-crypto/dsa
@@ -174,6 +176,26 @@ github.com/insolar/x-crypto/sha1
 github.com/insolar/x-crypto/x509/pkix
 github.com/insolar/x-crypto/rand/internal/unix
 github.com/insolar/x-crypto/subtle
+# github.com/jackc/chunkreader/v2 v2.0.0
+github.com/jackc/chunkreader/v2
+# github.com/jackc/pgconn v1.2.1
+github.com/jackc/pgconn
+github.com/jackc/pgconn/stmtcache
+github.com/jackc/pgconn/internal/ctxwatch
+# github.com/jackc/pgio v1.0.0
+github.com/jackc/pgio
+# github.com/jackc/pgpassfile v1.0.0
+github.com/jackc/pgpassfile
+# github.com/jackc/pgproto3/v2 v2.0.0
+github.com/jackc/pgproto3/v2
+# github.com/jackc/pgtype v1.1.0
+github.com/jackc/pgtype
+# github.com/jackc/pgx/v4 v4.2.1
+github.com/jackc/pgx/v4
+github.com/jackc/pgx/v4/internal/sanitize
+github.com/jackc/pgx/v4/pgxpool
+# github.com/jackc/puddle v1.0.0
+github.com/jackc/puddle
 # github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6
 github.com/jbenet/go-base58
 # github.com/jinzhu/inflection v1.0.0
@@ -213,7 +235,7 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/log
 github.com/opentracing/opentracing-go/ext
-# github.com/ory/dockertest/v3 v3.5.1
+# github.com/ory/dockertest/v3 v3.5.2
 github.com/ory/dockertest/v3
 github.com/ory/dockertest/v3/docker
 github.com/ory/dockertest/v3/docker/opts
@@ -241,7 +263,7 @@ github.com/ory/dockertest/v3/docker/types/strslice
 github.com/ory/dockertest/v3/docker/types/versions
 # github.com/pelletier/go-toml v1.5.0
 github.com/pelletier/go-toml
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -277,11 +299,13 @@ github.com/spf13/cast
 github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/spf13/viper v1.4.0
+# github.com/spf13/viper v1.6.2
 github.com/spf13/viper
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/subosito/gotenv v1.2.0
+github.com/subosito/gotenv
 # github.com/tylerb/gls v0.0.0-20150407001822-e606233f194d
 github.com/tylerb/gls
 # github.com/uber/jaeger-client-go v2.19.0+incompatible
@@ -347,8 +371,20 @@ golang.org/x/sys/cpu
 # golang.org/x/text v0.3.2
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
+golang.org/x/text/secure/precis
 golang.org/x/text/secure/bidirule
 golang.org/x/text/unicode/bidi
+golang.org/x/text/cases
+golang.org/x/text/language
+golang.org/x/text/runes
+golang.org/x/text/width
+golang.org/x/text/internal
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+# golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
+golang.org/x/xerrors
+golang.org/x/xerrors/internal
 # google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.21.0
@@ -384,7 +420,9 @@ google.golang.org/grpc/balancer/base
 google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
-# gopkg.in/yaml.v2 v2.2.7
+# gopkg.in/ini.v1 v1.51.0
+gopkg.in/ini.v1
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # mellium.im/sasl v0.2.1
 mellium.im/sasl

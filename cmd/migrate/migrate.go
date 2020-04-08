@@ -10,6 +10,7 @@ import (
 	"flag"
 
 	"github.com/go-pg/migrations"
+	"github.com/insolar/insconfig"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/pkg/errors"
 
@@ -21,9 +22,20 @@ var migrationDir = flag.String("dir", "", "directory with migrations")
 var doInit = flag.Bool("init", false, "perform db init (for empty db)")
 
 func main() {
-	flag.Parse()
+	cfg := &configuration.Migrate{}
+	params := insconfig.Params{
+		EnvPrefix: "migrate",
+		ConfigPathGetter: &insconfig.FlagPathGetter{
+			GoFlags: flag.CommandLine,
+		},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
+		panic(err)
+	}
+	insConfigurator.ToYaml(cfg)
+
 	ctx := context.Background()
-	cfg := configuration.Load()
 	log := inslogger.FromContext(ctx)
 
 	db, err := dbconn.Connect(cfg.DB)

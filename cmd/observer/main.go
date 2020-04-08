@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/insolar/insconfig"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
@@ -24,7 +25,16 @@ import (
 var stop = make(chan os.Signal, 1)
 
 func main() {
-	cfg := configuration.Load()
+	cfg := &configuration.Observer{}
+	params := insconfig.Params{
+		EnvPrefix:        "observer",
+		ConfigPathGetter: &insconfig.DefaultPathGetter{},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
+		panic(err)
+	}
+	insConfigurator.ToYaml(cfg)
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

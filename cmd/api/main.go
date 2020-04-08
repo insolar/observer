@@ -9,8 +9,10 @@ import (
 	"context"
 
 	echoPrometheus "github.com/globocom/echo-prometheus"
+	"github.com/insolar/insconfig"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/mitchellh/mapstructure"
 
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/log"
@@ -25,7 +27,18 @@ import (
 )
 
 func main() {
-	cfg := apiconfiguration.Load()
+	cfg := &apiconfiguration.Configuration{}
+	params := insconfig.Params{
+		EnvPrefix:        "observerapi",
+		ViperHooks:       []mapstructure.DecodeHookFunc{apiconfiguration.ToBigIntHookFunc()},
+		ConfigPathGetter: &insconfig.DefaultPathGetter{},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
+		panic(err)
+	}
+	insConfigurator.ToYaml(cfg)
+
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

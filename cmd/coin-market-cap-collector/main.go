@@ -17,25 +17,38 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/orm"
+	"github.com/insolar/insconfig"
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/log"
+	"github.com/pkg/errors"
+
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 	"github.com/insolar/observer/internal/models"
-	"github.com/pkg/errors"
 )
 
 // CMCUrl holds cmc-api url
 const CMCUrl = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
 
+var cmcAPIToken = flag.String("cmc-token", "", "api token for coin market cap")
+var symbol = flag.String("symbol", "", "symbol for fetching from coin market cap stats")
+
 func main() {
-	log.Info("start fetching from cmc-api")
-	cmcAPIToken := flag.String("cmc-token", "", "api token for coin market cap")
-	symbol := flag.String("symbol", "", "symbol for fetching from coin market cap stats")
-	flag.Parse()
+	cfg := &configuration.CollectorCoinMarketCap{}
+	params := insconfig.Params{
+		EnvPrefix: "coin-market-cap-collector",
+		ConfigPathGetter: &insconfig.FlagPathGetter{
+			GoFlags: flag.CommandLine,
+		},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
+		panic(err)
+	}
+	insConfigurator.ToYaml(cfg)
 
 	if cmcAPIToken == nil || len(*cmcAPIToken) == 0 || len(strings.TrimSpace(*cmcAPIToken)) == 0 {
 		panic("cmc-token should be provided")
@@ -44,7 +57,6 @@ func main() {
 		panic("symbol should be provided")
 	}
 
-	cfg := configuration.Load()
 	loggerConfig := insconf.Log{
 		Level:      cfg.Log.Level,
 		Formatter:  cfg.Log.Format,
@@ -59,6 +71,7 @@ func main() {
 	}
 	repo := postgres.NewCoinMarketCapStatsRepository(db)
 
+	logger.Info("start fetching from cmc-api")
 	stats := getStats(*cmcAPIToken, *symbol, logger)
 	replaceStats(stats, db)
 	err = repo.InsertStats(&models.CoinMarketCapStats{

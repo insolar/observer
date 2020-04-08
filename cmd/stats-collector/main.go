@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/go-pg/pg"
+	"github.com/insolar/insconfig"
 	insconf "github.com/insolar/insolar/configuration"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/instrumentation/inslogger"
@@ -21,7 +22,16 @@ import (
 )
 
 func main() {
-	cfg := configuration.Load()
+	cfg := &configuration.StatsCollector{}
+	params := insconfig.Params{
+		EnvPrefix:        "stats-collector",
+		ConfigPathGetter: &insconfig.DefaultPathGetter{},
+	}
+	insConfigurator := insconfig.New(params)
+	if err := insConfigurator.Load(cfg); err != nil {
+		panic(err)
+	}
+	insConfigurator.ToYaml(cfg)
 	loggerConfig := insconf.Log{
 		Level:        cfg.Log.Level,
 		Formatter:    cfg.Log.Format,

@@ -25,7 +25,7 @@ import (
 )
 
 func makeStorer(
-	cfg *configuration.Configuration,
+	cfg *configuration.Observer,
 	obs *observability.Observability,
 	conn PGer,
 ) func(*beauty, *state) *observer.Statistic {
@@ -141,7 +141,7 @@ func makeStorer(
 				}
 			}
 
-			addresses := postgres.NewMigrationAddressStorage(cfg, obs, tx)
+			addresses := postgres.NewMigrationAddressStorage(&cfg.DB, obs, tx)
 			for _, address := range b.addresses {
 				if address == nil {
 					continue
