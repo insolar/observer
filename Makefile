@@ -7,6 +7,7 @@ API = api
 OBSERVER = observer
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
+TEST_ARGS ?= ""
 
 VERSION	:=
 ifeq ($(OS),Windows_NT)
@@ -77,10 +78,10 @@ ci_test: ## run tests with coverage
 
 .PHONY: test
 test: config ## tests
-	go test ./... -v
+	go test ./... -v $(TEST_ARGS)
 
 integration: config ## integration tests
-	go test ./... -tags=integration -v
+	go test ./... -tags=integration -v $(TEST_ARGS)
 
 .PHONY: all
 all: config build

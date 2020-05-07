@@ -1,6 +1,8 @@
 name: observer
 on:
   pull_request:
+  schedule:
+    - cron: '0 2 * * *'
 env:
   GO_VERSION: 1.12.15
 jobs:
@@ -25,6 +27,10 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
+    - name: set nightly run params
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "::set-env name=TEST_ARGS::-c 300 -p 10 -race -failfast -timeout 240m"
     - name: set up go ${{env.GO_VERSION}}
       uses: actions/setup-go@v1
       id: go
@@ -40,6 +46,10 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     steps:
+      - name: set nightly run params
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "::set-env name=TEST_ARGS::-c 300 -p 10 -race -failfast -timeout 240m"
       - name: set up go ${{env.GO_VERSION}}
         uses: actions/setup-go@v1
         id: go
