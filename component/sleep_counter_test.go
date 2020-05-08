@@ -20,15 +20,10 @@ import (
 func TestSleepManager_Count(t *testing.T) {
 	mc := minimock.NewController(t)
 	ctx := context.Background()
-	var cfg *configuration.Observer
-
-	resetComponents := func() {
-		cfg = configuration.Default()
-	}
 
 	t.Run("regular", func(t *testing.T) {
 		t.Parallel()
-		resetComponents()
+		cfg := configuration.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -47,7 +42,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("fast forwarding", func(t *testing.T) {
 		t.Parallel()
-		resetComponents()
+		cfg := configuration.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -66,7 +61,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("faster than heavy", func(t *testing.T) {
 		t.Parallel()
-		resetComponents()
+		cfg := configuration.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -85,7 +80,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("nil pulse", func(t *testing.T) {
 		t.Parallel()
-		resetComponents()
+		cfg := configuration.Default()
 		defer mc.Finish()
 
 		raw := raw{
