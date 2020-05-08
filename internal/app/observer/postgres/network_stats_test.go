@@ -26,11 +26,12 @@ func TestNetworkStats(t *testing.T) {
 	pulseRepo := postgres.NewPulseStorage(log, db)
 
 	now := time.Now()
+	pulse := gen.PulseNumber()
 
 	monthAgo := now.Add(-1*time.Hour*24*30 - 1)
 
 	err := pulseRepo.Insert(&observer.Pulse{
-		Number:    insolar.GenesisPulse.PulseNumber + 1,
+		Number:    pulse + 1,
 		Entropy:   [64]byte{1, 2, 3},
 		Timestamp: monthAgo.Unix(),
 		Nodes:     []insolar.Node{{}},
@@ -38,7 +39,7 @@ func TestNetworkStats(t *testing.T) {
 	require.NoError(t, err)
 
 	err = pulseRepo.Insert(&observer.Pulse{
-		Number:    insolar.GenesisPulse.PulseNumber + 2,
+		Number:    pulse + 2,
 		Entropy:   [64]byte{1, 2, 3},
 		Timestamp: now.Add(-1 * time.Hour).Unix(),
 		Nodes:     []insolar.Node{{}},
@@ -46,7 +47,7 @@ func TestNetworkStats(t *testing.T) {
 	require.NoError(t, err)
 
 	err = pulseRepo.Insert(&observer.Pulse{
-		Number:    insolar.GenesisPulse.PulseNumber + 3,
+		Number:    pulse + 3,
 		Entropy:   [64]byte{1, 2, 3},
 		Timestamp: now.Unix(),
 		Nodes:     []insolar.Node{{}, {}},
@@ -54,7 +55,6 @@ func TestNetworkStats(t *testing.T) {
 	require.NoError(t, err)
 
 	txID1, txID2 := gen.Reference(), gen.Reference()
-	pulse := gen.PulseNumber()
 
 	err = component.StoreTxRegister(db, []observer.TxRegister{
 		{
@@ -73,11 +73,11 @@ func TestNetworkStats(t *testing.T) {
 	err = component.StoreTxSagaResult(db, []observer.TxSagaResult{
 		{
 			TransactionID:     txID1,
-			FinishPulseNumber: int64(insolar.GenesisPulse.PulseNumber),
+			FinishPulseNumber: int64(pulse),
 		},
 		{
 			TransactionID:     txID2,
-			FinishPulseNumber: int64(insolar.GenesisPulse.PulseNumber + 3),
+			FinishPulseNumber: int64(pulse) + 3,
 		},
 	})
 
