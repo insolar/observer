@@ -87,7 +87,7 @@ func TestNetworkStats(t *testing.T) {
 	res.Created = now
 	require.Equal(t, models.NetworkStats{
 		Created:           now,
-		PulseNumber:       int(insolar.GenesisPulse.PulseNumber + 3),
+		PulseNumber:       int(pulse) + 3,
 		TotalTransactions: 2,
 		MonthTransactions: 1,
 		Nodes:             2,

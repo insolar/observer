@@ -80,9 +80,6 @@ ci_test: ## run tests with coverage
 test: config ## tests
 	go test ./... -v $(TEST_ARGS)
 
-integration: config ## integration tests
-	go test ./... -tags=integration -v $(TEST_ARGS)
-
 .PHONY: all
 all: config build
 
