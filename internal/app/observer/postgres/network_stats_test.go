@@ -54,17 +54,18 @@ func TestNetworkStats(t *testing.T) {
 	require.NoError(t, err)
 
 	txID1, txID2 := gen.Reference(), gen.Reference()
+	pulse := gen.PulseNumber()
 
 	err = component.StoreTxRegister(db, []observer.TxRegister{
 		{
 			TransactionID: txID1,
 			Type:          models.TTypeTransfer,
-			PulseNumber:   int64(insolar.GenesisPulse.PulseNumber),
+			PulseNumber:   int64(pulse),
 		},
 		{
 			TransactionID: txID2,
 			Type:          models.TTypeTransfer,
-			PulseNumber:   int64(insolar.GenesisPulse.PulseNumber + 3),
+			PulseNumber:   int64(pulse) + 3,
 		},
 	})
 	require.NoError(t, err)
