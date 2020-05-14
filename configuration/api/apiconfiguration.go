@@ -44,7 +44,7 @@ func Default() *Configuration {
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 		},
-		FeeAmount: big.NewInt(1000000000), // todo what should we do with this field?
+		FeeAmount: big.NewInt(1000000000),
 		Log: Log{
 			Level:        "debug",
 			Format:       "text",
