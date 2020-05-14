@@ -32,16 +32,6 @@ type Migrate struct {
 	DB DB
 }
 
-type CollectorCoinMarketCap struct {
-	Log Log
-	DB  DB
-}
-
-type CollectorBinance struct {
-	Log Log
-	DB  DB
-}
-
 func (c Configuration) GetConfig() interface{} {
 	return &c
 }

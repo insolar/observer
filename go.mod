@@ -3,7 +3,7 @@ module github.com/insolar/observer
 go 1.12
 
 require (
-	github.com/deepmap/oapi-codegen v1.3.0
+	github.com/deepmap/oapi-codegen v1.3.7
 	github.com/dgraph-io/badger v1.6.0 // indirect
 	github.com/globocom/echo-prometheus v0.1.2
 	github.com/go-pg/migrations v6.7.3+incompatible
@@ -30,9 +30,6 @@ require (
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.1 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
-	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2 // indirect
 	gonum.org/v1/gonum v0.6.0 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect

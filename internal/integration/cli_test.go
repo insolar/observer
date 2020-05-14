@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/go-pg/pg"
-	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/testutils"
 )
@@ -22,14 +21,6 @@ var (
 	db        *pg.DB
 	pgOptions pg.Options
 )
-
-func TestStatsCollector(t *testing.T) {
-	t.Run("happy path", func(t *testing.T) {
-		output, err := runCommand("stats-collector", "--config=./.artifacts/stats-collector.yaml")
-		require.NotContains(t, output, "error")
-		require.NoError(t, err, "error with output: %s", output)
-	})
-}
 
 func TestMain(m *testing.M) {
 	err := os.Chdir("../..")

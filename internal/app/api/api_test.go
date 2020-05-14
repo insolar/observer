@@ -14,9 +14,10 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/pulse"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
+
+	apiconfiguration "github.com/insolar/observer/configuration/api"
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
 
@@ -56,7 +57,6 @@ func TestMain(t *testing.M) {
 
 	observerAPI := NewObserverServer(db, logger, pStorage, apiconfiguration.Configuration{
 		FeeAmount: testFee,
-		Price:     testPrice,
 	})
 
 	RegisterHandlers(e, observerAPI)

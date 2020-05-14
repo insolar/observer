@@ -22,7 +22,6 @@ func main() {
 	cfgs := make(map[string]interface{})
 	cfgs["observerapi.yaml"] = api.Default()
 	cfgs["observer.yaml"] = configuration.Default()
-	cfgs["stats-collector.yaml"] = configuration.StatsCollector{}.Default()
 	cfgs["migrate.yaml"] = configuration.Migrate{}.Default()
 
 	for filePath, cfg := range cfgs {

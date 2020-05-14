@@ -11,143 +11,120 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ResponsesAddressCountYaml defines model for responses-addressCount-yaml.
-type ResponsesAddressCountYaml struct {
-	Count int `json:"count"`
-}
-
-// ResponsesAddressesYaml defines model for responses-addresses-yaml.
-type ResponsesAddressesYaml []struct {
-	Address string `json:"address"`
-	Index   string `json:"index"`
-}
-
-// ResponsesDetailsYaml defines model for responses-details-yaml.
-type ResponsesDetailsYaml struct {
-	CostCenter SchemaCostCenter `json:"costCenter"`
-	FeeMember  SchemaFeeMember  `json:"feeMember"`
-	From       SchemaFromRefs   `json:"from"`
-	To         SchemaToRefs     `json:"to"`
-}
-
 // ResponsesFeeYaml defines model for responses-fee-yaml.
 type ResponsesFeeYaml struct {
+
+	// Fee value in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Fee string `json:"fee"`
 }
 
 // ResponsesInvalidAmountYaml defines model for responses-invalidAmount-yaml.
 type ResponsesInvalidAmountYaml struct {
+
+	// Array of error messages.
 	Error []string `json:"error"`
 }
 
 // ResponsesInvalidReferenceYaml defines model for responses-invalidReference-yaml.
 type ResponsesInvalidReferenceYaml struct {
+
+	// Array of error messages.
 	Error []string `json:"error"`
 }
 
 // ResponsesInvalidTransactionIdYaml defines model for responses-invalidTransactionId-yaml.
 type ResponsesInvalidTransactionIdYaml struct {
+
+	// Array of error messages.
 	Error []string `json:"error"`
-}
-
-// ResponsesIsMigrationAddressYaml defines model for responses-isMigrationAddress-yaml.
-type ResponsesIsMigrationAddressYaml struct {
-	IsMigrationAddress bool `json:"isMigrationAddress"`
-}
-
-// ResponsesMarketStatsYaml defines model for responses-marketStats-yaml.
-type ResponsesMarketStatsYaml struct {
-	CirculatingSupply *string `json:"circulatingSupply,omitempty"`
-	DailyChange       *string `json:"dailyChange,omitempty"`
-	MarketCap         *string `json:"marketCap,omitempty"`
-	Price             string  `json:"price"`
-	PriceHistory      *[]struct {
-		Price     string `json:"price"`
-		Timestamp int64  `json:"timestamp"`
-	} `json:"priceHistory,omitempty"`
-	Rank   *string `json:"rank,omitempty"`
-	Volume *string `json:"volume,omitempty"`
 }
 
 // ResponsesMemberYaml defines model for responses-member-yaml.
 type ResponsesMemberYaml struct {
-	AccountReference string           `json:"accountReference"`
-	Balance          string           `json:"balance"`
-	Deposits         *[]SchemaDeposit `json:"deposits,omitempty"`
-	MigrationAddress *string          `json:"migrationAddress,omitempty"`
-	Reference        string           `json:"reference"`
-	WalletReference  string           `json:"walletReference"`
+
+	// Reference to the member's account object.
+	AccountReference string `json:"accountReference"`
+
+	// Account's balance in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	Balance string `json:"balance"`
+
+	// Deposits associated with the member.
+	Deposits *[]SchemaDeposit `json:"deposits,omitempty"`
+
+	// Special address in the Ethereum network — transfer destination for INS tokens during the migration period.
+	MigrationAddress *string `json:"migrationAddress,omitempty"`
+
+	// Reference to the member object.
+	Reference string `json:"reference"`
+
+	// Reference to the member's wallet object.
+	WalletReference string `json:"walletReference"`
 }
 
 // ResponsesMemberBalanceYaml defines model for responses-memberBalance-yaml.
 type ResponsesMemberBalanceYaml struct {
-	Balance string `json:"balance"`
-}
 
-// ResponsesNetworkStatsYaml defines model for responses-networkStats-yaml.
-type ResponsesNetworkStatsYaml struct {
-	Accounts              int `json:"accounts"`
-	CurrentTPS            int `json:"currentTPS"`
-	LastMonthTransactions int `json:"lastMonthTransactions"`
-	MaxTPS                int `json:"maxTPS"`
-	Nodes                 int `json:"nodes"`
-	TotalTransactions     int `json:"totalTransactions"`
+	// Member's balance in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	Balance string `json:"balance"`
 }
 
 // ResponsesNotificationInfoYaml defines model for responses-notificationInfo-yaml.
 type ResponsesNotificationInfoYaml struct {
+
+	// Notification message.
 	Notification string `json:"notification"`
 }
 
 // ResponsesPulseNumberYaml defines model for responses-pulse-number-yaml.
 type ResponsesPulseNumberYaml struct {
+
+	// Number of the latest finalized pulse.
 	PulseNumber int64 `json:"pulseNumber"`
 }
 
 // ResponsesPulseRangeYaml defines model for responses-pulse-range-yaml.
 type ResponsesPulseRangeYaml []int64
 
-// SchemaAcceptRefs defines model for schema-accept-refs.
-type SchemaAcceptRefs struct {
-	Account string `json:"account"`
-	Member  string `json:"member"`
-	Wallet  string `json:"wallet"`
-}
-
-// SchemaCostCenter defines model for schema-cost-center.
-type SchemaCostCenter struct {
-	CalcFeeRequest string `json:"calcFeeRequest"`
-	Reference      string `json:"reference"`
-}
-
 // SchemaDeposit defines model for schema-deposit.
 type SchemaDeposit struct {
-	AmountOnHold     string             `json:"amountOnHold"`
-	AvailableAmount  string             `json:"availableAmount"`
-	DepositReference string             `json:"depositReference"`
-	EthTxHash        string             `json:"ethTxHash"`
-	HoldReleaseDate  int64              `json:"holdReleaseDate"`
-	Index            int                `json:"index"`
-	MemberReference  *string            `json:"memberReference,omitempty"`
-	NextRelease      *SchemaNextRelease `json:"nextRelease,omitempty"`
-	ReleaseEndDate   int64              `json:"releaseEndDate"`
-	ReleasedAmount   string             `json:"releasedAmount"`
-	Status           string             `json:"status"`
-	Timestamp        int64              `json:"timestamp"`
-}
 
-// SchemaFeeMember defines model for schema-fee-member.
-type SchemaFeeMember struct {
-	AcceptRequest string `json:"acceptRequest"`
-	Reference     string `json:"reference"`
-}
+	// Amount of XNS coin fractions in the deposit that are on hold — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	AmountOnHold string `json:"amountOnHold"`
 
-// SchemaFromRefs defines model for schema-from-refs.
-type SchemaFromRefs struct {
-	AccountReference string             `json:"accountReference"`
-	MemberReference  string             `json:"memberReference"`
-	TransferRequests SchemaTransferRefs `json:"transferRequests"`
-	WalletReference  string             `json:"walletReference"`
+	// Amount of XNS coin fractions available for transfer from the deposit — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	AvailableAmount string `json:"availableAmount"`
+
+	// Reference to the deposit's object.
+	DepositReference string `json:"depositReference"`
+
+	// Ethereum transaction's hash associated with the deposit.
+	EthTxHash string `json:"ethTxHash"`
+
+	// Date (in Unix timestamp format) to start the release of the hold on coins.
+	HoldReleaseDate int64 `json:"holdReleaseDate"`
+
+	// Deposit's sequence number.
+	Index int `json:"index"`
+
+	// Reference to the `member` object. Returned if the request had a `migrationAddress` in path instead of `reference`.
+	MemberReference *string `json:"memberReference,omitempty"`
+
+	// Next partial release: amount of XNS coin fractions to release on a particular timestamp in the future.
+	NextRelease *SchemaNextRelease `json:"nextRelease,omitempty"`
+
+	// Date (in Unix timestamp format) to end the release period — release all coins.
+	ReleaseEndDate int64 `json:"releaseEndDate"`
+
+	// Amount of released XNS coin fractions from the start of the release period — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	ReleasedAmount string `json:"releasedAmount"`
+
+	// * `AVAILABLE` — deposit is active, you can transfer coins from it.
+	// * `LOCKED` — deposit is on hold until `releaseEndDate`.
+	// * `MIGRATION` — approvals from migration daemons are being collected.
+	Status string `json:"status"`
+
+	// Deposit creation time in Unix timestamp format.
+	Timestamp int64 `json:"timestamp"`
 }
 
 // SchemaMigration defines model for schema-migration.
@@ -155,16 +132,26 @@ type SchemaMigration struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
+
+	// Reference to the sending member object (migration daemon).
 	FromMemberReference string `json:"fromMemberReference"`
-	ToDepositReference  string `json:"toDepositReference"`
-	ToMemberReference   string `json:"toMemberReference"`
-	Type                string `json:"type"`
+
+	// Reference to the receiving deposit object.
+	ToDepositReference string `json:"toDepositReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference string `json:"toMemberReference"`
+	Type              string `json:"type"`
 }
 
 // SchemaNextRelease defines model for schema-next-release.
 type SchemaNextRelease struct {
-	Amount    string `json:"amount"`
-	Timestamp int64  `json:"timestamp"`
+
+	// Amount of XNS coin fractions to release — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	Amount string `json:"amount"`
+
+	// Timestamp in the future.
+	Timestamp int64 `json:"timestamp"`
 }
 
 // SchemaRelease defines model for schema-release.
@@ -172,17 +159,13 @@ type SchemaRelease struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromDepositReference string `json:"fromDepositReference"`
-	ToMemberReference    string `json:"toMemberReference"`
-	Type                 string `json:"type"`
-}
 
-// SchemaToRefs defines model for schema-to-refs.
-type SchemaToRefs struct {
-	AcceptRequests   SchemaAcceptRefs `json:"acceptRequests"`
-	AccountReference string           `json:"accountReference"`
-	MemberReference  string           `json:"memberReference"`
-	WalletReference  string           `json:"walletReference"`
+	// Reference to the sending deposit object.
+	FromDepositReference string `json:"fromDepositReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference string `json:"toMemberReference"`
+	Type              string `json:"type"`
 }
 
 // SchemaTransfer defines model for schema-transfer.
@@ -190,16 +173,13 @@ type SchemaTransfer struct {
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
 	SchemasTransactionAbstract
 	// Embedded fields due to inline allOf schema
-	FromMemberReference string  `json:"fromMemberReference"`
-	ToMemberReference   *string `json:"toMemberReference"`
-	Type                string  `json:"type"`
-}
 
-// SchemaTransferRefs defines model for schema-transfer-refs.
-type SchemaTransferRefs struct {
-	Account string `json:"account"`
-	Member  string `json:"member"`
-	Wallet  string `json:"wallet"`
+	// Reference to the sending member object.
+	FromMemberReference string `json:"fromMemberReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference *string `json:"toMemberReference"`
+	Type              string  `json:"type"`
 }
 
 // SchemasTransaction defines model for schemas-transaction.
@@ -207,14 +187,35 @@ type SchemasTransaction interface{}
 
 // SchemasTransactionAbstract defines model for schemas-transactionAbstract.
 type SchemasTransactionAbstract struct {
-	Amount      string  `json:"amount"`
-	Fee         *string `json:"fee,omitempty"`
-	Index       string  `json:"index"`
-	PulseNumber int64   `json:"pulseNumber"`
-	Status      string  `json:"status"`
-	Timestamp   int64   `json:"timestamp"`
-	TxID        string  `json:"txID"`
-	Type        string  `json:"type"`
+
+	// Amount of XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	Amount string `json:"amount"`
+
+	// Fee value in XNS coin fractions. Only finalized transactions (with `received` status) have this value.
+	Fee *string `json:"fee,omitempty"`
+
+	// Transaction index.
+	Index string `json:"index"`
+
+	// Pulse number at transaction timestamp.
+	PulseNumber int64 `json:"pulseNumber"`
+
+	// Transaction status:
+	//
+	// * `registered` — transfer request is registered;
+	// * `sent` — transfer of funds from the sender is finalized;
+	// * `received` — transfer of funds to the receiver is finalized.
+	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	Status string `json:"status"`
+
+	// Timestamp of the initial transfer request in UNIX format.
+	Timestamp int64 `json:"timestamp"`
+
+	// Transaction ID.
+	TxID string `json:"txID"`
+
+	// Transaction type upon which all references depend.
+	Type string `json:"type"`
 }
 
 // SchemasTransactions defines model for schemas-transactions.
@@ -222,6 +223,8 @@ type SchemasTransactions []SchemasTransaction
 
 // InvalidTransactionListParameters defines model for invalidTransactionListParameters.
 type InvalidTransactionListParameters struct {
+
+	// Array of error messages.
 	Error []string `json:"error"`
 }
 
@@ -230,16 +233,6 @@ type Transactions struct {
 	// Embedded fields due to inline allOf schema
 	// Embedded struct due to allOf(#/components/schemas/schemas-transactions)
 	SchemasTransactions
-}
-
-// GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
-type GetMigrationAddressesParams struct {
-
-	// Index of the last known address to start the list from the next one. To start from the first added migration address, do not specify.
-	Index *string `json:"index,omitempty"`
-
-	// Number of entries per list.
-	Limit int `json:"limit"`
 }
 
 // MemberByPublicKeyParams defines parameters for MemberByPublicKey.
@@ -400,107 +393,50 @@ type TransactionsByPulseNumberRangeParams struct {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// check migration address// (GET /admin/isMigrationAddress/{ethereumAddress})
-	IsMigrationAddress(ctx echo.Context, ethereumAddress string) error
-	// addresses// (GET /admin/migration/addresses)
-	GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error
-	// addresses/count// (GET /admin/migration/addresses/count)
-	GetMigrationAddressCount(ctx echo.Context) error
-	// fee// (GET /api/fee/{amount})
+	// fee
+	// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
-	// member by public key// (GET /api/member/byPublicKey)
+	// member by public key
+	// (GET /api/member/byPublicKey)
 	MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error
-	// member// (GET /api/member/{reference})
+	// member
+	// (GET /api/member/{reference})
 	Member(ctx echo.Context, reference string) error
-	// member balance// (GET /api/member/{reference}/balance)
+	// member balance
+	// (GET /api/member/{reference}/balance)
 	Balance(ctx echo.Context, reference string) error
-	// member transactions// (GET /api/member/{reference}/transactions)
+	// member transactions
+	// (GET /api/member/{reference}/transactions)
 	MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error
-	// notification// (GET /api/notification)
+	// notification
+	// (GET /api/notification)
 	Notification(ctx echo.Context) error
-	// pulse number// (GET /api/pulse/number)
+	// pulse number
+	// (GET /api/pulse/number)
 	PulseNumber(ctx echo.Context) error
-	// pulse number range// (GET /api/pulse/range)
+	// pulse number range
+	// (GET /api/pulse/range)
 	PulseRange(ctx echo.Context, params PulseRangeParams) error
-	// stats/market// (GET /api/stats/market)
-	MarketStats(ctx echo.Context) error
-	// stats/network// (GET /api/stats/network)
-	NetworkStats(ctx echo.Context) error
-	// total supply// (GET /api/stats/supply/total)
+	// total supply
+	// (GET /api/stats/supply/total)
 	SupplyStatsTotal(ctx echo.Context) error
-	// transaction// (GET /api/transaction/{txID})
+	// transaction
+	// (GET /api/transaction/{txID})
 	Transaction(ctx echo.Context, txID string) error
-	// transaction details// (GET /api/transaction/{txID}/details)
-	TransactionsDetails(ctx echo.Context, txID string) error
-	// transactions// (GET /api/transactions)
+	// transactions
+	// (GET /api/transactions)
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
-	// closed transactions// (GET /api/transactions/closed)
+	// closed transactions
+	// (GET /api/transactions/closed)
 	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
-	// transactions within a pulse number range// (GET /api/transactions/inPulseNumberRange)
+	// transactions within a pulse number range
+	// (GET /api/transactions/inPulseNumberRange)
 	TransactionsByPulseNumberRange(ctx echo.Context, params TransactionsByPulseNumberRangeParams) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
-}
-
-// IsMigrationAddress converts echo context to params.
-func (w *ServerInterfaceWrapper) IsMigrationAddress(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "ethereumAddress" -------------
-	var ethereumAddress string
-
-	err = runtime.BindStyledParameter("simple", false, "ethereumAddress", ctx.Param("ethereumAddress"), &ethereumAddress)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ethereumAddress: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.IsMigrationAddress(ctx, ethereumAddress)
-	return err
-}
-
-// GetMigrationAddresses converts echo context to params.
-func (w *ServerInterfaceWrapper) GetMigrationAddresses(ctx echo.Context) error {
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetMigrationAddressesParams
-	// ------------- Optional query parameter "index" -------------
-	if paramValue := ctx.QueryParam("index"); paramValue != "" {
-
-	}
-
-	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter index: %s", err))
-	}
-
-	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetMigrationAddresses(ctx, params)
-	return err
-}
-
-// GetMigrationAddressCount converts echo context to params.
-func (w *ServerInterfaceWrapper) GetMigrationAddressCount(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetMigrationAddressCount(ctx)
-	return err
 }
 
 // Fee converts echo context to params.
@@ -526,11 +462,6 @@ func (w *ServerInterfaceWrapper) MemberByPublicKey(ctx echo.Context) error {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params MemberByPublicKeyParams
 	// ------------- Required query parameter "publicKey" -------------
-	if paramValue := ctx.QueryParam("publicKey"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument publicKey is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "publicKey", ctx.QueryParams(), &params.PublicKey)
 	if err != nil {
@@ -588,11 +519,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params MemberTransactionsParams
 	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
@@ -600,9 +526,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "index" -------------
-	if paramValue := ctx.QueryParam("index"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
@@ -610,9 +533,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "direction" -------------
-	if paramValue := ctx.QueryParam("direction"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "direction", ctx.QueryParams(), &params.Direction)
 	if err != nil {
@@ -620,9 +540,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "order" -------------
-	if paramValue := ctx.QueryParam("order"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
@@ -630,9 +547,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "type" -------------
-	if paramValue := ctx.QueryParam("type"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "type", ctx.QueryParams(), &params.Type)
 	if err != nil {
@@ -640,9 +554,6 @@ func (w *ServerInterfaceWrapper) MemberTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "status" -------------
-	if paramValue := ctx.QueryParam("status"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
 	if err != nil {
@@ -679,11 +590,6 @@ func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params PulseRangeParams
 	// ------------- Required query parameter "fromTimestamp" -------------
-	if paramValue := ctx.QueryParam("fromTimestamp"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument fromTimestamp is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "fromTimestamp", ctx.QueryParams(), &params.FromTimestamp)
 	if err != nil {
@@ -691,11 +597,6 @@ func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
 	}
 
 	// ------------- Required query parameter "toTimestamp" -------------
-	if paramValue := ctx.QueryParam("toTimestamp"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument toTimestamp is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "toTimestamp", ctx.QueryParams(), &params.ToTimestamp)
 	if err != nil {
@@ -703,11 +604,6 @@ func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
 	}
 
 	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
@@ -715,9 +611,6 @@ func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "pulseNumber" -------------
-	if paramValue := ctx.QueryParam("pulseNumber"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "pulseNumber", ctx.QueryParams(), &params.PulseNumber)
 	if err != nil {
@@ -726,24 +619,6 @@ func (w *ServerInterfaceWrapper) PulseRange(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.PulseRange(ctx, params)
-	return err
-}
-
-// MarketStats converts echo context to params.
-func (w *ServerInterfaceWrapper) MarketStats(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.MarketStats(ctx)
-	return err
-}
-
-// NetworkStats converts echo context to params.
-func (w *ServerInterfaceWrapper) NetworkStats(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.NetworkStats(ctx)
 	return err
 }
 
@@ -772,22 +647,6 @@ func (w *ServerInterfaceWrapper) Transaction(ctx echo.Context) error {
 	return err
 }
 
-// TransactionsDetails converts echo context to params.
-func (w *ServerInterfaceWrapper) TransactionsDetails(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "txID" -------------
-	var txID string
-
-	err = runtime.BindStyledParameter("simple", false, "txID", ctx.Param("txID"), &txID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter txID: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.TransactionsDetails(ctx, txID)
-	return err
-}
-
 // TransactionsSearch converts echo context to params.
 func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	var err error
@@ -795,9 +654,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params TransactionsSearchParams
 	// ------------- Optional query parameter "value" -------------
-	if paramValue := ctx.QueryParam("value"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "value", ctx.QueryParams(), &params.Value)
 	if err != nil {
@@ -805,11 +661,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	}
 
 	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
@@ -817,9 +668,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "index" -------------
-	if paramValue := ctx.QueryParam("index"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
@@ -827,9 +675,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "order" -------------
-	if paramValue := ctx.QueryParam("order"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
@@ -837,9 +682,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "type" -------------
-	if paramValue := ctx.QueryParam("type"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "type", ctx.QueryParams(), &params.Type)
 	if err != nil {
@@ -847,9 +689,6 @@ func (w *ServerInterfaceWrapper) TransactionsSearch(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "status" -------------
-	if paramValue := ctx.QueryParam("status"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
 	if err != nil {
@@ -868,11 +707,6 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ClosedTransactionsParams
 	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
@@ -880,9 +714,6 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "index" -------------
-	if paramValue := ctx.QueryParam("index"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
@@ -890,9 +721,6 @@ func (w *ServerInterfaceWrapper) ClosedTransactions(ctx echo.Context) error {
 	}
 
 	// ------------- Optional query parameter "order" -------------
-	if paramValue := ctx.QueryParam("order"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "order", ctx.QueryParams(), &params.Order)
 	if err != nil {
@@ -911,9 +739,6 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	// Parameter object where we will unmarshal all parameters from the context
 	var params TransactionsByPulseNumberRangeParams
 	// ------------- Optional query parameter "memberReference" -------------
-	if paramValue := ctx.QueryParam("memberReference"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "memberReference", ctx.QueryParams(), &params.MemberReference)
 	if err != nil {
@@ -921,11 +746,6 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	}
 
 	// ------------- Required query parameter "fromPulseNumber" -------------
-	if paramValue := ctx.QueryParam("fromPulseNumber"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument fromPulseNumber is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "fromPulseNumber", ctx.QueryParams(), &params.FromPulseNumber)
 	if err != nil {
@@ -933,11 +753,6 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	}
 
 	// ------------- Required query parameter "toPulseNumber" -------------
-	if paramValue := ctx.QueryParam("toPulseNumber"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument toPulseNumber is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "toPulseNumber", ctx.QueryParams(), &params.ToPulseNumber)
 	if err != nil {
@@ -945,11 +760,6 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	}
 
 	// ------------- Required query parameter "limit" -------------
-	if paramValue := ctx.QueryParam("limit"); paramValue != "" {
-
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Query argument limit is required, but not found"))
-	}
 
 	err = runtime.BindQueryParameter("form", true, true, "limit", ctx.QueryParams(), &params.Limit)
 	if err != nil {
@@ -957,9 +767,6 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	}
 
 	// ------------- Optional query parameter "index" -------------
-	if paramValue := ctx.QueryParam("index"); paramValue != "" {
-
-	}
 
 	err = runtime.BindQueryParameter("form", true, false, "index", ctx.QueryParams(), &params.Index)
 	if err != nil {
@@ -971,16 +778,28 @@ func (w *ServerInterfaceWrapper) TransactionsByPulseNumberRange(ctx echo.Context
 	return err
 }
 
+// This is a simple interface which specifies echo.Route addition functions which
+// are present on both echo.Echo and echo.Group, since we want to allow using
+// either of them for path registration
+type EchoRouter interface {
+	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
+}
+
 // RegisterHandlers adds each server route to the EchoRouter.
-func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
+func RegisterHandlers(router EchoRouter, si ServerInterface) {
 
 	wrapper := ServerInterfaceWrapper{
 		Handler: si,
 	}
 
-	router.GET("/admin/isMigrationAddress/:ethereumAddress", wrapper.IsMigrationAddress)
-	router.GET("/admin/migration/addresses", wrapper.GetMigrationAddresses)
-	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
 	router.GET("/api/fee/:amount", wrapper.Fee)
 	router.GET("/api/member/byPublicKey", wrapper.MemberByPublicKey)
 	router.GET("/api/member/:reference", wrapper.Member)
@@ -989,11 +808,8 @@ func RegisterHandlers(router runtime.EchoRouter, si ServerInterface) {
 	router.GET("/api/notification", wrapper.Notification)
 	router.GET("/api/pulse/number", wrapper.PulseNumber)
 	router.GET("/api/pulse/range", wrapper.PulseRange)
-	router.GET("/api/stats/market", wrapper.MarketStats)
-	router.GET("/api/stats/network", wrapper.NetworkStats)
 	router.GET("/api/stats/supply/total", wrapper.SupplyStatsTotal)
 	router.GET("/api/transaction/:txID", wrapper.Transaction)
-	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 	router.GET("/api/transactions", wrapper.TransactionsSearch)
 	router.GET("/api/transactions/closed", wrapper.ClosedTransactions)
 	router.GET("/api/transactions/inPulseNumberRange", wrapper.TransactionsByPulseNumberRange)

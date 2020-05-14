@@ -36,10 +36,7 @@ osflag:
 build: ## build all binaries
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
-	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
-	go build -o $(BIN_DIR)/binance-collector cmd/binance-collector/*.go
 	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
-	go build -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci

@@ -115,37 +115,6 @@ binance - get data gathered by binance collector
 coin_market_cap - get data gathered by cmc collector
 ```
 
-## Stats collector
-Command calculates, gathers and saves statistics, add to cron for 1/min execution.
-Uses replicator's config (see above).
-
-## Binance collector
-Binance gathers info about the exchange rate of the INS/USD pair (could be calculated like a XNS/USD)
-
-Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
-```
-    make build
-    ./bin/binance-collector -symbol=XNS
-```
-
- `-symbol` is used for providing symbol to the stats collector. 
-
-Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
-
-## Coin market cap collector
-Binance gathers info about the exchange rate of the INS/USD pair (could be calculated like a XNS/USD)
-
-Collector should be run every **hour** (it mustn't be run more than 1 time per 5 minute), to run it call these commands:
-```
-    make build
-    ./bin/coin-market-cap-collector -cmc-token={CMC_API_TOKEN} -symbol={XNS|INS}
-```
-
- `-cmc-token` is used for providing `Coin market cap` api token. That will be using for an every request.
-  `-symbol` is used for providing symbol to the stats collector. 
-
-Config is being taken from `.artifacts`. The observer config is needed, because `collector` uses `Log` and `Db` sections.
-
 ## Database initialization and upgrade
 Run migrations (with go binary inside repository):
 1. Run `make migrate`.
@@ -190,14 +159,14 @@ go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
 
 Generate combined `api-exported.yaml` file:
 ```
-cd ../insolar-observer-api/api-exported.yaml
-npm install
-npm run export
+cd ../spec-insolar-observer
+make build-external-call-api-client
 ```
 
 Generate types and API from observer API:
 ```
-oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
+oapi-codegen -package api -generate types,server \
+  ../spec-insolar-observer/external-call-api/client/api-exported.yaml > internal/app/api/generated.go
 ```
 
 # License

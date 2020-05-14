@@ -41,23 +41,6 @@ func NewObserverServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseSto
 	return &ObserverServer{db: db, log: log, pStorage: pStorage, config: config}
 }
 
-func (s *ObserverServer) IsMigrationAddress(ctx echo.Context, ethereumAddress string) error {
-	s.setExpire(ctx, 1*time.Minute)
-
-	count, err := s.db.Model(&models.MigrationAddress{}).
-		Where("addr = ?", ethereumAddress).
-		Count()
-
-	if err != nil {
-		s.log.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
-	return ctx.JSON(http.StatusOK, ResponsesIsMigrationAddressYaml{
-		IsMigrationAddress: count > 0,
-	})
-}
-
 func (s *ObserverServer) PulseNumber(ctx echo.Context) error {
 	pulse, err := s.pStorage.Last()
 	if err != nil {
@@ -95,54 +78,6 @@ func (s *ObserverServer) PulseRange(ctx echo.Context, params PulseRangeParams) e
 		res = append(res, int64(p))
 	}
 	return ctx.JSON(http.StatusOK, res)
-}
-
-func (s *ObserverServer) GetMigrationAddresses(ctx echo.Context, params GetMigrationAddressesParams) error {
-	limit := params.Limit
-	if limit <= 0 || limit > 1000 {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("`limit` should be in range [1, 1000]"))
-	}
-
-	query := s.db.Model(&models.MigrationAddress{}).
-		Where("wasted = false")
-	if params.Index != nil {
-		id, err := strconv.ParseInt(*params.Index, 10, 64)
-		if err != nil {
-			s.log.Error(err)
-			return ctx.JSON(http.StatusBadRequest, struct{}{})
-		}
-		query = query.Where("id > ?", id)
-	}
-	var result []models.MigrationAddress
-	err := query.Order("id").Limit(limit).Select(&result)
-	if err != nil {
-		s.log.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
-	resJSON := make(ResponsesAddressesYaml, len(result))
-	for i := 0; i < len(result); i++ {
-		resJSON[i].Address = result[i].Addr
-		resJSON[i].Index = strconv.FormatInt(result[i].ID, 10)
-	}
-	return ctx.JSON(http.StatusOK, resJSON)
-}
-
-// GetMigrationAddressCount returns the total number of non-assigned migration addresses
-func (s *ObserverServer) GetMigrationAddressCount(ctx echo.Context) error {
-	s.setExpire(ctx, 10*time.Second)
-
-	count, err := s.db.Model(&models.MigrationAddress{}).
-		Where("wasted = false").
-		Count()
-	if err != nil {
-		s.log.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
-	return ctx.JSON(http.StatusOK, ResponsesAddressCountYaml{
-		Count: count,
-	})
 }
 
 func (s *ObserverServer) TransactionsDetails(ctx echo.Context, txID string) error {
@@ -537,87 +472,6 @@ func (s *ObserverServer) SupplyStatsTotal(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusOK, result.TotalInXNS())
-}
-
-// PointsCount holds count of history points. Max count is 21
-// https://insolar.atlassian.net/browse/INS-4049
-const PointsCount = 21
-
-func (s *ObserverServer) MarketStats(ctx echo.Context) error {
-	s.setExpire(ctx, 1*time.Hour)
-	switch s.config.PriceOrigin {
-	case "binance":
-		repo := postgres.NewBinanceStatsRepository(s.db)
-		stats, err := repo.LastStats()
-		if err != nil {
-			s.log.Error(errors.Wrap(err, "couldn't get last binance supply stats"))
-			return ctx.JSON(http.StatusInternalServerError, "")
-		}
-
-		history, err := repo.PriceHistory(PointsCount)
-		if err != nil {
-			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
-			return ctx.JSON(http.StatusInternalServerError, "")
-		}
-		response := ResponsesMarketStatsYaml{
-			Price:       fmt.Sprintf("%v", stats.SymbolPriceUSD),
-			DailyChange: NullableString(stats.PriceChangePercent),
-		}
-		response.addHistoryPoints(history)
-
-		return ctx.JSON(http.StatusOK, response)
-	case "coin_market_cap":
-		checkEnabled := func(enabled bool, value float64) *string {
-			if enabled {
-				return NullableString(fmt.Sprintf("%v", value))
-			}
-			return nil
-		}
-		repo := postgres.NewCoinMarketCapStatsRepository(s.db)
-		stats, err := repo.LastStats()
-		if err != nil {
-			s.log.Error(errors.Wrap(err, "couldn't get last coin market cap supply stats"))
-			return ctx.JSON(http.StatusInternalServerError, "")
-		}
-		history, err := repo.PriceHistory(PointsCount)
-		if err != nil {
-			s.log.Error(errors.Wrap(err, "couldn't get info about price history"))
-			return ctx.JSON(http.StatusInternalServerError, "")
-		}
-		response := ResponsesMarketStatsYaml{
-			CirculatingSupply: checkEnabled(s.config.CMCMarketStatsParams.CirculatingSupply, stats.CirculatingSupply),
-			DailyChange:       checkEnabled(s.config.CMCMarketStatsParams.DailyChange, stats.PercentChange24Hours),
-			MarketCap:         checkEnabled(s.config.CMCMarketStatsParams.MarketCap, stats.MarketCap),
-			Price:             fmt.Sprintf("%v", stats.Price),
-			Rank:              checkEnabled(s.config.CMCMarketStatsParams.Rank, float64(stats.Rank)),
-			Volume:            checkEnabled(s.config.CMCMarketStatsParams.Volume, stats.Volume24Hours),
-		}
-		response.addHistoryPoints(history)
-		return ctx.JSON(http.StatusOK, response)
-	default:
-		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
-			Price: s.config.Price,
-		})
-	}
-}
-
-func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
-	s.setExpire(ctx, 10*time.Second)
-
-	repo := postgres.NewNetworkStatsRepository(s.db)
-	result, err := repo.LastStats()
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "")
-	}
-
-	return ctx.JSON(http.StatusOK, ResponsesNetworkStatsYaml{
-		Accounts:              result.TotalAccounts,
-		CurrentTPS:            result.CurrentTPS,
-		LastMonthTransactions: result.MonthTransactions,
-		MaxTPS:                result.MaxTPS,
-		Nodes:                 result.Nodes,
-		TotalTransactions:     result.TotalTransactions,
-	})
 }
 
 func checkIndex(i string) (int64, int64, error) {
