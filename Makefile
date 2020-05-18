@@ -75,10 +75,12 @@ config: ## generate configs
 
 ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
+	go test -json -v -count 10 -timeout 20m -tags="sequential" --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: test
 test: config ## tests
-	go test ./... -v $(TEST_ARGS)
+	go test ./... $(TEST_ARGS)
+	go test ./... -failfast -tags="sequential"
 
 .PHONY: all
 all: config build
