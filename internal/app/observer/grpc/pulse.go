@@ -9,11 +9,11 @@ import (
 	"context"
 	"io"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
-
-	"github.com/insolar/observer/configuration"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
@@ -52,7 +52,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	cycle.UntilError(func() error {
-		stream, err := client.Export(requestCtx, request)
+		stream, err := client.Export(metadata.AppendToOutgoingContext(requestCtx, "idobserver", "public-exchangeID"), request)
 		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
@@ -95,7 +95,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 	f.log.Debug("Fetching top sync pulse")
 
 	cycle.UntilError(func() error {
-		tsp, err = client.TopSyncPulse(ctx, request)
+		tsp, err = client.TopSyncPulse(metadata.AppendToOutgoingContext(ctx, "idobserver", "public-exchangeID"), request)
 		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get tsp"))
