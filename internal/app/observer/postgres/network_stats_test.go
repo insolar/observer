@@ -3,8 +3,6 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
-// +build sequential
-
 package postgres_test
 
 import (
@@ -24,6 +22,8 @@ import (
 )
 
 func TestNetworkStats(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	log := inslogger.FromContext(context.Background())
 	pulseRepo := postgres.NewPulseStorage(log, db)
 
