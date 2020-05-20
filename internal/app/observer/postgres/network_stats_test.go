@@ -22,6 +22,8 @@ import (
 )
 
 func TestNetworkStats(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	log := inslogger.FromContext(context.Background())
 	pulseRepo := postgres.NewPulseStorage(log, db)
 

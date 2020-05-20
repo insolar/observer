@@ -16,6 +16,8 @@ import (
 )
 
 func TestSupplyStats(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	repo := postgres.NewSupplyStatsRepository(db)
 
 	stats, err := repo.CountStats()

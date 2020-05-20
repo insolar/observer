@@ -25,6 +25,8 @@ func newInt(val int64) *int64 {
 }
 
 func TestDepositStorage_Insert(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
 
 	t.Run("not confirmed", func(t *testing.T) {
@@ -95,6 +97,8 @@ func TestDepositStorage_Insert(t *testing.T) {
 }
 
 func TestDepositStorage_Update(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
 
 	t.Run("ok", func(t *testing.T) {
@@ -387,6 +391,8 @@ func TestDepositStorage_Update(t *testing.T) {
 }
 
 func TestMemberSet(t *testing.T) {
+	cleaner := InitTestDB()
+	defer cleaner()
 	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
 
 	t.Run("ok", func(t *testing.T) {

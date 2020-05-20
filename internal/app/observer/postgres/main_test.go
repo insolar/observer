@@ -24,13 +24,17 @@ func (d dbLogger) BeforeQuery(q *pg.QueryEvent) {
 func (d dbLogger) AfterQuery(q *pg.QueryEvent) {
 }
 
-func TestMain(t *testing.M) {
+func InitTestDB() func() {
 	var dbCleaner func()
 	db, _, dbCleaner = testutils.SetupDB("../../../../scripts/migrations")
 
 	// for debug purposes print all queries
 	db.AddQueryHook(dbLogger{})
+	return dbCleaner
+}
 
+func TestMain(t *testing.M) {
+	dbCleaner := InitTestDB()
 	retCode := t.Run()
 	dbCleaner()
 	os.Exit(retCode)
