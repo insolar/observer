@@ -6,6 +6,7 @@
 package postgres_test
 
 import (
+	"github.com/insolar/observer/internal/testutils"
 	"testing"
 
 	"github.com/insolar/insolar/insolar/gen"
@@ -16,8 +17,10 @@ import (
 )
 
 func TestSupplyStats(t *testing.T) {
-	cleaner := InitTestDB()
-	defer cleaner()
+	defer testutils.TruncateTables(t, db, []interface{}{
+		&models.Member{},
+		&models.SupplyStats{},
+	})
 	repo := postgres.NewSupplyStatsRepository(db)
 
 	stats, err := repo.CountStats()
