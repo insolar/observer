@@ -29,7 +29,7 @@ jobs:
     steps:
     - name: set default pr params
       run: |
-        echo "::set-env name=TEST_ARGS::-race -p 10 -failfast -timeout 240m"
+        echo "::set-env name=TEST_ARGS::-race -failfast -timeout 240m"
     - name: set nightly run params
       if: github.event_name == 'schedule'
       run: |
