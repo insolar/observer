@@ -8,6 +8,9 @@ package testutils
 import (
 	"fmt"
 	"log"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/go-pg/migrations"
 	"github.com/go-pg/pg"
@@ -42,6 +45,7 @@ func SetupDB(migrationsDir string) (*pg.DB, pg.Options, func()) {
 
 	poolCleaner := func() {
 		// When you're done, kill and remove the container
+		log.Printf("removing container")
 		err := pool.Purge(resource)
 		if err != nil {
 			log.Printf("failed to purge docker pool: %s", err)
@@ -63,6 +67,7 @@ func SetupDB(migrationsDir string) (*pg.DB, pg.Options, func()) {
 	}
 
 	dbCleaner := func() {
+		log.Printf("shutting down db")
 		err := db.Close()
 		if err != nil {
 			log.Printf("failed to purge docker pool: %s", err)
@@ -93,4 +98,11 @@ func SetupDB(migrationsDir string) (*pg.DB, pg.Options, func()) {
 		log.Panicf("Could not migrate: %s", err)
 	}
 	return db, options, cleaner
+}
+
+func TruncateTables(t *testing.T, db *pg.DB, models []interface{}) {
+	for _, m := range models {
+		_, err := db.Model(m).Exec("TRUNCATE TABLE ?TableName CASCADE")
+		require.NoError(t, err)
+	}
 }

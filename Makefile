@@ -78,7 +78,7 @@ ci_test: ## run tests with coverage
 
 .PHONY: test
 test: config ## tests
-	go test ./... $(TEST_ARGS)
+	go test ./... -v $(TEST_ARGS)
 
 .PHONY: all
 all: config build
