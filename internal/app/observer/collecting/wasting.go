@@ -20,26 +20,26 @@ const (
 	GetFreeMigrationAddress = "GetFreeMigrationAddress"
 )
 
-type WastingCollector struct {
+type VestingCollector struct {
 	fetcher store.RecordFetcher
 	log     insolar.Logger
 }
 
-func NewWastingCollector(log insolar.Logger, fetcher store.RecordFetcher) *WastingCollector {
-	return &WastingCollector{
+func NewVestingCollector(log insolar.Logger, fetcher store.RecordFetcher) *VestingCollector {
+	return &VestingCollector{
 		log:     log,
 		fetcher: fetcher,
 	}
 }
 
-func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Wasting {
+func (c *VestingCollector) Collect(ctx context.Context, rec *observer.Record) *observer.Vesting {
 	if rec == nil {
 		return nil
 	}
 
 	log := c.log.WithFields(
 		map[string]interface{}{
-			"collector": "WastingCollector",
+			"collector": "VestingCollector",
 			"record_id": rec.ID.DebugString(),
 		})
 
@@ -74,7 +74,7 @@ func (c *WastingCollector) Collect(ctx context.Context, rec *observer.Record) *o
 
 	address := ""
 	result.ParseFirstPayloadValue(&address, log)
-	return &observer.Wasting{
+	return &observer.Vesting{
 		Addr: address,
 	}
 }

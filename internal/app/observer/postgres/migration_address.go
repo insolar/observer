@@ -68,9 +68,9 @@ func (s *MigrationAddressStorage) Insert(model *observer.MigrationAddress) error
 	return nil
 }
 
-func (s *MigrationAddressStorage) Update(model *observer.Wasting) error {
+func (s *MigrationAddressStorage) Update(model *observer.Vesting) error {
 	if model == nil {
-		s.log.Warnf("trying to apply nil vasting model")
+		s.log.Warnf("trying to apply nil vesting model")
 		return nil
 	}
 

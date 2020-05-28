@@ -44,18 +44,18 @@ func makeGetMigrationAddressCall(pn insolar.PulseNumber) *observer.Record {
 	return (*observer.Record)(rec)
 }
 
-func TestWastingCollector_Collect(t *testing.T) {
+func TestVestingCollector_Collect(t *testing.T) {
 	log := inslogger.FromContext(inslogger.TestContext(t))
 	t.Run("nil", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(log, fetcher)
+		collector := NewVestingCollector(log, fetcher)
 		ctx := context.Background()
 		require.Nil(t, collector.Collect(ctx, nil))
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
 		fetcher := store.NewRecordFetcherMock(t)
-		collector := NewWastingCollector(log, fetcher)
+		collector := NewVestingCollector(log, fetcher)
 
 		pn := insolar.GenesisPulse.PulseNumber
 		address := "0x5ca5e6417f818ba1c74d8f45104267a332c6aafb6ae446cc2bf8abd3735d1461111111111111111"
@@ -78,18 +78,18 @@ func TestWastingCollector_Collect(t *testing.T) {
 			}
 		})
 
-		expected := []*observer.Wasting{
+		expected := []*observer.Vesting{
 			{
 				Addr: address,
 			},
 		}
 
 		ctx := context.Background()
-		var actual []*observer.Wasting
+		var actual []*observer.Vesting
 		for _, r := range records {
-			wasting := collector.Collect(ctx, r)
-			if wasting != nil {
-				actual = append(actual, wasting)
+			vesting := collector.Collect(ctx, r)
+			if vesting != nil {
+				actual = append(actual, vesting)
 			}
 		}
 

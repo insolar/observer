@@ -52,7 +52,7 @@ func makeBeautifier(
 	balances := collecting.NewBalanceCollector(log)
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
 	depositMembers := collecting.NewDepositMemberCollector(log)
-	wastings := collecting.NewWastingCollector(log, cachedStore)
+	vestings := collecting.NewVestingCollector(log, cachedStore)
 
 	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
@@ -67,7 +67,7 @@ func makeBeautifier(
 			balances:       make(map[insolar.ID]*observer.Balance),
 			depositUpdates: make(map[insolar.ID]observer.DepositUpdate),
 			depositMembers: make(map[insolar.Reference]observer.DepositMemberUpdate),
-			wastings:       make(map[string]*observer.Wasting),
+			vestings:       make(map[string]*observer.Vesting),
 		}
 
 		// preparing data
@@ -178,9 +178,9 @@ func makeBeautifier(
 				b.depositMembers[depositMemberUpdate.Ref] = *depositMemberUpdate
 			}
 
-			wasting := wastings.Collect(ctx, &obsRecord)
-			if wasting != nil {
-				b.wastings[wasting.Addr] = wasting
+			vesting := vestings.Collect(ctx, &obsRecord)
+			if vesting != nil {
+				b.vestings[vesting.Addr] = vesting
 			}
 		}
 		log.Debug("Timer:  collected ", time.Since(tempTimer))
@@ -198,7 +198,7 @@ func makeBeautifier(
 		log.WithFields(map[string]interface{}{
 			"balances":                  len(b.balances),
 			"deposit_updates":           len(b.depositUpdates),
-			"migration_address_updates": len(b.wastings),
+			"migration_address_updates": len(b.vestings),
 			"deposit_member_updates":    len(b.depositMembers),
 		}).Infof("collected depositUpdates")
 
@@ -209,7 +209,7 @@ func makeBeautifier(
 
 		metric.Balances.Add(float64(len(b.balances)))
 		metric.Updates.Add(float64(len(b.depositUpdates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.Vestings.Add(float64(len(b.vestings)))
 
 		return b
 	}

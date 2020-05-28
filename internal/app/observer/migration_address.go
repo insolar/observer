@@ -19,10 +19,10 @@ type MigrationAddressCollector interface {
 	Collect(*Record) []*MigrationAddress
 }
 
-type Wasting struct {
+type Vesting struct {
 	Addr string
 }
 
-type WastingCollector interface {
-	Collect(*Record) []*Wasting
+type VestingCollector interface {
+	Collect(*Record) []*Vesting
 }
