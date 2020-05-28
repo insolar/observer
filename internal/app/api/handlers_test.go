@@ -1906,53 +1906,76 @@ func TestObserverServer_MarketStats(t *testing.T) {
 }
 
 func TestObserverServer_Notifications(t *testing.T) {
-	resp, err := http.Get("http://" + apihost + "/api/notification")
+	apiUrl := "http://" + apihost + "/api/notification"
+
+	// No content status is displayed
+	if _, err := db.Exec("DELETE FROM notifications"); err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(apiUrl)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 
+	// Present notification is published
+	presentNotificationName := uuid.New().String()
+	presentNotification := &models.Notification{
+		Message: presentNotificationName,
+		Start:   time.Now().Add(-3 * time.Hour),
+		Stop:    time.Now().Add(3 * time.Hour),
+	}
+	err = db.Insert(presentNotification)
+	require.NoError(t, err)
+
+	resp, err = http.Get(apiUrl)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	jsonResp := ResponsesNotificationInfoYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	require.Equal(t, presentNotificationName, jsonResp.Notification)
+
+	// Past notification was not published
+	resp, err = http.Get(apiUrl)
+	require.NoError(t, err)
+
+	oldNotificationName := uuid.New().String()
 	err = db.Insert(&models.Notification{
-		Message: "old",
+		Message: oldNotificationName,
 		Start:   time.Now().Add(-10 * time.Hour),
 		Stop:    time.Now().Add(-9 * time.Hour),
 	})
 	require.NoError(t, err)
 
-	resp, err = http.Get("http://" + apihost + "/api/notification")
+	resp, err = http.Get(apiUrl)
 	require.NoError(t, err)
-	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+	jsonResp = ResponsesNotificationInfoYaml{}
+	err = json.Unmarshal(bodyBytes, &jsonResp)
+	require.NoError(t, err)
+	require.NotEqual(t, oldNotificationName, jsonResp.Notification)
 
+	// Future notification is not published yet
+	futureNotificationName := uuid.New().String()
 	err = db.Insert(&models.Notification{
-		Message: "in the future",
+		Message: futureNotificationName,
 		Start:   time.Now().Add(20 * time.Hour),
 		Stop:    time.Now().Add(24 * time.Hour),
 	})
 	require.NoError(t, err)
 
-	resp, err = http.Get("http://" + apihost + "/api/notification")
-	require.NoError(t, err)
-	require.Equal(t, http.StatusNoContent, resp.StatusCode)
-
-	err = db.Insert(&models.Notification{
-		Message: "show now",
-		Start:   time.Now().Add(-3 * time.Hour),
-		Stop:    time.Now().Add(3 * time.Hour),
-	})
-	require.NoError(t, err)
-
-	resp, err = http.Get("http://" + apihost + "/api/notification")
+	resp, err = http.Get(apiUrl)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-
-	jsonResp := ResponsesNotificationInfoYaml{}
+	jsonResp = ResponsesNotificationInfoYaml{}
 	err = json.Unmarshal(bodyBytes, &jsonResp)
 	require.NoError(t, err)
-	expected := ResponsesNotificationInfoYaml{
-		Notification: "show now",
-	}
-	require.Equal(t, expected, jsonResp)
+	require.NotEqual(t, futureNotificationName, jsonResp.Notification)
 }
 
 func TestIsMigrationAddressFailed(t *testing.T) {

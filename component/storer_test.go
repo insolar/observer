@@ -29,6 +29,7 @@ import (
 )
 
 func TestStoreSimpleTransactions(t *testing.T) {
+	amount := strconv.Itoa(rand.Int())
 	expectedTransactions := []models.Transaction{
 		{
 			TransactionID:       gen.RecordReference().Bytes(),
@@ -36,7 +37,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
 			MemberFromReference: gen.Reference().Bytes(),
 			MemberToReference:   gen.Reference().Bytes(),
-			Amount:              strconv.Itoa(rand.Int()),
+			Amount:              amount,
 			Fee:                 strconv.Itoa(rand.Int()),
 			FinishSuccess:       rand.Int()/2 == 0,
 			FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
@@ -49,7 +50,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 			Type:               models.TTypeMigration,
 			PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
 			DepositToReference: gen.Reference().Bytes(),
-			Amount:             strconv.Itoa(rand.Int()),
+			Amount:             amount,
 			Fee:                strconv.Itoa(rand.Int()),
 			StatusRegistered:   true,
 			StatusSent:         true,
@@ -115,7 +116,7 @@ func TestStoreSimpleTransactions(t *testing.T) {
 
 		// Select transactions from db.
 		selected := make([]models.Transaction, 2)
-		res, err := tx.Query(&selected, `SELECT * FROM simple_transactions ORDER BY tx_id`)
+		res, err := tx.Query(&selected, `SELECT * FROM simple_transactions WHERE amount = ? ORDER BY tx_id`, amount)
 		require.NoError(t, err)
 		require.Equal(t, 2, res.RowsReturned())
 		// Reset ID field to simplify comparing.
@@ -297,12 +298,12 @@ func TestStoreSimpleDeposit(t *testing.T) {
 	state := gen.RecordReference()
 	transferDate := time.Now().Unix()
 	holdDate := time.Now().Unix() + 5
-
+	txHash := "tx_hash_0"
 	expectedDeposit := []models.Deposit{
 		{
 			Reference:       ref.Bytes(),
 			MemberReference: memberRef.Bytes(),
-			EtheriumHash:    "tx_hash_0",
+			EtheriumHash:    txHash,
 			State:           state.GetLocal().Bytes(),
 			Timestamp:       transferDate,
 			HoldReleaseDate: holdDate,
@@ -337,7 +338,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 
 		// Select deposit from db.
 		selected := make([]models.Deposit, 1)
-		res, err := tx.Query(&selected, `SELECT * FROM deposits`)
+		res, err := tx.Query(&selected, `SELECT * FROM deposits where eth_hash = ?`, txHash)
 		require.NoError(t, err)
 		require.Equal(t, 1, res.RowsReturned())
 

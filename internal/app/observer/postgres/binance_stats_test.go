@@ -11,12 +11,11 @@ import (
 
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
-	"github.com/insolar/observer/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBinanceStats(t *testing.T) {
-	db, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	db, _, dbCleaner := InitTestDB()
 	defer dbCleaner()
 	repo := postgres.NewBinanceStatsRepository(db)
 
@@ -45,9 +44,9 @@ func TestBinanceStats(t *testing.T) {
 }
 
 func TestBinanceStats_AverageCalculation(t *testing.T) {
-	mockDB, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	db, _, dbCleaner := InitTestDB()
 	defer dbCleaner()
-	repo := postgres.NewBinanceStatsRepository(mockDB)
+	repo := postgres.NewBinanceStatsRepository(db)
 
 	saveTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -62,7 +61,7 @@ func TestBinanceStats_AverageCalculation(t *testing.T) {
 			PriceChangePercent: "4",
 			Created:            saveTime,
 		}
-		err := mockDB.Insert(&stat)
+		err := db.Insert(&stat)
 		require.NoError(t, err)
 	}
 
@@ -87,9 +86,9 @@ func TestBinanceStats_AverageCalculation(t *testing.T) {
 }
 
 func TestBinanceStats_AverageCalculation_TwoDays(t *testing.T) {
-	mockDB, _, dbCleaner := testutils.SetupDB("../../../../scripts/migrations")
+	db, _, dbCleaner := InitTestDB()
 	defer dbCleaner()
-	repo := postgres.NewBinanceStatsRepository(mockDB)
+	repo := postgres.NewBinanceStatsRepository(db)
 
 	saveTimeFirst := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	saveTimeSecond := time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC)
@@ -105,7 +104,7 @@ func TestBinanceStats_AverageCalculation_TwoDays(t *testing.T) {
 			PriceChangePercent: "4",
 			Created:            saveTimeFirst,
 		}
-		err := mockDB.Insert(&stat)
+		err := db.Insert(&stat)
 		require.NoError(t, err)
 	}
 
@@ -120,7 +119,7 @@ func TestBinanceStats_AverageCalculation_TwoDays(t *testing.T) {
 			PriceChangePercent: "4",
 			Created:            saveTimeSecond,
 		}
-		err := mockDB.Insert(&stat)
+		err := db.Insert(&stat)
 		require.NoError(t, err)
 	}
 

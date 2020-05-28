@@ -7,6 +7,7 @@ package postgres_test
 
 import (
 	"context"
+	"github.com/insolar/observer/internal/testutils"
 	"testing"
 	"time"
 
@@ -22,6 +23,15 @@ import (
 )
 
 func TestNetworkStats(t *testing.T) {
+	defer testutils.TruncateTables(t, db, []interface{}{
+		&models.Pulse{},
+		&models.Member{},
+		&models.Transaction{},
+		&models.Deposit{},
+		&models.MigrationAddress{},
+		&models.NetworkStats{},
+		&models.SupplyStats{},
+	})
 	log := inslogger.FromContext(context.Background())
 	pulseRepo := postgres.NewPulseStorage(log, db)
 
