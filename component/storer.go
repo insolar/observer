@@ -178,13 +178,13 @@ func makeStorer(
 				}
 			}
 
-			for _, wasting := range b.wastings {
-				if wasting == nil {
+			for _, vesting := range b.vestings {
+				if vesting == nil {
 					continue
 				}
-				err := addresses.Update(wasting)
+				err := addresses.Update(vesting)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert vasting")
+					return errors.Wrap(err, "failed to insert vesting")
 				}
 			}
 
@@ -210,9 +210,9 @@ func makeStorer(
 		log.Info("items successfully stored")
 
 		// restore metrics
-		if s.ms.totalMigrationAddresses > 0 || s.ms.totalWasting > 0 {
+		if s.ms.totalMigrationAddresses > 0 || s.ms.totalVesting > 0 {
 			metric.Addresses.Add(float64(s.ms.totalMigrationAddresses))
-			metric.Wastings.Add(float64(s.ms.totalWasting))
+			metric.Vestings.Add(float64(s.ms.totalVesting))
 			s.ms.Reset()
 		}
 
@@ -223,7 +223,7 @@ func makeStorer(
 
 		metric.Balances.Add(float64(len(b.balances)))
 		metric.Updates.Add(float64(len(b.depositUpdates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.Vestings.Add(float64(len(b.vestings)))
 
 		return stat
 	}

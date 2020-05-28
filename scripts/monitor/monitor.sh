@@ -18,9 +18,7 @@ export PROMETHEUS_CONFIG_DIR=../../${LAUNCHNET_MONITOR_DIR}prometheus/
 
 if [[ $# -lt 1 ]]; then
 # 1) if started without params  pretend to be clever and do what is expected:
-# * prepare configuration
-# * shutdown ans start all monitoring services
-# * wait until Jaeger starts (we want to be sure tracer works before start benchmark)
+# * start all monitoring services
 
 
     echo "start monitoring stack"

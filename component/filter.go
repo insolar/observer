@@ -20,7 +20,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 
 		filtering.NewBalanceFilter().Filter(b.balances, b.members)
 		filtering.NewDepositUpdateFilter().Filter(b.depositUpdates, b.deposits)
-		filtering.NewWastingFilter().Filter(b.wastings, b.addresses)
+		filtering.NewVestingFilter().Filter(b.vestings, b.addresses)
 
 		log.Info("items successfully filtered")
 
@@ -31,7 +31,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 
 		metric.Balances.Add(float64(len(b.balances)))
 		metric.Updates.Add(float64(len(b.depositUpdates)))
-		metric.Wastings.Add(float64(len(b.wastings)))
+		metric.Vestings.Add(float64(len(b.vestings)))
 		return b
 	}
 }
