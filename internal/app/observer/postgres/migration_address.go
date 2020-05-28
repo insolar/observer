@@ -70,7 +70,7 @@ func (s *MigrationAddressStorage) Insert(model *observer.MigrationAddress) error
 
 func (s *MigrationAddressStorage) Update(model *observer.Wasting) error {
 	if model == nil {
-		s.log.Warnf("trying to apply nil wasting model")
+		s.log.Warnf("trying to apply nil vasting model")
 		return nil
 	}
 

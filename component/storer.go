@@ -184,7 +184,7 @@ func makeStorer(
 				}
 				err := addresses.Update(wasting)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert wasting")
+					return errors.Wrap(err, "failed to insert vasting")
 				}
 			}
 
