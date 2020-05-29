@@ -59,7 +59,7 @@ OBSERVER_LOG_BUFFER=0
 
 ## Metrics and health check
 
- ### Deploy built-in monitoring
+ ### Deploy the built-in monitoring system
  Before launching the monitoring script, make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
  
  Then run: ` ./scripts/monitor/monitor.sh`
@@ -74,9 +74,9 @@ The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
  
  * Observer health check service is at `http://localhost:8888/healthcheck`.
 
-### Deploy custom monitoring
+### Deploy a customized monitoring system
 
-You can install and deploy the monitoring system yourself. 
+You can install, customize and deploy the monitoring system yourself. 
 To do this:
 1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
 
