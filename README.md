@@ -60,19 +60,19 @@ OBSERVER_LOG_BUFFER=0
 ## Metrics and health check
 
  ### Deploy built-in monitoring
- Before launching the monitoring scriptm make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). Then run:
+ Before launching the monitoring scriptm make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
  
-` ./scripts/monitor/monitor.sh`
+ Then run: ` ./scripts/monitor/monitor.sh`
 
 The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
 
- Grafana at `http://localhost:3000`  with default login and password: `login=admin` `password=pass`
+ * Grafana is at `http://localhost:3000`  with default login and password: `login=admin` `password=pass`.
  
- Prometheus at `http://localhost:9090/graph`
+ * Prometheus is at `http://localhost:9090/graph`.
 
- Observer мetrics at `http://localhost:8888` by default
+ * Observer мetrics are at `http://localhost:8888` by default.
  
- Observer health check service at `http://localhost:8888/healthcheck`
+ * Observer health check service is at `http://localhost:8888/healthcheck`.
 
 ### Deploy custom monitoring
 
@@ -80,11 +80,11 @@ You can install and deploy the monitoring system yourself.
 To do this:
 1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
 
-You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
+   You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
 
 2. Import [this dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
  
- If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/)
+   If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
 
 
 ## API service
