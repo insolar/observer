@@ -105,7 +105,7 @@ type BeautyMetrics struct {
 	Deposits  prometheus.Counter
 	Updates   prometheus.Counter
 	Addresses prometheus.Counter
-	Wastings  prometheus.Counter
+	Vestings  prometheus.Counter
 }
 
 type CommonObserverMetrics struct {

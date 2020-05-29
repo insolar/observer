@@ -30,7 +30,7 @@ Run `make build`.
 To run replicator you should provide config file `observer.yaml`
 in the current working directory or in `.artifacts` directory.
 
-Run `./bin/observer`
+Run `./bin/observer --config .artifacts/observer.yaml`
 
 ### Configuration
 

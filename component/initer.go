@@ -44,19 +44,19 @@ func MustKnowPulse(obs *observability.Observability, db orm.DB) insolar.PulseNum
 }
 
 type metricState struct {
-	totalWasting            int
+	totalVesting            int
 	totalMigrationAddresses int
 }
 
 func (ms *metricState) Reset() {
-	ms.totalWasting = 0
+	ms.totalVesting = 0
 	ms.totalMigrationAddresses = 0
 }
 
 func getMetricState(cfg *configuration.Observer, obs *observability.Observability, db orm.DB) metricState {
 	ma := postgres.NewMigrationAddressStorage(&cfg.DB, obs, db)
 	return metricState{
-		totalWasting:            ma.Wasted(),
+		totalVesting:            ma.Wasted(),
 		totalMigrationAddresses: ma.TotalMigrationAddresses(),
 	}
 }

@@ -108,7 +108,7 @@ func TestBeautifier_Run(t *testing.T) {
 		assert.NotNil(t, res)
 	})
 
-	t.Run("wastings", func(t *testing.T) {
+	t.Run("vestings", func(t *testing.T) {
 		cfg := &configuration.Observer{
 			Replicator: configuration.Replicator{
 				CacheSize: 100000,
@@ -133,10 +133,10 @@ func TestBeautifier_Run(t *testing.T) {
 			},
 		}
 		res := beautifier(ctx, raw)
-		assert.Equal(t, map[string]*observer.Wasting{
+		assert.Equal(t, map[string]*observer.Vesting{
 			address: {
 				Addr: address,
-			}}, res.wastings)
+			}}, res.vestings)
 	})
 }
 

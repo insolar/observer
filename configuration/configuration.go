@@ -86,7 +86,7 @@ func Default() *Observer {
 			FastForwardInterval: time.Second / 4,
 			BatchSize:           2000,
 			CacheSize:           10000,
-			Listen:              ":0",
+			Listen:              ":8888",
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
