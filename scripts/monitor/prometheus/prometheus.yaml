@@ -7,7 +7,7 @@ scrape_configs:
 - job_name: observer
   static_configs:
   - targets:
-    - "host.docker.internal:8888"
+    - "host.docker.internal:8888" # port observer must match with `listen` in observer.yaml
     labels:
       installation: local
 
