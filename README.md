@@ -60,7 +60,7 @@ OBSERVER_LOG_BUFFER=0
 ## Metrics and health check
 
  ### Deploy built-in monitoring
- Before launching the monitoring scriptm make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
+ Before launching the monitoring script, make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
  
  Then run: ` ./scripts/monitor/monitor.sh`
 
