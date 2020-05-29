@@ -66,7 +66,7 @@ OBSERVER_LOG_BUFFER=0
 
 The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
 
- * Grafana is at `http://localhost:3000`  with default login and password: `login=admin` `password=pass`.
+ * Grafana is at `http://localhost:3000`  with default login and password: `login=admin` and `password=pass`.
  
  * Prometheus is at `http://localhost:9090/graph`.
 
