@@ -15,69 +15,9 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 9,
-  "iteration": 1590661643083,
+  "iteration": 1590768914437,
   "links": [],
   "panels": [
-    {
-      "cacheTimeout": null,
-      "datasource": "prometheus",
-      "gridPos": {
-        "h": 4,
-        "w": 9,
-        "x": 0,
-        "y": 0
-      },
-      "id": 2,
-      "links": [],
-      "options": {
-        "displayMode": "lcd",
-        "fieldOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [],
-            "max": 100,
-            "min": 0,
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": null
-                },
-                {
-                  "color": "dark-red",
-                  "value": 90
-                }
-              ]
-            }
-          },
-          "overrides": [],
-          "values": false
-        },
-        "orientation": "horizontal",
-        "showUnfilled": true
-      },
-      "pluginVersion": "6.7.1",
-      "targets": [
-        {
-          "expr": "observer_addresses_stored_total{namespace=\"$namespace\"} - observer_vestings_stored_total{namespace=\"$namespace\"}",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": "1m",
-      "timeShift": null,
-      "title": "Migration addresses available",
-      "type": "bargauge"
-    },
     {
       "cacheTimeout": null,
       "colorBackground": false,
@@ -101,7 +41,7 @@
       "gridPos": {
         "h": 4,
         "w": 7,
-        "x": 9,
+        "x": 0,
         "y": 0
       },
       "id": 4,
@@ -121,6 +61,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "pluginVersion": "6.2.4",
       "postfix": "",
       "postfixFontSize": "50%",
@@ -169,14 +110,101 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "description": "Show seconds spent on processing data from pulse",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 17,
+        "x": 7,
+        "y": 0
+      },
+      "id": 13,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "rate(observer_pulse_processing_time{namespace=\"$namespace\"}[2m])",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Processing pulse ",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "prometheus",
+      "description": "Shows the number of transactions per second",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 6,
@@ -221,6 +249,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -257,14 +286,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "description": "Shows the number of successfully created members per second.",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 8
       },
       "hiddenSeries": false,
       "id": 7,
@@ -308,6 +337,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -344,14 +374,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "description": "Shows the number of activation of objects per second",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 8,
@@ -394,6 +424,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -430,14 +461,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "description": "Shows the number of new balance records per second",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 9,
@@ -480,6 +511,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -516,14 +548,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "description": "Shows the number of objects deactivated per second",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 10,
@@ -602,14 +634,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
+      "description": "Shows deposit activity per second",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 11,
@@ -652,6 +684,7 @@
         "sort": 0,
         "value_type": "individual"
       },
+      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -684,8 +717,8 @@
       }
     }
   ],
-  "refresh": "5s",
-  "schemaVersion": 22,
+  "refresh": false,
+  "schemaVersion": 19,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -693,8 +726,9 @@
       {
         "allValue": null,
         "current": {
-          "text": "wallet",
-          "value": "wallet"
+          "isNone": true,
+          "text": "None",
+          "value": ""
         },
         "datasource": "prometheus",
         "definition": "label_values(observer_last_fetched_pulse, namespace)",
@@ -719,8 +753,8 @@
     ]
   },
   "time": {
-    "from": "now-30m",
-    "to": "now"
+    "from": "2020-05-29T16:00:45.933Z",
+    "to": "2020-05-29T16:39:29.796Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -750,8 +784,5 @@
   "timezone": "",
   "title": "Observer",
   "uid": "6zT9gUOWz",
-  "variables": {
-    "list": []
-  },
   "version": 1
 }
