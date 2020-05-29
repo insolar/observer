@@ -59,29 +59,32 @@ OBSERVER_LOG_BUFFER=0
 
 ## Metrics and health check
 
- you can  launch monitoring scripts (need  [docker compose](https://docs.docker.com/compose/install/ "Install Compose ") )
+ ### Deploy built-in monitoring
+ Before launching monitoring scripts make sure you have [docker compose](https://docs.docker.com/compose/install/ "Install Compose ") installed and set. Then run:
  
 ` ./scripts/monitor/monitor.sh`
 
- script starting grafana and prometheus configured by observer
+The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
 
- Grafana: http://localhost:3000  default login=admin password=pass
+ Grafana at `http://localhost:3000`  with default login and password: `login=admin` `password=pass`
  
- Prometheus: http://localhost:9090/graph
+ Prometheus at `http://localhost:9090/graph`
 
- observer мetrics  http://localhost:8888 by default
+ Observer мetrics at `http://localhost:8888` by default
  
- observer health check : http://localhost:8888/healthcheck
+ Observer health check service at `http://localhost:8888/healthcheck`
 
-###For deploy custom monitoring
+### Deploy custom monitoring
 
-You can install the monitoring system yourself. To do this, deploy  [grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
+You can install and deploy the monitoring system yourself. 
+To do this:
+1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
 
-you can get the config for prometheus  [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
+You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
 
-next step import   [this board](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into grafana. 
+2. Import [this dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
  
- [ how to import dashboard ]( https://grafana.com/docs/grafana/latest/reference/export_import/)
+ If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/)
 
 
 ## API service
