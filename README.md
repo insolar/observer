@@ -25,6 +25,20 @@ Run `make build`.
 
 `make all`
 
+The `make all` command generates three configurations (migrate.yaml, observer.yaml, observerapi.yaml) 
+and thee binaries (migrate, observer, api).
+
+## Extended version
+
+Use the next commands to build an extended version of services:
+`make config-extended`
+`make build-extended`
+`make all-extended`
+`make test-extended`
+
+The `make all-extended` command generates four configurations (migrate.yaml, observer.yaml, observerapi.yaml, stats-collector.yaml) 
+and six binaries (migrate, observer, api, stats-collector, binance-collector, coin-market-cap-collector).
+
 ## Replicator service
 
 To run replicator you should provide config file `observer.yaml`
@@ -74,7 +88,7 @@ API dashboard: `./dashboard_api.json`
 To run API you should provide config file `observerapi.yaml`
 in the current working directory or in `.artifacts` directory.
 
-Run `./bin/api`
+Run `./bin/api -- config .artifacts/observerapi.yaml`
 
 ### Configuration
 
