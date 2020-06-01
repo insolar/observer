@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/pulse"
-	apiconfiguration "github.com/insolar/observer/configuration/api"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 
@@ -54,10 +53,7 @@ func TestMain(t *testing.M) {
 	nowPulse := 1575302444 - pulse.UnixTimeOfMinTimePulse + pulse.MinTimePulse
 	_ = pStorage.Insert(&observer.Pulse{Number: pulse.Number(nowPulse)})
 
-	observerAPI := NewObserverServer(db, logger, pStorage, apiconfiguration.Configuration{
-		FeeAmount: testFee,
-		Price:     testPrice,
-	})
+	observerAPI := NewServer(db, logger, pStorage, getApiConfig())
 
 	RegisterHandlers(e, observerAPI)
 	go func() {

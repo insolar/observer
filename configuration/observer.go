@@ -11,39 +11,26 @@ import (
 	"github.com/insolar/observer/internal/pkg/cycle"
 )
 
-type StatsCollector struct {
-	Log Log
-	DB  DB
-}
-
 type Observer struct {
 	Log        Log
 	DB         DB
 	Replicator Replicator
 }
 
-type Configuration struct {
-	Replicator Replicator
-	DB         DB
-	Log        Log
+type Log struct {
+	Level        string
+	Format       string
+	OutputType   string
+	OutputParams string
+	Buffer       int
 }
 
-type Migrate struct {
-	DB DB
-}
-
-type CollectorCoinMarketCap struct {
-	Log Log
-	DB  DB
-}
-
-type CollectorBinance struct {
-	Log Log
-	DB  DB
-}
-
-func (c Configuration) GetConfig() interface{} {
-	return &c
+type DB struct {
+	URL      string
+	PoolSize int
+	Attempts cycle.Limit
+	// Interval between store in db failed attempts
+	AttemptInterval time.Duration
 }
 
 type Replicator struct {
@@ -60,23 +47,7 @@ type Replicator struct {
 	Listen string
 }
 
-type DB struct {
-	URL      string
-	PoolSize int
-	Attempts cycle.Limit
-	// Interval between store in db failed attempts
-	AttemptInterval time.Duration
-}
-
-type Log struct {
-	Level        string
-	Format       string
-	OutputType   string
-	OutputParams string
-	Buffer       int
-}
-
-func Default() *Observer {
+func (Observer) Default() *Observer {
 	return &Observer{
 		Replicator: Replicator{
 			Addr:                "127.0.0.1:5678",
@@ -102,15 +73,4 @@ func Default() *Observer {
 			Buffer:       0,
 		},
 	}
-}
-
-func (StatsCollector) Default() StatsCollector {
-	return StatsCollector{
-		DB:  Default().DB,
-		Log: Default().Log,
-	}
-}
-
-func (Migrate) Default() Migrate {
-	return Migrate{DB: Default().DB}
 }

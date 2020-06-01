@@ -3,7 +3,9 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
-package api
+// +build extended
+
+package configuration
 
 import (
 	"math/big"
@@ -24,7 +26,7 @@ func (g testPathGetter) GetConfigPath() string {
 }
 
 func TestConfigLoad(t *testing.T) {
-	cfg := Configuration{}
+	cfg := ApiExtended{}
 	params := insconfig.Params{
 		EnvPrefix:        "observerapi",
 		ViperHooks:       []mapstructure.DecodeHookFunc{ToBigIntHookFunc()},
