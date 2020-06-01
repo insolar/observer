@@ -26,7 +26,7 @@ func (g testPathGetter) GetConfigPath() string {
 }
 
 func TestConfigLoad(t *testing.T) {
-	cfg := ApiExtended{}
+	cfg := APIExtended{}
 	params := insconfig.Params{
 		EnvPrefix:        "observerapi",
 		ViperHooks:       []mapstructure.DecodeHookFunc{ToBigIntHookFunc()},

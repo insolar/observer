@@ -11,6 +11,6 @@ import (
 	"github.com/insolar/observer/configuration"
 )
 
-func getApiConfig() configuration.ApiConfig {
-	return configuration.Api{}
+func GetAPIConfigForTest() configuration.APIConfig {
+	return &configuration.API{}
 }

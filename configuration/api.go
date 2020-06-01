@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ApiConfig interface {
+type APIConfig interface {
 	GetListen() string
 	GetDB() DB
 	GetLog() Log
@@ -33,14 +33,14 @@ type CMCMarketStatsParamsEnabled struct {
 	Volume            bool
 }
 
-type Api struct {
+type API struct {
 	Listen string
 	DB     DB
 	Log    Log
 }
 
-func (Api) Default() *Api {
-	return &Api{
+func (API) Default() *API {
+	return &API{
 		Listen: ":0",
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
@@ -81,30 +81,30 @@ func ToBigIntHookFunc() mapstructure.DecodeHookFunc {
 	}
 }
 
-func (a Api) GetListen() string {
+func (a API) GetListen() string {
 	return a.Listen
 }
 
-func (a Api) GetDB() DB {
+func (a API) GetDB() DB {
 	return a.DB
 }
 
-func (a Api) GetLog() Log {
+func (a API) GetLog() Log {
 	return a.Log
 }
 
-func (a Api) GetFeeAmount() *big.Int {
-	panic("shouldn't be implemented for the type Api")
+func (a API) GetFeeAmount() *big.Int {
+	panic("shouldn't be implemented for the type API")
 }
 
-func (a Api) GetPriceOrigin() string {
-	panic("shouldn't be implemented for the type Api")
+func (a API) GetPriceOrigin() string {
+	panic("shouldn't be implemented for the type API")
 }
 
-func (a Api) GetPrice() string {
-	panic("shouldn't be implemented for the type Api")
+func (a API) GetPrice() string {
+	panic("shouldn't be implemented for the type API")
 }
 
-func (a Api) GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled {
-	panic("shouldn't be implemented for the type Api")
+func (a API) GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled {
+	panic("shouldn't be implemented for the type API")
 }

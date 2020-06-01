@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-	cfg := configuration.GetApiConfig()
+	cfg := configuration.GetAPIConfig()
 	params := insconfig.Params{
 		EnvPrefix:        "observerapi",
 		ViperHooks:       []mapstructure.DecodeHookFunc{configuration.ToBigIntHookFunc()},

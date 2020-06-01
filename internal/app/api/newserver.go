@@ -15,6 +15,6 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 )
 
-func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.ApiConfig) ServerInterface {
+func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) ServerInterface {
 	return NewObserverServer(db, log, pStorage, config)
 }

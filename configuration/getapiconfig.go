@@ -7,6 +7,6 @@
 
 package configuration
 
-func GetApiConfig() ApiConfig {
-	return &Api{}
+func GetAPIConfig() APIConfig {
+	return &API{}
 }

@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-type ApiExtended struct {
-	Api `mapstructure:",squash"`
+type APIExtended struct {
+	API `mapstructure:",squash"`
 
 	FeeAmount            *big.Int
 	PriceOrigin          string
@@ -21,9 +21,9 @@ type ApiExtended struct {
 	CMCMarketStatsParams CMCMarketStatsParamsEnabled
 }
 
-func (ApiExtended) Default() *ApiExtended {
-	return &ApiExtended{
-		Api: Api{
+func (APIExtended) Default() *APIExtended {
+	return &APIExtended{
+		API: API{
 			Listen: ":0",
 			DB: DB{
 				URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
@@ -51,34 +51,34 @@ func (ApiExtended) Default() *ApiExtended {
 	}
 }
 
-func (a ApiExtended) GetListen() string {
+func (a APIExtended) GetListen() string {
 	return a.Listen
 }
 
-func (a ApiExtended) GetDB() DB {
+func (a APIExtended) GetDB() DB {
 	return a.DB
 }
 
-func (a ApiExtended) GetLog() Log {
+func (a APIExtended) GetLog() Log {
 	return a.Log
 }
 
-func (a ApiExtended) GetFeeAmount() *big.Int {
+func (a APIExtended) GetFeeAmount() *big.Int {
 	return a.FeeAmount
 }
 
-func (a ApiExtended) GetPriceOrigin() string {
+func (a APIExtended) GetPriceOrigin() string {
 	return a.PriceOrigin
 }
 
-func (a ApiExtended) GetPrice() string {
+func (a APIExtended) GetPrice() string {
 	return a.Price
 }
 
-func (a ApiExtended) GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled {
+func (a APIExtended) GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled {
 	return a.CMCMarketStatsParams
 }
 
-func GetApiConfig() ApiConfig {
-	return &ApiExtended{}
+func GetAPIConfig() APIConfig {
+	return &APIExtended{}
 }

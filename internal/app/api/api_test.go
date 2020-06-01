@@ -53,7 +53,7 @@ func TestMain(t *testing.M) {
 	nowPulse := 1575302444 - pulse.UnixTimeOfMinTimePulse + pulse.MinTimePulse
 	_ = pStorage.Insert(&observer.Pulse{Number: pulse.Number(nowPulse)})
 
-	observerAPI := NewServer(db, logger, pStorage, getApiConfig())
+	observerAPI := NewServer(db, logger, pStorage, GetAPIConfigForTest())
 
 	RegisterHandlers(e, observerAPI)
 	go func() {

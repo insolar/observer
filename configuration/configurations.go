@@ -9,7 +9,7 @@ package configuration
 
 func Configurations() map[string]interface{} {
 	cfgs := make(map[string]interface{})
-	cfgs["observerapi.yaml"] = Api{}.Default()
+	cfgs["observerapi.yaml"] = API{}.Default()
 	cfgs["observer.yaml"] = Observer{}.Default()
 	cfgs["migrate.yaml"] = Migrate{}.Default()
 

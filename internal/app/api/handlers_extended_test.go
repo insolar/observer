@@ -27,8 +27,8 @@ import (
 	"github.com/insolar/observer/internal/models"
 )
 
-func getApiConfig() configuration.ApiConfig {
-	return configuration.ApiExtended{
+func GetAPIConfigForTest() configuration.APIConfig {
+	return configuration.APIExtended{
 		FeeAmount: testFee,
 		Price:     testPrice,
 	}
@@ -439,7 +439,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 	require.NoError(t, err)
 
 	logger := inslogger.FromContext(context.Background())
-	observerAPI := NewObserverServerFull(db, logger, pStorage, configuration.ApiExtended{
+	observerAPI := NewObserverServerFull(db, logger, pStorage, configuration.APIExtended{
 		FeeAmount:   testFee,
 		Price:       testPrice,
 		PriceOrigin: "coin_market_cap",
@@ -542,7 +542,7 @@ func TestObserverServer_Binance_Price(t *testing.T) {
 	require.NoError(t, err)
 
 	logger := inslogger.FromContext(context.Background())
-	observerAPI := NewObserverServerFull(db, logger, pStorage, configuration.ApiExtended{
+	observerAPI := NewObserverServerFull(db, logger, pStorage, configuration.APIExtended{
 		FeeAmount:   testFee,
 		Price:       testPrice,
 		PriceOrigin: "binance",

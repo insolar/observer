@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
@@ -32,10 +31,10 @@ type ObserverServer struct {
 	db       *pg.DB
 	log      insolar.Logger
 	pStorage observer.PulseStorage
-	config   configuration.ApiConfig
+	config   configuration.APIConfig
 }
 
-func NewObserverServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.ApiConfig) *ObserverServer {
+func NewObserverServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) *ObserverServer {
 	return &ObserverServer{db: db, log: log, pStorage: pStorage, config: config}
 }
 
@@ -124,16 +123,6 @@ func (s *ObserverServer) ClosedTransactions(ctx echo.Context, params ClosedTrans
 		resJSON[i] = TxToAPITx(result[i], models.TxIndexTypeFinishPulseRecord)
 	}
 	return ctx.JSON(http.StatusOK, resJSON)
-}
-
-func isInt(s string) bool {
-	s = strings.TrimPrefix(s, "-")
-	for _, c := range s {
-		if !unicode.IsDigit(c) {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *ObserverServer) Member(ctx echo.Context, reference string) error {

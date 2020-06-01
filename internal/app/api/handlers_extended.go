@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -30,16 +31,16 @@ type ObserverServerFull struct {
 	db       *pg.DB
 	log      insolar.Logger
 	pStorage observer.PulseStorage
-	config   configuration.ApiConfig
+	config   configuration.APIConfig
 	server   *ObserverServer
 }
 
-func NewObserverServerFull(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.ApiConfig) *ObserverServerFull {
+func NewObserverServerFull(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) *ObserverServerFull {
 	observerServer := NewObserverServer(db, log, pStorage, config)
 	return &ObserverServerFull{db: db, log: log, pStorage: pStorage, config: config, server: observerServer}
 }
 
-func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.ApiConfig) ServerInterface {
+func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) ServerInterface {
 	return NewObserverServerFull(db, log, pStorage, config)
 }
 
@@ -290,4 +291,14 @@ func (s *ObserverServerFull) setExpire(ctx echo.Context, duration time.Duration)
 		"Expires",
 		time.Now().UTC().Add(duration).Format(http.TimeFormat),
 	)
+}
+
+func isInt(s string) bool {
+	s = strings.TrimPrefix(s, "-")
+	for _, c := range s {
+		if !unicode.IsDigit(c) {
+			return false
+		}
+	}
+	return true
 }
