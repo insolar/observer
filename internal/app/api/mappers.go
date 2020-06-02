@@ -219,20 +219,3 @@ func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) *big.Int {
 	releasedAmount := depositContract.VestedByNow(amount, uint64(steps-1), uint64(steps))
 	return new(big.Int).Sub(amount, releasedAmount)
 }
-
-func (response *ResponsesMarketStatsYaml) addHistoryPoints(points []models.PriceHistory) {
-	var parsedPoints []struct {
-		Price     string `json:"price"`
-		Timestamp int64  `json:"timestamp"`
-	}
-	for _, point := range points {
-		parsedPoints = append(parsedPoints, struct {
-			Price     string `json:"price"`
-			Timestamp int64  `json:"timestamp"`
-		}{
-			fmt.Sprintf("%v", point.Price),
-			point.Timestamp.Unix(),
-		})
-	}
-	response.PriceHistory = &parsedPoints
-}

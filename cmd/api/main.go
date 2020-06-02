@@ -20,17 +20,17 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	apiconfiguration "github.com/insolar/observer/configuration/api"
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/api"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 )
 
 func main() {
-	cfg := &apiconfiguration.Configuration{}
+	cfg := configuration.GetAPIConfig()
 	params := insconfig.Params{
 		EnvPrefix:        "observerapi",
-		ViperHooks:       []mapstructure.DecodeHookFunc{apiconfiguration.ToBigIntHookFunc()},
+		ViperHooks:       []mapstructure.DecodeHookFunc{configuration.ToBigIntHookFunc()},
 		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
 	insConfigurator := insconfig.New(params)
@@ -40,15 +40,15 @@ func main() {
 	insConfigurator.ToYaml(cfg)
 
 	loggerConfig := insconf.Log{
-		Level:        cfg.Log.Level,
-		Formatter:    cfg.Log.Format,
+		Level:        cfg.GetLog().Level,
+		Formatter:    cfg.GetLog().Format,
 		Adapter:      "zerolog",
-		OutputType:   cfg.Log.OutputType,
-		OutputParams: cfg.Log.OutputParams,
-		BufferSize:   cfg.Log.Buffer,
+		OutputType:   cfg.GetLog().OutputType,
+		OutputParams: cfg.GetLog().OutputParams,
+		BufferSize:   cfg.GetLog().Buffer,
 	}
 	_, logger := initGlobalLogger(context.Background(), loggerConfig)
-	db, err := dbconn.Connect(cfg.DB)
+	db, err := dbconn.Connect(cfg.GetDB())
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -62,10 +62,10 @@ func main() {
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	pStorage := postgres.NewPulseStorage(logger, db)
-	observerAPI := api.NewObserverServer(db, logger, pStorage, *cfg)
+	observerAPI := api.NewServer(db, logger, pStorage, cfg)
 	api.RegisterHandlers(e, observerAPI)
 
-	e.Logger.Fatal(e.Start(cfg.Listen))
+	e.Logger.Fatal(e.Start(cfg.GetListen()))
 }
 
 type EchoWriterAdapter struct {

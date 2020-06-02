@@ -83,7 +83,7 @@ func TestPulseStorage_Insert(t *testing.T) {
 func TestPulseStorage_Last(t *testing.T) {
 	ctx := context.Background()
 	t.Run("connection_error", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 
 		db := &DBMock{}
@@ -102,7 +102,7 @@ func TestPulseStorage_Last(t *testing.T) {
 	})
 
 	t.Run("no_pulses", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 
 		db := &DBMock{}

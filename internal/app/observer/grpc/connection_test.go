@@ -51,7 +51,7 @@ func TestConnectionHolder_Conn(t *testing.T) {
 	log := inslogger.FromContext(inslogger.TestContext(t))
 
 	t.Run("ordinary", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 
 		holder := NewConnectionHolder(cfg, log)
 		require.NotNil(t, holder)
