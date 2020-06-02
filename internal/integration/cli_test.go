@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("could not change dir: %v", err)
 	}
 
-	cmd := exec.Command("make", "build-extended", "config-extended")
+	cmd := exec.Command("make", "build", "config")
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")
 	output, err := cmd.CombinedOutput()
 	if err != nil {

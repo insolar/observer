@@ -25,19 +25,16 @@ Run `make build`.
 
 `make all`
 
-The `make all` command generates three configurations (migrate.yaml, observer.yaml, observerapi.yaml) 
+## Public version
+
+Use the next commands to build a public version of services:
+`make config-public`
+`make build-public`
+`make all-public`
+`make test-public`
+
+The `make all-public` command generates three configurations (migrate.yaml, observer.yaml, observerapi.yaml) 
 and thee binaries (migrate, observer, api).
-
-## Extended version
-
-Use the next commands to build an extended version of services:
-`make config-extended`
-`make build-extended`
-`make all-extended`
-`make test-extended`
-
-The `make all-extended` command generates four configurations (migrate.yaml, observer.yaml, observerapi.yaml, stats-collector.yaml) 
-and six binaries (migrate, observer, api, stats-collector, binance-collector, coin-market-cap-collector).
 
 ## Replicator service
 
