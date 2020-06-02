@@ -38,16 +38,15 @@ build: ## build main binaries
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
+	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
+	go build -o $(BIN_DIR)/binance-collector cmd/binance-collector/*.go
+	go build -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
 
-
-.PHONY: build-extended
-build-extended: ## build all binaries
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
-	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
-	go build -tags extended -o $(BIN_DIR)/$(API) cmd/api/*.go
-	go build -tags extended -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
-	go build -tags extended -o $(BIN_DIR)/binance-collector cmd/binance-collector/*.go
-	go build -tags extended -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
+.PHONY: build-public
+build-public: ## build all binaries
+	go build -tags public -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -tags public -o $(BIN_DIR)/migrate cmd/migrate/*.go
+	go build -tags public -o $(BIN_DIR)/$(API) cmd/api/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -80,10 +79,10 @@ config: ## generate main configs
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
-.PHONY: config-extended
-config-extended: ## generate all configs
+.PHONY: config-public
+config-public: ## generate all configs
 	mkdir -p $(ARTIFACTS_DIR)
-	for f in `go run -tags extended ./configuration/gen/gen.go`; do \
+	for f in `go run -tags public ./configuration/gen/gen.go`; do \
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
@@ -94,15 +93,15 @@ ci_test: ## run tests with coverage
 test: config ## tests
 	go test ./... -v $(TEST_ARGS)
 
-.PHONY: test-extended
-test-extended: config-extended ## tests
-	go test ./... -tags extended -v $(TEST_ARGS)
+.PHONY: test-public
+test-public: config-public ## tests
+	go test ./... -tags public -v $(TEST_ARGS)
 
 .PHONY: all
 all: config build
 
-.PHONY: all-extended
-all-extended: config-extended build-extended
+.PHONY: all-public
+all-public: config-public build-public
 
 .PHONY: help
 help: ## Display this help screen
