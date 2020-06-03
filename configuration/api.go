@@ -43,7 +43,7 @@ func (API) Default() *API {
 	return &API{
 		Listen: ":0",
 		DB: DB{
-			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
+			URL:             "postgres://observer:observer@localhost/observer?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
 		},
