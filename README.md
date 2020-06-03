@@ -1,65 +1,54 @@
-# Observer
-Service that replicates smart-contract records data to DB,
-collects various statistics and serves API.
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/github-readme-banner.png">](http://insolar.io/?utm_source=Github)
 
-# Depends on
-Insolar heavy material executor node
+# Insolar Observer
+Insolar Obserber is a service that replicates record data produced by Insolar smart contracts, organizes it into a SQL database and aggregates various statistical data.
 
-PostgreSQL DB 11.4
+The Observer allows trusted agents such as crypto exchanges read data from Insolar Platform via the public Observer API. Trusted agents can integrate the Observer into their business applications or use the Observer API to get the data at their discretion.
 
-# Installation and deployment
+The Observer obtains data from a trusted Heavy Material Executor run within Insolar Platform. This way Observer users are insured against inacurate or corrupted data. 
 
-## Generate default configs
+Observer users are responsible for the data they store on their Observer instance and can regulate access via an access  control system of their choice.
 
-Run `make config`. Command generates two config files:
-`observer.yaml` and `observerapi.yaml`. Places them into
-`./.artifacts` directory.
+
+# Build
+
+## Prerequisites
+
+* Address of a trusted Heavy Material Executor run on Insolar Platform or [Insolar MainNet](https://github.com/insolar/mainnet) deployed locally (for testing)
+
+* [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
+
+* [Go Tools 1.14](https://golang.org/doc/install)
+
+## Clone and change to Insolar Observer
+
+Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 
 ## Build binaries
 
-Run `make build`.
+Build binaries automatically using the instructions from the Makefile: `make all-public`.
 
-**WARNING:** Go modules are used, you may need `GO111MODULE=on` set.
+This command:
+* Generates three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
+* Generates thee binaries (`migrate`, `observer`, `api`) and places them into `./cmd/migrate/*.go`, `cmd/observer/*.go`, `./cmd/api/*.go` respectively.
 
-## Above in one go
+**WARNING:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
 
-`make all`
+### Configure
 
-## Public version
+All parameters in `observer.yaml` can be overridden via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
 
-Use the next commands to build a public version of services:
-`make config-public`
-`make build-public`
-`make all-public`
-`make test-public`
+**WARNING:** overriding via ENV variables doesn't work without a configuration file in place.
 
-The `make all-public` command generates three configurations (migrate.yaml, observer.yaml, observerapi.yaml) 
-and thee binaries (migrate, observer, api).
+### Configuration parameters
 
-## Replicator service
-
-To run replicator you should provide config file `observer.yaml`
-in the current working directory or in `.artifacts` directory.
-
-Run `./bin/observer --config .artifacts/observer.yaml`
-
-### Configuration
-
-All options in `observer.yaml` config can be overridden with environment
-variables using `OBSERVER` and `_` as delimiter, for example:
-`OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
-
-**WARNING:** overriding via ENV wouldn't work without config file with default.
-
-### Config options
-
-DB connection:
+Database connection:
 `OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-Heavy node replication API:
+Heavy Material Node replication API:
 `OBSERVER_REPLICATOR_ADDR=127.0.0.1:5678`
 
-Log params:
+Log parameters:
 ```
 OBSERVER_LOG_LEVEL=info
 OBSERVER_LOG_FORMAT=text
@@ -68,32 +57,40 @@ OBSERVER_LOG_OUTPUTPARAMS=<some_text>
 OBSERVER_LOG_BUFFER=0
 ```
 
+### Deploy
+
+TBD
+
 ## Metrics and health check
 
- ### Deploy the built-in monitoring system
- Before launching the monitoring script, make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
- 
- Then run: ` ./scripts/monitor/monitor.sh`
+## Prerequisites
 
-The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
+Before launching the monitoring script, make sure you have installed and set [Docker compose(https://docs.docker.com/compose/install/ "Install Compose ").
 
- * Grafana is at `http://localhost:3000`  with default login and password: `login=admin` and `password=pass`.
- 
- * Prometheus is at `http://localhost:9090/graph`.
+### Deploy the built-in monitoring system
 
- * Observer мetrics are at `http://localhost:8888` by default.
+Deploy the built-in system: `./scripts/monitor/monitor.sh`
+
+This script starts Grafana and Prometheus configured by the Observer at:
+
+* Grafana: `http://localhost:3000` with default login and password: `login=admin` and `password=pass`
  
- * Observer health check service is at `http://localhost:8888/healthcheck`.
+* Prometheus: `http://localhost:9090/graph`
+
+* Observer мetrics: `http://localhost:8888` by default
+ 
+* Observer health check service: `http://localhost:8888/healthcheck`
 
 ### Deploy a customized monitoring system
 
 You can install, customize and deploy the monitoring system yourself. 
+
 To do this:
-1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
+1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
 
    You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
 
-2. Import [this dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
+2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
  
    If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
 
@@ -105,28 +102,26 @@ in the current working directory or in `.artifacts` directory.
 
 Run `./bin/api -- config .artifacts/observerapi.yaml`
 
-### Configuration
+### Configure the API
 
-All options in `observerapi.yaml` config can be overridden with environment
-variables using `OBSERVERAPI` prefix and `_` as delimiter, for example:
-`OBSERVERAPI_DB_URL=...`, `OBSERVERAPI_LISTEN=...`
+All parameters in `observer.yaml` can be overridden via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
 
-**WARNING:** overriding via ENV wouldn't work without config file with default.
+**WARNING:** overriding via ENV variables doesn't work without a configuration file in place.
 
-### Config options
+### Configuration parameters
 
-API's endpoint:
+API endpoint:
 `OBSERVERAPI_LISTEN=127.0.0.1:5678`
 or
 `OBSERVERAPI_LISTEN=:5678`
 
-DB connection:
+Database connection:
 `OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-Max number of connections to DB:
+Max number of connections to the database:
 `OBSERVERAPI_DB_POOLSIZE=20`
 
-Log params:
+Log parameters:
 ```
 OBSERVERAPI_LOG_LEVEL=info
 OBSERVERAPI_LOG_FORMAT=text
@@ -134,8 +129,8 @@ OBSERVERAPI_LOG_OUTPUTTYPE=stderr
 OBSERVERAPI_LOG_BUFFER=0
 ```
 
-Coin statistic api:
-You need to chose an origin of coin statistic.
+Coin statistic API:
+You need to choose an origin of coin statistic.
 
 ```
 PriceOrigin = const|binance|coin_market_cap
@@ -201,16 +196,30 @@ INSERT INTO notifications(message, start, stop)
 **WARNING:** only one notification is active, the one with older `start` value
 wins.
 
-# Development
 
-## Installing required command line tools
+## Contribute!
 
-Run `make install_deps`
+Feel free to submit issues, fork the repository and send pull requests! 
 
-**WARNING:** this step installs exact versions of tools to avoid constant
-changes back and forth from different developers.
+To make the process smooth for both reviewers and contributors, familiarize yourself with the following guidelines:
 
-## Regenerate server API implementation from OpenAPI specification
+1. [Open source contributor guide](https://github.com/freeCodeCamp/how-to-contribute-to-open-source).
+2. [Style guide: Effective Go](https://golang.org/doc/effective_go.html).
+3. [List of shorthands for Go code review comments](https://github.com/golang/go/wiki/CodeReviewComments).
+
+When submitting an issue, **include a complete test function** that reproduces it.
+
+Thank you for your intention to contribute to the Insolar Mainnet project. As a company developing open-source code, we highly appreciate external contributions to our project.
+
+Here is a helping hand if you decide to contribute.
+
+# Installing required command line tools
+
+Install required command line tools: `make install_deps`
+
+**WARNING:** this option installs the unified versions of tools to avoid constant preference changes from different developers.
+
+## Regenerate server API implementation from the OpenAPI specification
 
 Use oapi-codegen. Get it via:
 ```
@@ -229,6 +238,21 @@ Generate types and API from observer API:
 oapi-codegen -package api -generate types,server ../insolar-observer-api/api-exported.yaml > internal/app/api/generated.go
 ```
 
-# License
+## Contacts
+
+If you have any additional questions, join our [developers chat on Telegram](https://t.me/InsolarTech).
+
+Our social media:
+
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-facebook.png" width="36" height="36">](https://facebook.com/insolario)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-twitter.png" width="36" height="36">](https://twitter.com/insolario)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-medium.png" width="36" height="36">](https://medium.com/insolar)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-youtube.png" width="36" height="36">](https://youtube.com/insolar)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-reddit.png" width="36" height="36">](https://www.reddit.com/r/insolar/)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-linkedin.png" width="36" height="36">](https://www.linkedin.com/company/insolario/)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-instagram.png" width="36" height="36">](https://instagram.com/insolario)
+[<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-telegram.png" width="36" height="36">](https://t.me/InsolarAnnouncements) 
+
+## License
 
 This project is licensed under the terms of the [Insolar License 1.0](LICENSE.md).
