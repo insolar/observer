@@ -3,7 +3,7 @@
 # Insolar Observer
 Insolar Obserber is a service that collects record data produced by Insolar smart contracts, organizes it into a SQL database and aggregates various statistical data.
 
-The Observer allows trusted agents such as crypto exchanges read data from Insolar Platform via the public Observer API. Trusted agents can integrate the Observer into their business applications or use the Observer API to get the data at their discretion.
+Insolar Observer allows trusted agents such as crypto exchanges read data from Insolar Platform via gRPC. Trusted agents can integrate the Observer into their business applications or use the Observer API to get the data at their discretion.
 
 The Observer obtains data from a trusted Heavy Material Node run within Insolar Platform. This way Observer users are insured against inacurate or corrupted data. 
 
@@ -113,6 +113,13 @@ OBSERVERAPI_LOG_BUFFER=0
 Run the Observer API: `./bin/api`.
 
 Note: To run the Observer, you need to use the `observerapi.yaml` configuration file. The file should be in the `.artifacts` directory.
+
+These endpoints are restricted from Observer users:
+* /api/fee/{amount}
+
+* /api/notification
+
+* /api/stats/supply/total
 
 
 ### 4. Deploy and start moniroting services
