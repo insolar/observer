@@ -58,67 +58,61 @@ Initialize your SQL database (generated go binaries required): `migrate-init`.
 
 ## Step 2: Configure and deploy the Observer
 
-**To configure your Observer**,  set configuration parameters in `observer.yaml`.
+1. To configure, edit the configuration parameters in `observer.yaml`:
 
-Parameters to configure:
+   * Database connection:
+   `OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-* Database connection:
-`OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+   * Heavy Material Node replication API:
+   `OBSERVER_REPLICATOR_ADDR=<ip_address>:5678`
 
-* Heavy Material Node replication API:
-`OBSERVER_REPLICATOR_ADDR=<ip_address>:5678`
+   * Log parameters:
+   ```
+   OBSERVER_LOG_LEVEL=info
+   OBSERVER_LOG_FORMAT=text
+   OBSERVER_LOG_OUTPUTTYPE=stderr
+   OBSERVER_LOG_OUTPUTPARAMS=<some_text>
+   OBSERVER_LOG_BUFFER=0
+   ```
+   **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
 
-* Log parameters:
-```
-OBSERVER_LOG_LEVEL=info
-OBSERVER_LOG_FORMAT=text
-OBSERVER_LOG_OUTPUTTYPE=stderr
-OBSERVER_LOG_OUTPUTPARAMS=<some_text>
-OBSERVER_LOG_BUFFER=0
-```
-**Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
+   **Warning:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+   
+2. Make sure that the `observer.yaml` configuration file is in the `.artifacts` directory.
 
-**Warning:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+3. To run the Observer, execute this command: 
+```./bin/observer --config .artifacts/observer.yaml```.
 
-**To run the Observer**, execute this command: 
-```./bin/observer --config .artifacts/observer.yaml```. 
-
-Wait for a while for it to sync with the trusted HMN.
-
-**Tip**: Make sure that the `observer.yaml` configuration file is in the `.artifacts` directory.
+   Wait for a while for it to sync with the trusted HMN.
 
 ## Step 3: Configure and deploy the Observer API
 
-**To configure the API of your Observer API**, set configuration parameters in `observerapi.yaml`.
+1. To configure, edit the configuration parameters in `observerapi.yaml`:
 
-Parameters to configure:
+   * API endpoint:
+   `OBSERVERAPI_LISTEN=127.0.0.1:5678 or OBSERVERAPI_LISTEN=:5678`
 
-* API endpoint:
-`OBSERVERAPI_LISTEN=127.0.0.1:5678 or OBSERVERAPI_LISTEN=:5678`
+   * Database connection:
+   `OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-* Database connection:
-`OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+   * Maximum number of connections to the database: 
+   `OBSERVERAPI_DB_POOLSIZE=20`
 
-* Maximum number of connections to the database: 
-`OBSERVERAPI_DB_POOLSIZE=20`
+   * Log params:
+   ```
+   OBSERVERAPI_LOG_LEVEL=info
+   OBSERVERAPI_LOG_FORMAT=text
+   OBSERVERAPI_LOG_OUTPUTTYPE=stderr
+   OBSERVERAPI_LOG_BUFFER=0
+   ```
+   **Tip**: All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
 
-* Log params:
-```
-OBSERVERAPI_LOG_LEVEL=info
-OBSERVERAPI_LOG_FORMAT=text
-OBSERVERAPI_LOG_OUTPUTTYPE=stderr
-OBSERVERAPI_LOG_BUFFER=0
-```
-**Tip**: All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
+   **Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+   
+2. Make sure that the `observerapi.yaml` configuration file is in the `.artifacts` directory.
 
-**Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
-
-**To run the Observer API**, execute this command: `./bin/api`.
-
-**Tip**: Make sure that the `observerapi.yaml` configuration file is in the `.artifacts` directory.
-
-The list of endpoints available to Observer API users:
-* TBD
+3. To run the Observer, execute this command: 
+```./bin/api --config .artifacts/observerapi.yaml```.
 
 ## Step 4: Deploy the monitoring system
 
@@ -126,7 +120,10 @@ The list of endpoints available to Observer API users:
 
 2. Choose to deploy the buil-in or custom monitoring system as described below.
 
-**Deploy the built-in monitoring system**: `./scripts/monitor/monitor.sh`
+### Built-in monitoring system
+
+To deploy the built-in monitoring system, execute this command: 
+```./scripts/monitor/monitor.sh```
 
 `monitor.sh` starts Grafana and Prometheus configured by the Observer at:
 
@@ -138,11 +135,10 @@ The list of endpoints available to Observer API users:
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-**Deploy a customized monitoring system**.
+### Сustom monitoring system
 
-You can install, customize and deploy the monitoring system yourself. 
+To deploy a custom monitoring system:
 
-To do this:
 1. Deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
 
    You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
