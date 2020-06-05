@@ -57,17 +57,35 @@ OBSERVER_LOG_OUTPUTPARAMS=<some_text>
 OBSERVER_LOG_BUFFER=0
 ```
 
-### Metrics and health check
+## Metrics and health check
 
-`OBSERVER_REPLICATOR_LISTEN=:8888`
+ ### Deploy the built-in monitoring system
+ Before launching the monitoring script, make sure you have installed and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose "). 
+ 
+ Then run: ` ./scripts/monitor/monitor.sh`
 
-Prometheus: `http://localhost:8888/metrics`
+The `monitor.sh` script starts Grafana and Prometheus configured by Observer.
 
-Health check: `http://localhost:8888/healthcheck`
+ * Grafana is at `http://localhost:3000`  with default login and password: `login=admin` and `password=pass`.
+ 
+ * Prometheus is at `http://localhost:9090/graph`.
 
-Replicator dashboard: `./dashboard.json`
+ * Observer мetrics are at `http://localhost:8888` by default.
+ 
+ * Observer health check service is at `http://localhost:8888/healthcheck`.
 
-API dashboard: `./dashboard_api.json`
+### Deploy a customized monitoring system
+
+You can install, customize and deploy the monitoring system yourself. 
+To do this:
+1. Deploy  [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and  [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ")
+
+   You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
+
+2. Import [this dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
+ 
+   If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+
 
 ## API service
 
