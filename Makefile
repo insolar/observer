@@ -42,11 +42,11 @@ build: ## build main binaries
 	go build -o $(BIN_DIR)/binance-collector cmd/binance-collector/*.go
 	go build -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
 
-.PHONY: build-public
-build-public: ## build all binaries
-	go build -tags public -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
-	go build -tags public -o $(BIN_DIR)/migrate cmd/migrate/*.go
-	go build -tags public -o $(BIN_DIR)/$(API) cmd/api/*.go
+.PHONY: build-node
+build-node: ## build all binaries
+	go build -tags node -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -tags node -o $(BIN_DIR)/migrate cmd/migrate/*.go
+	go build -tags node -o $(BIN_DIR)/$(API) cmd/api/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -79,10 +79,10 @@ config: ## generate main configs
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
-.PHONY: config-public
-config-public: ## generate all configs
+.PHONY: config-node
+config-node: ## generate all configs
 	mkdir -p $(ARTIFACTS_DIR)
-	for f in `go run -tags public ./configuration/gen/gen.go`; do \
+	for f in `go run -tags node ./configuration/gen/gen.go`; do \
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
@@ -93,15 +93,15 @@ ci_test: ## run tests with coverage
 test: config ## tests
 	go test ./... -v $(TEST_ARGS)
 
-.PHONY: test-public
-test-public: config-public ## tests
-	go test ./... -tags public -v $(TEST_ARGS)
+.PHONY: test-node
+test-node: config-node ## tests
+	go test ./... -tags node -v $(TEST_ARGS)
 
 .PHONY: all
 all: config build
 
-.PHONY: all-public
-all-public: config-public build-public
+.PHONY: all-node
+all-node: config-node build-node
 
 .PHONY: help
 help: ## Display this help screen
