@@ -19,7 +19,7 @@ To build the Observer, first:
 
 * Get an authorized access to Insolar Platform.
 
-### Authorized access to Insolar Platform
+## Get authorized access to Insolar Platform
 
 Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform or [Insolar MainNet] to collect data. 
 
