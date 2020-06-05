@@ -60,7 +60,7 @@ func (Observer) Default() *Observer {
 			Listen:              ":8888",
 		},
 		DB: DB{
-			URL:             "postgres://observer:observer@localhost/observer?sslmode=disable",
+			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			PoolSize:        100,
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,

@@ -26,7 +26,7 @@ func (APIExtended) Default() *APIExtended {
 		API: API{
 			Listen: ":0",
 			DB: DB{
-				URL:             "postgres://observer:observer@localhost/observer?sslmode=disable",
+				URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 				Attempts:        5,
 				AttemptInterval: 3 * time.Second,
 			},
