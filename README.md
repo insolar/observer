@@ -174,7 +174,7 @@ To make the process smooth for both reviewers and contributors, familiarize your
 
 When submitting an issue, **include a complete test function** that reproduces it.
 
-Thank you for your intention to contribute to the Insolar Mainnet project. As a company developing open-source code, we highly appreciate external contributions to our project.
+Thank you for your intention to contribute to the Insolar Observer project. As a company developing open-source code, we highly appreciate external contributions to our project.
 
 Here is a helping hand if you decide to contribute.
 
