@@ -133,8 +133,6 @@ These endpoints are restricted from Observer users:
 
 ### Deploy and start moniroting services
 
-## Prerequisites
-
 Before launching the monitoring script, install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
 ### Deploy the built-in monitoring system
