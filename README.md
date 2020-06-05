@@ -39,7 +39,7 @@ Build binaries automatically using the instructions from the Makefile: `make all
 
 This command:
 * Generates three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
-* Generates thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate/*.go`, `./.bin/observer/*.go`, `./bin/api/*.go` respectively.
+* Generates thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
 
 **WARNING:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
 
@@ -123,13 +123,8 @@ Run the Observer API: `./bin/api`.
 
 Note: To run the Observer, you need to use the `observerapi.yaml` configuration file. The file should be in the `.artifacts` directory.
 
-These endpoints are restricted from Observer users:
-* /api/fee/{amount}
-
-* /api/notification
-
-* /api/stats/supply/total
-
+Observer API users can access these points:
+* TBD
 
 ### Deploy and start monitoring services
 
