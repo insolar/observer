@@ -61,7 +61,7 @@ Tip: `migrate-init` is only for the initial migration. Later, you should use `./
 
 ### Deploy the Observer
 
-### Configure the Observer
+#### Configure the Observer
 
 Configure your Observer instance via configuration parameters in `observer.yaml`.
 
@@ -69,7 +69,7 @@ Configure your Observer instance via configuration parameters in `observer.yaml`
 
 **WARNING:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
 
-#### Configuration parameters
+##### Configuration parameters
 
 Database connection:
 `OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
@@ -93,12 +93,12 @@ Tip: To run the Observer, you need to use the `observer.yaml` configuration file
 
 ### Deploy the Observer API
 
-### Configure the Observer API 
+#### Configure the Observer API 
 All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
 
 **WARNING**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
 
-#### Configuration parameters
+##### Configuration parameters
 
 API endpoint:
 `OBSERVERAPI_LISTEN=127.0.0.1:5678 or OBSERVERAPI_LISTEN=:5678`
@@ -131,11 +131,11 @@ These endpoints are restricted from Observer users:
 * /api/stats/supply/total
 
 
-### Deploy and start moniroting services
+### Deploy and start monitoring services
 
 Before launching the monitoring script, install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
-### Deploy the built-in monitoring system
+#### Deploy the built-in monitoring system
 
 Deploy the built-in system: `./scripts/monitor/monitor.sh`
 
@@ -149,7 +149,7 @@ Deploy the built-in system: `./scripts/monitor/monitor.sh`
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-### Deploy a customized monitoring system
+#### Deploy a customized monitoring system
 
 You can install, customize and deploy the monitoring system yourself. 
 
