@@ -11,12 +11,13 @@ Observer users are responsible for the data they store on their Observer instanc
 
 # Build
 
-## Prerequisites
-### Software
+To build the Observer, first:
 
-* [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
+* Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
 
-* [Go Tools 1.12](https://golang.org/doc/install)
+* Install and set [Go Tools 1.12](https://golang.org/doc/install)
+
+* Get an authorized access to Insolar Platform.
 
 ### Authorized access to Insolar Platform
 
@@ -44,13 +45,21 @@ This command:
 
 ## Deploy
 
-### 1. Initialize your SQL database
+To successfully deploy the Observer, you need to:
+1. Initialize your SQL database
+2. Deploy the Observer
+3. Deploy the Observer API
+4. Deploy and start moniroting services
+
+Read about every step below in detail.
+
+### Initialize your SQL database
 
 Initialize your SQL database (generated go binaries required): `migrate-init`.
 
 Tip: `migrate-init` is only for the initial migration. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
 
-### 2. Deploy the Observer
+### Deploy the Observer
 
 ### Configure the Observer
 
@@ -82,7 +91,7 @@ Run the Observer and wait for a while for it to sync with the trusted HMN: `./bi
 
 Tip: To run the Observer, you need to use the `observer.yaml` configuration file. The file should be in the `.artifacts` directory.
 
-### 3. Deploy the Observer API
+### Deploy the Observer API
 
 ### Configure the Observer API 
 All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
@@ -122,7 +131,7 @@ These endpoints are restricted from Observer users:
 * /api/stats/supply/total
 
 
-### 4. Deploy and start moniroting services
+### Deploy and start moniroting services
 
 ## Prerequisites
 
