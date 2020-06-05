@@ -3,6 +3,8 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
+// +build !public
+
 package integration
 
 import (
