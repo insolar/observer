@@ -46,8 +46,11 @@ This command generates:
 # Deploy
 
 Step 1: Initialize your SQL database
+
 Step 2: Configure and deploy the Observer
+
 Step 3: Configure and deploy the Observer API
+
 Step 4: Deploy the monitoring system
 
 ## Step 1: Initialize your SQL database
@@ -118,7 +121,7 @@ Initialize your SQL database (generated go binaries required): `migrate-init`.
 
 1. Install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
-2. Choose to deploy the buil-in or custom monitoring system as described below.
+2. Choose to deploy the buil-in or a customized monitoring system as described below.
 
 ### Built-in monitoring system
 
@@ -135,9 +138,9 @@ To deploy the built-in monitoring system, execute this command:
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-### Сustom monitoring system
+### Сustomized monitoring system
 
-To deploy a custom monitoring system:
+To deploy a customized monitoring system:
 
 1. Deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
 
