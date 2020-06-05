@@ -1,7 +1,7 @@
 [<img src="https://github.com/insolar/doc-pics/raw/master/st/github-readme-banner.png">](http://insolar.io/?utm_source=Github)
 
 # Insolar Observer
-Insolar Obserber is a service that collects record data produced by Insolar smart contracts, organizes it into a SQL database, and aggregates various statistical data if metric services are enabled.
+Insolar Obserber is a service that collects record data produced by Insolar smart contracts, organizes it into a SQL database, and aggregates various statistical data.
 
 Insolar Observer allows trusted agents such as crypto exchanges read data from Insolar Platform via gRPC. Trusted agents can integrate the Observer into their business applications or use the Observer API to get the data at their discretion.
 
