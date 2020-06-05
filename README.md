@@ -9,75 +9,66 @@ The Observer obtains data from a trusted Heavy Material Node run within Insolar 
 
 Observer users are responsible for the data they store on their Observer instance and can regulate access via an access  control system of their choice.
 
+To use Insolar Observer, you need to :
+
+1. Build Insolar Observer
+2. Deploy Insolar Observer
+
+
+# Install the prerequisites and get access
+
+1. Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
+
+2. Install and set [Go Tools 1.12](https://golang.org/doc/install)
+
+3. Get an authorized access to Insolar Platform:
+
+   Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform or [Insolar MainNet] to collect data. 
+
+   How to obtain it:
+   1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
+   2. After the registration, the Team will send you your login and a unique link to set your password.
+   3. After setting your password, put your login and password into the `observer.yaml` configuration file (see **Build binaries**).
+   4. Working with Insolar Platform, you use your credentials in `observer.yaml` to obtain an access token to address the Platform.
+
 # Build
 
-To build the Observer, first:
+1. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 
-* Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
+2. Build binaries automatically using the instructions from the Makefile: `make all-public`.
 
-* Install and set [Go Tools 1.12](https://golang.org/doc/install)
+This command generates:
+* Three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
+* Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
 
-* Get an authorized access to Insolar Platform.
+**Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
 
-## Get authorized access to Insolar Platform
+# Deploy
 
-Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform or [Insolar MainNet] to collect data. 
+Step 1: Initialize your SQL database
+Step 2: Configure and deploy the Observer
+Step 3: Configure and deploy the Observer API
+Step 4: Deploy the monitoring system
 
-How to obtain it:
-1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
-2. After the registration, the Team will send you your login and a unique link to set your password.
-4. After setting your password, put your login and password into the `observer.yaml` configuration file (see **Build binaries**).
-3. Working with Insolar Platform, you use your credentials in `observer.yaml` to obtain an access token to address the Platform.
-
-## Clone and change to Insolar Observer
-
-Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
-
-## Build binaries
-
-Build binaries automatically using the instructions from the Makefile: `make all-public`.
-
-This command:
-* Generates three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
-* Generates thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
-
-**WARNING:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
-
-## Deploy
-
-To successfully deploy the Observer, you need to:
-1. Initialize your SQL database
-2. Deploy the Observer
-3. Deploy the Observer API
-4. Deploy and start moniroting services
-
-Read about every step below in detail.
-
-### Initialize your SQL database
+## Step 1: Initialize your SQL database
 
 Initialize your SQL database (generated go binaries required): `migrate-init`.
 
-Tip: `migrate-init` is only for the initial migration. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
+**Tip**: `migrate-init` is only for the initial migration. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
 
-### Deploy the Observer
+## Step 2: Configure and deploy the Observer
 
-#### Configure the Observer
+**To configure your Observer**,  set configuration parameters in `observer.yaml`.
 
-Configure your Observer instance via configuration parameters in `observer.yaml`.
+Parameters to configure:
 
-**Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
-
-**WARNING:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
-
-##### Configuration parameters
-
-Database connection:
+* Database connection:
 `OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-Heavy Material Node replication API:
+* Heavy Material Node replication API:
 `OBSERVER_REPLICATOR_ADDR=<ip_address>:5678`
 
-Log parameters:
+* Log parameters:
 ```
 OBSERVER_LOG_LEVEL=info
 OBSERVER_LOG_FORMAT=text
@@ -85,54 +76,57 @@ OBSERVER_LOG_OUTPUTTYPE=stderr
 OBSERVER_LOG_OUTPUTPARAMS=<some_text>
 OBSERVER_LOG_BUFFER=0
 ```
-#### Run the Observer
+**Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
 
-Run the Observer and wait for a while for it to sync with the trusted HMN: `./bin/observer --config .artifacts/observer.yaml`
+**Warning:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
 
-Tip: To run the Observer, you need to use the `observer.yaml` configuration file. The file should be in the `.artifacts` directory.
+**To run the Observer**, execute this command: 
+```./bin/observer --config .artifacts/observer.yaml```. 
 
-### Deploy the Observer API
+Wait for a while for it to sync with the trusted HMN.
 
-#### Configure the Observer API 
-All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
+**Tip**: Make sure that the `observer.yaml` configuration file is in the `.artifacts` directory.
 
-**WARNING**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+## Step 3: Configure and deploy the Observer API
 
-##### Configuration parameters
+**To configure the API of your Observer API**, set configuration parameters in `observerapi.yaml`.
 
-API endpoint:
+Parameters to configure:
+
+* API endpoint:
 `OBSERVERAPI_LISTEN=127.0.0.1:5678 or OBSERVERAPI_LISTEN=:5678`
 
-Database connection:
+* Database connection:
 `OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
 
-Maximum number of connections to the database: 
+* Maximum number of connections to the database: 
 `OBSERVERAPI_DB_POOLSIZE=20`
 
-Log params:
+* Log params:
 ```
 OBSERVERAPI_LOG_LEVEL=info
 OBSERVERAPI_LOG_FORMAT=text
 OBSERVERAPI_LOG_OUTPUTTYPE=stderr
 OBSERVERAPI_LOG_BUFFER=0
 ```
+**Tip**: All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
 
-#### Run the Observer API
+**Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
 
-Run the Observer API: `./bin/api`.
+**To run the Observer API**, execute this command: `./bin/api`.
 
-Note: To run the Observer, you need to use the `observerapi.yaml` configuration file. The file should be in the `.artifacts` directory.
+**Tip**: Make sure that the `observerapi.yaml` configuration file is in the `.artifacts` directory.
 
 The list of endpoints available to Observer API users:
 * TBD
 
-### Deploy and start monitoring services
+## Step 4: Deploy the monitoring system
 
-Before launching the monitoring script, install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
+1. Install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
-#### Deploy the built-in monitoring system
+2. Choose to deploy the buil-in or custom monitoring system as described below.
 
-Deploy the built-in system: `./scripts/monitor/monitor.sh`
+**Deploy the built-in monitoring system**: `./scripts/monitor/monitor.sh`
 
 `monitor.sh` starts Grafana and Prometheus configured by the Observer at:
 
@@ -144,7 +138,7 @@ Deploy the built-in system: `./scripts/monitor/monitor.sh`
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-#### Deploy a customized monitoring system
+**Deploy a customized monitoring system**.
 
 You can install, customize and deploy the monitoring system yourself. 
 
