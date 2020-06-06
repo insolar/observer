@@ -21,7 +21,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/insolar/observer/configuration"
-	"github.com/insolar/observer/internal/app/api"
+	"github.com/insolar/observer/internal/app/api/handlers"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/dbconn"
 )
@@ -62,8 +62,7 @@ func main() {
 	e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 
 	pStorage := postgres.NewPulseStorage(logger, db)
-	observerAPI := api.NewServer(db, logger, pStorage, cfg)
-	api.RegisterHandlers(e, observerAPI)
+	handlers.RegisterHandlers(e, db, logger, pStorage, cfg)
 
 	e.Logger.Fatal(e.Start(cfg.GetListen()))
 }

@@ -8,9 +8,13 @@
 package api
 
 import (
+	"github.com/go-pg/pg"
+	"github.com/insolar/insolar/insolar"
+
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/internal/app/observer"
 )
 
-func GetAPIConfigForTest() configuration.APIConfig {
-	return &configuration.API{}
+func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage) ServerInterface {
+	return NewObserverServer(db, log, pStorage, configuration.API{})
 }

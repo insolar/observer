@@ -3,7 +3,7 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
-// +build node
+// +build !node
 
 package api
 
@@ -15,6 +15,9 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 )
 
-func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) ServerInterface {
-	return NewObserverServer(db, log, pStorage, config)
+func NewServer(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage) ServerInterface {
+	return NewObserverServerExtended(db, log, pStorage, configuration.APIExtended{
+		FeeAmount: testFee,
+		Price:     testPrice,
+	})
 }

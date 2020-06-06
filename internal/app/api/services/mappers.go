@@ -5,7 +5,7 @@
 
 // +build !node
 
-package api
+package services
 
 import (
 	"fmt"
