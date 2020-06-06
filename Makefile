@@ -34,7 +34,7 @@ osflag:
 	@echo $(VERSION)
 
 .PHONY: build
-build: ## build main binaries
+build: ## build all binaries
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
@@ -43,7 +43,7 @@ build: ## build main binaries
 	go build -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
 
 .PHONY: build-node
-build-node: ## build all binaries
+build-node: ## build binaries for node
 	go build -tags node -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -tags node -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -tags node -o $(BIN_DIR)/$(API) cmd/api/*.go
@@ -73,14 +73,14 @@ $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
 
 .PHONY: config
-config: ## generate main configs
+config: ## generate all configs
 	mkdir -p $(ARTIFACTS_DIR)
 	for f in `go run ./configuration/gen/gen.go`; do \
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
 .PHONY: config-node
-config-node: ## generate all configs
+config-node: ## generate configs for node
 	mkdir -p $(ARTIFACTS_DIR)
 	for f in `go run -tags node ./configuration/gen/gen.go`; do \
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
