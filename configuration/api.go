@@ -3,7 +3,7 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
-package api
+package configuration
 
 import (
 	"fmt"
@@ -13,30 +13,16 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-
-	"github.com/insolar/observer/configuration"
 )
 
-type Configuration struct {
-	Listen               string
-	DB                   configuration.DB
-	FeeAmount            *big.Int
-	PriceOrigin          string
-	Price                string
-	CMCMarketStatsParams CMCMarketStatsParamsEnabled
-	Log                  Log
-}
-
-func (c Configuration) GetConfig() interface{} {
-	return &c
-}
-
-type Log struct {
-	Level        string
-	Format       string
-	OutputType   string
-	OutputParams string
-	Buffer       int
+type APIConfig interface {
+	GetListen() string
+	GetDB() DB
+	GetLog() Log
+	GetFeeAmount() *big.Int
+	GetPriceOrigin() string
+	GetPrice() string
+	GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled
 }
 
 type CMCMarketStatsParamsEnabled struct {
@@ -47,23 +33,19 @@ type CMCMarketStatsParamsEnabled struct {
 	Volume            bool
 }
 
-func Default() *Configuration {
-	return &Configuration{
+type API struct {
+	Listen string
+	DB     DB
+	Log    Log
+}
+
+func (API) Default() *API {
+	return &API{
 		Listen: ":0",
-		DB: configuration.DB{
+		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
 			Attempts:        5,
 			AttemptInterval: 3 * time.Second,
-		},
-		FeeAmount:   big.NewInt(1000000000),
-		Price:       "0.05",
-		PriceOrigin: "const", //const|binance|coin_market_cap
-		CMCMarketStatsParams: CMCMarketStatsParamsEnabled{
-			CirculatingSupply: true,
-			DailyChange:       true,
-			MarketCap:         true,
-			Rank:              true,
-			Volume:            true,
 		},
 		Log: Log{
 			Level:        "debug",
@@ -97,4 +79,32 @@ func ToBigIntHookFunc() mapstructure.DecodeHookFunc {
 		}
 		return data, nil
 	}
+}
+
+func (a API) GetListen() string {
+	return a.Listen
+}
+
+func (a API) GetDB() DB {
+	return a.DB
+}
+
+func (a API) GetLog() Log {
+	return a.Log
+}
+
+func (a API) GetFeeAmount() *big.Int {
+	panic("shouldn't be implemented for the type API")
+}
+
+func (a API) GetPriceOrigin() string {
+	panic("shouldn't be implemented for the type API")
+}
+
+func (a API) GetPrice() string {
+	panic("shouldn't be implemented for the type API")
+}
+
+func (a API) GetCMCMarketStatsParams() CMCMarketStatsParamsEnabled {
+	panic("shouldn't be implemented for the type API")
 }

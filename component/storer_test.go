@@ -498,7 +498,7 @@ func TestStoreTxDepositData(t *testing.T) {
 }
 
 func TestStorerOK(t *testing.T) {
-	cfg := configuration.Default()
+	cfg := configuration.Observer{}.Default()
 	obs := observability.Make(context.Background())
 
 	storer := makeStorer(cfg, obs, fakeConn{})

@@ -9,11 +9,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
-
-	"github.com/insolar/observer/configuration"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"

@@ -3,11 +3,14 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
+// +build !node
+
 package postgres_test
 
 import (
-	"github.com/insolar/observer/internal/testutils"
 	"testing"
+
+	"github.com/insolar/observer/internal/testutils"
 
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
