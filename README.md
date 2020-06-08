@@ -253,6 +253,7 @@ Our social media:
 [<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-instagram.png" width="36" height="36">](https://instagram.com/insolario)
 [<img src="https://github.com/insolar/doc-pics/raw/master/st/ico-social-telegram.png" width="36" height="36">](https://t.me/InsolarAnnouncements) 
 
+
 ## License
 
 This project is licensed under the terms of the [Insolar License 1.0](LICENSE.md).
