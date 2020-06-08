@@ -3,7 +3,9 @@
 // This material is licensed under the Insolar License version 1.0,
 // available at https://github.com/insolar/observer/blob/master/LICENSE.md.
 
-package api
+// +build !node
+
+package services
 
 import (
 	"context"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/insolar/insolar/instrumentation/inslogger"
 
+	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
@@ -26,9 +29,9 @@ import (
 )
 
 const (
-	migrationsDir = "../../../scripts/migrations"
+	migrationsDir = "../../../../scripts/migrations"
 
-	apihost = ":14800"
+	apihost = ":14801"
 )
 
 var (
@@ -53,9 +56,13 @@ func TestMain(t *testing.M) {
 	nowPulse := 1575302444 - pulse.UnixTimeOfMinTimePulse + pulse.MinTimePulse
 	_ = pStorage.Insert(&observer.Pulse{Number: pulse.Number(nowPulse)})
 
-	observerAPI := NewServer(db, logger, pStorage)
+	observerAPI := NewObserverServer(db, logger, pStorage, configuration.APIExtended{
+		FeeAmount: testFee,
+		Price:     testPrice,
+	})
 
 	RegisterHandlers(e, observerAPI)
+
 	go func() {
 		err := e.Start(apihost)
 		dbCleaner()

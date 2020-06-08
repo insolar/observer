@@ -24,7 +24,7 @@ import (
 func TestPulseFetcher_Fetch(t *testing.T) {
 	ctx := context.Background()
 	t.Run("empty_stream", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		cfg.Replicator.AttemptInterval = 0
 		cfg.Replicator.Attempts = 1
@@ -44,7 +44,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("one_pulse", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
@@ -64,7 +64,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("ordinary", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		expected := &observer.Pulse{}
 		stream := &pulseStream{}
@@ -84,7 +84,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("failed_export", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		client := &pulseClient{}
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
@@ -100,7 +100,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	})
 
 	t.Run("failed_recv", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		stream := &pulseStream{}
 		stream.recv = func() (*exporter.Pulse, error) {
@@ -122,7 +122,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 func TestPulseFetcher_FetchCurrent(t *testing.T) {
 	ctx := context.Background()
 	t.Run("happy topsyncpulse", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		cfg.Replicator.AttemptInterval = 0
 		cfg.Replicator.Attempts = 1
@@ -143,7 +143,7 @@ func TestPulseFetcher_FetchCurrent(t *testing.T) {
 	})
 
 	t.Run("topsyncpulse returns error", func(t *testing.T) {
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
 		cfg.Replicator.AttemptInterval = 0
 		cfg.Replicator.Attempts = 1

@@ -23,7 +23,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("regular", func(t *testing.T) {
 		t.Parallel()
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -42,7 +42,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("fast forwarding", func(t *testing.T) {
 		t.Parallel()
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -61,7 +61,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("faster than heavy", func(t *testing.T) {
 		t.Parallel()
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		defer mc.Finish()
 
 		raw := raw{
@@ -80,7 +80,7 @@ func TestSleepManager_Count(t *testing.T) {
 
 	t.Run("nil pulse", func(t *testing.T) {
 		t.Parallel()
-		cfg := configuration.Default()
+		cfg := configuration.Observer{}.Default()
 		defer mc.Finish()
 
 		raw := raw{

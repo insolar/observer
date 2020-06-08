@@ -36,11 +36,17 @@ osflag:
 .PHONY: build
 build: ## build all binaries
 	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
 	go build -o $(BIN_DIR)/binance-collector cmd/binance-collector/*.go
-	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -o $(BIN_DIR)/coin-market-cap-collector cmd/coin-market-cap-collector/*.go
+
+.PHONY: build-node
+build-node: ## build binaries for node
+	go build -tags node -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build -tags node -o $(BIN_DIR)/migrate cmd/migrate/*.go
+	go build -tags node -o $(BIN_DIR)/$(API) cmd/api/*.go
 
 .PHONY: install_deps
 install_deps: minimock golangci
@@ -67,9 +73,16 @@ $(BIN_DIR): ## create bin dir
 	@mkdir -p $(BIN_DIR)
 
 .PHONY: config
-config: ## generate configs
+config: ## generate all configs
 	mkdir -p $(ARTIFACTS_DIR)
 	for f in `go run ./configuration/gen/gen.go`; do \
+  		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
+  	done
+
+.PHONY: config-node
+config-node: ## generate configs for node
+	mkdir -p $(ARTIFACTS_DIR)
+	for f in `go run -tags node ./configuration/gen/gen.go`; do \
   		mv ./$$f $(ARTIFACTS_DIR)/$$f      ;\
   	done
 
@@ -80,13 +93,24 @@ ci_test: ## run tests with coverage
 test: config ## tests
 	go test ./... -v $(TEST_ARGS)
 
+.PHONY: test-node
+test-node: config-node ## tests
+	go test ./... -tags node -v $(TEST_ARGS)
+
 .PHONY: all
 all: config build
+
+.PHONY: all-node
+all-node: config-node build-node
 
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: migrate
-migrate: ## migrate
+.PHONY: migrate-init
+migrate-init: ## initial migrate
 	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --init --config=.artifacts/migrate.yaml
+
+.PHONY: migrate
+migrate:  ## migrate
+	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --config=.artifacts/migrate.yaml

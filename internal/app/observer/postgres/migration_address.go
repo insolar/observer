@@ -19,7 +19,7 @@ import (
 )
 
 type MigrationAddressSchema struct {
-	tableName struct{} `sql:"migration_addresses"` //nolint: unused,structcheck
+	tableName struct{} `sql:"migration_addresses"` // nolint: unused,structcheck
 
 	Addr      string `sql:",pk"`
 	Timestamp int64  `sql:",notnull"`
