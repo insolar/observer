@@ -6,9 +6,14 @@
 package connectivity
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"net/http"
+
 	"github.com/go-pg/pg"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/dbconn"
@@ -32,8 +37,26 @@ func Make(cfg *configuration.Observer, obs *observability.Observability) *Connec
 			)
 			log.Infof("trying connect to %s...", cfg.Replicator.Addr)
 
-			// We omit error here because connect happens in background.
-			conn, err := grpc.Dial(cfg.Replicator.Addr, limits, grpc.WithInsecure())
+			cp, err := x509.SystemCertPool()
+			if err != nil {
+				log.Fatal(errors.Wrapf(err, "failed get x509 SystemCertPool"))
+			}
+			httpClient := &http.Client{Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs: cp,
+					// nolint:gosec
+					InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+				},
+			}}
+			perRPCCred := grpc.WithPerRPCCredentials(newTokenCredentials(httpClient, cfg.Replicator.Auth.URL,
+				cfg.Replicator.Auth.Login, cfg.Replicator.Auth.Password,
+				cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.InsecureTLS))
+
+			tlsOption := grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, ""))
+			if cfg.Replicator.InsecureTLS {
+				tlsOption = grpc.WithInsecure()
+			}
+			conn, err := grpc.Dial(cfg.Replicator.Addr, limits, perRPCCred, tlsOption)
 			if err != nil {
 				log.Fatal(errors.Wrapf(err, "failed to grpc.Dial"))
 			}

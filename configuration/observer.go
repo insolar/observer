@@ -43,8 +43,19 @@ type Replicator struct {
 	FastForwardInterval time.Duration
 	BatchSize           uint32
 	CacheSize           int
+	Auth                Auth
+	// warning: set true only for testing purpose within secured environment
+	InsecureTLS bool
 	// Replicator's metrics, health check, etc.
 	Listen string
+}
+
+type Auth struct {
+	URL      string
+	Login    string
+	Password string
+	// number of seconds remain of token expiration to start token refreshing
+	RefreshOffset int64
 }
 
 func (Observer) Default() *Observer {
@@ -57,7 +68,14 @@ func (Observer) Default() *Observer {
 			FastForwardInterval: time.Second / 4,
 			BatchSize:           2000,
 			CacheSize:           10000,
-			Listen:              ":8888",
+			Auth: Auth{
+				URL:           "https://{access_token_url}",
+				Login:         "{unique_login}",
+				Password:      "{strong_password}",
+				RefreshOffset: 60,
+			},
+			InsecureTLS: false,
+			Listen:      ":8888",
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",
