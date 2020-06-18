@@ -56,6 +56,7 @@ type Auth struct {
 	Password string
 	// number of seconds remain of token expiration to start token refreshing
 	RefreshOffset int64
+	Timeout       time.Duration
 }
 
 func (Observer) Default() *Observer {
@@ -73,6 +74,7 @@ func (Observer) Default() *Observer {
 				Login:         "{unique_login}",
 				Password:      "{strong_password}",
 				RefreshOffset: 60,
+				Timeout:       15 * time.Second,
 			},
 			InsecureTLS: false,
 			Listen:      ":8888",

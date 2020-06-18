@@ -41,13 +41,16 @@ func Make(cfg *configuration.Observer, obs *observability.Observability) *Connec
 			if err != nil {
 				log.Fatal(errors.Wrapf(err, "failed get x509 SystemCertPool"))
 			}
-			httpClient := &http.Client{Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: cp,
-					// nolint:gosec
-					InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+			httpClient := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						RootCAs: cp,
+						// nolint:gosec
+						InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+					},
 				},
-			}}
+				Timeout: cfg.Replicator.Auth.Timeout,
+			}
 			perRPCCred := grpc.WithPerRPCCredentials(newTokenCredentials(httpClient, cfg.Replicator.Auth.URL,
 				cfg.Replicator.Auth.Login, cfg.Replicator.Auth.Password,
 				cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.InsecureTLS))
