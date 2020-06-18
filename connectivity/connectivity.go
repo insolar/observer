@@ -37,29 +37,35 @@ func Make(cfg *configuration.Observer, obs *observability.Observability) *Connec
 			)
 			log.Infof("trying connect to %s...", cfg.Replicator.Addr)
 
-			cp, err := x509.SystemCertPool()
-			if err != nil {
-				log.Fatal(errors.Wrapf(err, "failed get x509 SystemCertPool"))
-			}
-			httpClient := &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						RootCAs: cp,
-						// nolint:gosec
-						InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+			options := []grpc.DialOption{limits, grpc.WithInsecure()}
+			if cfg.Replicator.Auth.Required {
+				log.Info("replicator auth is required, preparing auth options")
+				cp, err := x509.SystemCertPool()
+				if err != nil {
+					log.Fatal(errors.Wrapf(err, "failed get x509 SystemCertPool"))
+				}
+				httpClient := &http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{
+							RootCAs: cp,
+							// nolint:gosec
+							InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+						},
 					},
-				},
-				Timeout: cfg.Replicator.Auth.Timeout,
-			}
-			perRPCCred := grpc.WithPerRPCCredentials(newTokenCredentials(httpClient, cfg.Replicator.Auth.URL,
-				cfg.Replicator.Auth.Login, cfg.Replicator.Auth.Password,
-				cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.InsecureTLS))
+					Timeout: cfg.Replicator.Auth.Timeout,
+				}
+				perRPCCred := grpc.WithPerRPCCredentials(newTokenCredentials(httpClient, cfg.Replicator.Auth.URL,
+					cfg.Replicator.Auth.Login, cfg.Replicator.Auth.Password,
+					cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.InsecureTLS))
 
-			tlsOption := grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, ""))
-			if cfg.Replicator.InsecureTLS {
-				tlsOption = grpc.WithInsecure()
+				tlsOption := grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, ""))
+				if cfg.Replicator.InsecureTLS {
+					tlsOption = grpc.WithInsecure()
+				}
+				options = []grpc.DialOption{limits, tlsOption, perRPCCred}
 			}
-			conn, err := grpc.Dial(cfg.Replicator.Addr, limits, perRPCCred, tlsOption)
+
+			conn, err := grpc.Dial(cfg.Replicator.Addr, options...)
 			if err != nil {
 				log.Fatal(errors.Wrapf(err, "failed to grpc.Dial"))
 			}

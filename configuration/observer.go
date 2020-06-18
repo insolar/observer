@@ -51,6 +51,7 @@ type Replicator struct {
 }
 
 type Auth struct {
+	Required bool
 	URL      string
 	Login    string
 	Password string
@@ -70,6 +71,7 @@ func (Observer) Default() *Observer {
 			BatchSize:           2000,
 			CacheSize:           10000,
 			Auth: Auth{
+				Required:      true,
 				URL:           "https://{access_token_url}",
 				Login:         "{unique_login}",
 				Password:      "{strong_password}",
