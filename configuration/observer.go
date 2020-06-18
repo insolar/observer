@@ -44,13 +44,12 @@ type Replicator struct {
 	BatchSize           uint32
 	CacheSize           int
 	Auth                Auth
-	// warning: set true only for testing purpose within secured environment
-	InsecureTLS bool
 	// Replicator's metrics, health check, etc.
 	Listen string
 }
 
 type Auth struct {
+	// warning: set false only for testing purpose within secured environment
 	Required bool
 	URL      string
 	Login    string
@@ -58,6 +57,8 @@ type Auth struct {
 	// number of seconds remain of token expiration to start token refreshing
 	RefreshOffset int64
 	Timeout       time.Duration
+	// warning: set true only for testing purpose within secured environment
+	InsecureTLS bool
 }
 
 func (Observer) Default() *Observer {
@@ -77,9 +78,9 @@ func (Observer) Default() *Observer {
 				Password:      "{strong_password}",
 				RefreshOffset: 60,
 				Timeout:       15 * time.Second,
+				InsecureTLS:   false,
 			},
-			InsecureTLS: false,
-			Listen:      ":8888",
+			Listen: ":8888",
 		},
 		DB: DB{
 			URL:             "postgres://postgres@localhost/postgres?sslmode=disable",

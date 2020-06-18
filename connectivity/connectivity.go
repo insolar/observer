@@ -49,17 +49,17 @@ func Make(cfg *configuration.Observer, obs *observability.Observability) *Connec
 						TLSClientConfig: &tls.Config{
 							RootCAs: cp,
 							// nolint:gosec
-							InsecureSkipVerify: cfg.Replicator.InsecureTLS,
+							InsecureSkipVerify: cfg.Replicator.Auth.InsecureTLS,
 						},
 					},
 					Timeout: cfg.Replicator.Auth.Timeout,
 				}
 				perRPCCred := grpc.WithPerRPCCredentials(newTokenCredentials(httpClient, cfg.Replicator.Auth.URL,
 					cfg.Replicator.Auth.Login, cfg.Replicator.Auth.Password,
-					cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.InsecureTLS))
+					cfg.Replicator.Auth.RefreshOffset, cfg.Replicator.Auth.InsecureTLS))
 
 				tlsOption := grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, ""))
-				if cfg.Replicator.InsecureTLS {
+				if cfg.Replicator.Auth.InsecureTLS {
 					tlsOption = grpc.WithInsecure()
 				}
 				options = []grpc.DialOption{limits, tlsOption, perRPCCred}

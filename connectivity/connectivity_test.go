@@ -21,7 +21,7 @@ func TestConnectivity_GRPC(t *testing.T) {
 	t.Run("auth_with_tls", func(t *testing.T) {
 		var conn *Connectivity
 		cfg.Replicator.Auth.Required = true
-		cfg.Replicator.InsecureTLS = false
+		cfg.Replicator.Auth.InsecureTLS = false
 		conn = Make(cfg, observability.Make(context.Background()))
 		require.NotNil(t, conn.GRPC())
 	})
@@ -29,7 +29,7 @@ func TestConnectivity_GRPC(t *testing.T) {
 	t.Run("auth_insecure", func(t *testing.T) {
 		var conn *Connectivity
 		cfg.Replicator.Auth.Required = true
-		cfg.Replicator.InsecureTLS = true
+		cfg.Replicator.Auth.InsecureTLS = true
 		conn = Make(cfg, observability.Make(context.Background()))
 		require.NotNil(t, conn.GRPC())
 	})
