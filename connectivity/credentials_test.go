@@ -29,7 +29,7 @@ func TestTokenCredentials_GetRequestMetadata(t *testing.T) {
 		cred := newTokenCredentials(nil, "", "", "", refreshOffset, true)
 		cred.token = Token{
 			AccessToken: expectedToken,
-			ExpiresIn:   time.Now().Add(61 * time.Second).Unix(),
+			ExpiresIn:   int64(61),
 		}
 		expected := fmt.Sprintf("Bearer %s", expectedToken)
 
@@ -79,7 +79,7 @@ func TestTokenCredentials_GetRequestMetadata(t *testing.T) {
 		cred := newTokenCredentials(server.Client(), server.URL, login, password, refreshOffset, true)
 		cred.token = Token{
 			AccessToken: "expired-token",
-			ExpiresIn:   time.Now().Add(60 * time.Second).Unix(),
+			ExpiresIn:   int64(60),
 		}
 		metadata, err := cred.GetRequestMetadata(context.Background(), "")
 		require.NoError(t, err)

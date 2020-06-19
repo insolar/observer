@@ -64,7 +64,8 @@ func (c *tokenCredentials) isTokenExpired() bool {
 	c.tokenMx.RLock()
 	defer c.tokenMx.RUnlock()
 
-	return time.Unix(c.token.ExpiresIn-c.refreshOffset, 0).Before(time.Now())
+	timeToRefresh := time.Now().Add(time.Duration(c.token.ExpiresIn-c.refreshOffset) * time.Second)
+	return timeToRefresh.Before(time.Now())
 }
 
 func (c *tokenCredentials) receiveAccessToken(ctx context.Context) error {
