@@ -22,5 +22,5 @@ jobs:
         docker tag observer insolar/mainnet-observer:${VERSION}
         docker tag observer-node insolar/mainnet-observer-node:${VERSION}
 
-        docker push observer insolar/mainnet-observer:${VERSION}
-        docker push observer-node insolar/mainnet-observer-node:${VERSION}
+        docker push insolar/mainnet-observer:${VERSION}
+        docker push insolar/mainnet-observer-node:${VERSION}
