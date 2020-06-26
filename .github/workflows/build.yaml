@@ -1,0 +1,26 @@
+name: build
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout app sources
+      uses: actions/checkout@v2
+    - name: Build docker image
+      run: |
+        docker build -t observer .
+        docker build -t observer-node -f Dockerfile.node .
+    - name: Log into registry
+      run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{secrets.DOCKERHUB_USERNAME}} --password-stdin
+    - name: Push image
+      run: |
+        VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+        docker tag observer insolar/mainnet-observer:${VERSION}
+        docker tag observer-node insolar/mainnet-observer-node:${VERSION}
+
+        docker push insolar/mainnet-observer:${VERSION}
+        docker push insolar/mainnet-observer-node:${VERSION}
