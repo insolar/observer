@@ -30,6 +30,7 @@ func TestTokenCredentials_GetRequestMetadata(t *testing.T) {
 		cred.token = Token{
 			AccessToken: expectedToken,
 			ExpiresIn:   int64(61),
+			ReceivedAt:  time.Now(),
 		}
 		expected := fmt.Sprintf("Bearer %s", expectedToken)
 
@@ -80,6 +81,7 @@ func TestTokenCredentials_GetRequestMetadata(t *testing.T) {
 		cred.token = Token{
 			AccessToken: "expired-token",
 			ExpiresIn:   int64(60),
+			ReceivedAt:  time.Now(),
 		}
 		metadata, err := cred.GetRequestMetadata(context.Background(), "")
 		require.NoError(t, err)
