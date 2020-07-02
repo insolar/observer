@@ -17,22 +17,45 @@ To use Insolar Observer, you need to :
 
 # Install the prerequisites and get access
 
-1. Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/) (for example, via [PostresApp](https://postgresapp.com/) on macOS)
+1. Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/)
 
 2. Install and set [Go Tools 1.12](https://golang.org/doc/install)
 
-3. Get an authorized access to Insolar Platform:
+3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) (only if you want to build using Docker Compose)
 
-   Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform or [Insolar MainNet] to collect data. 
+4. Get an authorized access to Insolar Platform:
 
-   How to obtain it:
+   Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform to collect data. 
+
+   Here's how to obtain it:
    1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
-   2. After the registration, the Team will send you your login and a unique link to set your password.
+   2. After the registration, the Team will send you your login and a unique link to set your password. The link doesn't have a WEB UI and should be addressed via a CLI tool such as Curl.
+   3. Set your password. Use this command as a reference example: 
+   ```
+   curl -d '{"login":"login_example", "password":"password_example"}' -H "Content-Type: application/json" -X POST https://api.example.insolar.io/auth/set-password?code=XXXXXXXXXXXXXXXXX
+   ```
    3. After setting your password, put your login and password into the `observer.yaml` configuration file (see **Build binaries**).
-   4. Working with Insolar Platform, you use your credentials in `observer.yaml` to obtain an access token to address the Platform.
+   4. Working with Insolar Platform, you use your credentials from `observer.yaml` to obtain an access token to address the Platform.
 
-# Build
+# Build, deploy and monitor
 
+Choose an appropriate mode and proceed with the instructions.
+
+## Using Docker Compose
+
+### Deploy
+
+1. Make sure you've set your `login` and `password` correctly. You can find them in `replicator.yaml` under the `auth` parameter section. 
+2. Run `docker-compose up -d migrate` to create a database and set it structure appropriately. Wait up to a minute to ensure the database has been set correctly.
+3. Run `docker-compose up -d` to fire up the services.
+4. Check the services are up and running, and the migration service has done its job correctly: `docker-compose ps`. You should see the API (`observer_api_1`), database service (`observer_postgres_1`), replication service (`observer_replicator_1`) in the `Up` status, and the migration service (`observer_migrate_1`) in the `Exit 0` status.
+5. Run a safe check on your credentials: `docker-compose logs -f replicator`. 
+   1. If you see `ERR failed to get gRPC stream from exporter.Export method: rpc error: code = Unauthenticated desc = transport: can't get access_token:...` it means your credentials have been set wrong or you haven't set them. If so, check #1 in `Build using Docker Compose` or check #4 in `Install the prerequisites and get access` and then said #1.
+   2. Otherwise, if you see blazing-fast amending log lines starting with `DBG...`, your Observer is fine and reading data from a trusted Heavy Material Node. 
+
+## Using raw binary files
+
+### Build
 1. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 
 2. Build binaries automatically using the instructions from the Makefile: `make all-public`.
@@ -43,7 +66,7 @@ This command generates:
 
 **Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
 
-# Deploy
+### Deploy
 
 Step 1: Initialize your SQL database
 
@@ -53,13 +76,13 @@ Step 3: Configure and deploy the Observer API
 
 Step 4: Deploy the monitoring system
 
-## Step 1: Initialize your SQL database
+#### Step 1: Initialize your SQL database
 
 Initialize your SQL database (generated go binaries required): `migrate-init`.
 
 **Tip**: `migrate-init` is only for the initial migration. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
 
-## Step 2: Configure and deploy the Observer
+#### Step 2: Configure and deploy the Observer
 
 1. To configure, edit the configuration parameters in `observer.yaml`:
 
@@ -88,7 +111,7 @@ Initialize your SQL database (generated go binaries required): `migrate-init`.
 
    Wait for a while for it to sync with the trusted HMN.
 
-## Step 3: Configure and deploy the Observer API
+#### Step 3: Configure and deploy the Observer API
 
 1. To configure, edit the configuration parameters in `observerapi.yaml`:
 
@@ -117,7 +140,7 @@ Initialize your SQL database (generated go binaries required): `migrate-init`.
 3. To run the Observer, execute this command: 
 ```./bin/api --config .artifacts/observerapi.yaml```.
 
-## Step 4: Deploy the monitoring system
+#### Step 4: Deploy the monitoring system
 
 1. Install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
@@ -138,7 +161,7 @@ To deploy the built-in monitoring system, execute this command:
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-### Сustomized monitoring system
+#### Сustomized monitoring system
 
 To deploy a customized monitoring system:
 
