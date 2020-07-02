@@ -80,7 +80,7 @@ Step 4: Deploy the monitoring system
 
 Initialize your SQL database (generated go binaries required): `migrate-init`.
 
-**Tip**: `migrate-init` is only for the initial migration. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
+**Tip**: `migrate-init` is only for the initial database setting-up. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
 
 #### Step 2: Configure and deploy the Observer
 
@@ -146,7 +146,7 @@ Initialize your SQL database (generated go binaries required): `migrate-init`.
 
 2. Choose to deploy the buil-in or a customized monitoring system as described below.
 
-### Built-in monitoring system
+##### Built-in monitoring system
 
 To deploy the built-in monitoring system, execute this command: 
 ```./scripts/monitor/monitor.sh```
@@ -161,7 +161,7 @@ To deploy the built-in monitoring system, execute this command:
  
 * Observer health check service: `http://localhost:8888/healthcheck`
 
-#### Сustomized monitoring system
+##### Сustomized monitoring system
 
 To deploy a customized monitoring system:
 
