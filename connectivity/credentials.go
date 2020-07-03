@@ -18,8 +18,9 @@ import (
 )
 
 type Token struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int64  `json:"expires_in"`
+	AccessToken string    `json:"access_token"`
+	ExpiresIn   int64     `json:"expires_in"`
+	ReceivedAt  time.Time `json:"-"`
 }
 
 type tokenCredentials struct {
@@ -46,7 +47,7 @@ func newTokenCredentials(client *http.Client, authURL, login, pass string, refre
 }
 
 func (c *tokenCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	if c.isTokenExpired() {
+	if c.needNewToken() {
 		err := c.receiveAccessToken(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "can't get access_token")
@@ -60,11 +61,15 @@ func (c *tokenCredentials) RequireTransportSecurity() bool {
 	return !c.insecureTLS
 }
 
-func (c *tokenCredentials) isTokenExpired() bool {
+func (c *tokenCredentials) needNewToken() bool {
 	c.tokenMx.RLock()
 	defer c.tokenMx.RUnlock()
 
-	timeToRefresh := time.Now().Add(time.Duration(c.token.ExpiresIn-c.refreshOffset) * time.Second)
+	if c.token.AccessToken == "" {
+		return true
+	}
+
+	timeToRefresh := c.token.ReceivedAt.Add(time.Duration(c.token.ExpiresIn-c.refreshOffset) * time.Second)
 	return timeToRefresh.Before(time.Now())
 }
 
@@ -101,6 +106,7 @@ func (c *tokenCredentials) receiveAccessToken(ctx context.Context) error {
 		return fmt.Errorf("failed to parse authorization response body %v", err)
 	}
 
+	token.ReceivedAt = time.Now()
 	c.token = token
 	return nil
 }
