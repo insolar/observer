@@ -78,7 +78,7 @@ Step 4: Deploy the monitoring system
 
 #### Step 1: Initialize your SQL database
 
-Initialize your SQL database (generated go binaries required): `migrate-init`.
+Initialize your SQL database (generated go binaries required): `make migrate-init`.
 
 **Tip**: `migrate-init` is only for the initial database setting-up. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
 
