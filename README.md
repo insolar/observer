@@ -86,19 +86,21 @@ Initialize your SQL database (generated go binaries required): `make migrate-ini
 
 1. To configure, edit the configuration parameters in `observer.yaml`:
 
-   * Database connection:
-   `OBSERVER_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+   * Database connection in the `db` section:
+   `url: postgres://user:password@host/db_name?sslmode=disable`
 
-   * Heavy Material Node replication API:
-   `OBSERVER_REPLICATOR_ADDR=<ip_address>:5678`
+   * Insolar network address and user credentials to access it in the `auth` section:
+   `url: https://<api-url>/auth/token`
+   `login: "<your-login>"`
+   `password: "<your-password"`
 
-   * Log parameters:
+   * Log parameters in the `log` section:
    ```
-   OBSERVER_LOG_LEVEL=info
-   OBSERVER_LOG_FORMAT=text
-   OBSERVER_LOG_OUTPUTTYPE=stderr
-   OBSERVER_LOG_OUTPUTPARAMS=<some_text>
-   OBSERVER_LOG_BUFFER=0
+     level: debug
+     format: text
+     outputtype: stderr
+     outputparams:
+     buffer: 0
    ```
    **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
 
@@ -124,12 +126,13 @@ Initialize your SQL database (generated go binaries required): `make migrate-ini
    * Maximum number of connections to the database: 
    `OBSERVERAPI_DB_POOLSIZE=20`
 
-   * Log params:
+   * Log params in the `log` section:
    ```
-   OBSERVERAPI_LOG_LEVEL=info
-   OBSERVERAPI_LOG_FORMAT=text
-   OBSERVERAPI_LOG_OUTPUTTYPE=stderr
-   OBSERVERAPI_LOG_BUFFER=0
+    level: debug
+    format: json
+    outputtype: stderr
+    outputparams: ""
+    buffer: 0
    ```
    **Tip**: All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
 
