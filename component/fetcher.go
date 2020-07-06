@@ -51,12 +51,15 @@ func makeFetcher(
 		recordCounterMetric.Add(float64(len(batch)))
 		log.WithField("batch_size", len(batch)).
 			Infof("fetched records")
-
+		if pulse.Number < s.currentHeavyPN {
+			return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
+		}
 		// Get current heavy pulse
 		currentFinalisedPulse, err := pulses.FetchCurrent(ctx)
 		if err != nil {
 			return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom}
 		}
+		s.currentHeavyPN = currentFinalisedPulse
 		return &raw{pulse: pulse, batch: batch, shouldIterateFrom: shouldIterateFrom, currentHeavyPN: currentFinalisedPulse}
 	}
 }

@@ -26,7 +26,7 @@ Clone the Observer and change to its directory: `git clone git@github.com:insola
 
 ## Build binaries
 
-Build binaries automatically using the instructions from the Makefile: `make all-public`.
+Build binaries automatically using the instructions from the Makefile: `make all-node`.
 
 This command:
 * Generates three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
