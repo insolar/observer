@@ -1,41 +1,44 @@
 [<img src="https://github.com/insolar/doc-pics/raw/master/st/github-readme-banner.png">](http://insolar.io/?utm_source=Github)
 
-# Insolar Observer
-Insolar Obserber is a service that collects record data produced by Insolar smart contracts, organizes it into a SQL database, and aggregates various statistical data.
+# Insolar Observer node
+Insolar Observer node (later "the Node") allows trusted agents such as crypto exchanges collect record data produced by Insolar smart contracts, organize it into a SQL database, and aggregate various statistical data.
 
-Insolar Observer allows trusted agents such as crypto exchanges read data from Insolar Platform via gRPC. Trusted agents can integrate the Observer into their business applications or use the Observer API to get the data at their discretion.
+Trusted agents can integrate the Node into their business applications or use the Node API to get the data at their discretion.
 
-The Observer obtains data from a trusted Heavy Material Node run within Insolar Platform. This way Observer users are insured against inacurate or corrupted data. 
+The Node communicates with Insolar Platform via gRPC and obtains data from a trusted Heavy Material Node run on Insolar Platform. 
 
-Observer users are responsible for the data they store on their Observer instance and can regulate access via an access  control system of their choice.
+Access to the Heavy Material Node is controlled by an Insolar authentication service and is limited to registered trusted agents.
+This mechanism is designed to protect the Node users against inaccurate or corrupted data. 
 
-To use Insolar Observer, you need to :
+Meanwhile, the Node users are responsible for the data they store locally on their Node instance and can regulate local access via an access control system of their choice.
 
-1. Build Insolar Observer
-2. Deploy Insolar Observer
+To use Insolar Observer node, you need to:
 
+1. Install prerequisites and obtain an authorized access to Insolar Platform.
+2. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
 
-# Install the prerequisites and get access
+# Install the prerequisites and get access to Insolar Platform
 
-1. Install and set [PostgreSQL 11.4](https://www.postgresql.org/download/)
+1. Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/).
 
-2. Install and set [Go Tools 1.12](https://golang.org/doc/install)
+2. Install and set up [Go Tools 1.12](https://golang.org/doc/install).
 
-3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) (only if you want to build using Docker Compose)
+3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop).
 
-4. Get an authorized access to Insolar Platform:
+4. Obtain an authorized access to Insolar Platform.
 
-   Observer users need to obtain an address of a trusted Heavy Material Node run on Insolar Platform to collect data. 
+   The Node users need to obtain an authorized access, otherwise they are not able to address the trusted Heavy Material Node on Insolar Platform or to collect the data. 
 
-   Here's how to obtain it:
+   To obtain it:
    1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
-   2. After the registration, the Team will send you your login and a unique link to set your password. The link doesn't have a WEB UI and should be addressed via a CLI tool such as Curl.
-   3. Set your password. Use this command as a reference example: 
+   2. After the registration, the Team will send you your login along with a unique link to set your password. The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
+   3. Set your password using the link. Consider this command as the reference example: 
    ```
-   curl -d '{"login":"login_example", "password":"password_example"}' -H "Content-Type: application/json" -X POST https://api.example.insolar.io/auth/set-password?code=XXXXXXXXXXXXXXXXX
+   curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
    ```
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The correct expected result is to see no errors returned by Curl.
    3. After setting your password, put your login and password into the `observer.yaml` configuration file (see **Build binaries**).
-   4. Working with Insolar Platform, you use your credentials from `observer.yaml` to obtain an access token to address the Platform.
+   Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
 # Build, deploy and monitor
 
@@ -43,56 +46,58 @@ Choose an appropriate mode and proceed with the instructions.
 
 ## Using Docker Compose
 
-### Deploy
+### Build, deploy
 
-1. Make sure you've set your `login` and `password` correctly. You can find them in `replicator.yaml` under the `auth` parameter section. 
-2. Run `docker-compose up -d migrate` to create a database and set it structure appropriately. Wait up to a minute to ensure the database has been set correctly.
+1. Make sure you've set your `login` and `password` correctly. Check them in `observer.yaml` under the `auth` parameter section.
+2. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
+3. Generate the needed configuration files: `make config-node`.
+2. Run `docker-compose up -d migrate` to create a database and the necessary tables in it. You may want to wait for 10-15 seconds to ensure the database has been set correctly.
 3. Run `docker-compose up -d` to fire up the services.
-4. Check the services are up and running, and the migration service has done its job correctly: `docker-compose ps`. You should see the API (`observer_api_1`), database service (`observer_postgres_1`), replication service (`observer_replicator_1`) in the `Up` status, and the migration service (`observer_migrate_1`) in the `Exit 0` status.
+4. Check the services are up and running, and the migration service has done its job correctly: `docker-compose ps`. You should see the API (`observer_api_1`), database service (`observer_postgres_1`),Observer service (`observer_replicator_1`) in the `Up` status, and the migration service (`observer_migrate_1`) in the `Exit 0` status.
 5. Run a safe check on your credentials: `docker-compose logs -f replicator`. 
    1. If you see `ERR failed to get gRPC stream from exporter.Export method: rpc error: code = Unauthenticated desc = transport: can't get access_token:...` it means your credentials have been set wrong or you haven't set them. If so, check #1 in `Build using Docker Compose` or check #4 in `Install the prerequisites and get access` and then said #1.
-   2. Otherwise, if you see blazing-fast amending log lines starting with `DBG...`, your Observer is fine and reading data from a trusted Heavy Material Node. 
+   2. Otherwise, if you see blazing-fast amending log lines starting with `DBG...`, your Node is fine and reading data from a trusted Heavy Material Node. 
 
 ## Using raw binary files
 
 ### Build
 1. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 
-2. Build binaries automatically using the instructions from the Makefile: `make all-public`.
+2. Build binaries automatically using the instructions from the Makefile: `make all-node`.
 
-This command generates:
-* Three configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
-* Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
+    This command generates:
+    * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
+    * Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
 
-**Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) on: `GO111MODULE=on`.
+    **Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: `GO111MODULE=on`.
 
 ### Deploy
 
-Step 1: Initialize your SQL database
+1. Initialize your PostgreSQL database.
 
-Step 2: Configure and deploy the Observer
+2. Configure and deploy the Node.
 
-Step 3: Configure and deploy the Observer API
+3. Configure and deploy the Node API.
 
-Step 4: Deploy the monitoring system
+4. Deploy the monitoring system.
 
-#### Step 1: Initialize your SQL database
+#### Initialize your PostgreSQL database
 
-Initialize your SQL database (generated go binaries required): `make migrate-init`.
+Initialize your PostgreSQL database (generated go binaries required): `make migrate-init`.
 
-**Tip**: `migrate-init` is only for the initial database setting-up. Later, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating your SQL database.
+**Tip**: `migrate-init` is only for the initial database setting-up. Later if needed, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating the database structure.
 
-#### Step 2: Configure and deploy the Observer
+#### Configure and deploy the Node
 
-1. To configure, edit the configuration parameters in `observer.yaml`:
+1. To configure, edit the configuration parameters in `./.artifacts/observer.yaml`:
 
    * Database connection in the `db` section:
-   `url: postgres://user:password@host/db_name?sslmode=disable`
+   `url: postgres://user:password@host/db_name?sslmode=disable`.
 
    * Insolar network address and user credentials to access it in the `auth` section:
    `url: https://<api-url>/auth/token`
-   `login: "<your-login>"`
-   `password: "<your-password"`
+   `login: "<your_login>"`
+   `password: "<your_password"`.
 
    * Log parameters in the `log` section:
    ```
@@ -102,29 +107,30 @@ Initialize your SQL database (generated go binaries required): `make migrate-ini
      outputparams:
      buffer: 0
    ```
-   **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example: `OBSERVER_DB_URL=...`, `OBSERVER_REPLICATOR_LISTEN=...`
+   **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example, `OBSERVER_DB_URL=...` or `OBSERVER_REPLICATOR_LISTEN=...`.
 
-   **Warning:** Overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+   **Warning:** Overriding via ENV variables works only with the configuration file in place. The configuration file must have the default number of parameters.
    
-2. Make sure that the `observer.yaml` configuration file is in the `.artifacts` directory.
+2. Make sure the `observer.yaml` configuration file is in the `./.artifacts` directory.
 
-3. To run the Observer, execute this command: 
-```./bin/observer --config .artifacts/observer.yaml```.
+3. Run the Node: ```./bin/observer --config .artifacts/observer.yaml```.
 
-   Wait for a while for it to sync with the trusted HMN.
+   Wait for a while for it to sync with the trusted HMN. 
+   
+   **Tip:** initial synching can take up to 20 hours as Insolar Platform has a lot of data.
 
-#### Step 3: Configure and deploy the Observer API
+#### Configure and deploy the Observer API
 
-1. To configure, edit the configuration parameters in `observerapi.yaml`:
+1. To configure, edit the configuration parameters in `./.artifacts/observerapi.yaml`:
 
    * API endpoint:
-   `OBSERVERAPI_LISTEN=127.0.0.1:5678 or OBSERVERAPI_LISTEN=:5678`
+   `listen: 127.0.0.1:5678 or listen: :5678`.
 
-   * Database connection:
-   `OBSERVERAPI_DB_URL=postgres://user:password@host/db_name?sslmode=disable`
+   * Database connection in the `db` section:
+   `url: postgres://user:password@host/db_name?sslmode=disable`.
 
    * Maximum number of connections to the database: 
-   `OBSERVERAPI_DB_POOLSIZE=20`
+   `poolsize: 20`.
 
    * Log params in the `log` section:
    ```
@@ -134,35 +140,32 @@ Initialize your SQL database (generated go binaries required): `make migrate-ini
     outputparams: ""
     buffer: 0
    ```
-   **Tip**: All options in observerapi.yaml config can be overridden with environment variables using OBSERVERAPI prefix and _ as delimiter, for example: OBSERVERAPI_DB_URL=..., OBSERVERAPI_LISTEN=...
+   **Tip**: You can override all parameters in `observerapi.yaml` via environment variables that start with `OBSERVERAPI` and use `_` as a separator. For example, `OBSERVERAPI_DB_URL=...` or `OBSERVERAPI_LISTEN=...`.
 
    **Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
-   
-2. Make sure that the `observerapi.yaml` configuration file is in the `.artifacts` directory.
 
-3. To run the Observer, execute this command: 
-```./bin/api --config .artifacts/observerapi.yaml```.
+3. Run the Node API: ```./bin/api --config .artifacts/observerapi.yaml```.
 
-#### Step 4: Deploy the monitoring system
+#### Deploy the monitoring system
 
-1. Install and set [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
+1. Make sure you've installed [Docker compose](https://docs.docker.com/compose/install/ "Install Compose ").
 
-2. Choose to deploy the buil-in or a customized monitoring system as described below.
+2. Choose to deploy the built-in or a customized monitoring system as described below.
 
 ##### Built-in monitoring system
 
-To deploy the built-in monitoring system, execute this command: 
+To deploy the built-in monitoring system, execute the script: 
 ```./scripts/monitor/monitor.sh```
 
-`monitor.sh` starts Grafana and Prometheus configured by the Observer at:
+`monitor.sh` starts Grafana and Prometheus configured for the Node at:
 
-* Grafana: `http://localhost:3000` with the default login and password: `login=admin` and `password=pass`
+* Grafana: `http://localhost:3000` with the default login and password: `admin` and `pass` respectively. Grafana starts with a preset dashboard. To navigate to the dashboard, use the left menu: `Dashboards > Manage > Observer`.
  
 * Prometheus: `http://localhost:9090/graph`
 
-* Observer мetrics: `http://localhost:8888` by default
+* Observer node metrics: `http://localhost:8888`
  
-* Observer health check service: `http://localhost:8888/healthcheck`
+* Observer node health check service: `http://localhost:8888/healthcheck`
 
 ##### Сustomized monitoring system
 
@@ -172,7 +175,7 @@ To deploy a customized monitoring system:
 
    You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
 
-2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana. 
+2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
    If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
 
