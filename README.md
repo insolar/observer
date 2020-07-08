@@ -39,7 +39,7 @@ To obtain it:
    ```
    The correct expected result is to see no errors returned by Curl.
 4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
-   Working with Insolar Platform, your Node instance uses your credentials from `/.artifacts/observer.yaml` to obtain an access token to successfully communicate with the Platform.
+   Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
 # Build, deploy and monitor
 
@@ -108,7 +108,7 @@ Initialize your PostgreSQL database (generated go binaries required): `make migr
      outputparams:
      buffer: 0
    ```
-   For the full list of parameters and their description, check [Configuration parameters]("https://github.com/insolar/observer/wiki/Configuration-parameters").
+   For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
    
    **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example, `OBSERVER_DB_URL=...` or `OBSERVER_REPLICATOR_LISTEN=...`.
 
@@ -143,7 +143,7 @@ Initialize your PostgreSQL database (generated go binaries required): `make migr
     outputparams: ""
     buffer: 0
    ```
-   For the full list of parameters and their description, check [Configuration parameters]("https://github.com/insolar/observer/wiki/Configuration-parameters").
+   For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
    
    **Tip**: You can override all parameters in `observerapi.yaml` via environment variables that start with `OBSERVERAPI` and use `_` as a separator. For example, `OBSERVERAPI_DB_URL=...` or `OBSERVERAPI_LISTEN=...`.
 
