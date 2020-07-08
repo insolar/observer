@@ -28,20 +28,18 @@ To use Insolar Observer node, you need to:
 
 # Obtain an authorized access to Insolar Platform
 
-4. Obtain an authorized access to Insolar Platform.
+The Node users need to obtain an authorized access, otherwise they are not able to address the trusted Heavy Material Node on Insolar Platform or to collect the data. 
 
-   The Node users need to obtain an authorized access, otherwise they are not able to address the trusted Heavy Material Node on Insolar Platform or to collect the data. 
-
-   To obtain it:
-   1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
-   2. After the registration, the Team will send you your login along with a unique link to set your password. The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
-   3. Set your password using the link. Consider this command as the reference example: 
+To obtain it:
+1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
+2. After the registration, the Team will send you your login along with a unique link to set your password. The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
+3. Set your password using the link. Consider this command as the reference example: 
    ```
    curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
    ```
-   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The correct expected result is to see no errors returned by Curl.
-   3. After setting your password, put your login and password into the `observer.yaml` configuration file (see **Build binaries**).
-   Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
+   The correct expected result is to see no errors returned by Curl.
+4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
+   Working with Insolar Platform, your Node instance uses your credentials from `/.artifacts/observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
 # Build, deploy and monitor
 
@@ -51,7 +49,7 @@ Choose an appropriate mode and proceed with the instructions.
 
 ### Build, deploy
 
-1. Make sure you've set your `login` and `password` correctly. Check them in `observer.yaml` under the `auth` parameter section.
+1. Make sure you've obtained an authorized access to Insolar Platform and set your `login` and `password` correctly. Check them in `./.artifacts/observer.yaml` under the `auth` parameter section.
 2. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 3. Generate the needed configuration files: `make config-node`.
 2. Run `docker-compose up -d migrate` to create a database and the necessary tables in it. You may want to wait for 10-15 seconds to ensure the database has been set correctly.
@@ -110,6 +108,8 @@ Initialize your PostgreSQL database (generated go binaries required): `make migr
      outputparams:
      buffer: 0
    ```
+   For the full list of parameters and their description, check [Configuration parameters]("https://github.com/insolar/observer/wiki/Configuration-parameters").
+   
    **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example, `OBSERVER_DB_URL=...` or `OBSERVER_REPLICATOR_LISTEN=...`.
 
    **Warning:** Overriding via ENV variables works only with the configuration file in place. The configuration file must have the default number of parameters.
@@ -143,6 +143,8 @@ Initialize your PostgreSQL database (generated go binaries required): `make migr
     outputparams: ""
     buffer: 0
    ```
+   For the full list of parameters and their description, check [Configuration parameters]("https://github.com/insolar/observer/wiki/Configuration-parameters").
+   
    **Tip**: You can override all parameters in `observerapi.yaml` via environment variables that start with `OBSERVERAPI` and use `_` as a separator. For example, `OBSERVERAPI_DB_URL=...` or `OBSERVERAPI_LISTEN=...`.
 
    **Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
