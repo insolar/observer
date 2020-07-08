@@ -156,6 +156,7 @@ type beauty struct {
 type state struct {
 	last              insolar.PulseNumber
 	ShouldIterateFrom insolar.PulseNumber
+	currentHeavyPN    insolar.PulseNumber
 	ms                metricState
 }
 
