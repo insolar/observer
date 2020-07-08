@@ -14,16 +14,19 @@ Meanwhile, the Node users are responsible for the data they store locally on the
 
 To use Insolar Observer node, you need to:
 
-1. Install prerequisites and obtain an authorized access to Insolar Platform.
-2. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
+1. Install prerequisites
+2. Obtain an authorized access to Insolar Platform.
+3. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
 
-# Install the prerequisites and get access to Insolar Platform
+# Install the prerequisites
 
 1. Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/).
 
 2. Install and set up [Go Tools 1.12](https://golang.org/doc/install).
 
 3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop).
+
+# Obtain an authorized access to Insolar Platform
 
 4. Obtain an authorized access to Insolar Platform.
 
