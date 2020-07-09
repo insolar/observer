@@ -20,9 +20,7 @@ To use the Node, you need to:
 
 ## Install the prerequisites
 
-1. Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/).
-
-2. Install and set up [Go Tools 1.12](https://golang.org/doc/install).
+Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.12](https://golang.org/doc/install).
 
 ## Obtain an authorized access to Insolar Platform
 
@@ -35,23 +33,34 @@ To obtain it:
    The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
 3. Set your password using the link. Consider this command as the reference example: 
    ```
-   curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H \ "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
+   curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H \
+   "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
    ```
    The correct expected result is to see no errors returned by Curl.
 4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
+
    Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
 ## Build
 
-1. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
+1. Clone the Observer and change to its directory: 
+   ```
+   git clone git@github.com:insolar/observer.git && cd observer
+   ```
 
-2. Build binaries automatically using the instructions from the Makefile: `make all-node`.
+2. Build binaries using the instructions from the Makefile: 
+   ```
+   make all-node
+   ```
 
-    This command generates:
-    * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
-    * Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
+   This command generates:
+   * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
+   * Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
 
-    **Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: `GO111MODULE=on`.
+   **Warning:** The Node uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: 
+   ```
+   GO111MODULE=on
+   ```
 
 ## Deploy
 To deploy, do the following:
@@ -64,23 +73,28 @@ To deploy, do the following:
 
 4. Deploy the monitoring system.
 
-### Initialize your PostgreSQL database
+### Initialize your PostgreSQL instance
 
-Migrate the necessary database and tables into your PostgreSQL instance: `make migrate-init`.
+Initialize the necessary database and tables in your PostgreSQL instance: 
+```
+make migrate-init
+```
 
-**Tip**: `migrate-init` is only for the initial database setting-up. Later if needed, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating the database structure.
+**Tip**: `migrate-init` is only for the initial database setting-up. For updating the database structure later on, run:
+ ```
+./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml
+``` 
 
 ### Configure and deploy the Node
 
-1. To configure, edit the configuration parameters in `./.artifacts/observer.yaml`:
+1. Configure the following parameters in `./.artifacts/observer.yaml`:
 
-  * Insolar network address in the `replicator` section:
-    ```
-    addr: 127.0.0.1:5678
-    ```
-   
-   
-   * Insolar authentication service address and your credentials to access it. In the `auth` section:
+   * Insolar network address in the `replicator` section:
+     ```
+     addr: <address_of_Insolar_MainNet_given_by_Insolar_Team>
+     ```
+ 
+   * Insolar authentication service address and your access credentials in the `auth` section:
      ```
      url: https://<api-url>/auth/token
      login: "<your_login>"
@@ -92,10 +106,12 @@ Migrate the necessary database and tables into your PostgreSQL instance: `make m
      **Tip:** You can override all parameters in `observer.yaml` via environment variables that start with `OBSERVER` and use `_` as a separator. For example, `OBSERVER_DB_URL=...` or `OBSERVER_REPLICATOR_LISTEN=...`.
 
      **Warning:** Overriding via ENV variables works only with the configuration file in place. The configuration file must have the default number of parameters.
-   
-2. Make sure the `observer.yaml` configuration file is in the `./.artifacts` directory.
 
-3. Run the Node: ```./bin/observer --config .artifacts/observer.yaml```.
+
+2. Run the Node: 
+   ```
+   ./bin/observer --config .artifacts/observer.yaml
+   ```
 
    Wait for a while for it to sync with the trusted HMN. 
    
@@ -103,7 +119,7 @@ Migrate the necessary database and tables into your PostgreSQL instance: `make m
 
 ### Configure and deploy the Node API
 
-First, configure the API endpoint parameter in `./.artifacts/observerapi.yaml`. 
+1. Configure the API endpoint parameter in `./.artifacts/observerapi.yaml`. 
 
    For example:
 
@@ -115,24 +131,22 @@ First, configure the API endpoint parameter in `./.artifacts/observerapi.yaml`.
    
    **Tip**: You can override all parameters in `observerapi.yaml` via environment variables that start with `OBSERVERAPI` and use `_` as a separator. For example, `OBSERVERAPI_DB_URL=...` or `OBSERVERAPI_LISTEN=...`.
 
-   **Warning**: overriding via ENV variables works only with the configuration file in place with the default number of parameters.
+   **Warning**: Overriding via ENV variables works only with the configuration file in place. The configuration file must have the default number of parameters.
 
-Then run the Node API: 
+2. Run the Node API: 
    ```
    ./bin/api --config .artifacts/observerapi.yaml
    ```
 
 ### Deploy the monitoring system
 
-To deploy a monitoring system:
+1. Install and deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
 
-1. Deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
-
-   You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).
+   You can get the config for Prometheus [here](https://github.com/insolar/observer/blob/master/scripts/monitor/prometheus/prometheus.yaml).  
 
 2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
-   If you need to, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+   If necessary, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
 
 ## Contribute!
 
