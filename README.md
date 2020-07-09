@@ -37,7 +37,7 @@ To obtain it:
    "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
    ```
    The correct expected result is to see no errors returned by Curl.
-4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
+4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see [Build binaries](#build-binaries).
 
    Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
@@ -48,7 +48,7 @@ To obtain it:
    git clone git@github.com:insolar/observer.git && cd observer
    ```
 
-2. Build binaries using the instructions from the Makefile: 
+2. <a name="build-binaries">Build binaries</a> using the instructions from the Makefile: 
    ```
    make all-node
    ```
