@@ -124,7 +124,13 @@ make migrate-init
    For example:
 
    ```
-   listen: 127.0.0.1:5678 or listen: :5678
+   listen: 127.0.0.1:5678
+   ```
+   
+   or
+   
+   ```
+   listen: :5678
    ```
 
    For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
