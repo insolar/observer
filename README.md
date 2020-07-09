@@ -153,6 +153,10 @@ make migrate-init
 2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
    If necessary, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+   
+## Additional details
+
+[Visit the Node wiki](https://github.com/insolar/observer/wiki) for additional details on database description, configuration parameters description and metrics description.
 
 ## Contribute!
 
