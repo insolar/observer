@@ -41,27 +41,8 @@ To obtain it:
 4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
    Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
-# Build, deploy and monitor
+# Build
 
-Choose an appropriate mode and proceed with the instructions.
-
-## Using Docker Compose
-
-### Build, deploy
-
-1. Make sure you've obtained an authorized access to Insolar Platform and set your `login` and `password` correctly. Check them in `./.artifacts/observer.yaml` under the `auth` parameter section.
-2. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
-3. Generate the needed configuration files: `make config-node`.
-2. Run `docker-compose up -d migrate` to create a database and the necessary tables in it. You may want to wait for 10-15 seconds to ensure the database has been set correctly.
-3. Run `docker-compose up -d` to fire up the services.
-4. Check the services are up and running, and the migration service has done its job correctly: `docker-compose ps`. You should see the API (`observer_api_1`), database service (`observer_postgres_1`),Observer service (`observer_replicator_1`) in the `Up` status, and the migration service (`observer_migrate_1`) in the `Exit 0` status.
-5. Run a safe check on your credentials: `docker-compose logs -f replicator`. 
-   1. If you see `ERR failed to get gRPC stream from exporter.Export method: rpc error: code = Unauthenticated desc = transport: can't get access_token:...` it means your credentials have been set wrong or you haven't set them. If so, check #1 in `Build using Docker Compose` or check #4 in `Install the prerequisites and get access` and then said #1.
-   2. Otherwise, if you see blazing-fast amending log lines starting with `DBG...`, your Node is fine and reading data from a trusted Heavy Material Node. 
-
-## Using raw binary files
-
-### Build
 1. Clone the Observer and change to its directory: `git clone git@github.com:insolar/observer.git && cd observer`.
 
 2. Build binaries automatically using the instructions from the Makefile: `make all-node`.
@@ -72,7 +53,7 @@ Choose an appropriate mode and proceed with the instructions.
 
     **Warning:** The Observer uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: `GO111MODULE=on`.
 
-### Deploy
+# Deploy
 
 1. Initialize your PostgreSQL database.
 
@@ -82,18 +63,15 @@ Choose an appropriate mode and proceed with the instructions.
 
 4. Deploy the monitoring system.
 
-#### Initialize your PostgreSQL database
+## Initialize your PostgreSQL database
 
-Initialize your PostgreSQL database (generated go binaries required): `make migrate-init`.
+Migrate the necessary database and tables into your PostgreSQL instance: `make migrate-init`.
 
 **Tip**: `migrate-init` is only for the initial database setting-up. Later if needed, you should use `./bin/migrate --dir=scripts/migrations --init --config=.artifacts/migrate.yaml` for updating the database structure.
 
-#### Configure and deploy the Node
+## Configure and deploy the Node
 
 1. To configure, edit the configuration parameters in `./.artifacts/observer.yaml`:
-
-   * Database connection in the `db` section:
-   `url: postgres://user:password@host/db_name?sslmode=disable`.
 
    * Insolar network address and user credentials to access it in the `auth` section:
    `url: https://<api-url>/auth/token`
@@ -168,9 +146,9 @@ To deploy the built-in monitoring system, execute the script:
  
 * Prometheus: `http://localhost:9090/graph`
 
-* Observer node metrics: `http://localhost:8888`
+* The Node metrics: `http://localhost:8888/metrics`. The port is set via the `listen` parameter in `./.artifacts/observer.yaml` and `:8888` is the default value.
  
-* Observer node health check service: `http://localhost:8888/healthcheck`
+* The Node health check service: `http://localhost:8888/healthcheck`. The port is set via the `listen` parameter in `./.artifacts/observer.yaml` and `:8888` is the default value.
 
 ##### Сustomized monitoring system
 
