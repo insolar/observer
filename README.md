@@ -5,7 +5,7 @@ Insolar Observer node (later "the Node") allows trusted agents such as crypto ex
 
 Trusted agents can integrate the Node into their business applications or use the Node API to get data at their discretion.
 
-The Node communicates with Insolar Platform via gRPC and obtains data from a trusted Heavy Material Node run on Insolar Platform. 
+The Node communicates with Insolar Platform via gRPC and obtains data from a Heavy Material Node run on Insolar Platform. 
 
 Access to this Heavy Material Node is controlled by the Insolar authentication service and is limited to registered trusted agents.
 This mechanism is designed to protect the Node users against inaccurate or corrupted data. 
@@ -24,7 +24,7 @@ Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [
 
 ## Obtain an authorized access to Insolar Platform
 
-The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the trusted Heavy Material Node on Insolar Platform or to collect data. 
+The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the Heavy Material Node on Insolar Platform or to collect data. 
 
 To obtain it:
 1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
