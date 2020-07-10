@@ -20,7 +20,7 @@ To use the Node, you need to:
 
 There are no strict hardware or network recommendations for the Node, and users can choose the hardware and network connection at their discretion.
 
-The tests showed the following configuration gives good results:
+The tests showed the following configuration gives satisfying results:
 
 * Quad core CPU 3.5GHz
 * 4GB RAM allocated for the Node and database
