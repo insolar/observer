@@ -33,8 +33,13 @@ To obtain it:
    The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
 3. Set your password using the link. Consider this command as the reference example: 
    ```
-   curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H \
-   "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
+   curl --request POST \
+   --url '${LINK}' \
+   --header 'content-type: application/json' \
+   --data '{
+   "login": "${LOGIN}",
+   "password": "${PASSWORD}"
+   } '
    ```
    The correct expected result is to see no errors returned by Curl.
 4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see [Build binaries](#build-binaries)).
