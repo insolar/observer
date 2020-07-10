@@ -120,7 +120,7 @@ make migrate-init
 
    Wait for a while for it to sync with the trusted HMN. 
    
-   **Tip:** initial synching can take up to 20 hours as Insolar Platform has a lot of data.
+   **Tip:** initial synching can take various time depending on your hardware and network properties. An approximate time is 26 hours on a 4 core CPU, SATA SSD and 4Gb RAM on a gigabit connection with averagely 50ms network latency.
 
 ### Configure and deploy the Node API
 
