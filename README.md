@@ -18,9 +18,7 @@ To use the Node, you need to:
 2. Obtain an authorized access to Insolar Platform.
 3. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
 
-## Recommended hardware and network configuration
-
-There are no strict recommendations for the Node, and users can choose the hardware and network connection at their discretion.
+There are no strict hardware or network recommendations for the Node, and users can choose the hardware and network connection at their discretion.
 
 The tests showed the following configuration gives good results:
 
