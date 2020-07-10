@@ -143,7 +143,12 @@ make migrate-init
    ```
    ./bin/api --config .artifacts/observerapi.yaml
    ```
-
+   
+3. Run a healthcheck on the Node and Node API: in a web browser of your choice, address the local `pulse_number` endpoint to get the current pulse; then refresh the page to make sure the pulse has changed to the next one.
+   ```
+   http://127.0.0.1:8080/api/pulse/number
+   ```
+   
 ### Deploy the monitoring system
 
 1. Install and deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
@@ -153,6 +158,13 @@ make migrate-init
 2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
    If necessary, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+   
+## Future Node updates
+
+Upon any upcoming new Insolar MainNet updates, the current Node version may suspend synching. To resume the synching, you need to update your Node instance.
+
+Update instructions for future versions of the Node are on the way and will be released closer to the next significant update. 
+
    
 ## Additional details
 
