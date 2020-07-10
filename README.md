@@ -23,7 +23,7 @@ There are no strict hardware or network recommendations for the Node, and users 
 The tests showed the following configuration gives satisfying results:
 
 * Quad core CPU 3.5GHz
-* 4GB RAM allocated for the Node and database
+* 4GB DDR3 RAM allocated for the Node and database
 * SATA SSD
 * 10Mbps Internet connection with low latency
 
@@ -129,7 +129,7 @@ make migrate-init
 
    Wait for a while for it to sync with the trusted HMN. 
    
-   **Tip:** initial synching can take various time depending on your hardware and network properties. An approximate time is 18 hours on a quad core CPU 3.5GHz, SATA SSD, 4GB RAM on a 10Mbps connection with averagely 50ms network latency, and default Node configuration parameters.
+   **Tip:** initial synching can take various time depending on your hardware and network properties. An approximate time is 18 hours on a quad core CPU 3.5GHz, SATA SSD, 4GB DDR3 RAM on a 10Mbps connection with averagely 50ms network latency, and default Node configuration parameters.
 
 ### Configure and deploy the Node API
 
