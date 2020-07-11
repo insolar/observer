@@ -3,34 +3,31 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	// Provides simplistic plain text diff representation with diff lines designated with - and +.
-	// This script uses it for writing diffs to files.
-	df "github.com/kylelemons/godebug/diff"
-
-	// Provides pretty diff representation for terminal with diff lines designated with red and green colors.
-	dff "github.com/sergi/go-diff/diffmatchpatch"
-
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
+	// The following package provides simplistic plain text diff representation
+	// With diff lines designated with - and +
+	// This script uses it for writing diffs to files
+	df "github.com/kylelemons/godebug/diff"
 )
 
 const (
 	MainNetURL = "https://wallet-api.insolar.io/api"
-	TestNetURL = "https://wallet-api.testnet.insolar.io/api"
+	//TestNetURL = "https://wallet-api.testnet.insolar.io/api"
 	//LocalURL = "http://127.0.0.1:8080/api/"
 	Endpoint = "/transactions/inPulseNumberRange"
 )
 
-func sendRequest(URL string, params url.Values) (string, string) {
+func sendRequest(URLandEndpoint string, params url.Values) (string, string) {
 
 	// Initialize the client
 	client := http.Client{}
 
 	// Create a new GET request
-	transactionsReq, err := http.NewRequest("GET", URL, nil)
+	transactionsReq, err := http.NewRequest("GET", URLandEndpoint, nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -59,14 +56,15 @@ func sendRequest(URL string, params url.Values) (string, string) {
 		os.Exit(1)
 	}
 
-	// Prettify the JSON
+	// Prettify the JSON: add indentation for better human-readability
 	prettyRespJSON, err := json.MarshalIndent(rawBody, "", "  ")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// Return both the response as it is returned by the API (a one-line string) and the beautiful JSON for pretty-printing
+	// Return both the response as it is returned by the API (a one-line string)
+	// and the beautiful JSON for pretty-printing
 	return string(transactionsRespBody), string(prettyRespJSON)
 }
 
@@ -88,16 +86,30 @@ func main() {
 	params.Add("fromPulseNumber", os.Args[1])
 	params.Add("toPulseNumber", os.Args[2])
 	params.Add("limit", os.Args[3])
+
+	// Save the request to a file to be able to copy-paste and send the exact same request later
+	// To do so, first, create a file and put the current date and time into its name
+	currentTime := time.Now().Format(time.UnixDate)
+	file, err := os.Create( currentTime + ".txt")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// Then write the request URL with all query parameters to it
 	requestString := MainNetURL + Endpoint + "?" + params.Encode()
+	file.WriteString("The request is as follows:\n\n")
+	file.WriteString(requestString + "\n\n")
 
-	fmt.Println("\nGetting transactions within a pulse number range from MainNet with the following request:\n")
+	// Send the request to MainNet using the sender function declared earlier and receive pulse contents
+	fmt.Println("\nGetting transactions within a pulse number range from MainNet with the following request:")
+	mainNetPulseContent, prettyMainNetPulseContent := sendRequest(MainNetURL + Endpoint, params)
 
-	mainPulseCntnt, prettyMainPulseCntnt := sendRequest(MainNetURL + Endpoint, params)
+	// To test the case with a difference, comment function that sends request to the node
+	// And uncomment the following lines
 
-	//Comment the previous line and uncomment the following to test the case with a difference.
-	//mainPulseCntnt := `[{"amount":"100000000000000","fee":"","index":"47289127:51","pulseNumber":47289127,"status":"some_different_status","timestamp":1593524390,"txID":"insolar:1AtGTJ8ytEnaESprhR3VOd1UtSK0S2t7YeLjnTht10AM.record","fromMemberReference":"insolar:1AAEAAWeNhA_NwKaH6E36IJ-2PLvXnJRxiTTNWq1giOg","toMemberReference":"insolar:1AtGTJwUKe7my117vMZPBBpzTEam-wJx6aWxeAtE4ZKw","type":"transfer"},{"amount":"100000000000000","fee":"","index":"47289127:111","pulseNumber":47289127,"status":"failed","timestamp":1593524390,"txID":"insolar:1AtGTJzrPe8qXiEJ2Gin4_YEPK05ttVG4QrnlH27qLbE.record","fromMemberReference":"insolar:1AAEAAWeNhA_NwKaH6E36IJ-2PLvXnJRxiTTNWq1giOg","toMemberReference":"insolar:1AtGTJx_F-66HR4LGxckXlBmNldI2KA9cGYKtXngsJVs","type":"transfer"},{"amount":"100","fee":"0","index":"47289127:376","pulseNumber":47289127,"status":"received","timestamp":1593524390,"txID":"insolar:1AtGTJ_RiMvX27EWE6ROOleCQ329YAdrFcXuP1ZTkzmA.record","fromMemberReference":"insolar:1AAEAAS2JLnvh2bkLUUlUijqcp7--k8_GIz9qLKxZXLE","toDepositReference":"insolar:1AtGTJ490s4HHcgfO9vl-o-kooZVTyJFlaquRgQPx6EI","toMemberReference":"insolar:1AtGTJ2Hb3j_58uR2iPpHu9p4_WOJpyGVfaew9uDhQrU","type":"migration"}]`
+	//nodePulseContent := `[{"amount":"4045300000000","fee":"100000000","index":"48222814:81","pulseNumber":48222814,"status":"received","timestamp":1594458077,"txID":"insolar:1At_SXhIyDsmIM0z4bRRoa8vu1-xPmzOmJGzDr029yJo.record","fromMemberReference":"insolar:1At9mtqXJbRnsPSLf4Lmb-G7M92ChDmtERC64li7JI8Q","toMemberReference":"insolar:1Ag6rgI9GWg8ODZ0Mf3At8ehc1HYQUFbivJFkCVGn59s","type":"transfer"}]`
 	//var rawBody []interface{}
-	//err := json.Unmarshal([]byte(mainPulseCntnt), &rawBody)
+	//err = json.Unmarshal([]byte(mainNetPulseContent), &rawBody)
 	//if err != nil {
 	//	fmt.Println(err)
 	//	os.Exit(1)
@@ -108,64 +120,34 @@ func main() {
 	//	fmt.Println(err)
 	//	os.Exit(1)
 	//}
-	//prettyMainPulseCntnt := string(indentedTransactions1Byte)
+	//prettyNodePulseContent := string(indentedTransactions1Byte)
 
-	fmt.Println("\nGetting transactions within a pulse number range locally with the following request:\n")
-	nodePulseCntnt, prettyNodePulseCntnt := sendRequest(os.Args[4] + Endpoint, params)
+	// Send the exact same request to your node and receive pulse contents
+	fmt.Println("\nGetting transactions within a pulse number range locally with the following request:")
+	nodePulseContent, prettyNodePulseContent := sendRequest(MainNetURL + Endpoint, params)
 
-	// Comparing strings with basic Golang comparison operator (==) as it's the most reliable.
-	if mainPulseCntnt == nodePulseCntnt {
+	// Compare the contents with basic Golang comparison operator (==)
+	if mainNetPulseContent == nodePulseContent {
+		// This is the case with identical pulse contents from both MainNet and your node
 
-		// This prints out the pretty JSON to the terminal.
-		fmt.Println("\nNow comparing:\n\n"+ prettyMainPulseCntnt)
-
-		print := "\nPulse contents from both sources are identical." + "\n\n" +
-			"In case you want to make sure that the returned array did not change over time, here's the request to send later:" + "\n\n" +
-			requestString + "\n"
-		fmt.Println(print)
-
-		currentTime := time.Now().Format(time.UnixDate)
-		file, err := os.Create("Request and result received at " + currentTime + ".txt")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		file.WriteString("Open the following URL in the browser:" + "\n\n")
-		file.WriteString(requestString + "\n\n")
-		file.WriteString("Copy-paste both the output below and the result in the browser and compare them, for example, using an online diff tool." + "\n\n")
-		// This writes a one-liner request to the file for future copy-paste.
-		// This one-liner is supposed to be compared with a new request output in the browser which is a one-liner as well.
-		file.WriteString(mainPulseCntnt)
+		// Write the pulse contents to the file to be able to later compare it to the results of the exact same request
+		file.WriteString("Pulse contents from MainNet and your node are identical. Here's the response:\n\n")
+		file.WriteString(mainNetPulseContent)
 		file.Close()
-		fmt.Println("Just in case: the request and array it returned are saved to the \"Request and array received at "+ currentTime + ".txt\" file.")
+		fmt.Println("\nThe request and result it returned are saved to the \"" + currentTime + ".txt\" file.")
 
 	} else {
+		// This is the case with pulse contents that differ
+		// Remember: some transaction attributes may change their values since the values depend on separate objects
+		// But each pulse always contains the same set of registered transactions
 
-		// Forming a human-readable diff for the terminal.
+		// Form a simple plaint text diff between prettified reponse—JSON object with indentation
+		indentedDiff := df.Diff(prettyMainNetPulseContent, prettyNodePulseContent)
 
-		dmpDiff2 := dff.New()
-		indentedDiff2 := dmpDiff2.DiffMain(prettyMainPulseCntnt, prettyNodePulseCntnt, true)
-		prettyIndentedDiff2 := dmpDiff2.DiffPrettyText(indentedDiff2)
-
-		fmt.Println("\nNow comparing:\n\n" + prettyIndentedDiff2)
-		print := "\nThere's a difference!" + "\n\n" +
-			"Remember: transaction statuses and fees (and, in some cases, fromDepositReference of migration transactions) may change as transactions go through the finalization process." + "\n" +
-			"This may result in differences in corresponding transaction attributes between MainNet and your node." + "\n" +
-			"Tip: wait for transactions to finalize and your node to sync with MainNet and repeat the request or, simply, pick an \"older\" pulse." + "\n\n"
-		fmt.Println(print)
-
-		// Saving plain text diff to file.
-		indentedDiff1 := df.Diff(prettyMainPulseCntnt, prettyNodePulseCntnt)
-		currentTime := time.Now().Format(time.Stamp)
-		file, err := os.Create("Request and diff received at " + currentTime + ".txt")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		file.WriteString("The request goes as follows:\n\n" + requestString + "\n\n")
-		file.WriteString(print)
-		file.WriteString(indentedDiff1)
+		// Write the diff to the file
+		file.WriteString("The diff goes as follows:\n\n")
+		file.WriteString(indentedDiff)
 		file.Close()
-		fmt.Println("Just in case: the request and diff are saved to the \"Request and diff received at "+ currentTime + ".txt\" file.")
+		fmt.Println("\nThe request and diff are saved to the \"" + currentTime + ".txt\" file.")
 	}
 }
