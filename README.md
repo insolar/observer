@@ -71,7 +71,7 @@ To obtain it:
 
    This command generates:
    * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the `./.artifacts` directory.
-   * Thee binaries (`migrate`, `observer`, `api`) and places them into the `./bin/` directory.
+   * Thee binaries (`migrate`, `observer`, `api`) and places them into the `./bin` directory.
 
    **Warning:** The Node uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: 
    ```
