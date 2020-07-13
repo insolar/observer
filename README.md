@@ -62,7 +62,7 @@ To obtain it:
    git clone git@github.com:insolar/observer.git && cd observer
    ```
    
-   **Tip:** syntax for all subsequent commands and directories implies that you run or see them from the Node root directory.
+   **Tip:** syntax of all subsequent commands and directories implies that you run or see them from the Node root directory.
 
 2. <a name="build-binaries">Build binaries</a> using the instructions from the Makefile: 
    ```
