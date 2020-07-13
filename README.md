@@ -103,7 +103,7 @@ make migrate-init
 
 ### Configure and deploy the Node
 
-1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml` filling in your login and password from [Obtain an authorized access to Insolar Platform](#obtain-access):
+1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml` (see [Obtain an authorized access to Insolar Platform](#obtain-access)):
  
      ```
      replicator:
