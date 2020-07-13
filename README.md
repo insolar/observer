@@ -43,11 +43,11 @@ To obtain it:
 3. Set your password using the link. Consider this command as the reference example: 
    ```
    curl --request POST \
-   --url '${LINK}' \
+   --url '<unique_link_given_by_Insolar_Team>' \
    --header 'content-type: application/json' \
    --data '{
-   "login": "${LOGIN}",
-   "password": "${PASSWORD}"
+   "login": "<your_login>",
+   "password": "<your_password>"
    } '
    ```
    The correct expected result is to see no errors returned by Curl.
@@ -101,18 +101,11 @@ make migrate-init
 
 ### Configure and deploy the Node
 
-1. Configure the following parameters in `./.artifacts/observer.yaml`:
-
-   * Insolar network address in the `replicator` section:
-     ```
-     addr: <address_of_Insolar_MainNet_given_by_Insolar_Team>
-     ```
+1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml`:
  
-   * Insolar authentication service address and your access credentials in the `auth` section:
      ```
-     url: https://<api-url>/auth/token
      login: "<your_login>"
-     password: "<your_password"
+     password: "<your_password>"
      ```
 
      For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
