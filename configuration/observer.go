@@ -74,8 +74,8 @@ func (Observer) Default() *Observer {
 			Auth: Auth{
 				Required:      true,
 				URL:           "https://wallet-api.insolar.io/auth/token",
-				Login:         "${LOGIN}",
-				Password:      "${PASSWORD}",
+				Login:         "<your_login>",
+				Password:      "<your_password>",
 				RefreshOffset: 60,
 				Timeout:       15 * time.Second,
 				InsecureTLS:   false,
