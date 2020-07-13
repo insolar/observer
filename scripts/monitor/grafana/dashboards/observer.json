@@ -2,6 +2,7 @@
   "annotations": {
     "list": [
       {
+        "$$hashKey": "object:276",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -15,7 +16,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1590768914437,
+  "iteration": 1594552561142,
   "links": [],
   "panels": [
     {
@@ -30,6 +31,7 @@
         "#d44a3a"
       ],
       "datasource": "prometheus",
+      "description": "[What is a pulse?](https://docs.insolar.io/en/latest/glossary.html?highlight=pulse)",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -39,9 +41,9 @@
         "thresholdMarkers": true
       },
       "gridPos": {
-        "h": 4,
-        "w": 7,
-        "x": 0,
+        "h": 6,
+        "w": 8,
+        "x": 4,
         "y": 0
       },
       "id": 4,
@@ -50,10 +52,12 @@
       "mappingType": 1,
       "mappingTypes": [
         {
+          "$$hashKey": "object:1148",
           "name": "value to text",
           "value": 1
         },
         {
+          "$$hashKey": "object:1149",
           "name": "range to text",
           "value": 2
         }
@@ -61,7 +65,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "pluginVersion": "6.2.4",
       "postfix": "",
       "postfixFontSize": "50%",
@@ -98,6 +101,7 @@
       "valueFontSize": "80%",
       "valueMaps": [
         {
+          "$$hashKey": "object:1151",
           "op": "=",
           "text": "N/A",
           "value": "null"
@@ -110,15 +114,17 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Show seconds spent on processing data from pulse",
+      "datasource": null,
+      "description": "Time in seconds spent on processing data from a single pulse. [What is a pulse?](https://docs.insolar.io/en/latest/glossary.html?highlight=pulse)",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
-        "w": 17,
-        "x": 7,
+        "h": 6,
+        "w": 9,
+        "x": 12,
         "y": 0
       },
+      "hiddenSeries": false,
       "id": 13,
       "legend": {
         "avg": false,
@@ -146,6 +152,8 @@
       "targets": [
         {
           "expr": "rate(observer_pulse_processing_time{namespace=\"$namespace\"}[2m])",
+          "interval": "",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
@@ -153,7 +161,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Processing pulse ",
+      "title": "Process pulse time",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -170,6 +178,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:511",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -178,6 +187,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:512",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -197,14 +207,14 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "prometheus",
-      "description": "Shows the number of transactions per second",
+      "description": "Number of new transactions initiated by users per second. ",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 6,
@@ -243,13 +253,12 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Transfers stored",
+      "title": "Transfers initiated",
       "tooltip": {
         "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
-      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -286,14 +295,15 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Shows the number of successfully created members per second.",
+      "datasource": null,
+      "description": "Number of successfully created new users per second. ",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 6
       },
       "hiddenSeries": false,
       "id": 7,
@@ -331,13 +341,12 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Members stored",
+      "title": "Members created",
       "tooltip": {
         "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
-      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -348,6 +357,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:764",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -356,6 +366,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:765",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -374,101 +385,15 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Shows the number of activation of objects per second",
+      "datasource": null,
+      "description": "Number of new balances created per second. ",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
-      },
-      "hiddenSeries": false,
-      "id": 8,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(observer_activates_stored_total{namespace=\"$namespace\"}[2m])",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Activates stored",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "description": "Shows the number of new balance records per second",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 9,
@@ -505,13 +430,12 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Balances stored",
+      "title": "Balances created",
       "tooltip": {
         "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
-      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -522,6 +446,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:875",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -530,6 +455,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:876",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -548,100 +474,15 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "description": "Shows the number of objects deactivated per second",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "hiddenSeries": false,
-      "id": 10,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(observer_deactivates_stored_total{namespace=\"$namespace\"}[2m])",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Deactivates stored",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "description": "Shows deposit activity per second",
+      "datasource": null,
+      "description": "Number of new deposits created per seconds.",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 11,
@@ -678,13 +519,12 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Deposits stored",
+      "title": "Deposits created",
       "tooltip": {
         "shared": true,
         "sort": 0,
         "value_type": "individual"
       },
-      "transparent": true,
       "type": "graph",
       "xaxis": {
         "buckets": null,
@@ -718,7 +558,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 19,
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -726,9 +566,8 @@
       {
         "allValue": null,
         "current": {
-          "isNone": true,
-          "text": "None",
-          "value": ""
+          "text": "wallet",
+          "value": "wallet"
         },
         "datasource": "prometheus",
         "definition": "label_values(observer_last_fetched_pulse, namespace)",
@@ -753,8 +592,8 @@
     ]
   },
   "time": {
-    "from": "now-30m",
-    "to": "now"
+    "from": "2020-07-12T08:38:53.062Z",
+    "to": "2020-07-12T13:06:30.351Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -784,5 +623,8 @@
   "timezone": "",
   "title": "Observer",
   "uid": "6zT9gUOWz",
+  "variables": {
+    "list": []
+  },
   "version": 1
 }
