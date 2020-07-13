@@ -36,7 +36,7 @@ Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [
 The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the Heavy Material Node on Insolar Platform or to collect data. 
 
 To obtain it:
-1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
+1. [Contact Insolar Team](support@insolar.io) to register as a trusted agent.
 2. After the registration, the Team will send you your login along with a unique link to set your password. 
 
    The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
