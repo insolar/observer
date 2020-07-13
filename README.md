@@ -33,7 +33,7 @@ Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [
 
 ## Obtain an authorized access to Insolar Platform
 
-The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the Heavy Material Node on Insolar Platform or to collect data. 
+The Node users need to obtain an authorized access, otherwise their Node instance is not able to access the Heavy Material Node on Insolar Platform or to collect data. 
 
 To obtain it:
 1. [Contact Insolar Team](mailto:support@insolar.io) to register as a trusted agent.
