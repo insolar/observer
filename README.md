@@ -5,7 +5,7 @@ Insolar Observer node (later "the Node") allows trusted agents such as crypto ex
 
 Trusted agents can integrate the Node into their business applications or use the Node API to get data at their discretion.
 
-The Node communicates with Insolar Platform via gRPC and obtains data from a trusted Heavy Material Node run on Insolar Platform. 
+The Node communicates with Insolar Platform via gRPC and obtains data from a Heavy Material Node run on Insolar Platform. 
 
 Access to this Heavy Material Node is controlled by the Insolar authentication service and is limited to registered trusted agents.
 This mechanism is designed to protect the Node users against inaccurate or corrupted data. 
@@ -18,13 +18,22 @@ To use the Node, you need to:
 2. Obtain an authorized access to Insolar Platform.
 3. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
 
+There are no strict hardware or network recommendations for the Node, and users can choose the hardware and network connection at their discretion.
+
+The tests showed the following configuration gives satisfying results:
+
+* Quad core CPU 3.5GHz
+* 4GB DDR3 RAM allocated for the Node and database
+* SATA SSD
+* 10Mbps Internet connection with low latency
+
 ## Install the prerequisites
 
 Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.12](https://golang.org/doc/install).
 
 ## Obtain an authorized access to Insolar Platform
 
-The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the trusted Heavy Material Node on Insolar Platform or to collect data. 
+The Node users need to obtain an authorized access, otherwise their Node instance is not able to address the Heavy Material Node on Insolar Platform or to collect data. 
 
 To obtain it:
 1. [Contact Insolar Team](https://insolar.io/contact) to register as a trusted agent.
@@ -33,11 +42,16 @@ To obtain it:
    The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
 3. Set your password using the link. Consider this command as the reference example: 
    ```
-   curl -d '{"login":"your_login", "password":"password_of_your_choice"}' -H \
-   "Content-Type: application/json" -X POST https://<api-url>/auth/set-password?code=XXXXXXXXXXXXXXXXX
+   curl --request POST \
+   --url '${LINK}' \
+   --header 'content-type: application/json' \
+   --data '{
+   "login": "${LOGIN}",
+   "password": "${PASSWORD}"
+   } '
    ```
    The correct expected result is to see no errors returned by Curl.
-4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see **Build binaries**).
+4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see [Build binaries](#build-binaries)).
 
    Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
 
@@ -48,7 +62,7 @@ To obtain it:
    git clone git@github.com:insolar/observer.git && cd observer
    ```
 
-2. Build binaries using the instructions from the Makefile: 
+2. <a name="build-binaries">Build binaries</a> using the instructions from the Makefile: 
    ```
    make all-node
    ```
@@ -115,7 +129,7 @@ make migrate-init
 
    Wait for a while for it to sync with the trusted HMN. 
    
-   **Tip:** initial synching can take up to 20 hours as Insolar Platform has a lot of data.
+   **Tip:** initial synching can take various time depending on your hardware and network properties. An approximate time is 18 hours on a quad core CPU 3.5GHz, SATA SSD, 4GB DDR3 RAM on a 10Mbps connection with averagely 50ms network latency, and default Node configuration parameters.
 
 ### Configure and deploy the Node API
 
@@ -124,7 +138,13 @@ make migrate-init
    For example:
 
    ```
-   listen: 127.0.0.1:5678 or listen: :5678
+   listen: 127.0.0.1:5678
+   ```
+   
+   or
+   
+   ```
+   listen: :5678
    ```
 
    For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
@@ -137,7 +157,12 @@ make migrate-init
    ```
    ./bin/api --config .artifacts/observerapi.yaml
    ```
-
+   
+3. Run a healthcheck on the Node and Node API: in a web browser of your choice, address the local `pulse_number` endpoint to get the current pulse; then refresh the page to make sure the pulse has changed to the next one.
+   ```
+   http://127.0.0.1:8080/api/pulse/number
+   ```
+   
 ### Deploy the monitoring system
 
 1. Install and deploy [Grafana](https://grafana.com/docs/grafana/latest/installation/ "Install Grafana ") and [Prometheus](https://prometheus.io/docs/prometheus/latest/installation/ "Install Prometheus ").
@@ -147,6 +172,17 @@ make migrate-init
 2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
    If necessary, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+   
+## Future Node updates
+
+Upon any upcoming new Insolar MainNet updates, the current Node version may suspend synching. To resume the synching, you need to update your Node instance.
+
+Update instructions for future versions of the Node are on the way and will be released closer to the next significant update. 
+
+   
+## Additional details
+
+[Visit the Node wiki](https://github.com/insolar/observer/wiki) for additional details on database description, configuration parameters description and metrics description.
 
 ## Contribute!
 
