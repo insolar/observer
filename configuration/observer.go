@@ -64,7 +64,7 @@ type Auth struct {
 func (Observer) Default() *Observer {
 	return &Observer{
 		Replicator: Replicator{
-			Addr:                "127.0.0.1:5678",
+			Addr:                "explorer.insolar.io:443",
 			MaxTransportMsg:     1073741824,
 			Attempts:            cycle.INFINITY,
 			AttemptInterval:     10 * time.Second,
@@ -73,9 +73,9 @@ func (Observer) Default() *Observer {
 			CacheSize:           10000,
 			Auth: Auth{
 				Required:      true,
-				URL:           "https://{access_token_url}",
-				Login:         "{unique_login}",
-				Password:      "{strong_password}",
+				URL:           "https://wallet-api.insolar.io/auth/token",
+				Login:         "${LOGIN}",
+				Password:      "${PASSWORD}",
 				RefreshOffset: 60,
 				Timeout:       15 * time.Second,
 				InsecureTLS:   false,

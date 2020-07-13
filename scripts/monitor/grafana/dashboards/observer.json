@@ -31,6 +31,7 @@
         "#d44a3a"
       ],
       "datasource": "prometheus",
+      "description": "[What is a pulse?](https://docs.insolar.io/en/latest/glossary.html?highlight=pulse)",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -51,10 +52,12 @@
       "mappingType": 1,
       "mappingTypes": [
         {
+          "$$hashKey": "object:1148",
           "name": "value to text",
           "value": 1
         },
         {
+          "$$hashKey": "object:1149",
           "name": "range to text",
           "value": 2
         }
@@ -98,6 +101,7 @@
       "valueFontSize": "80%",
       "valueMaps": [
         {
+          "$$hashKey": "object:1151",
           "op": "=",
           "text": "N/A",
           "value": "null"
@@ -292,7 +296,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "description": "Number of successfully created new users. ",
+      "description": "Number of successfully created new users per second. ",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -382,7 +386,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "description": "Number of new balance records per second. \n\nBalance records reflect updates in user balances.",
+      "description": "Number of new balances created per second. ",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -426,7 +430,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Balances changed",
+      "title": "Balances created",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -471,7 +475,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": null,
-      "description": "Number of new deposits per seconds.",
+      "description": "Number of new deposits created per seconds.",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
