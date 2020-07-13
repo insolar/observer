@@ -39,7 +39,7 @@ To obtain it:
 1. [Contact Insolar Team](mailto:support@insolar.io) to register as a trusted agent.
 2. After the registration, the Team will send you your login along with a unique link to set your password. 
 
-   The link doesn't have a common Web UI and should be addressed via a CLI tool such as Curl.
+   The link doesn't have a common Web UI and should be addressed via an HTTP client. For example, curl.
 3. Set your password using the link. Consider this command as the reference example: 
    ```
    curl --request POST \
@@ -57,10 +57,12 @@ To obtain it:
 
 ## Build
 
-1. Clone the Observer and change to its directory: 
+1. Clone the Node and go to its directory: 
    ```
    git clone git@github.com:insolar/observer.git && cd observer
    ```
+   
+   **Tip:** syntax for all subsequent commands and directories implies that you run or see them from the Node root directory.
 
 2. <a name="build-binaries">Build binaries</a> using the instructions from the Makefile: 
    ```
@@ -68,8 +70,8 @@ To obtain it:
    ```
 
    This command generates:
-   * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the hidden `./.artifacts` directory.
-   * Thee binaries (`migrate`, `observer`, `api`) and places them into `./.bin/migrate`, `./.bin/observer`, `./bin/api` respectively.
+   * Three necessary configuration files (`migrate.yaml`, `observer.yaml`, `observerapi.yaml`) and places them into the `./.artifacts` directory.
+   * Thee binaries (`migrate`, `observer`, `api`) and places them into `./bin/observer/bin/migrate`, `./bin/observer`, `./bin/observer/bin/api` respectively.
 
    **Warning:** The Node uses Go modules. You may need to set the [Go modules environment variable](https://golang.org/cmd/go/#hdr-Module_support) to `on`: 
    ```
@@ -104,8 +106,10 @@ make migrate-init
 1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml`:
  
      ```
-     login: "<your_login>"
-     password: "<your_password>"
+     replicator:
+        auth:
+           login: "<your_login>"
+           password: "<your_password>"
      ```
 
      For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
