@@ -31,7 +31,7 @@ The tests showed the following configuration gives satisfying results:
 
 Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.12](https://golang.org/doc/install).
 
-## Obtain an authorized access to Insolar Platform
+## <a name="obtain-access">Obtain an authorized access</a> to Insolar Platform
 
 The Node users need to obtain an authorized access, otherwise their Node instance is not able to access the Heavy Material Node on Insolar Platform or to collect data. 
 
@@ -103,13 +103,13 @@ make migrate-init
 
 ### Configure and deploy the Node
 
-1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml`:
+1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml` filling in your login and password from [Obtain an authorized access</a> to Insolar Platform](#obtain-access):
  
      ```
      replicator:
         auth:
-           login: "<your_login>"
-           password: "<your_password>"
+           login: ""
+           password: ""
      ```
 
      For the full list of parameters and their description, check [Configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters).
