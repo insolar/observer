@@ -162,6 +162,7 @@ make migrate-init
    ```
    http://127.0.0.1:8080/api/pulse/number
    ```
+**Tip:** Read the [complete set of API methods](https://apidocs.insolar.io/observer-node/v1) available to the Node users. 
    
 ### Deploy the monitoring system
 
