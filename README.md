@@ -23,7 +23,7 @@ There are no strict hardware or network recommendations for the Node, and users 
 The tests showed the following configuration gives satisfying results:
 
 * Quad core CPU 3.5GHz
-* 4GB DDR3 RAM allocated for the Node and database
+* 4GB DDR3 RAM
 * SATA SSD
 * 10Mbps Internet connection with low latency
 
