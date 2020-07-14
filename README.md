@@ -53,7 +53,7 @@ To obtain it:
    The correct expected result is to see no errors returned by Curl.
 4. After setting your password, put your login and password into the `/.artifacts/observer.yaml` configuration file (see [Build binaries](#build-binaries)).
 
-   Working with Insolar Platform, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the Platform.
+   Working with Insolar MainNet, your Node instance uses your credentials from `observer.yaml` to obtain an access token to successfully communicate with the MainNet.
 
 ## Build
 
@@ -103,7 +103,7 @@ make migrate-init
 
 ### Configure and deploy the Node
 
-1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml` (see [Obtain an authorized access to Insolar Platform](#obtain-access)):
+1. Configure your access credentials in the `auth` subsection `./.artifacts/observer.yaml` (see [Obtain an authorized access to Insolar MainNet](#obtain-access)):
  
      ```
      replicator:
