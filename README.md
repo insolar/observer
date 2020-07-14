@@ -5,7 +5,7 @@ Insolar Observer node (later "the Node") allows trusted agents such as crypto ex
 
 Trusted agents can integrate the Node into their business applications or use the Node API to get data at their discretion.
 
-The Node communicates with Insolar Platform via gRPC and obtains data from a Heavy Material Node run on Insolar Platform. 
+The Node communicates with Insolar MainNet via gRPC and obtains data from a Heavy Material Node run on Insolar MainNet. 
 
 Access to this Heavy Material Node is controlled by the Insolar authentication service and is limited to registered trusted agents.
 This mechanism is designed to protect the Node users against inaccurate or corrupted data. 
@@ -15,7 +15,7 @@ Meanwhile, the Node users are responsible for the data they store locally on the
 To use the Node, you need to:
 
 1. Install the prerequisites.
-2. Obtain an authorized access to Insolar Platform.
+2. Obtain an authorized access to Insolar MainNet.
 3. Build, deploy and monitor Insolar Observer node on the hardware of your choice.
 
 There are no strict hardware or network recommendations for the Node, and users can choose the hardware and network connection at their discretion.
@@ -31,9 +31,9 @@ The tests showed the following configuration gives satisfying results:
 
 Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.12](https://golang.org/doc/install).
 
-## <a name="obtain-access">Obtain an authorized access</a> to Insolar Platform
+## <a name="obtain-access">Obtain an authorized access</a> to Insolar MainNet
 
-The Node users need to obtain an authorized access, otherwise their Node instance is not able to access the Heavy Material Node on Insolar Platform or to collect data. 
+The Node users need to obtain an authorized access, otherwise their Node instance is not able to access the Heavy Material Node on Insolar MainNet or to collect data. 
 
 To obtain it:
 1. [Contact Insolar Team](mailto:support@insolar.io) to register as a trusted agent.
