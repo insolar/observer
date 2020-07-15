@@ -23,6 +23,7 @@ type Manager struct {
 	stopSignal chan bool
 
 	cfg           *configuration.Observer
+	appVersion    string
 	log           insolar.Logger
 	init          func() *state
 	commonMetrics *observability.CommonObserverMetrics
@@ -36,7 +37,7 @@ type Manager struct {
 	sleepCounter sleepCounter
 }
 
-func Prepare(ctx context.Context, cfg *configuration.Observer) *Manager {
+func Prepare(ctx context.Context, cfg *configuration.Observer, version string) *Manager {
 	obs := observability.Make(ctx)
 	conn := connectivity.Make(cfg, obs)
 	router := NewRouter(cfg, obs)
@@ -44,6 +45,7 @@ func Prepare(ctx context.Context, cfg *configuration.Observer) *Manager {
 	records := grpc.NewRecordFetcher(cfg, obs, exporter.NewRecordExporterClient(conn.GRPC()))
 	sm := NewSleepManager(cfg)
 	return &Manager{
+		appVersion:    version,
 		stopSignal:    make(chan bool, 1),
 		init:          makeInitter(cfg, obs, conn),
 		log:           obs.Log(),
@@ -91,7 +93,9 @@ func (m *Manager) needStop() bool {
 func (m *Manager) run(s *state) {
 	timeStart := time.Now()
 	m.log.Debug("Timer: new round started at ", timeStart)
+
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, "version", m.appVersion)
 
 	tempTimer := time.Now()
 	raw := m.fetch(ctx, s)
@@ -156,6 +160,7 @@ type beauty struct {
 type state struct {
 	last              insolar.PulseNumber
 	ShouldIterateFrom insolar.PulseNumber
+	currentHeavyPN    insolar.PulseNumber
 	ms                metricState
 }
 

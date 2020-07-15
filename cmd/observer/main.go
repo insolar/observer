@@ -23,6 +23,7 @@ import (
 )
 
 var stop = make(chan os.Signal, 1)
+var Version string
 
 func main() {
 	cfg := &configuration.Observer{}
@@ -44,7 +45,13 @@ func main() {
 		BufferSize:   cfg.Log.Buffer,
 	}
 	ctx, logger := initGlobalLogger(context.Background(), loggerConfig)
-	manager := component.Prepare(ctx, cfg)
+	if len(Version) == 0 {
+		logger.Fatal("Failed to determine the version of the Observer. please use the command `make build`or `make build-node`")
+	}
+	logger.Infof("Observer version=%s", Version)
+
+
+	manager := component.Prepare(ctx, cfg,Version)
 	manager.Start()
 	graceful(logger, manager.Stop)
 }

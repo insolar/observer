@@ -12,6 +12,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/insolar/observer/configuration"
 	"github.com/insolar/observer/internal/app/observer"
@@ -48,6 +49,7 @@ func (f *RecordFetcher) Fetch(
 	insolar.PulseNumber,
 	error,
 ) {
+	version := ctx.Value("version").(string)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	client := f.client
@@ -62,7 +64,7 @@ func (f *RecordFetcher) Fetch(
 	for {
 		counter = 0
 		f.log.Debug("Data request: ", f.request)
-		stream, err := client.Export(ctx, f.request)
+		stream, err := client.Export(metadata.AppendToOutgoingContext(ctx, "version", version), f.request)
 
 		if err != nil {
 			f.log.Debug("Data request failed: ", err)

@@ -8,7 +8,8 @@ OBSERVER = observer
 GOPATH ?= $(shell go env GOPATH)
 PATH := $(GOPATH)/bin:$(PATH)
 TEST_ARGS ?= ""
-
+VERSIONAPP=`git describe --tags`
+LDFLAGS=-ldflags "-s -X main.Version=${VERSIONAPP}"
 VERSION	:=
 ifeq ($(OS),Windows_NT)
 	VERSION := Windows
@@ -33,9 +34,13 @@ endif
 osflag:
 	@echo $(VERSION)
 
+.PHONY: version
+version: ## show  build version
+	@echo "observer version =" $(VERSIONAPP)
+
 .PHONY: build
 build: ## build all binaries
-	go build -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build ${LDFLAGS} -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -o $(BIN_DIR)/$(API) cmd/api/*.go
 	go build -o $(BIN_DIR)/stats-collector cmd/stats-collector/*.go
@@ -44,7 +49,7 @@ build: ## build all binaries
 
 .PHONY: build-node
 build-node: ## build binaries for node
-	go build -tags node -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
+	go build ${LDFLAGS} -tags node -o $(BIN_DIR)/$(OBSERVER) cmd/observer/*.go
 	go build -tags node -o $(BIN_DIR)/migrate cmd/migrate/*.go
 	go build -tags node -o $(BIN_DIR)/$(API) cmd/api/*.go
 
