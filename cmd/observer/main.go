@@ -50,8 +50,7 @@ func main() {
 	}
 	logger.Infof("Observer version=%s", Version)
 
-
-	manager := component.Prepare(ctx, cfg,Version)
+	manager := component.Prepare(ctx, cfg, Version)
 	manager.Start()
 	graceful(logger, manager.Stop)
 }
