@@ -24,7 +24,7 @@ import (
 type RecordFetcher struct {
 	log     insolar.Logger
 	client  exporter.RecordExporterClient
-	records observer.RecordStorage //nolint: unused,structcheck
+	records observer.RecordStorage // nolint: unused,structcheck
 	request *exporter.GetRecords
 }
 
@@ -49,7 +49,7 @@ func (f *RecordFetcher) Fetch(
 	insolar.PulseNumber,
 	error,
 ) {
-	version := ctx.Value("version").(string)
+	version := ctx.Value(configuration.VersionAPP).(string)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	client := f.client
@@ -64,7 +64,7 @@ func (f *RecordFetcher) Fetch(
 	for {
 		counter = 0
 		f.log.Debug("Data request: ", f.request)
-		stream, err := client.Export(metadata.AppendToOutgoingContext(ctx, "version", version), f.request)
+		stream, err := client.Export(metadata.AppendToOutgoingContext(ctx, configuration.VersionAPP.String(), version), f.request)
 
 		if err != nil {
 			f.log.Debug("Data request failed: ", err)

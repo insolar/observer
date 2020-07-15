@@ -49,12 +49,12 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 	var (
 		resp *exporter.Pulse
 	)
-	version := ctx.Value("version").(string)
+	version := ctx.Value(configuration.VersionAPP).(string)
 	requestCtx, cancel := context.WithCancel(ctx)
 
 	defer cancel()
 	cycle.UntilError(func() error {
-		stream, err := client.Export(metadata.AppendToOutgoingContext(requestCtx, "version", version), request)
+		stream, err := client.Export(metadata.AppendToOutgoingContext(requestCtx, configuration.VersionAPP.String(), version), request)
 		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
@@ -95,10 +95,10 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 	tsp := &exporter.TopSyncPulseResponse{}
 	var err error
 	f.log.Debug("Fetching top sync pulse")
-	version := ctx.Value("version").(string)
+	version := ctx.Value(configuration.VersionAPP).(string)
 
 	cycle.UntilError(func() error {
-		tsp, err = client.TopSyncPulse(metadata.AppendToOutgoingContext(ctx, "version", version), request)
+		tsp, err = client.TopSyncPulse(metadata.AppendToOutgoingContext(ctx, configuration.VersionAPP.String(), version), request)
 		if err != nil {
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get tsp"))

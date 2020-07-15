@@ -19,10 +19,6 @@ import (
 	"github.com/insolar/observer/observability"
 )
 
-type KeyContext string
-
-const version KeyContext = "version"
-
 type Manager struct {
 	stopSignal chan bool
 
@@ -99,7 +95,7 @@ func (m *Manager) run(s *state) {
 	m.log.Debug("Timer: new round started at ", timeStart)
 
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, version, m.appVersion)
+	ctx = context.WithValue(ctx, configuration.VersionAPP, m.appVersion)
 
 	tempTimer := time.Now()
 	raw := m.fetch(ctx, s)
