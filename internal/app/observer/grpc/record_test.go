@@ -25,7 +25,7 @@ import (
 
 func TestRecordFetcher_Fetch(t *testing.T) {
 	mc := minimock.NewController(t)
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), versionKey, versionValue)
 	cfg := configuration.Observer{}.Default()
 	obs := observability.Make(ctx)
 	recordClient := NewRecordExporterClientMock(mc)
