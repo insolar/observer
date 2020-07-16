@@ -22,12 +22,11 @@ import (
 )
 
 const (
-	versionKey   = "version"
 	versionValue = "4.0.1"
 )
 
 func TestPulseFetcher_Fetch(t *testing.T) {
-	ctx := context.WithValue(context.Background(), versionKey, versionValue)
+	ctx := context.WithValue(context.Background(), configuration.VersionAPP, versionValue)
 	t.Run("empty_stream", func(t *testing.T) {
 		cfg := configuration.Observer{}.Default()
 		obs := observability.Make(ctx)
@@ -125,7 +124,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 }
 
 func TestPulseFetcher_FetchCurrent(t *testing.T) {
-	ctx := context.WithValue(context.Background(), versionKey, versionValue)
+	ctx := context.WithValue(context.Background(), configuration.VersionAPP, versionValue)
 
 	t.Run("happy topsyncpulse", func(t *testing.T) {
 		cfg := configuration.Observer{}.Default()
