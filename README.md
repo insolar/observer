@@ -39,6 +39,8 @@ To obtain it:
 1. [Contact Insolar Team](mailto:support@insolar.io) to register as a trusted agent.
 2. After the registration, the Team will send you your login along with a unique link to set your password. 
 
+   Customary with the modern security policies, the link is active for a limited time and should be used within the next 24h after its generation.
+   
    The link doesn't have a common Web UI and should be addressed via an HTTP client. For example, curl.
 3. Set your password using the link. Consider this command as the reference example: 
    ```
