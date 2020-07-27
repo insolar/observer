@@ -8,10 +8,10 @@ package collecting
 import (
 	"context"
 
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/mainnet/application/builtin/contract/deposit"
+	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/app/observer"

@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/pulse"
+	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 )
 
 type Member struct {

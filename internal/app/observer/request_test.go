@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/insolar/insolar/application/builtin/contract/member"
-	depositProxy "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	memberProxy "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
+	depositProxy "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	"github.com/stretchr/testify/require"
 )
 

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"math/big"
 
-	depositContract "github.com/insolar/insolar/application/builtin/contract/deposit"
 	"github.com/insolar/insolar/insolar"
+	depositContract "github.com/insolar/mainnet/application/builtin/contract/deposit"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/models"

@@ -14,9 +14,6 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/google/uuid"
-	"github.com/insolar/insolar/application/appfoundation"
-	"github.com/insolar/insolar/application/builtin/contract/member"
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
@@ -24,6 +21,9 @@ import (
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/mainnet/application/appfoundation"
+	"github.com/insolar/mainnet/application/builtin/contract/member"
+	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
