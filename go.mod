@@ -13,7 +13,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
-	github.com/insolar/insconfig v0.0.0-20200228110347-69b2648d7227
+	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 	github.com/insolar/insolar v1.6.2
 	github.com/insolar/mainnet v1.9.2
 	github.com/jinzhu/inflection v1.0.0 // indirect
