@@ -14,7 +14,6 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/google/uuid"
-	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
@@ -24,6 +23,7 @@ import (
 	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
+	proxyMember "github.com/insolar/mainnet/application/builtin/proxy/member"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

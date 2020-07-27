@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 
 	"github.com/google/uuid"
-	proxyMember "github.com/insolar/insolar/application/builtin/proxy/member"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
@@ -18,6 +17,7 @@ import (
 	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
+	proxyMember "github.com/insolar/mainnet/application/builtin/proxy/member"
 	"github.com/insolar/mainnet/application/genesisrefs"
 	"github.com/pkg/errors"
 
