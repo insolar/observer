@@ -8,13 +8,13 @@ package collecting
 import (
 	"testing"
 
-	"github.com/insolar/insolar/application/builtin/contract/account"
-	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/pulse"
+	"github.com/insolar/mainnet/application/builtin/contract/account"
+	proxyAccount "github.com/insolar/mainnet/application/builtin/proxy/account"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"

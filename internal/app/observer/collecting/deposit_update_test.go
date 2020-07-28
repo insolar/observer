@@ -10,12 +10,12 @@ import (
 	"testing"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/insolar/insolar/application/builtin/contract/deposit"
-	proxyDeposit "github.com/insolar/insolar/application/builtin/proxy/deposit"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/insolar/mainnet/application/builtin/contract/deposit"
+	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"

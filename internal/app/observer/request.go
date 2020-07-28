@@ -13,7 +13,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 
-	"github.com/insolar/insolar/application/builtin/contract/member"
+	"github.com/insolar/mainnet/application/builtin/contract/member"
 	"github.com/pkg/errors"
 )
 

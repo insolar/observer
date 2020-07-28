@@ -9,10 +9,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/insolar/insolar/application/builtin/contract/migrationshard"
-	proxyShard "github.com/insolar/insolar/application/builtin/proxy/migrationshard"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/mainnet/application/builtin/contract/migrationshard"
+	proxyShard "github.com/insolar/mainnet/application/builtin/proxy/migrationshard"
 
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/store"

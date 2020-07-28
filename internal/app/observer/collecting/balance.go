@@ -8,11 +8,11 @@ package collecting
 import (
 	"errors"
 
-	"github.com/insolar/insolar/application/builtin/contract/account"
-	proxyAccount "github.com/insolar/insolar/application/builtin/proxy/account"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
+	"github.com/insolar/mainnet/application/builtin/contract/account"
+	proxyAccount "github.com/insolar/mainnet/application/builtin/proxy/account"
 
 	"github.com/insolar/observer/internal/app/observer"
 )

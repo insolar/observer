@@ -7,12 +7,12 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
@@ -25,6 +25,7 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 	ctx := context.Background()
 	t.Run("empty_stream", func(t *testing.T) {
 		cfg := configuration.Observer{}.Default()
+		cfg.Replicator.Auth.Required = false
 		obs := observability.Make(ctx)
 		cfg.Replicator.AttemptInterval = 0
 		cfg.Replicator.Attempts = 1
@@ -36,7 +37,6 @@ func TestPulseFetcher_Fetch(t *testing.T) {
 		client.export = func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {
 			return stream, nil
 		}
-		cfg.Replicator.Attempts = 1
 		fetcher := NewPulseFetcher(cfg, obs, client)
 
 		_, err := fetcher.Fetch(ctx, 0)
@@ -161,8 +161,13 @@ func TestPulseFetcher_FetchCurrent(t *testing.T) {
 }
 
 type pulseClient struct {
-	export       func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error)
-	topSyncPulse func(ctx context.Context, in *exporter.GetTopSyncPulse, opts ...grpc.CallOption) (*exporter.TopSyncPulseResponse, error)
+	export             func(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error)
+	topSyncPulse       func(ctx context.Context, in *exporter.GetTopSyncPulse, opts ...grpc.CallOption) (*exporter.TopSyncPulseResponse, error)
+	nextFinalizedPulse func(ctx context.Context, in *exporter.GetNextFinalizedPulse, opts ...grpc.CallOption) (*exporter.FullPulse, error)
+}
+
+func (c *pulseClient) NextFinalizedPulse(ctx context.Context, in *exporter.GetNextFinalizedPulse, opts ...grpc.CallOption) (*exporter.FullPulse, error) {
+	return c.nextFinalizedPulse(ctx, in, opts...)
 }
 
 func (c *pulseClient) Export(ctx context.Context, in *exporter.GetPulses, opts ...grpc.CallOption) (exporter.PulseExporter_ExportClient, error) {

@@ -64,9 +64,6 @@ func (i *insConfigurator) Load(configStruct interface{}) error {
 	if i.params.EnvPrefix == "" {
 		return errors.New("EnvPrefix should be defined")
 	}
-	if i.params.ConfigPathGetter == nil {
-		return errors.New("ConfigPathGetter should be defined")
-	}
 
 	configPath := i.params.ConfigPathGetter.GetConfigPath()
 	return i.load(configPath, configStruct)

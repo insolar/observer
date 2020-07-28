@@ -16,13 +16,18 @@ type MachineType int
 const (
 	MachineTypeNotExist             = 0
 	MachineTypeBuiltin  MachineType = iota + 1
-	MachineTypeGoPlugin
 
 	MachineTypesLastID
 )
 
 func (m MachineType) Equal(other MachineType) bool {
 	return m == other
+}
+
+type ContractMethodNotFound struct{}
+
+func (c *ContractMethodNotFound) Error() string {
+	return "failed to find contracts method"
 }
 
 //go:generate minimock -i github.com/insolar/insolar/insolar.MachineLogicExecutor -o ../testutils -s _mock.go -g
@@ -106,9 +111,6 @@ type ContractConstructors map[string]ContractConstructor
 
 // ContractWrapper stores all needed about contract wrapper (it's methods/constructors)
 type ContractWrapper struct {
-	GetCode      ContractMethod
-	GetPrototype ContractMethod
-
 	Methods      ContractMethods
 	Constructors ContractConstructors
 }
