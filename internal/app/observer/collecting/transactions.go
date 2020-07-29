@@ -466,7 +466,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	// Migration and release don't have fees.
-	if args.Params.CallSite == callSiteRelease {
+	if args.Params.CallSite == callSiteRelease || args.Params.CallSite == callSiteAllocation {
 		tx := &observer.TxResult{
 			TransactionID: txID,
 			Fee:           "0",

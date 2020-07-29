@@ -233,11 +233,10 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberTo := gen.Reference()
 		memberFrom := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID: txID,
-			Type:          models.TTypeAllocation,
-			PulseNumber:   int64(txID.GetLocal().Pulse()),
-			RecordNumber:  int64(rand.Int31()),
-			// todo how to get memberfrom ?
+			TransactionID:       txID,
+			Type:                models.TTypeAllocation,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
 			MemberFromReference: memberFrom.Bytes(),
 			MemberToReference:   memberTo.Bytes(),
 			DepositToReference:  nil,
@@ -246,7 +245,6 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 
 		request := member.Request{
 			Params: member.Params{
-				// todo why Reference is memberTo?
 				Reference: memberFrom.String(),
 				CallSite:  callSiteAllocation,
 				CallParams: map[string]interface{}{
@@ -423,6 +421,45 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		defer mc.Finish()
 
 		memberRequest := member.Request{Params: member.Params{CallSite: callSiteRelease}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		txID := *insolar.NewRecordReference(gen.ID())
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: txID,
+				}),
+			},
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *txID.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
+	})
+
+	t.Run("allocation happy path", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteAllocation}}
 		encodedRequest, err := json.Marshal(&memberRequest)
 		require.NoError(t, err)
 		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
