@@ -192,12 +192,67 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 			Amount:              "123",
 		}
 
+		// todo call on member or account ?
 		request := member.Request{
 			Params: member.Params{
 				Reference: memberTo.String(),
 				CallSite:  callSiteRelease,
 				CallParams: map[string]interface{}{
 					paramAmount: expectedTx.Amount,
+				},
+			},
+		}
+		encodedRequest, err := json.Marshal(&request)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodCall,
+					APINode:    gen.Reference(),
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Prototype:  proxyMember.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("allocation happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberTo := gen.Reference()
+		memberFrom := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID: txID,
+			Type:          models.TTypeAllocation,
+			PulseNumber:   int64(txID.GetLocal().Pulse()),
+			RecordNumber:  int64(rand.Int31()),
+			// todo how to get memberfrom ?
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  nil,
+			Amount:              "123",
+		}
+
+		request := member.Request{
+			Params: member.Params{
+				// todo why Reference is memberTo?
+				Reference: memberFrom.String(),
+				CallSite:  callSiteAllocation,
+				CallParams: map[string]interface{}{
+					paramToMemberRef:   memberTo.String(),
+					paramToDepositName: "genesis_deposit2",
+					paramAmount:        expectedTx.Amount,
 				},
 			},
 		}
