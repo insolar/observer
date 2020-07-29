@@ -704,7 +704,8 @@ func (c *TxSagaResultCollector) fromCall(
 
 	isTransfer := args.Params.CallSite == callSiteTransfer
 	isRelease := args.Params.CallSite == callSiteRelease
-	if !isTransfer && !isRelease {
+	isAllocation := args.Params.CallSite == callSiteAllocation
+	if !isTransfer && !isRelease && !isAllocation {
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
 	}
