@@ -62,7 +62,7 @@ func (f *RecordFetcher) Fetch(
 	for {
 		counter = 0
 		f.log.Debug("Data request: ", f.request)
-		stream, err := client.Export(ctx, f.request)
+		stream, err := client.Export(getCtxWithClientVersion(ctx), f.request)
 
 		if err != nil {
 			f.log.Debug("Data request failed: ", err)
