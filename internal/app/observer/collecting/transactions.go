@@ -40,9 +40,8 @@ const (
 )
 
 const (
-	paramAmount        = "amount"
-	paramToMemberRef   = "toMemberReference"
-	paramToDepositName = "toDepositName"
+	paramAmount      = "amount"
+	paramToMemberRef = "toMemberReference"
 )
 
 type TxRegisterCollector struct {
