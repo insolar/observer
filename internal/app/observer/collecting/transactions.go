@@ -681,7 +681,6 @@ func (c *TxSagaResultCollector) fromCall(
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
-
 	// Ensure txID is record reference so other collectors can match it.
 	txID := *insolar.NewRecordReference(*result.Request.GetLocal())
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
