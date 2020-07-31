@@ -26,7 +26,7 @@ import (
 func main() {
 	cfg := &configuration.StatsCollector{}
 	params := insconfig.Params{
-		EnvPrefix:        "stats-collector",
+		EnvPrefix:        "statscollector",
 		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
 	insConfigurator := insconfig.New(params)

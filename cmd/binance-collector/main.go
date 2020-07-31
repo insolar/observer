@@ -38,7 +38,7 @@ var symbol = flag.String("symbol", "", "token symbol")
 func main() {
 	cfg := &configuration.CollectorBinance{}
 	params := insconfig.Params{
-		EnvPrefix: "binance-collector",
+		EnvPrefix: "binancecollector",
 		ConfigPathGetter: &insconfig.FlagPathGetter{
 			GoFlags: flag.CommandLine,
 		},
