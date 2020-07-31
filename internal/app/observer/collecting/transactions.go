@@ -78,7 +78,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	case methodCall:
 		tx = c.fromCall(log, rec)
 	case methodTransferToDeposit:
-		tx = c.fromMigration(log, rec)
+		tx = c.fromDepositToDeposit(log, rec)
 	default:
 		return nil
 	}
@@ -231,7 +231,7 @@ func (c *TxRegisterCollector) fromCall(log insolar.Logger, rec exporter.Record) 
 	return res
 }
 
-func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromDepositToDeposit(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -256,13 +256,16 @@ func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Rec
 	}
 
 	var (
-		amount                                string
+		amount, txType                        string
 		txID, toDeposit, fromMember, toMember insolar.Reference
 	)
-	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember})
+	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember, &txType})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
+	}
+	if txType == "" {
+		txType = "migration"
 	}
 
 	// Ensure txID is record reference so other collectors can match it.
@@ -271,7 +274,7 @@ func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Rec
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
 	return &observer.TxRegister{
-		Type:                models.TTypeMigration,
+		Type:                models.TransactionType(txType),
 		TransactionID:       txID,
 		PulseNumber:         int64(rec.Record.ID.Pulse()),
 		RecordNumber:        int64(rec.RecordNumber),
@@ -436,7 +439,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	if request.Method == methodTransferToDeposit {
-		return c.fromMigration(log, *request)
+		return c.fromDepositToDeposit(log, *request)
 	}
 
 	if request.Method != methodCall {
@@ -520,7 +523,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	return tx
 }
 
-func (c *TxResultCollector) fromMigration(
+func (c *TxResultCollector) fromDepositToDeposit(
 	log insolar.Logger,
 	request record.IncomingRequest,
 ) *observer.TxResult {

@@ -533,6 +533,40 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		require.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
 	})
 
+	t.Run("deposit-to-deposit allocation happy path", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		txID := *insolar.NewRecordReference(gen.ID())
+		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil, "allocation"})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodTransferToDeposit,
+				Arguments:  arguments,
+				Prototype:  proxyDeposit.PrototypeReference,
+			}),
+		}
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: txID,
+				}),
+			},
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *txID.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
+	})
+
 	t.Run("transfer with error", func(t *testing.T) {
 		setup()
 		defer mc.Finish()
@@ -846,4 +880,20 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}
 		assert.Equal(t, &expectedTx, tx)
 	})
+}
+
+func TestCborSerializationDeserialization(t *testing.T) {
+	var amount, txType string
+	arguments, err := insolar.Serialize([]interface{}{"100", "migration"})
+
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "migration", txType)
+
+	arguments, err = insolar.Serialize([]interface{}{"100"})
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "", txType)
 }
