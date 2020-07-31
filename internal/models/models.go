@@ -67,10 +67,11 @@ const (
 type TransactionType string
 
 const (
-	TTypeUnknown   TransactionType = "unknown"
-	TTypeTransfer  TransactionType = "transfer"
-	TTypeMigration TransactionType = "migration"
-	TTypeRelease   TransactionType = "release"
+	TTypeUnknown    TransactionType = "unknown"
+	TTypeTransfer   TransactionType = "transfer"
+	TTypeMigration  TransactionType = "migration"
+	TTypeRelease    TransactionType = "release"
+	TTypeAllocation TransactionType = "allocation"
 )
 
 type TxIndexType int
