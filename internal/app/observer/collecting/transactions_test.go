@@ -135,7 +135,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		assert.Equal(t, &expectedTx, tx)
 	})
 
-	t.Run("migration happy path", func(t *testing.T) {
+	t.Run("migration with transaction type happy path", func(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
@@ -157,6 +157,94 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 			memberFrom,
 			txID,
 			memberTo,
+			"migration",
+		})
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodTransferToDeposit,
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Caller:     gen.Reference(),
+					Prototype:  proxyDeposit.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("migration without transaction type happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberFrom := gen.Reference()
+		memberTo := gen.Reference()
+		depositTo := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID:       txID,
+			Type:                models.TTypeMigration,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  depositTo.Bytes(),
+			Amount:              "123",
+		}
+
+		arguments, err := insolar.Serialize([]interface{}{
+			expectedTx.Amount,
+			depositTo,
+			memberFrom,
+			txID,
+			memberTo,
+		})
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodTransferToDeposit,
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Caller:     gen.Reference(),
+					Prototype:  proxyDeposit.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("allocation deposit to deposit happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberFrom := gen.Reference()
+		memberTo := gen.Reference()
+		depositTo := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID:       txID,
+			Type:                models.TTypeAllocation,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  depositTo.Bytes(),
+			Amount:              "123",
+		}
+
+		arguments, err := insolar.Serialize([]interface{}{
+			expectedTx.Amount,
+			depositTo,
+			memberFrom,
+			txID,
+			memberTo,
+			"allocation",
 		})
 		require.NoError(t, err)
 		rec := exporter.Record{
@@ -846,4 +934,20 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}
 		assert.Equal(t, &expectedTx, tx)
 	})
+}
+
+func TestCborSerializationDeserialization(t *testing.T) {
+	var amount, txType string
+
+	arguments, err := insolar.Serialize([]interface{}{"100"})
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "", txType)
+
+	arguments, err = insolar.Serialize([]interface{}{"100", "migration"})
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "migration", txType)
 }
