@@ -30,26 +30,32 @@ type Member struct {
 }
 
 type DepositStatus string
+type DepositType string
 
 const (
 	DepositStatusCreated   DepositStatus = "created"
 	DepositStatusConfirmed DepositStatus = "confirmed"
+
+	DepositTypeNonLinear   DepositType = "non-linear"
+	DepositTypeDefaultFund DepositType = "vesting-fund"
+	DepositTypeLinear      DepositType = "linear"
 )
 
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` // nolint: unused,structcheck
 
-	Reference       []byte `sql:"deposit_ref"`
-	MemberReference []byte `sql:"member_ref"`
-	EtheriumHash    string `sql:"eth_hash"`
-	State           []byte `sql:"deposit_state"`
-	HoldReleaseDate int64  `sql:"hold_release_date"`
-	Amount          string `sql:"amount"`
-	Balance         string `sql:"balance"`
-	Timestamp       int64  `sql:"transfer_date"`
-	DepositNumber   *int64 `sql:"deposit_number"`
-	Vesting         int64  `sql:"vesting"`
-	VestingStep     int64  `sql:"vesting_step"`
+	Reference       []byte      `sql:"deposit_ref"`
+	MemberReference []byte      `sql:"member_ref"`
+	EtheriumHash    string      `sql:"eth_hash"`
+	State           []byte      `sql:"deposit_state"`
+	HoldReleaseDate int64       `sql:"hold_release_date"`
+	Amount          string      `sql:"amount"`
+	Balance         string      `sql:"balance"`
+	Timestamp       int64       `sql:"transfer_date"`
+	DepositNumber   *int64      `sql:"deposit_number"`
+	Vesting         int64       `sql:"vesting"`
+	VestingStep     int64       `sql:"vesting_step"`
+	VestingType     DepositType `sql:"vesting_type"`
 
 	InnerStatus DepositStatus `sql:"status"`
 }
