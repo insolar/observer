@@ -94,7 +94,7 @@ github.com/hashicorp/hcl/json/token
 github.com/insolar/gls
 # github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 github.com/insolar/insconfig
-# github.com/insolar/insolar v1.6.6-0.20200728094205-e5301b73195e
+# github.com/insolar/insolar v1.7.0
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
 github.com/insolar/insolar/instrumentation/inslogger
