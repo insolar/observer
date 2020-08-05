@@ -16,6 +16,7 @@ import (
 
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
+	"github.com/insolar/observer/internal/models"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
@@ -171,6 +172,15 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 			}
 
+			var vestingType models.DepositType
+			switch depositState.VestingType {
+			case 0:
+				vestingType = models.DepositTypeNonLinear
+			case 1:
+				vestingType = models.DepositTypeLinear
+			case 2:
+				vestingType = models.DepositTypeDefaultFund
+			}
 			d := observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
 				Ref:             *depositRef,
@@ -182,6 +192,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
+				VestingType:     vestingType,
 				IsConfirmed:     true,
 			}
 
@@ -201,6 +212,17 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 	}
 
 	state := c.initialDepositState(activate)
+
+	var vestingType models.DepositType
+	switch state.VestingType {
+	case 0:
+		vestingType = models.DepositTypeNonLinear
+	case 1:
+		vestingType = models.DepositTypeLinear
+	case 2:
+		vestingType = models.DepositTypeDefaultFund
+	}
+
 	d := &observer.Deposit{
 		EthHash:      strings.ToLower(state.TxHash),
 		Ref:          *insolar.NewReference(*activate.Request.GetLocal()),
@@ -210,6 +232,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 		DepositState: id,
 		Vesting:      state.Vesting,
 		VestingStep:  state.VestingStep,
+		VestingType:  vestingType,
 	}
 
 	if state.PulseDepositUnHold > 0 {

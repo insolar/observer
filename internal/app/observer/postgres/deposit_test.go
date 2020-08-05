@@ -42,6 +42,7 @@ func TestDepositStorage_Insert(t *testing.T) {
 			HoldReleaseDate: now,
 			Amount:          "100",
 			Balance:         "0",
+			VestingType:     models.DepositTypeDefaultFund,
 			DepositState:    gen.ID(),
 		}
 
@@ -60,7 +61,7 @@ func TestDepositStorage_Insert(t *testing.T) {
 			Balance:         "0",
 			Timestamp:       now,
 			InnerStatus:     models.DepositStatusCreated,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     models.DepositTypeDefaultFund,
 		}, res)
 	})
 
@@ -77,6 +78,7 @@ func TestDepositStorage_Insert(t *testing.T) {
 			Balance:         "0",
 			DepositState:    gen.ID(),
 			IsConfirmed:     true,
+			VestingType:     models.DepositTypeDefaultFund,
 		}
 
 		err := depositRepo.Insert(deposit)
@@ -94,7 +96,7 @@ func TestDepositStorage_Insert(t *testing.T) {
 			Balance:         "0",
 			Timestamp:       now,
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     deposit.VestingType,
 			DepositNumber:   newInt(1),
 		}, res)
 	})
@@ -118,6 +120,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeDefaultFund,
 		}
 
 		err := depositRepo.Insert(deposit)
@@ -150,7 +153,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Timestamp:       now - 10,
 			DepositNumber:   newInt(1),
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     deposit.VestingType,
 		}, res)
 	})
 
@@ -166,6 +169,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeLinear,
 		}
 
 		err := depositRepo.Insert(deposit1)
@@ -198,7 +202,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Timestamp:       now,
 			DepositNumber:   newInt(1),
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     deposit1.VestingType,
 		}, res)
 
 		deposit2 := observer.Deposit{
@@ -210,6 +214,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeLinear,
 		}
 
 		err = depositRepo.Insert(deposit2)
@@ -242,7 +247,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Timestamp:       now,
 			DepositNumber:   newInt(2),
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     deposit2.VestingType,
 		}, res)
 	})
 
@@ -265,6 +270,7 @@ func TestDepositStorage_Update(t *testing.T) {
 				Amount:          "100",
 				Balance:         "100",
 				DepositState:    stateID,
+				VestingType:     models.DepositTypeNonLinear,
 			}
 
 			err := depositRepo.Insert(deposit1)
@@ -293,6 +299,7 @@ func TestDepositStorage_Update(t *testing.T) {
 				Balance:         "100",
 				DepositState:    gen.ID(),
 				IsConfirmed:     true,
+				VestingType:     models.DepositTypeNonLinear,
 			}
 
 			err = depositRepo.Insert(deposit2)
@@ -382,6 +389,7 @@ func TestDepositStorage_Update(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeNonLinear,
 		}
 
 		err := depositRepo.Insert(deposit)
@@ -419,6 +427,7 @@ func TestMemberSet(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeNonLinear,
 		}
 
 		memberRef := gen.Reference()
@@ -456,6 +465,7 @@ func TestMemberSet(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeLinear,
 		}
 
 		memberRef := gen.Reference()
@@ -493,7 +503,7 @@ func TestMemberSet(t *testing.T) {
 			Balance:         "20",
 			Timestamp:       now,
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     models.DepositTypeLinear,
 			DepositNumber:   newInt(1),
 		}, res)
 	})
@@ -509,6 +519,7 @@ func TestMemberSet(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeLinear,
 		}
 
 		memberRef := gen.Reference()
@@ -546,7 +557,7 @@ func TestMemberSet(t *testing.T) {
 			Balance:         "100",
 			Timestamp:       now,
 			InnerStatus:     models.DepositStatusConfirmed,
-			VestingType:     models.DepositTypeNonLinear,
+			VestingType:     models.DepositTypeLinear,
 			DepositNumber:   newInt(1),
 		}, res)
 	})
@@ -562,6 +573,7 @@ func TestMemberSet(t *testing.T) {
 			Amount:          "100",
 			Balance:         "0",
 			DepositState:    gen.ID(),
+			VestingType:     models.DepositTypeNonLinear,
 		}
 
 		err := depositRepo.Insert(deposit)

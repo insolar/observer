@@ -15,6 +15,7 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 	"github.com/insolar/mainnet/application/builtin/contract/pkshard"
 	"github.com/insolar/mainnet/application/builtin/contract/wallet"
@@ -22,6 +23,7 @@ import (
 	proxyPKShard "github.com/insolar/mainnet/application/builtin/proxy/pkshard"
 	proxyWallet "github.com/insolar/mainnet/application/builtin/proxy/wallet"
 	"github.com/insolar/mainnet/application/genesisrefs"
+	"github.com/insolar/observer/internal/models"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -50,6 +52,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		Vesting:            vPeriod,
 		VestingStep:        vStep,
 		Lockup:             lockup,
+		VestingType:        appfoundation.Vesting2,
 	}
 
 	depositRef := genesisrefs.ContractMigrationDeposit
@@ -89,6 +92,7 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		VestingStep:     vStep,
 		HoldReleaseDate: 1546300920,
 		IsConfirmed:     true,
+		VestingType:     models.DepositTypeDefaultFund,
 	}}
 
 	require.Len(t, actual, 1)
@@ -116,6 +120,7 @@ func TestDepositCollector_CollectDeposit(t *testing.T) {
 		Vesting:            vPeriod,
 		VestingStep:        vStep,
 		Lockup:             lockup,
+		VestingType:        appfoundation.DefaultVesting,
 	}
 
 	depositRef := gen.ReferenceWithPulse(pn)
@@ -148,6 +153,7 @@ func TestDepositCollector_CollectDeposit(t *testing.T) {
 		DepositState:    activationRecord.ID,
 		Vesting:         vPeriod,
 		VestingStep:     vStep,
+		VestingType:     models.DepositTypeNonLinear,
 		HoldReleaseDate: 1546300921,
 		IsConfirmed:     false,
 	}}
