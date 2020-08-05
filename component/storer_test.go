@@ -312,6 +312,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			InnerStatus:     models.DepositStatusCreated,
+			VestingType:     models.DepositTypeNonLinear,
 		},
 	}
 
@@ -330,6 +331,7 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
 			Vesting:         expectedDeposit[0].Vesting,
 			VestingStep:     expectedDeposit[0].VestingStep,
+			VestingType:     expectedDeposit[0].VestingType,
 			DepositNumber:   100,
 		})
 		if err != nil {

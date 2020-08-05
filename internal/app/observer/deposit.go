@@ -7,6 +7,7 @@ package observer
 
 import (
 	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/observer/internal/models"
 )
 
 type Deposit struct {
@@ -20,6 +21,7 @@ type Deposit struct {
 	DepositState    insolar.ID
 	Vesting         int64
 	VestingStep     int64
+	VestingType     models.DepositType
 	DepositNumber   int64
 	IsConfirmed     bool
 }
