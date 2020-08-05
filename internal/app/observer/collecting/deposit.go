@@ -20,6 +20,7 @@ import (
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	proxyPKShard "github.com/insolar/mainnet/application/builtin/proxy/pkshard"
@@ -174,11 +175,11 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 
 			var vestingType models.DepositType
 			switch depositState.VestingType {
-			case 0:
+			case appfoundation.DefaultVesting:
 				vestingType = models.DepositTypeNonLinear
-			case 1:
+			case appfoundation.LinearVesting:
 				vestingType = models.DepositTypeLinear
-			case 2:
+			case appfoundation.Vesting2:
 				vestingType = models.DepositTypeDefaultFund
 			}
 			d := observer.Deposit{
@@ -215,11 +216,11 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 
 	var vestingType models.DepositType
 	switch state.VestingType {
-	case 0:
+	case appfoundation.DefaultVesting:
 		vestingType = models.DepositTypeNonLinear
-	case 1:
+	case appfoundation.LinearVesting:
 		vestingType = models.DepositTypeLinear
-	case 2:
+	case appfoundation.Vesting2:
 		vestingType = models.DepositTypeDefaultFund
 	}
 
