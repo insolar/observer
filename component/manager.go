@@ -29,7 +29,7 @@ type Manager struct {
 	fetch         func(context.Context, *state) *raw
 	beautify      func(context.Context, *raw) *beauty
 	filter        func(*beauty) *beauty
-	store         func(*beauty, *state) (*observer.Statistic, error)
+	store         func(*beauty, *state) *observer.Statistic
 	stop          func()
 
 	router       RouterInterface
@@ -106,7 +106,7 @@ func (m *Manager) run(s *state) {
 	m.log.Debug("Timer: filtered ", time.Since(tempTimer))
 
 	tempTimer = time.Now()
-	statistic := m.storeWithRetries(s, collapsed)
+	statistic := m.store(collapsed, s)
 	m.log.Debug("Timer: stored ", time.Since(tempTimer))
 
 	timeExecuted := time.Since(timeStart)
@@ -122,30 +122,6 @@ func (m *Manager) run(s *state) {
 	sleepTime := m.sleepCounter.Count(ctx, raw, timeExecuted)
 	m.log.Info("Sleep: ", sleepTime)
 	time.Sleep(sleepTime)
-}
-
-func (m *Manager) storeWithRetries(s *state, collapsed *beauty) *observer.Statistic {
-	var statistic *observer.Statistic
-	countRetries := int(m.cfg.DB.Attempts)
-	if countRetries <= 0 {
-		countRetries = 1
-	}
-	for i := 1; i <= countRetries; i++ {
-		var err error
-		statistic, err = m.store(collapsed, s)
-		if err == nil {
-			break
-		}
-		if m.needStop() {
-			return nil
-		}
-		m.log.Errorf("DB connection error... %s", err.Error())
-		if i >= countRetries {
-			panic(err)
-		}
-		time.Sleep(m.cfg.DB.AttemptInterval * time.Duration(i))
-	}
-	return statistic
 }
 
 type raw struct {

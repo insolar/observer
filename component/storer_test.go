@@ -503,7 +503,7 @@ func TestStorerOK(t *testing.T) {
 
 	storer := makeStorer(cfg, obs, fakeConn{})
 
-	stats, _ := storer(&beauty{
+	stats := storer(&beauty{
 		pulse: &observer.Pulse{
 			Number: insolar.GenesisPulse.PulseNumber,
 			Nodes: []insolar.Node{
