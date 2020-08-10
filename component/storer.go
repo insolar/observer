@@ -108,7 +108,7 @@ func makeStorer(
 	}
 }
 
-func insertRawData(b *beauty, tx *pg.Tx, obs *observability.Observability) error {
+func insertRawData(b *beauty, tx orm.DB, obs *observability.Observability) error {
 	requests := postgres.NewRequestStorage(obs, tx)
 	for _, req := range b.requests {
 		if req == nil {
@@ -164,7 +164,7 @@ func insertRawData(b *beauty, tx *pg.Tx, obs *observability.Observability) error
 	return nil
 }
 
-func insertObjectData(cfg *configuration.Observer, b *beauty, tx *pg.Tx, obs *observability.Observability) error {
+func insertObjectData(cfg *configuration.Observer, b *beauty, tx orm.DB, obs *observability.Observability) error {
 	err := StoreTxRegister(tx, b.txRegister)
 	if err != nil {
 		return errors.Wrap(err, "failed to insert txRegister")
