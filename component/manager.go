@@ -126,17 +126,24 @@ func (m *Manager) run(s *state) {
 
 func (m *Manager) storeWithRetries(s *state, collapsed *beauty) *observer.Statistic {
 	var statistic *observer.Statistic
-	for i := 1; i <= m.cfg.DB.Retries; i++ {
+	countRetries := int(m.cfg.DB.Attempts)
+	if countRetries <= 0 {
+		countRetries = 1
+	}
+	for i := 1; i <= countRetries; i++ {
 		var err error
 		statistic, err = m.store(collapsed, s)
 		if err == nil {
 			break
 		}
+		if m.needStop() {
+			return nil
+		}
 		m.log.Errorf("DB connection error... %s", err.Error())
-		if i == m.cfg.DB.Retries {
+		if i >= countRetries {
 			panic(err)
 		}
-		time.Sleep(m.cfg.DB.Delay * time.Duration(i))
+		time.Sleep(m.cfg.DB.AttemptInterval * time.Duration(i))
 	}
 	return statistic
 }

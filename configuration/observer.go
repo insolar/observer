@@ -31,11 +31,6 @@ type DB struct {
 	Attempts cycle.Limit
 	// Interval between store in db failed attempts
 	AttemptInterval time.Duration
-	// The number of attempts to reconnect before panic
-	Retries int
-	// If the connection to the base is broken, the delay time between attempts,
-	// which increases in multiples of the number of attempts
-	Delay time.Duration
 }
 
 type Replicator struct {
