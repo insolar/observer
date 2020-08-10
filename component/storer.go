@@ -28,7 +28,7 @@ func makeStorer(
 	cfg *configuration.Observer,
 	obs *observability.Observability,
 	conn PGer,
-) func(*beauty, *state) *observer.Statistic {
+) func(*beauty, *state) (*observer.Statistic, error) {
 	log := obs.Log()
 	db := conn.PG()
 
@@ -36,11 +36,10 @@ func makeStorer(
 	platformNodes := obs.Gauge(prometheus.GaugeOpts{
 		Name: "observer_platform_nodes",
 	})
-	return func(b *beauty, s *state) *observer.Statistic {
+	return func(b *beauty, s *state) (*observer.Statistic, error) {
 		if b == nil {
-			return nil
+			return nil, nil
 		}
-
 		var stat *observer.Statistic
 		err := db.RunInTransaction(func(tx *pg.Tx) error {
 			// plain records
@@ -204,6 +203,9 @@ func makeStorer(
 			return nil
 		})
 		if err != nil {
+			if strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "EOF") {
+				return nil, err
+			}
 			panic(err)
 		}
 
@@ -225,7 +227,7 @@ func makeStorer(
 		metric.Updates.Add(float64(len(b.depositUpdates)))
 		metric.Vestings.Add(float64(len(b.vestings)))
 
-		return stat
+		return stat, nil
 	}
 }
 

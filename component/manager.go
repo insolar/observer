@@ -29,7 +29,7 @@ type Manager struct {
 	fetch         func(context.Context, *state) *raw
 	beautify      func(context.Context, *raw) *beauty
 	filter        func(*beauty) *beauty
-	store         func(*beauty, *state) *observer.Statistic
+	store         func(*beauty, *state) (*observer.Statistic, error)
 	stop          func()
 
 	router       RouterInterface
@@ -106,7 +106,7 @@ func (m *Manager) run(s *state) {
 	m.log.Debug("Timer: filtered ", time.Since(tempTimer))
 
 	tempTimer = time.Now()
-	statistic := m.store(collapsed, s)
+	statistic := m.storeWithRetries(s, collapsed)
 	m.log.Debug("Timer: stored ", time.Since(tempTimer))
 
 	timeExecuted := time.Since(timeStart)
@@ -122,6 +122,23 @@ func (m *Manager) run(s *state) {
 	sleepTime := m.sleepCounter.Count(ctx, raw, timeExecuted)
 	m.log.Info("Sleep: ", sleepTime)
 	time.Sleep(sleepTime)
+}
+
+func (m *Manager) storeWithRetries(s *state, collapsed *beauty) *observer.Statistic {
+	var statistic *observer.Statistic
+	for i := 1; i <= m.cfg.DB.Retries; i++ {
+		var err error
+		statistic, err = m.store(collapsed, s)
+		if err == nil {
+			break
+		}
+		m.log.Errorf("DB connection error... %s", err.Error())
+		if i == m.cfg.DB.Retries {
+			panic(err)
+		}
+		time.Sleep(m.cfg.DB.Delay * time.Duration(i))
+	}
+	return statistic
 }
 
 type raw struct {
