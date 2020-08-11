@@ -171,7 +171,20 @@ make migrate-init
 
 Upon any upcoming Insolar MainNet updates, the current Node version may suspend synching. To resume the synching, you need to update your Node instance.
 
-Update instructions for future versions of the Node are on the way and will be released closer to the next significant update. 
+Each time your Node instance connects to the trusted Heavy Material Node, your Node instance sends its client type (`client_type`), communication protocol version (`heavy_version`) and smart contract version (`contract_version`) in the metadata.
+
+If the protocol version and smart contract version are lower than those accepted by the Heavy Material Node, it sends back the `version of the observer is outdated. Please upgrade this client` message.
+
+Upon this message, your Node instance exits signifying it needs to be updated to continue working proreply.
+
+To update your Node instance:
+
+1. Exit your Node instance if it didn't exit automatically. 
+2. Clone and build the Node as described in the [**Build** section](https://github.com/insolar/observer/blob/master/README.md#build) of this document.
+3. Deploy the Node and Node API as described in the [**Configure and deploy the Node**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node) and [**Configure and deploy the Node API**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node-api) sections respectively.
+Check for [new or updated configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters) to make sure your current configurations are fully compatible with the updated Node binary files.  
+
+After the update has been completed, run your Node instance.
 
    
 ## Additional details
