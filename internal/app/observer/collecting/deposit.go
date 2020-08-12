@@ -225,7 +225,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 }
 
 func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
-	if req.Method != "New" {
+	if req.Method != "New" && req.Method != "NewFund" {
 		return false
 	}
 
