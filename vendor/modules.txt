@@ -148,7 +148,7 @@ github.com/insolar/insolar/insolar/flow
 github.com/insolar/insolar/logicrunner/metrics
 github.com/insolar/insolar/insolar/reply
 github.com/insolar/insolar/insolar/flow/internal/pulse
-# github.com/insolar/mainnet v1.9.2
+# github.com/insolar/mainnet v1.9.6-0.20200805073824-5572daa6f68c
 github.com/insolar/mainnet/application/builtin/contract/deposit
 github.com/insolar/mainnet/application/builtin/contract/member
 github.com/insolar/mainnet/application/appfoundation
