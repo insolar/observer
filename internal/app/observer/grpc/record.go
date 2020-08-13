@@ -77,6 +77,7 @@ func (f *RecordFetcher) Fetch(
 				break
 			}
 			if err != nil {
+				detectedDeprecatedVersion(err, f.log)
 				f.log.Debugf("received error value from records gRPC stream %v", f.request)
 				return batch, shouldIterateFrom, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
 			}

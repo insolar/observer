@@ -14,13 +14,11 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
-	github.com/insolar/insolar v1.6.6-0.20200728094205-e5301b73195e
-	github.com/insolar/mainnet v1.9.2
+	github.com/insolar/insolar v1.7.1
+	github.com/insolar/mainnet v1.10.1
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/ory/dockertest/v3 v3.5.2
@@ -30,13 +28,11 @@ require (
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
-	github.com/tylerb/is v2.1.4+incompatible // indirect
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
 	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2 // indirect
 	gonum.org/v1/gonum v0.6.0 // indirect
-	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect
 	google.golang.org/grpc v1.21.0
 	gopkg.in/yaml.v2 v2.2.8
@@ -44,3 +40,5 @@ require (
 )
 
 replace github.com/insolar/observer => ./
+
+replace github.com/ugorji/go v1.1.4 => github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43

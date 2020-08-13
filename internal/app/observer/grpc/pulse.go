@@ -65,6 +65,8 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 				f.log.Debug("EOF received, quit")
 				return nil
 			}
+			detectedDeprecatedVersion(err, f.log)
+
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
 		}
@@ -96,6 +98,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 	cycle.UntilError(func() error {
 		tsp, err = client.TopSyncPulse(getCtxWithClientVersion(ctx), request)
 		if err != nil {
+			detectedDeprecatedVersion(err, f.log)
 			f.log.WithField("request", request).
 				Error(errors.Wrapf(err, "failed to get tsp"))
 			return err
