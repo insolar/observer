@@ -3,8 +3,8 @@ contrib.go.opencensus.io/exporter/prometheus
 # github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96
 github.com/AndreasBriese/bbloom
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
-github.com/Azure/go-ansiterm/winterm
 github.com/Azure/go-ansiterm
+github.com/Azure/go-ansiterm/winterm
 # github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
@@ -12,8 +12,8 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/Nvveen/Gotty
 # github.com/ThreeDotsLabs/watermill v1.0.2
 github.com/ThreeDotsLabs/watermill
-github.com/ThreeDotsLabs/watermill/message
 github.com/ThreeDotsLabs/watermill/internal
+github.com/ThreeDotsLabs/watermill/message
 github.com/ThreeDotsLabs/watermill/pubsub/sync
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
@@ -49,15 +49,15 @@ github.com/globocom/echo-prometheus
 # github.com/go-pg/migrations v6.7.3+incompatible
 github.com/go-pg/migrations
 # github.com/go-pg/pg v8.0.6+incompatible
-github.com/go-pg/pg/orm
 github.com/go-pg/pg
 github.com/go-pg/pg/internal
 github.com/go-pg/pg/internal/iszero
 github.com/go-pg/pg/internal/parser
+github.com/go-pg/pg/internal/pool
 github.com/go-pg/pg/internal/struct_filter
 github.com/go-pg/pg/internal/tag
+github.com/go-pg/pg/orm
 github.com/go-pg/pg/types
-github.com/go-pg/pg/internal/pool
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -81,115 +81,115 @@ github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/hcl v1.0.0
 github.com/hashicorp/hcl
-github.com/hashicorp/hcl/hcl/printer
 github.com/hashicorp/hcl/hcl/ast
 github.com/hashicorp/hcl/hcl/parser
-github.com/hashicorp/hcl/hcl/token
-github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/printer
 github.com/hashicorp/hcl/hcl/scanner
 github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
 # github.com/insolar/gls v0.0.0-20200427111849-9a08a622625d
 github.com/insolar/gls
 # github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 github.com/insolar/insconfig
-# github.com/insolar/insolar v1.7.0
+# github.com/insolar/insolar v1.7.1
+github.com/insolar/insolar/api/requester
+github.com/insolar/insolar/application
+github.com/insolar/insolar/application/appfoundation
+github.com/insolar/insolar/application/genesisrefs
+github.com/insolar/insolar/applicationbase/builtin/proxy/nodedomain
+github.com/insolar/insolar/applicationbase/genesisrefs
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
-github.com/insolar/insolar/instrumentation/inslogger
-github.com/insolar/insolar/log
-github.com/insolar/insolar/insolar/record
-github.com/insolar/insolar/ledger/heavy/exporter
-github.com/insolar/insolar/application/appfoundation
-github.com/insolar/insolar/logicrunner/builtin/foundation
-github.com/insolar/insolar/pulse
 github.com/insolar/insolar/insolar/bits
+github.com/insolar/insolar/insolar/bus
+github.com/insolar/insolar/insolar/bus/meta
 github.com/insolar/insolar/insolar/defaults
-github.com/insolar/insolar/longbits
-github.com/insolar/insolar/reference
-github.com/insolar/insolar/insolar/utils
-github.com/insolar/insolar/log/critlog
-github.com/insolar/insolar/log/logadapter
-github.com/insolar/insolar/log/zlogadapter
+github.com/insolar/insolar/insolar/flow
+github.com/insolar/insolar/insolar/flow/internal/pulse
+github.com/insolar/insolar/insolar/gen
 github.com/insolar/insolar/insolar/jet
 github.com/insolar/insolar/insolar/node
-github.com/insolar/insolar/insolar/pulse
-github.com/insolar/insolar/instrumentation/insmetrics
-github.com/insolar/insolar/ledger/heavy/executor
-github.com/insolar/insolar/ledger/object
-github.com/insolar/insolar/api/requester
-github.com/insolar/insolar/insolar/gen
-github.com/insolar/insolar/application/genesisrefs
-github.com/insolar/insolar/applicationbase/genesisrefs
-github.com/insolar/insolar/logicrunner/common
-github.com/insolar/insolar/logicrunner/builtin/foundation/safemath
-github.com/insolar/insolar/insolar/secrets
-github.com/insolar/insolar/applicationbase/builtin/proxy/nodedomain
-github.com/insolar/insolar/network/consensus/common/cryptkit
-github.com/insolar/insolar/logicrunner/preprocessor
-github.com/insolar/insolar/log/logoutput
-github.com/insolar/insolar/network/consensus/common/args
-github.com/insolar/insolar/log/inssyslog
-github.com/insolar/insolar/log/logmetrics
-github.com/insolar/insolar/insolar/store
 github.com/insolar/insolar/insolar/payload
-github.com/insolar/insolar/ledger/drop
-github.com/insolar/insolar/application
-github.com/insolar/insolar/platformpolicy
+github.com/insolar/insolar/insolar/pulse
+github.com/insolar/insolar/insolar/record
+github.com/insolar/insolar/insolar/reply
+github.com/insolar/insolar/insolar/secrets
+github.com/insolar/insolar/insolar/store
+github.com/insolar/insolar/insolar/utils
+github.com/insolar/insolar/instrumentation/inslogger
+github.com/insolar/insolar/instrumentation/insmetrics
 github.com/insolar/insolar/instrumentation/instracer
+github.com/insolar/insolar/ledger/drop
+github.com/insolar/insolar/ledger/heavy/executor
+github.com/insolar/insolar/ledger/heavy/exporter
+github.com/insolar/insolar/ledger/object
+github.com/insolar/insolar/log
+github.com/insolar/insolar/log/critlog
+github.com/insolar/insolar/log/inssyslog
+github.com/insolar/insolar/log/logadapter
+github.com/insolar/insolar/log/logmetrics
+github.com/insolar/insolar/log/logoutput
+github.com/insolar/insolar/log/zlogadapter
 github.com/insolar/insolar/logicrunner/artifacts
+github.com/insolar/insolar/logicrunner/builtin/foundation
+github.com/insolar/insolar/logicrunner/builtin/foundation/safemath
+github.com/insolar/insolar/logicrunner/common
 github.com/insolar/insolar/logicrunner/goplugin/rpctypes
-github.com/insolar/insolar/insolar/bus/meta
+github.com/insolar/insolar/logicrunner/metrics
+github.com/insolar/insolar/logicrunner/preprocessor
+github.com/insolar/insolar/longbits
+github.com/insolar/insolar/network/consensus/common/args
+github.com/insolar/insolar/network/consensus/common/cryptkit
+github.com/insolar/insolar/platformpolicy
 github.com/insolar/insolar/platformpolicy/internal/hash
 github.com/insolar/insolar/platformpolicy/internal/sign
-github.com/insolar/insolar/insolar/bus
-github.com/insolar/insolar/insolar/flow
-github.com/insolar/insolar/logicrunner/metrics
-github.com/insolar/insolar/insolar/reply
-github.com/insolar/insolar/insolar/flow/internal/pulse
-# github.com/insolar/mainnet v1.9.6-0.20200805073824-5572daa6f68c
-github.com/insolar/mainnet/application/builtin/contract/deposit
-github.com/insolar/mainnet/application/builtin/contract/member
+github.com/insolar/insolar/pulse
+github.com/insolar/insolar/reference
+# github.com/insolar/mainnet v1.10.1
+github.com/insolar/mainnet/application
 github.com/insolar/mainnet/application/appfoundation
 github.com/insolar/mainnet/application/builtin/contract/account
+github.com/insolar/mainnet/application/builtin/contract/deposit
+github.com/insolar/mainnet/application/builtin/contract/member
 github.com/insolar/mainnet/application/builtin/contract/migrationshard
 github.com/insolar/mainnet/application/builtin/contract/pkshard
 github.com/insolar/mainnet/application/builtin/contract/wallet
 github.com/insolar/mainnet/application/builtin/proxy/account
+github.com/insolar/mainnet/application/builtin/proxy/costcenter
 github.com/insolar/mainnet/application/builtin/proxy/deposit
 github.com/insolar/mainnet/application/builtin/proxy/member
+github.com/insolar/mainnet/application/builtin/proxy/migrationadmin
+github.com/insolar/mainnet/application/builtin/proxy/migrationdaemon
 github.com/insolar/mainnet/application/builtin/proxy/migrationshard
 github.com/insolar/mainnet/application/builtin/proxy/pkshard
+github.com/insolar/mainnet/application/builtin/proxy/rootdomain
 github.com/insolar/mainnet/application/builtin/proxy/wallet
 github.com/insolar/mainnet/application/genesisrefs
-github.com/insolar/mainnet/application/builtin/proxy/costcenter
-github.com/insolar/mainnet/application/builtin/proxy/migrationdaemon
-github.com/insolar/mainnet/application/builtin/proxy/migrationadmin
-github.com/insolar/mainnet/application/builtin/proxy/rootdomain
-github.com/insolar/mainnet/application
 # github.com/insolar/x-crypto v0.0.0-20191031140942-75fab8a325f6
+github.com/insolar/x-crypto
+github.com/insolar/x-crypto/dsa
 github.com/insolar/x-crypto/ecdsa
 github.com/insolar/x-crypto/elliptic
-github.com/insolar/x-crypto/sha256
-github.com/insolar/x-crypto/x509
-github.com/insolar/x-crypto
-github.com/insolar/x-crypto/rand
 github.com/insolar/x-crypto/internal/randutil
-github.com/insolar/x-crypto/sha512
-github.com/insolar/x-crypto/dsa
 github.com/insolar/x-crypto/md5
+github.com/insolar/x-crypto/rand
+github.com/insolar/x-crypto/rand/internal/unix
 github.com/insolar/x-crypto/rsa
 github.com/insolar/x-crypto/sha1
-github.com/insolar/x-crypto/x509/pkix
-github.com/insolar/x-crypto/rand/internal/unix
+github.com/insolar/x-crypto/sha256
+github.com/insolar/x-crypto/sha512
 github.com/insolar/x-crypto/subtle
+github.com/insolar/x-crypto/x509
+github.com/insolar/x-crypto/x509/pkix
 # github.com/jackc/chunkreader/v2 v2.0.0
 github.com/jackc/chunkreader/v2
 # github.com/jackc/pgconn v1.2.1
 github.com/jackc/pgconn
-github.com/jackc/pgconn/stmtcache
 github.com/jackc/pgconn/internal/ctxwatch
+github.com/jackc/pgconn/stmtcache
 # github.com/jackc/pgio v1.0.0
 github.com/jackc/pgio
 # github.com/jackc/pgpassfile v1.0.0
@@ -200,8 +200,8 @@ github.com/jackc/pgproto3/v2
 github.com/jackc/pgtype
 # github.com/jackc/pgx/v4 v4.2.1
 github.com/jackc/pgx/v4
-github.com/jackc/pgx/v4/pgxpool
 github.com/jackc/pgx/v4/internal/sanitize
+github.com/jackc/pgx/v4/pgxpool
 # github.com/jackc/puddle v1.0.0
 github.com/jackc/puddle
 # github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6
@@ -214,9 +214,9 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/labstack/echo/v4
 github.com/labstack/echo/v4/middleware
 # github.com/labstack/gommon v0.3.0
+github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
-github.com/labstack/gommon/bytes
 github.com/labstack/gommon/random
 # github.com/lithammer/shortuuid/v3 v3.0.4
 github.com/lithammer/shortuuid/v3
@@ -235,14 +235,14 @@ github.com/oklog/ulid
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
-github.com/opencontainers/image-spec/specs-go/v1
 github.com/opencontainers/image-spec/specs-go
+github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc5
 github.com/opencontainers/runc/libcontainer/user
 # github.com/opentracing/opentracing-go v1.1.0
 github.com/opentracing/opentracing-go
-github.com/opentracing/opentracing-go/log
 github.com/opentracing/opentracing-go/ext
+github.com/opentracing/opentracing-go/log
 # github.com/ory/dockertest/v3 v3.5.2
 github.com/ory/dockertest/v3
 github.com/ory/dockertest/v3/docker
@@ -250,23 +250,23 @@ github.com/ory/dockertest/v3/docker/opts
 github.com/ory/dockertest/v3/docker/pkg/archive
 github.com/ory/dockertest/v3/docker/pkg/fileutils
 github.com/ory/dockertest/v3/docker/pkg/homedir
-github.com/ory/dockertest/v3/docker/pkg/jsonmessage
-github.com/ory/dockertest/v3/docker/pkg/stdcopy
-github.com/ory/dockertest/v3/docker/types/registry
-github.com/ory/dockertest/v3/docker/types
 github.com/ory/dockertest/v3/docker/pkg/idtools
 github.com/ory/dockertest/v3/docker/pkg/ioutils
+github.com/ory/dockertest/v3/docker/pkg/jsonmessage
 github.com/ory/dockertest/v3/docker/pkg/longpath
+github.com/ory/dockertest/v3/docker/pkg/mount
 github.com/ory/dockertest/v3/docker/pkg/pools
+github.com/ory/dockertest/v3/docker/pkg/stdcopy
 github.com/ory/dockertest/v3/docker/pkg/system
 github.com/ory/dockertest/v3/docker/pkg/term
+github.com/ory/dockertest/v3/docker/pkg/term/windows
+github.com/ory/dockertest/v3/docker/types
+github.com/ory/dockertest/v3/docker/types/blkiodev
 github.com/ory/dockertest/v3/docker/types/container
 github.com/ory/dockertest/v3/docker/types/filters
 github.com/ory/dockertest/v3/docker/types/mount
 github.com/ory/dockertest/v3/docker/types/network
-github.com/ory/dockertest/v3/docker/pkg/mount
-github.com/ory/dockertest/v3/docker/pkg/term/windows
-github.com/ory/dockertest/v3/docker/types/blkiodev
+github.com/ory/dockertest/v3/docker/types/registry
 github.com/ory/dockertest/v3/docker/types/strslice
 github.com/ory/dockertest/v3/docker/types/versions
 # github.com/pelletier/go-toml v1.5.0
@@ -276,16 +276,16 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.1.0
-github.com/prometheus/client_golang/prometheus/promhttp
 github.com/prometheus/client_golang/prometheus
-github.com/prometheus/client_golang/prometheus/promauto
 github.com/prometheus/client_golang/prometheus/internal
+github.com/prometheus/client_golang/prometheus/promauto
+github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.7.0
 github.com/prometheus/common/expfmt
-github.com/prometheus/common/model
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+github.com/prometheus/common/model
 # github.com/prometheus/procfs v0.0.5
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
@@ -310,84 +310,84 @@ github.com/spf13/pflag
 # github.com/spf13/viper v1.6.2
 github.com/spf13/viper
 # github.com/stretchr/testify v1.4.0
-github.com/stretchr/testify/require
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
 # github.com/uber/jaeger-client-go v2.19.0+incompatible
 github.com/uber/jaeger-client-go
 github.com/uber/jaeger-client-go/config
 github.com/uber/jaeger-client-go/internal/baggage
+github.com/uber/jaeger-client-go/internal/baggage/remote
 github.com/uber/jaeger-client-go/internal/spanlog
 github.com/uber/jaeger-client-go/internal/throttler
+github.com/uber/jaeger-client-go/internal/throttler/remote
 github.com/uber/jaeger-client-go/log
+github.com/uber/jaeger-client-go/rpcmetrics
 github.com/uber/jaeger-client-go/thrift
+github.com/uber/jaeger-client-go/thrift-gen/agent
+github.com/uber/jaeger-client-go/thrift-gen/baggage
 github.com/uber/jaeger-client-go/thrift-gen/jaeger
 github.com/uber/jaeger-client-go/thrift-gen/sampling
 github.com/uber/jaeger-client-go/thrift-gen/zipkincore
-github.com/uber/jaeger-client-go/utils
-github.com/uber/jaeger-client-go/internal/baggage/remote
-github.com/uber/jaeger-client-go/internal/throttler/remote
-github.com/uber/jaeger-client-go/rpcmetrics
 github.com/uber/jaeger-client-go/transport
-github.com/uber/jaeger-client-go/thrift-gen/agent
-github.com/uber/jaeger-client-go/thrift-gen/baggage
+github.com/uber/jaeger-client-go/utils
 # github.com/uber/jaeger-lib v2.2.0+incompatible
 github.com/uber/jaeger-lib/metrics
-# github.com/ugorji/go v1.1.4
+# github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8
 github.com/ugorji/go/codec
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasttemplate v1.0.1
 github.com/valyala/fasttemplate
 # go.opencensus.io v0.22.1
-go.opencensus.io/stats
-go.opencensus.io/stats/view
-go.opencensus.io/tag
-go.opencensus.io/metric/metricdata
-go.opencensus.io/stats/internal
+go.opencensus.io
+go.opencensus.io/internal
 go.opencensus.io/internal/tagencoding
+go.opencensus.io/metric/metricdata
+go.opencensus.io/metric/metricexport
 go.opencensus.io/metric/metricproducer
 go.opencensus.io/resource
-go.opencensus.io/metric/metricexport
+go.opencensus.io/stats
+go.opencensus.io/stats/internal
+go.opencensus.io/stats/view
+go.opencensus.io/tag
 go.opencensus.io/trace
-go.opencensus.io/internal
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-go.opencensus.io
 # golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
-golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
+golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/sha3
 # golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582
-golang.org/x/net/trace
-golang.org/x/net/idna
-golang.org/x/net/internal/timeseries
+golang.org/x/net/context
+golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
-golang.org/x/net/http/httpguts
-golang.org/x/net/context
+golang.org/x/net/idna
+golang.org/x/net/internal/timeseries
+golang.org/x/net/trace
 # golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2
-golang.org/x/sys/windows
-golang.org/x/sys/unix
 golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
-golang.org/x/text/transform
-golang.org/x/text/unicode/norm
-golang.org/x/text/secure/precis
-golang.org/x/text/secure/bidirule
-golang.org/x/text/unicode/bidi
 golang.org/x/text/cases
-golang.org/x/text/language
-golang.org/x/text/runes
-golang.org/x/text/width
 golang.org/x/text/internal
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
+golang.org/x/text/language
+golang.org/x/text/runes
+golang.org/x/text/secure/bidirule
+golang.org/x/text/secure/precis
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+golang.org/x/text/width
 # golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
@@ -395,12 +395,14 @@ golang.org/x/xerrors/internal
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.21.0
 google.golang.org/grpc
-google.golang.org/grpc/credentials
-google.golang.org/grpc/metadata
 google.golang.org/grpc/balancer
+google.golang.org/grpc/balancer/base
 google.golang.org/grpc/balancer/roundrobin
+google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
+google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -412,8 +414,10 @@ google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
+google.golang.org/grpc/metadata
 google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
@@ -422,10 +426,6 @@ google.golang.org/grpc/resolver/passthrough
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-google.golang.org/grpc/credentials/internal
-google.golang.org/grpc/balancer/base
-google.golang.org/grpc/binarylog/grpc_binarylog_v1
-google.golang.org/grpc/internal/syscall
 # gopkg.in/ini.v1 v1.51.0
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.2.8
