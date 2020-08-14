@@ -2,7 +2,6 @@
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:276",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -16,7 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1594552561142,
+  "id": 1,
+  "iteration": 1597410891776,
   "links": [],
   "panels": [
     {
@@ -41,9 +41,9 @@
         "thresholdMarkers": true
       },
       "gridPos": {
-        "h": 6,
+        "h": 3,
         "w": 8,
-        "x": 4,
+        "x": 0,
         "y": 0
       },
       "id": 4,
@@ -52,12 +52,10 @@
       "mappingType": 1,
       "mappingTypes": [
         {
-          "$$hashKey": "object:1148",
           "name": "value to text",
           "value": 1
         },
         {
-          "$$hashKey": "object:1149",
           "name": "range to text",
           "value": 2
         }
@@ -65,6 +63,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "pluginVersion": "6.2.4",
       "postfix": "",
       "postfixFontSize": "50%",
@@ -101,7 +100,6 @@
       "valueFontSize": "80%",
       "valueMaps": [
         {
-          "$$hashKey": "object:1151",
           "op": "=",
           "text": "N/A",
           "value": "null"
@@ -114,14 +112,13 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
       "description": "Time in seconds spent on processing data from a single pulse. [What is a pulse?](https://docs.insolar.io/en/latest/glossary.html?highlight=pulse)",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 6,
         "w": 9,
-        "x": 12,
+        "x": 8,
         "y": 0
       },
       "hiddenSeries": false,
@@ -178,7 +175,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:511",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -187,7 +183,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:512",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -200,6 +195,95 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "cacheTimeout": null,
+      "colorBackground": false,
+      "colorPostfix": false,
+      "colorPrefix": false,
+      "colorValue": true,
+      "colors": [
+        "#299c46",
+        "#56A64B",
+        "#C4162A"
+      ],
+      "format": "none",
+      "gauge": {
+        "maxValue": 100,
+        "minValue": 0,
+        "show": false,
+        "thresholdLabels": false,
+        "thresholdMarkers": true
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 3
+      },
+      "id": 15,
+      "interval": null,
+      "links": [],
+      "mappingType": 1,
+      "mappingTypes": [
+        {
+          "name": "value to text",
+          "value": 1
+        },
+        {
+          "name": "range to text",
+          "value": 2
+        }
+      ],
+      "maxDataPoints": 100,
+      "nullPointMode": "connected",
+      "nullText": null,
+      "options": {},
+      "postfix": "",
+      "postfixFontSize": "20%",
+      "prefix": "version client:",
+      "prefixFontSize": "50%",
+      "rangeMaps": [
+        {
+          "from": "null",
+          "text": "N/A",
+          "to": "null"
+        }
+      ],
+      "sparkline": {
+        "fillColor": "rgba(31, 118, 189, 0.18)",
+        "full": false,
+        "lineColor": "rgb(31, 120, 193)",
+        "show": false,
+        "ymax": null,
+        "ymin": null
+      },
+      "tableColumn": "",
+      "targets": [
+        {
+          "expr": "observer_version_is_deprecated",
+          "refId": "A"
+        }
+      ],
+      "thresholds": "0,1",
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Version Observer",
+      "type": "singlestat",
+      "valueFontSize": "70%",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "Actual",
+          "value": "0"
+        },
+        {
+          "op": "=",
+          "text": "Deprecated. Need new version",
+          "value": "1"
+        }
+      ],
+      "valueName": "current"
     },
     {
       "aliasColors": {},
@@ -295,7 +379,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
       "description": "Number of successfully created new users per second. ",
       "fill": 1,
       "fillGradient": 0,
@@ -357,7 +440,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:764",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -366,7 +448,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:765",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -385,7 +466,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
       "description": "Number of new balances created per second. ",
       "fill": 1,
       "fillGradient": 0,
@@ -446,7 +526,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:875",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -455,7 +534,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:876",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -474,7 +552,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": null,
       "description": "Number of new deposits created per seconds.",
       "fill": 1,
       "fillGradient": 0,
@@ -558,7 +635,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 22,
+  "schemaVersion": 19,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -566,8 +643,9 @@
       {
         "allValue": null,
         "current": {
-          "text": "wallet",
-          "value": "wallet"
+          "isNone": true,
+          "text": "None",
+          "value": ""
         },
         "datasource": "prometheus",
         "definition": "label_values(observer_last_fetched_pulse, namespace)",
@@ -592,8 +670,8 @@
     ]
   },
   "time": {
-    "from": "2020-07-12T08:38:53.062Z",
-    "to": "2020-07-12T13:06:30.351Z"
+    "from": "now-5m",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -623,8 +701,5 @@
   "timezone": "",
   "title": "Observer",
   "uid": "6zT9gUOWz",
-  "variables": {
-    "list": []
-  },
   "version": 1
 }
