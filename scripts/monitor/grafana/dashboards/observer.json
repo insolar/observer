@@ -15,8 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
-  "iteration": 1597410891776,
+  "iteration": 1597420099344,
   "links": [],
   "panels": [
     {
@@ -198,10 +197,10 @@
     },
     {
       "cacheTimeout": null,
-      "colorBackground": false,
+      "colorBackground": true,
       "colorPostfix": false,
       "colorPrefix": false,
-      "colorValue": true,
+      "colorValue": false,
       "colors": [
         "#299c46",
         "#56A64B",
@@ -241,7 +240,7 @@
       "options": {},
       "postfix": "",
       "postfixFontSize": "20%",
-      "prefix": "version client:",
+      "prefix": "",
       "prefixFontSize": "50%",
       "rangeMaps": [
         {
@@ -268,18 +267,18 @@
       "thresholds": "0,1",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Version Observer",
+      "title": "Observer version",
       "type": "singlestat",
-      "valueFontSize": "70%",
+      "valueFontSize": "50%",
       "valueMaps": [
         {
           "op": "=",
-          "text": "Actual",
+          "text": "Up to date",
           "value": "0"
         },
         {
           "op": "=",
-          "text": "Deprecated. Need new version",
+          "text": "Out of date. Please update your Node.",
           "value": "1"
         }
       ],
@@ -634,7 +633,7 @@
       }
     }
   ],
-  "refresh": false,
+  "refresh": "5s",
   "schemaVersion": 19,
   "style": "dark",
   "tags": [],
