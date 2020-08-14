@@ -29,6 +29,10 @@ func makeFetcher(
 		// todo: get batch of empty pulses, if shouldIterateFrom set
 		pulse, err := pulses.Fetch(ctx, s.last)
 		if err != nil {
+			if err == grpc.ErrNoPulseReceived {
+				log.Warn(grpc.ErrNoPulseReceived.Error())
+				return nil
+			}
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
 			return nil
 		}
