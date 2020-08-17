@@ -15,7 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1597420099344,
+  "id": 1,
+  "iteration": 1597664031393,
   "links": [],
   "panels": [
     {
@@ -62,7 +63,6 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
-      "options": {},
       "pluginVersion": "6.2.4",
       "postfix": "",
       "postfixFontSize": "50%",
@@ -111,6 +111,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "description": "Time in seconds spent on processing data from a single pulse. [What is a pulse?](https://docs.insolar.io/en/latest/glossary.html?highlight=pulse)",
       "fill": 1,
       "fillGradient": 0,
@@ -157,7 +158,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Process pulse time",
+      "title": "Pulse processing time",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -197,92 +198,78 @@
     },
     {
       "cacheTimeout": null,
-      "colorBackground": true,
-      "colorPostfix": false,
-      "colorPrefix": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "#56A64B",
-        "#C4162A"
-      ],
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
+      "datasource": null,
       "gridPos": {
-        "h": 3,
+        "h": 2,
         "w": 8,
         "x": 0,
         "y": 3
       },
       "id": 15,
-      "interval": null,
       "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
+      "options": {
+        "colorMode": "background",
+        "fieldOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "defaults": {
+            "mappings": [
+              {
+                "id": 0,
+                "op": "=",
+                "text": "Up to date",
+                "type": 1,
+                "value": "0"
+              },
+              {
+                "id": 1,
+                "op": "=",
+                "text": "Out of date. Please update your Node.",
+                "type": 1,
+                "value": "1"
+              }
+            ],
+            "nullValueMode": "connected",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#299c46",
+                  "value": null
+                },
+                {
+                  "color": "#56A64B",
+                  "value": 0
+                },
+                {
+                  "color": "#C4162A",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": [],
+          "values": false
         },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "20%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal"
       },
-      "tableColumn": "",
+      "pluginVersion": "6.7.1",
       "targets": [
         {
           "expr": "observer_version_is_deprecated",
+          "interval": "",
+          "legendFormat": "",
           "refId": "A"
         }
       ],
-      "thresholds": "0,1",
       "timeFrom": null,
       "timeShift": null,
       "title": "Observer version",
-      "type": "singlestat",
-      "valueFontSize": "50%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "Up to date",
-          "value": "0"
-        },
-        {
-          "op": "=",
-          "text": "Out of date. Please update your Node.",
-          "value": "1"
-        }
-      ],
-      "valueName": "current"
+      "type": "stat"
     },
     {
       "aliasColors": {},
@@ -378,6 +365,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "description": "Number of successfully created new users per second. ",
       "fill": 1,
       "fillGradient": 0,
@@ -465,6 +453,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "description": "Number of new balances created per second. ",
       "fill": 1,
       "fillGradient": 0,
@@ -551,6 +540,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": null,
       "description": "Number of new deposits created per seconds.",
       "fill": 1,
       "fillGradient": 0,
@@ -634,7 +624,7 @@
     }
   ],
   "refresh": "5s",
-  "schemaVersion": 19,
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -643,6 +633,7 @@
         "allValue": null,
         "current": {
           "isNone": true,
+          "selected": false,
           "text": "None",
           "value": ""
         },
@@ -700,5 +691,8 @@
   "timezone": "",
   "title": "Observer",
   "uid": "6zT9gUOWz",
+  "variables": {
+    "list": []
+  },
   "version": 1
 }
