@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/insolar/insolar/pulse"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	"github.com/insolar/mainnet/application/builtin/contract/pkshard"
 	"github.com/insolar/mainnet/application/builtin/contract/wallet"
@@ -108,6 +109,11 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 
 	log.Debugf("New deposit ref %s, state %s, EthHash %s", d.Ref.String(),
 		d.DepositState.String(), d.EthHash)
+
+	// We fill member reference here because the fund deposit is created without deposit.Confirm requests.
+	if req.Method == "NewFund" {
+		d.Member = appfoundation.GetMigrationAdminMember()
+	}
 
 	return []observer.Deposit{*d}
 }
@@ -210,6 +216,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 		DepositState: id,
 		Vesting:      state.Vesting,
 		VestingStep:  state.VestingStep,
+		IsConfirmed:  state.IsConfirmed,
 	}
 
 	if state.PulseDepositUnHold > 0 {
