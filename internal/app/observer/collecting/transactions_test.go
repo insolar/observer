@@ -514,7 +514,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		defer mc.Finish()
 
 		txID := *insolar.NewRecordReference(gen.ID())
-		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil})
+		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil, nil})
 		require.NoError(t, err)
 		request := record.Material{
 			Virtual: record.Wrap(&record.IncomingRequest{
