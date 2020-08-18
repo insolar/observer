@@ -545,16 +545,22 @@ func (c *TxResultCollector) fromDepositToDeposit(
 	}
 
 	var txID insolar.Reference
-	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil})
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil, nil})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
 
-	return &observer.TxResult{
+	tx := &observer.TxResult{
 		TransactionID: txID,
 		Fee:           "0",
 	}
+
+	if err = tx.Validate(); err != nil {
+		log.Error(errors.Wrap(err, "failed to validate transaction"))
+		return nil
+	}
+	return tx
 }
 
 type TxSagaResultCollector struct {
