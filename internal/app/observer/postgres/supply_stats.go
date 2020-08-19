@@ -39,7 +39,6 @@ func (s *SupplyStatsRepository) LastStats() (models.SupplyStats, error) {
 	return *lastStats, nil
 }
 
-// Deprecated
 func (s *SupplyStatsRepository) CountStats() (models.SupplyStats, error) {
 	sql := fmt.Sprintf(`select coalesce(sum(balance::numeric(24)), 0) as total from members`)
 	stats := models.SupplyStats{}
@@ -50,7 +49,6 @@ func (s *SupplyStatsRepository) CountStats() (models.SupplyStats, error) {
 	return stats, nil
 }
 
-// Deprecated
 func (s *SupplyStatsRepository) InsertStats(stats models.SupplyStats) error {
 	stats.Created = time.Now()
 
