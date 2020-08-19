@@ -40,7 +40,8 @@ func (s *SupplyStatsRepository) LastStats() (models.SupplyStats, error) {
 }
 
 func (s *SupplyStatsRepository) CountStats() (models.SupplyStats, error) {
-	sql := fmt.Sprintf(`select coalesce(sum(balance::numeric(24)), 0) as total from members`)
+	sql := fmt.Sprintf(`SELECT (SELECT coalesce(sum(balance::numeric(24)), 0) FROM members) + 
+								(SELECT coalesce(sum(balance::numeric(24)), 0) FROM deposits) AS total;`)
 	stats := models.SupplyStats{}
 	_, err := s.db.Query(&stats, sql)
 	if err != nil {
