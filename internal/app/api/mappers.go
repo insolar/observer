@@ -33,7 +33,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 
 	switch tx.Type {
-	case models.TTypeMigration:
+	case models.TTypeMigration, models.TTypeAllocation:
 		res := SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),
@@ -51,24 +51,6 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 			res.ToMemberReference = ref.String()
 		}
 
-		return res
-	case models.TTypeAllocation:
-		res := SchemaMigration{
-			SchemasTransactionAbstract: internalTx,
-			Type:                       string(tx.Type),
-		}
-		if len(tx.MemberFromReference) > 0 {
-			ref := insolar.NewReferenceFromBytes(tx.MemberFromReference)
-			res.FromMemberReference = ref.String()
-		}
-		if len(tx.DepositToReference) > 0 {
-			ref := insolar.NewReferenceFromBytes(tx.DepositToReference)
-			res.ToDepositReference = ref.String()
-		}
-		if len(tx.MemberToReference) > 0 {
-			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
-			res.ToMemberReference = ref.String()
-		}
 		return res
 	case models.TTypeTransfer:
 		res := SchemaTransfer{
