@@ -289,6 +289,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		"member_from_ref",
 		"member_to_ref",
 		"deposit_to_ref",
+		"deposit_from_ref",
 		"amount",
 	}
 	var values []interface{}
@@ -302,6 +303,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 			t.MemberFromReference,
 			t.MemberToReference,
 			t.DepositToReference,
+			t.DepositFromReference,
 			t.Amount,
 		)
 	}

@@ -6,6 +6,9 @@
 package api
 
 import (
+	"github.com/insolar/insolar/insolar"
+	"github.com/insolar/insolar/insolar/gen"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 
@@ -305,4 +308,39 @@ func TestNextRelease(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAllocationTransactions(t *testing.T) {
+	memberFrom := gen.Reference()
+	memberTo := gen.Reference()
+	depositTo := gen.Reference()
+	tx := models.Transaction{
+		Amount:              "100",
+		Fee:                 *NullableString("0"),
+		StatusRegistered:    true,
+		TransactionID:       gen.Reference().Bytes(),
+		Type:                models.TTypeAllocation,
+		MemberFromReference: memberFrom.Bytes(),
+		MemberToReference:   memberTo.Bytes(),
+		DepositToReference:  depositTo.Bytes(),
+	}
+	indexType := models.TxIndexTypeFinishPulseRecord
+	txMigration := SchemaMigration{
+		SchemasTransactionAbstract: SchemasTransactionAbstract{
+			Amount:      tx.Amount,
+			Fee:         NullableString(tx.Fee),
+			Index:       tx.Index(indexType),
+			PulseNumber: tx.PulseNumber(),
+			Status:      string(tx.Status()),
+			Timestamp:   tx.Timestamp(),
+			TxID:        insolar.NewReferenceFromBytes(tx.TransactionID).String(),
+			Type:        string(tx.Type),
+		},
+		Type:                string(tx.Type),
+		FromMemberReference: memberFrom.String(),
+		ToMemberReference:   memberTo.String(),
+		ToDepositReference:  depositTo.String(),
+	}
+	res := TxToAPITx(tx, indexType)
+	require.Equal(t, txMigration, res.(SchemaMigration))
 }
