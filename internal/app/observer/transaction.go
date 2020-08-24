@@ -13,14 +13,15 @@ import (
 )
 
 type TxRegister struct {
-	TransactionID       insolar.Reference
-	Type                models.TransactionType
-	PulseNumber         int64
-	RecordNumber        int64
-	MemberFromReference []byte
-	MemberToReference   []byte
-	DepositToReference  []byte
-	Amount              string
+	TransactionID        insolar.Reference
+	Type                 models.TransactionType
+	PulseNumber          int64
+	RecordNumber         int64
+	MemberFromReference  []byte
+	MemberToReference    []byte
+	DepositToReference   []byte
+	DepositFromReference []byte
+	Amount               string
 }
 
 func (t *TxRegister) Validate() error {
