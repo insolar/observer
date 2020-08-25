@@ -169,25 +169,23 @@ make migrate-init
    
 ## Future Node updates
 
-Upon any upcoming Insolar MainNet updates, the current Node version may suspend synching. To resume synching, you need to update your Node instance.
+Upon an upcoming Insolar MainNet update, the Node of the current version may suspend synching. To resume synching, update your Node instance.
 
 Each time your Node instance connects to the trusted Heavy Material Node, your Node instance sends its client type (`client_type`), communication protocol version (`heavy_version`) and smart contract version (`contract_version`) in the metadata.
 
-If the protocol version and smart contract version are lower than those accepted by the Heavy Material Node, the Heavy Material Node sends back the `version of the observer is outdated. Please upgrade this client` message.
+If the protocol and/or smart contract versions are older than those accepted by the Heavy Material Node, the Heavy Material Node sends back the following message: `version of the observer is outdated. Please upgrade this client`.
 
-Upon this message, your Node instance logs the message and exits in 12s signifying it needs to be updated to continue working proreply.
+Upon receiving this message, your Node instance logs it and stops in 12s. Attempts to reconnect result in a stop.
 
-Your Node instance also changes the `is_deprecated_client` metrics value to `1`, which causes a `Your Node is out of date. Please update your Node` message on the Grafana board used for the Node monitoring.
+Your Node instance also changes the `is_deprecated_client` metrics value to `1`, which causes the following message on the Grafana board used for the Node monitoring: `Your Node is out of date. Please update your Node.`
 
 To update your Node instance:
 
-1. Exit your Node instance if it didn't exit automatically. 
-2. Clone and build the Node as described in the [**Build** section](https://github.com/insolar/observer/blob/master/README.md#build) of this document. Alternatively, you can pull to the existing cloned repo and then build the Node.
-3. Deploy the Node and Node API as described in the [**Configure and deploy the Node**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node) and [**Configure and deploy the Node API**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node-api) sections respectively.
-Check for [new or updated configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters) to make sure your current configurations are fully compatible with the updated Node binary files.  
+1. Stop your Node instance if it didn't stop automatically. 
+2. Clone and build the Node as described in [**Build** section](https://github.com/insolar/observer/blob/master/README.md#build). Alternatively, you can pull to the existing cloned repo and then build the Node.
+3. Deploy the Node and Node API as described in the [**Configure and deploy the Node**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node) and [**Configure and deploy the Node API**](https://github.com/insolar/observer/blob/master/README.md#configure-and-deploy-the-node-api) sections respectively.  
 
 After the update has been completed, run your Node instance.
-
    
 ## Additional details
 
