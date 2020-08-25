@@ -171,7 +171,7 @@ make migrate-init
 
 Upon an upcoming Insolar MainNet update, the Node of the current version may suspend synching. To resume synching, update your Node instance.
 
-Each time your Node instance connects to the trusted Heavy Material Node, your Node instance sends its client type (`client_type`), communication protocol version (`heavy_version`) and smart contract version (`contract_version`) in the metadata.
+Each time your Node instance connects to the trusted Heavy Material Node, the instance sends its client type (`client_type`), communication protocol version (`heavy_version`), and smart contract version (`contract_version`) to this Heavy Material Node.
 
 If the protocol and/or smart contract versions are older than those accepted by the Heavy Material Node, the Heavy Material Node sends back the following message: `version of the observer is outdated. Please upgrade this client`.
 
