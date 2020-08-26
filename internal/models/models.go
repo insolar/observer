@@ -323,7 +323,13 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 
 	currentStep := (currentTime - d.HoldReleaseDate) / d.VestingStep
 	steps := d.Vesting / d.VestingStep
-	releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
+
+	switch d.VestingType {
+	case DepositTypeNonLinear:
+		releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
+	case DepositTypeLinear:
+		releaseAmount = deposit.LinearVestedByNow(amount, uint64(currentStep), uint64(steps))
+	}
 
 	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
 

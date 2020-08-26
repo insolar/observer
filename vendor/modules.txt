@@ -148,7 +148,7 @@ github.com/insolar/insolar/platformpolicy/internal/hash
 github.com/insolar/insolar/platformpolicy/internal/sign
 github.com/insolar/insolar/pulse
 github.com/insolar/insolar/reference
-# github.com/insolar/mainnet v1.9.6-0.20200803102136-e180be506e5c
+# github.com/insolar/mainnet v1.9.6-0.20200826144805-260d3f4fcda8
 github.com/insolar/mainnet/application
 github.com/insolar/mainnet/application/appfoundation
 github.com/insolar/mainnet/application/builtin/contract/account
