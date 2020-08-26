@@ -183,6 +183,7 @@ To update your Node instance:
 
 1. Stop your Node instance if it didn't stop automatically. 
 2. Clone and build the Node:
+
    ```
    git clone git@github.com:insolar/observer.git && cd observer
    make all-node
