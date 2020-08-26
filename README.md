@@ -182,7 +182,11 @@ Your Node instance also changes the `is_deprecated_client` metrics value to `1`,
 To update your Node instance:
 
 1. Stop your Node instance if it didn't stop automatically. 
-2. Clone and build the Node as described in [**Build** section](https://github.com/insolar/observer/blob/master/README.md#build). Alternatively, you can pull to the existing cloned repo and then build the Node.
+2. Clone and build the Node:
+   ```
+   git clone git@github.com:insolar/observer.git && cd observer
+   make all-node
+   ```
 3. Check for [new or updated configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters) to make sure your current configurations are fully compatible with the updated Node binary files.
 4. Run your Node and Node API with the following commands:
 
