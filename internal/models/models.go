@@ -329,6 +329,10 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 		releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
 	case DepositTypeLinear:
 		releaseAmount = deposit.LinearVestedByNow(amount, uint64(currentStep), uint64(steps))
+	case DepositTypeDefaultFund:
+		releaseAmount = new(big.Int).Set(amount)
+	default:
+		panic(fmt.Sprintf("undefined vesting type %v", d.VestingType))
 	}
 
 	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
