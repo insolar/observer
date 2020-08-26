@@ -165,14 +165,36 @@ make migrate-init
 
 2. Import [this Grafana dashboard](https://github.com/insolar/observer/blob/master/scripts/monitor/grafana/dashboards/observer.json) into Grafana or create your own. 
  
-   If necessary, [read how to import a dashboard]( https://grafana.com/docs/grafana/latest/reference/export_import/).
+   If necessary, [read how to import a dashboard](https://grafana.com/docs/grafana/latest/reference/export_import/).
    
-## Future Node updates
+## Update the Node
 
-Upon any upcoming Insolar MainNet updates, the current Node version may suspend synching. To resume the synching, you need to update your Node instance.
+Upon an upcoming Insolar MainNet update, your Node instance may suspend synching due to version change. To resume synching, update your Node instance.
 
-Update instructions for future versions of the Node are on the way and will be released closer to the next significant update. 
+Each time your Node instance connects to the trusted Heavy Material Node, the instance sends its client type (`client_type`), communication protocol version (`heavy_version`), and smart contract version (`contract_version`) to this Heavy Material Node.
 
+If the protocol and/or smart contract versions are older than those accepted by the Heavy Material Node, the Heavy Material Node sends back the following message: `version of the observer is outdated. Please upgrade this client`.
+
+Upon receiving this message, your Node instance logs it and stops in 12s. Attempts to reconnect result in a stop.
+ 
+Your Node instance also changes the `is_deprecated_client` metrics value to `1`, which causes the following message on the Grafana board used for the Node monitoring: `Your Node is out of date. Please update your Node.`
+
+To update your Node instance:
+
+1. Stop your Node instance if it didn't stop automatically. 
+2. Clone and build the Node:
+
+   ```
+   git clone git@github.com:insolar/observer.git && cd observer
+   make all-node
+   ```
+3. Check for [new or updated configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters) to make sure your current configurations are fully compatible with the updated Node binary files.
+4. Run your Node and Node API with the following commands:
+
+   ```
+   ./bin/observer --config .artifacts/observer.yaml
+   ./bin/api --config .artifacts/observerapi.yaml
+   ```
    
 ## Additional details
 
