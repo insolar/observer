@@ -167,7 +167,7 @@ make migrate-init
  
    If necessary, [read how to import a dashboard](https://grafana.com/docs/grafana/latest/reference/export_import/).
    
-## Future Node updates
+## Update the Node
 
 Upon an upcoming Insolar MainNet update, your Node instance may suspend synching due to version change. To resume synching, update your Node instance.
 
@@ -184,8 +184,12 @@ To update your Node instance:
 1. Stop your Node instance if it didn't stop automatically. 
 2. Clone and build the Node as described in [**Build** section](https://github.com/insolar/observer/blob/master/README.md#build). Alternatively, you can pull to the existing cloned repo and then build the Node.
 3. Check for [new or updated configuration parameters](https://github.com/insolar/observer/wiki/Configuration-parameters) to make sure your current configurations are fully compatible with the updated Node binary files.
-4. Run your Node and Node API with the following commands: 
-```./bin/observer --config .artifacts/observer.yaml``` and ```./bin/api --config .artifacts/observerapi.yaml```.
+4. Run your Node and Node API with the following commands:
+
+   ```
+   ./bin/observer --config .artifacts/observer.yaml
+   ./bin/api --config .artifacts/observerapi.yaml
+   ```
    
 ## Additional details
 
