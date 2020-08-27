@@ -91,13 +91,10 @@ func MakeBeautyMetrics(obs *Observability, action string) *BeautyMetrics {
 }
 
 type BeautyMetrics struct {
-	Pulses      prometheus.Counter
-	Records     prometheus.Counter
-	Requests    prometheus.Counter
-	Results     prometheus.Counter
-	Activates   prometheus.Counter
-	Amends      prometheus.Counter
-	Deactivates prometheus.Counter
+	Pulses   prometheus.Counter
+	Records  prometheus.Counter
+	Requests prometheus.Counter
+	Results  prometheus.Counter
 
 	Transfers prometheus.Counter
 	Members   prometheus.Counter
