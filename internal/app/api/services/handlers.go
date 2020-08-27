@@ -151,12 +151,11 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 		response := ResponsesMarketStatsYaml{
-			CirculatingSupply: checkEnabled(s.config.GetCMCMarketStatsParams().CirculatingSupply, stats.CirculatingSupply),
-			DailyChange:       checkEnabled(s.config.GetCMCMarketStatsParams().DailyChange, stats.PercentChange24Hours),
-			MarketCap:         checkEnabled(s.config.GetCMCMarketStatsParams().MarketCap, stats.MarketCap),
-			Price:             fmt.Sprintf("%v", stats.Price),
-			Rank:              checkEnabled(s.config.GetCMCMarketStatsParams().Rank, float64(stats.Rank)),
-			Volume:            checkEnabled(s.config.GetCMCMarketStatsParams().Volume, stats.Volume24Hours),
+			DailyChange: checkEnabled(s.config.GetCMCMarketStatsParams().DailyChange, stats.PercentChange24Hours),
+			MarketCap:   checkEnabled(s.config.GetCMCMarketStatsParams().MarketCap, stats.MarketCap),
+			Price:       fmt.Sprintf("%v", stats.Price),
+			Rank:        checkEnabled(s.config.GetCMCMarketStatsParams().Rank, float64(stats.Rank)),
+			Volume:      checkEnabled(s.config.GetCMCMarketStatsParams().Volume, stats.Volume24Hours),
 		}
 		response.addHistoryPoints(history)
 		return ctx.JSON(http.StatusOK, response)

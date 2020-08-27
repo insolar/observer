@@ -29,7 +29,6 @@ func TestCoinMarketCapStats(t *testing.T) {
 		Rank:                 3,
 		MarketCap:            4,
 		Volume24Hours:        5,
-		CirculatingSupply:    6,
 	}
 	err = repo.InsertStats(&stat)
 	require.NoError(t, err)
@@ -42,7 +41,6 @@ func TestCoinMarketCapStats(t *testing.T) {
 	require.Equal(t, stat.Rank, savedData.Rank)
 	require.Equal(t, stat.MarketCap, savedData.MarketCap)
 	require.Equal(t, stat.Volume24Hours, savedData.Volume24Hours)
-	require.Equal(t, stat.CirculatingSupply, savedData.CirculatingSupply)
 }
 
 func TestCoinMarketCapStats_AverageCalculation(t *testing.T) {
@@ -60,7 +58,6 @@ func TestCoinMarketCapStats_AverageCalculation(t *testing.T) {
 			Rank:                 3,
 			MarketCap:            4,
 			Volume24Hours:        5,
-			CirculatingSupply:    6,
 			Created:              saveTime,
 		}
 		err := db.Insert(&stat)
