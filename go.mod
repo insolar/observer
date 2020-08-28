@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 	github.com/insolar/insolar v1.6.6-0.20200728094205-e5301b73195e
-	github.com/insolar/mainnet v1.9.6-0.20200803102136-e180be506e5c
+	github.com/insolar/mainnet v1.9.6-0.20200826144805-260d3f4fcda8
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
