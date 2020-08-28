@@ -140,15 +140,17 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
+		caller := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeMigration,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: memberFrom.Bytes(),
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  depositTo.Bytes(),
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeMigration,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
@@ -166,7 +168,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					Method:     methodTransferToDeposit,
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
-					Caller:     gen.Reference(),
+					Caller:     caller,
 					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID: *txID.GetLocal(),
@@ -184,15 +186,17 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
+		caller := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeMigration,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: memberFrom.Bytes(),
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  depositTo.Bytes(),
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeMigration,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
@@ -209,7 +213,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					Method:     methodTransferToDeposit,
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
-					Caller:     gen.Reference(),
+					Caller:     caller,
 					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID: *txID.GetLocal(),
@@ -227,15 +231,17 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
+		caller := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeAllocation,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: memberFrom.Bytes(),
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  depositTo.Bytes(),
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeAllocation,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
@@ -253,7 +259,7 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					Method:     methodTransferToDeposit,
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
-					Caller:     gen.Reference(),
+					Caller:     caller,
 					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID: *txID.GetLocal(),
@@ -270,14 +276,15 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
 		memberTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeRelease,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: nil,
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  nil,
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeRelease,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  nil,
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   nil,
+			DepositFromReference: nil,
+			Amount:               "123",
 		}
 
 		request := member.Request{
@@ -514,7 +521,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		defer mc.Finish()
 
 		txID := *insolar.NewRecordReference(gen.ID())
-		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil})
+		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil, nil})
 		require.NoError(t, err)
 		request := record.Material{
 			Virtual: record.Wrap(&record.IncomingRequest{

@@ -273,15 +273,20 @@ func (c *TxRegisterCollector) fromDepositToDeposit(log insolar.Logger, rec expor
 
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
+	var fromDeposit []byte
+	if !request.Caller.IsEmpty() {
+		fromDeposit = request.Caller.Bytes()
+	}
 	return &observer.TxRegister{
-		Type:                models.TransactionType(txType),
-		TransactionID:       txID,
-		PulseNumber:         int64(rec.Record.ID.Pulse()),
-		RecordNumber:        int64(rec.RecordNumber),
-		MemberFromReference: fromMember.Bytes(),
-		MemberToReference:   toMember.Bytes(),
-		DepositToReference:  toDeposit.Bytes(),
-		Amount:              amount,
+		Type:                 models.TransactionType(txType),
+		TransactionID:        txID,
+		PulseNumber:          int64(rec.Record.ID.Pulse()),
+		RecordNumber:         int64(rec.RecordNumber),
+		MemberFromReference:  fromMember.Bytes(),
+		MemberToReference:    toMember.Bytes(),
+		DepositToReference:   toDeposit.Bytes(),
+		DepositFromReference: fromDeposit,
+		Amount:               amount,
 	}
 }
 
@@ -545,16 +550,22 @@ func (c *TxResultCollector) fromDepositToDeposit(
 	}
 
 	var txID insolar.Reference
-	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil})
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil, nil})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
 
-	return &observer.TxResult{
+	tx := &observer.TxResult{
 		TransactionID: txID,
 		Fee:           "0",
 	}
+
+	if err = tx.Validate(); err != nil {
+		log.Error(errors.Wrap(err, "failed to validate transaction"))
+		return nil
+	}
+	return tx
 }
 
 type TxSagaResultCollector struct {

@@ -94,7 +94,7 @@ github.com/hashicorp/hcl/json/token
 github.com/insolar/gls
 # github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 github.com/insolar/insconfig
-# github.com/insolar/insolar v1.6.6-0.20200728094205-e5301b73195e
+# github.com/insolar/insolar v1.7.2
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
 github.com/insolar/insolar/instrumentation/inslogger
@@ -148,7 +148,7 @@ github.com/insolar/insolar/insolar/flow
 github.com/insolar/insolar/logicrunner/metrics
 github.com/insolar/insolar/insolar/reply
 github.com/insolar/insolar/insolar/flow/internal/pulse
-# github.com/insolar/mainnet v1.9.2
+# github.com/insolar/mainnet v1.10.2
 github.com/insolar/mainnet/application/builtin/contract/deposit
 github.com/insolar/mainnet/application/builtin/contract/member
 github.com/insolar/mainnet/application/appfoundation
@@ -334,7 +334,7 @@ github.com/uber/jaeger-client-go/thrift-gen/agent
 github.com/uber/jaeger-client-go/thrift-gen/baggage
 # github.com/uber/jaeger-lib v2.2.0+incompatible
 github.com/uber/jaeger-lib/metrics
-# github.com/ugorji/go v1.1.4
+# github.com/ugorji/go/codec v1.1.7
 github.com/ugorji/go/codec
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
@@ -358,10 +358,10 @@ go.opencensus.io
 # golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
+golang.org/x/crypto/sha3
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
-golang.org/x/crypto/sha3
 # golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582
 golang.org/x/net/trace
 golang.org/x/net/idna
@@ -372,8 +372,8 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/context
 # golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2
 golang.org/x/sys/windows
-golang.org/x/sys/unix
 golang.org/x/sys/cpu
+golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm

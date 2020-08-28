@@ -8,12 +8,17 @@ package member
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/insolar/insolar/applicationbase/builtin/proxy/nodedomain"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/pkg/errors"
+
 	"github.com/insolar/mainnet/application/appfoundation"
+	depositContract "github.com/insolar/mainnet/application/builtin/contract/deposit"
+	walletContract "github.com/insolar/mainnet/application/builtin/contract/wallet"
 	"github.com/insolar/mainnet/application/builtin/proxy/account"
 	"github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	"github.com/insolar/mainnet/application/builtin/proxy/member"
@@ -25,7 +30,6 @@ import (
 )
 
 const (
-	XNS = "XNS"
 	// 10 ^ 14
 	ACCOUNT_START_VALUE = "0"
 )
@@ -153,6 +157,13 @@ func (m *Member) Call(signedRequest []byte) (interface{}, error) {
 		return m.depositMigrationCall(params)
 	case "deposit.transfer":
 		return m.depositTransferCall(params)
+	case "deposit.transferToDeposit":
+		return m.depositTransferToDepositCall(params)
+	case "deposit.createFund":
+		return m.createFundCall(params)
+	// account.*
+	case "account.transferToDeposit":
+		return m.accountTransferToDepositCall(params)
 	}
 	return nil, fmt.Errorf("unknown method '%s'", request.Params.CallSite)
 }
@@ -215,7 +226,7 @@ func (m *Member) getBalanceCall(params map[string]interface{}) (interface{}, err
 	}
 
 	depWallet := wallet.GetObject(*walletRef)
-	b, err := depWallet.GetBalance(XNS)
+	b, err := depWallet.GetBalance(walletContract.XNS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get balance: %s", err.Error())
 	}
@@ -245,7 +256,7 @@ func (m *Member) transferCall(params map[string]interface{}) (interface{}, error
 
 	asset, ok := params["asset"].(string)
 	if !ok {
-		asset = XNS // set to default asset
+		asset = walletContract.XNS // set to default asset
 	}
 
 	recipientReference, err := insolar.NewObjectReferenceFromString(recipientReferenceStr)
@@ -301,6 +312,46 @@ func (m *Member) depositTransferCall(params map[string]interface{}) (interface{}
 	return d.Transfer(amount, m.GetReference(), *request)
 }
 
+func (m *Member) depositTransferToDepositCall(params map[string]interface{}) (interface{}, error) {
+	fromDepositName, ok := params["fromDepositName"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'fromDepositName' param")
+	}
+	toDepositName, ok := params["toDepositName"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'toDepositName' param")
+	}
+	toMember, ok := params["toMemberReference"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'toMemberReference' param")
+	}
+	toMemberRef, err := insolar.NewObjectReferenceFromString(toMember)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to cast member reference from string")
+	}
+	if toDepositName == fromDepositName && toMemberRef.Equal(m.GetReference()) {
+		return nil, fmt.Errorf("it is impossible to make a transfer and accrual to the same deposit")
+	}
+	fromDepositRef, err := m.getDepositReferenceByName(fromDepositName, m.GetReference())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find fromDeposit object")
+	}
+	toDepositRef, err := m.getDepositReferenceByName(toDepositName, *toMemberRef)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find toDeposit object")
+	}
+	depositObj := deposit.GetObject(*fromDepositRef)
+	amountStr, err := depositObj.GetAmount()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get deposit amount")
+	}
+	request, err := foundation.GetRequestReference()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get request reference: %s", err.Error())
+	}
+	return nil, depositObj.TransferToDeposit(amountStr, *toDepositRef, m.GetReference(), *request, *toMemberRef, string(appfoundation.TTypeAllocation))
+}
+
 func (m *Member) depositMigrationCall(params map[string]interface{}) (interface{}, error) {
 	migrationAdmin := migrationadmin.GetObject(appfoundation.GetMigrationAdmin())
 	migrationDaemonRef, err := migrationAdmin.GetMigrationDaemonByMemberRef(m.GetReference().String())
@@ -315,6 +366,77 @@ func (m *Member) depositMigrationCall(params map[string]interface{}) (interface{
 
 	migrationDaemon := migrationdaemon.GetObject(migrationDaemonRef)
 	return migrationDaemon.DepositMigrationCall(params, m.GetReference(), *request)
+}
+
+func (m *Member) createFundCall(params map[string]interface{}) (interface{}, error) {
+	// check permissions
+	if !m.GetReference().Equal(appfoundation.GetMigrationAdminMember()) {
+		return nil, fmt.Errorf("only migration admin can call this method")
+	}
+
+	// parse args
+	lockupEndDateStr, ok := params["lockupEndDate"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'lockupEndDate' param")
+	}
+
+	lockupEndDate, err := strconv.ParseInt(lockupEndDateStr, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse timestamp value")
+	}
+
+	// prevent double creation
+	walletObj := wallet.GetObject(m.Wallet)
+	found, dRef, err := walletObj.FindDeposit(depositContract.PublicAllocation2DepositName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find deposit: %s", err.Error())
+	}
+	if found {
+		return nil, fmt.Errorf("fund already created depositRef=%s", dRef.String())
+	}
+
+	// fund creation
+	_, err = walletObj.CreateFund(lockupEndDate)
+	return map[string]interface{}{}, err
+}
+
+func (m *Member) accountTransferToDepositCall(params map[string]interface{}) (interface{}, error) {
+	toDepositName, ok := params["toDepositName"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'toDepositName' param")
+	}
+
+	toMember, ok := params["toMemberReference"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'toMemberReference' param")
+	}
+	toMemberRef, err := insolar.NewObjectReferenceFromString(toMember)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to cast member reference from string")
+	}
+
+	amountStr, ok := params["amount"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to get 'amount' param")
+	}
+
+	toDepositRef, err := m.getDepositReferenceByName(toDepositName, *toMemberRef)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find toDeposit object")
+	}
+
+	request, err := foundation.GetRequestReference()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get request reference: %s", err.Error())
+	}
+
+	accountRef, err := m.GetAccount(walletContract.XNS)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account reference: %s", err.Error())
+	}
+	acc := account.GetObject(*accountRef)
+
+	return nil, acc.ReallocateToDeposit(amountStr, *toDepositRef, m.GetReference(), *request)
 }
 
 // Platform methods.
@@ -458,8 +580,7 @@ func (m *Member) memberGet(publicKey string) (interface{}, error) {
 // FromMember and Request not used, but needed by observer, do not remove
 //ins:saga(INS_FLAG_NO_ROLLBACK_METHOD)
 func (m *Member) Accept(arg appfoundation.SagaAcceptInfo) error {
-
-	accountRef, err := m.GetAccount(XNS)
+	accountRef, err := m.GetAccount(walletContract.XNS)
 	if err != nil {
 		return fmt.Errorf("failed to get account reference: %s", err.Error())
 	}
@@ -469,4 +590,27 @@ func (m *Member) Accept(arg appfoundation.SagaAcceptInfo) error {
 		return fmt.Errorf("failed to increase balance: %s", err.Error())
 	}
 	return nil
+}
+
+func (m *Member) getDepositReferenceByName(depositName string, memberRef insolar.Reference) (*insolar.Reference, error) {
+	var err error
+	walletRef := &m.Wallet
+
+	if !memberRef.Equal(m.GetReference()) {
+		walletRef, err = member.GetObject(memberRef).GetWallet()
+		if err != nil {
+			if strings.Contains(err.Error(), "index not found") {
+				return nil, fmt.Errorf("recipient member does not exist")
+			}
+			return nil, fmt.Errorf("failed to get destination wallet: %s", err.Error())
+		}
+	}
+	find, depositRef, err := wallet.GetObject(*walletRef).FindDeposit(depositName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find deposit: %s", err.Error())
+	}
+	if !find {
+		return nil, fmt.Errorf("can't find deposit")
+	}
+	return depositRef, nil
 }

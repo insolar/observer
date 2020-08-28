@@ -72,8 +72,8 @@ func (Observer) Default() *Observer {
 			BatchSize:           2000,
 			CacheSize:           10000,
 			Auth: Auth{
-				Required:      true,
-				URL:           "https://wallet-api.insolar.io/auth/token",
+				Required: true,
+				URL:      "https://wallet-api.insolar.io/auth/token",
 				// Login obtained from Insolar Team
 				Login:         "",
 				Password:      "",
