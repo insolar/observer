@@ -33,7 +33,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 
 	switch tx.Type {
-	case models.TTypeMigration:
+	case models.TTypeMigration, models.TTypeAllocation:
 		res := SchemaMigration{
 			SchemasTransactionAbstract: internalTx,
 			Type:                       string(tx.Type),

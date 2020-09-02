@@ -58,7 +58,7 @@ func runCommand(cmdName string, args ...string) (string, error) {
 	cmd := exec.Command("./bin/"+cmdName, args...)
 	cmd.Env = append(
 		os.Environ(),
-		strings.ToUpper(cmdName)+"_DB_URL=postgres://"+pgOptions.User+":"+pgOptions.Password+"@"+
+		strings.ToUpper(strings.Replace(cmdName, "-", "", -1))+"_DB_URL=postgres://"+pgOptions.User+":"+pgOptions.Password+"@"+
 			pgOptions.Addr+"/"+pgOptions.Database+"?sslmode=disable",
 	)
 	output, err := cmd.CombinedOutput()

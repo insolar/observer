@@ -94,15 +94,16 @@ github.com/hashicorp/hcl/json/token
 github.com/insolar/gls
 # github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 github.com/insolar/insconfig
-# github.com/insolar/insolar v1.6.6-0.20200728094205-e5301b73195e
-github.com/insolar/insolar/api/requester
-github.com/insolar/insolar/application
-github.com/insolar/insolar/application/appfoundation
-github.com/insolar/insolar/application/genesisrefs
-github.com/insolar/insolar/applicationbase/builtin/proxy/nodedomain
-github.com/insolar/insolar/applicationbase/genesisrefs
+# github.com/insolar/insolar v1.7.2
 github.com/insolar/insolar/configuration
 github.com/insolar/insolar/insolar
+github.com/insolar/insolar/instrumentation/inslogger
+github.com/insolar/insolar/log
+github.com/insolar/insolar/insolar/record
+github.com/insolar/insolar/ledger/heavy/exporter
+github.com/insolar/insolar/application/appfoundation
+github.com/insolar/insolar/logicrunner/builtin/foundation
+github.com/insolar/insolar/pulse
 github.com/insolar/insolar/insolar/bits
 github.com/insolar/insolar/insolar/bus
 github.com/insolar/insolar/insolar/bus/meta
@@ -150,6 +151,14 @@ github.com/insolar/insolar/pulse
 github.com/insolar/insolar/reference
 # github.com/insolar/mainnet v1.9.6-0.20200826144805-260d3f4fcda8
 github.com/insolar/mainnet/application
+github.com/insolar/insolar/insolar/bus
+github.com/insolar/insolar/insolar/flow
+github.com/insolar/insolar/logicrunner/metrics
+github.com/insolar/insolar/insolar/reply
+github.com/insolar/insolar/insolar/flow/internal/pulse
+# github.com/insolar/mainnet v1.10.2
+github.com/insolar/mainnet/application/builtin/contract/deposit
+github.com/insolar/mainnet/application/builtin/contract/member
 github.com/insolar/mainnet/application/appfoundation
 github.com/insolar/mainnet/application/builtin/contract/account
 github.com/insolar/mainnet/application/builtin/contract/deposit
@@ -334,7 +343,7 @@ github.com/uber/jaeger-client-go/transport
 github.com/uber/jaeger-client-go/utils
 # github.com/uber/jaeger-lib v2.2.0+incompatible
 github.com/uber/jaeger-lib/metrics
-# github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8
+# github.com/ugorji/go v1.1.4
 github.com/ugorji/go/codec
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
@@ -358,6 +367,8 @@ go.opencensus.io/trace/tracestate
 # golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
+golang.org/x/crypto/sha3
+golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/pbkdf2
@@ -374,6 +385,8 @@ golang.org/x/net/trace
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
 golang.org/x/text/cases
 golang.org/x/text/internal

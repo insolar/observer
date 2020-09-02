@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	callSiteTransfer = "member.transfer"
-	callSiteRelease  = "deposit.transfer"
+	callSiteTransfer   = "member.transfer"
+	callSiteRelease    = "deposit.transfer"
+	callSiteAllocation = "account.transferToDeposit"
 )
 
 const (
@@ -53,6 +54,7 @@ func NewTxRegisterCollector(log insolar.Logger) *TxRegisterCollector {
 	}
 }
 
+// Collects API calls starting transactions
 func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxRegister {
 	log := c.log.WithFields(
 		map[string]interface{}{
@@ -76,7 +78,7 @@ func (c *TxRegisterCollector) Collect(ctx context.Context, rec exporter.Record) 
 	case methodCall:
 		tx = c.fromCall(log, rec)
 	case methodTransferToDeposit:
-		tx = c.fromMigration(log, rec)
+		tx = c.fromDepositToDeposit(log, rec)
 	default:
 		return nil
 	}
@@ -186,6 +188,40 @@ func (c *TxRegisterCollector) fromCall(log insolar.Logger, rec exporter.Record) 
 			Amount:            amount,
 			MemberToReference: memberTo.Bytes(),
 		}
+	case args.Params.CallSite == callSiteAllocation:
+		amount, ok := callParams[paramAmount].(string)
+		if !ok {
+			log.Errorf("not found %s in transaction callParams", paramAmount)
+			return nil
+		}
+
+		memberToStr, ok := callParams[paramToMemberRef].(string)
+		if !ok {
+			log.Errorf("not found %s in transaction callParams", paramToMemberRef)
+			return nil
+		}
+
+		memberTo, err := insolar.NewObjectReferenceFromString(memberToStr)
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to parse memberTo reference"))
+			return nil
+		}
+
+		memberFrom, err := insolar.NewObjectReferenceFromString(args.Params.Reference)
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to parse from reference"))
+			return nil
+		}
+
+		res = &observer.TxRegister{
+			Type:                models.TTypeAllocation,
+			TransactionID:       txID,
+			PulseNumber:         int64(rec.Record.ID.Pulse()),
+			RecordNumber:        int64(rec.RecordNumber),
+			Amount:              amount,
+			MemberToReference:   memberTo.Bytes(),
+			MemberFromReference: memberFrom.Bytes(),
+		}
 	default:
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
@@ -195,7 +231,7 @@ func (c *TxRegisterCollector) fromCall(log insolar.Logger, rec exporter.Record) 
 	return res
 }
 
-func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
+func (c *TxRegisterCollector) fromDepositToDeposit(log insolar.Logger, rec exporter.Record) *observer.TxRegister {
 	request, ok := record.Unwrap(&rec.Record.Virtual).(*record.IncomingRequest)
 	if !ok {
 		log.Debug("skipped (not IncomingRequest)")
@@ -220,13 +256,16 @@ func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Rec
 	}
 
 	var (
-		amount                                string
+		amount, txType                        string
 		txID, toDeposit, fromMember, toMember insolar.Reference
 	)
-	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember})
+	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember, &txType})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
+	}
+	if txType == "" {
+		txType = "migration"
 	}
 
 	// Ensure txID is record reference so other collectors can match it.
@@ -234,15 +273,20 @@ func (c *TxRegisterCollector) fromMigration(log insolar.Logger, rec exporter.Rec
 
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
+	var fromDeposit []byte
+	if !request.Caller.IsEmpty() {
+		fromDeposit = request.Caller.Bytes()
+	}
 	return &observer.TxRegister{
-		Type:                models.TTypeMigration,
-		TransactionID:       txID,
-		PulseNumber:         int64(rec.Record.ID.Pulse()),
-		RecordNumber:        int64(rec.RecordNumber),
-		MemberFromReference: fromMember.Bytes(),
-		MemberToReference:   toMember.Bytes(),
-		DepositToReference:  toDeposit.Bytes(),
-		Amount:              amount,
+		Type:                 models.TransactionType(txType),
+		TransactionID:        txID,
+		PulseNumber:          int64(rec.Record.ID.Pulse()),
+		RecordNumber:         int64(rec.RecordNumber),
+		MemberFromReference:  fromMember.Bytes(),
+		MemberToReference:    toMember.Bytes(),
+		DepositToReference:   toDeposit.Bytes(),
+		DepositFromReference: fromDeposit,
+		Amount:               amount,
 	}
 }
 
@@ -256,6 +300,7 @@ func NewTxDepositTransferCollector(log insolar.Logger) *TxDepositTransferCollect
 	}
 }
 
+// Collect incoming requests to transfer from deposit
 func (c *TxDepositTransferCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxDepositTransferUpdate {
 	log := c.log.WithFields(
 		map[string]interface{}{
@@ -361,6 +406,7 @@ func NewTxResultCollector(log insolar.Logger, fetcher store.RecordFetcher) *TxRe
 	}
 }
 
+// Collect results of incoming calls to transfer from deposit
 func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *observer.TxResult {
 	log := c.log.WithFields(
 		map[string]interface{}{
@@ -398,7 +444,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	if request.Method == methodTransferToDeposit {
-		return c.fromMigration(log, *request)
+		return c.fromDepositToDeposit(log, *request)
 	}
 
 	if request.Method != methodCall {
@@ -427,7 +473,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	// Migration and release don't have fees.
-	if args.Params.CallSite == callSiteRelease {
+	if args.Params.CallSite == callSiteRelease || args.Params.CallSite == callSiteAllocation {
 		tx := &observer.TxResult{
 			TransactionID: txID,
 			Fee:           "0",
@@ -482,7 +528,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	return tx
 }
 
-func (c *TxResultCollector) fromMigration(
+func (c *TxResultCollector) fromDepositToDeposit(
 	log insolar.Logger,
 	request record.IncomingRequest,
 ) *observer.TxResult {
@@ -504,16 +550,22 @@ func (c *TxResultCollector) fromMigration(
 	}
 
 	var txID insolar.Reference
-	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil})
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil, nil})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
 	}
 
-	return &observer.TxResult{
+	tx := &observer.TxResult{
 		TransactionID: txID,
 		Fee:           "0",
 	}
+
+	if err = tx.Validate(); err != nil {
+		log.Error(errors.Wrap(err, "failed to validate transaction"))
+		return nil
+	}
+	return tx
 }
 
 type TxSagaResultCollector struct {
@@ -643,7 +695,6 @@ func (c *TxSagaResultCollector) fromCall(
 	request record.IncomingRequest,
 	result record.Result,
 ) *observer.TxSagaResult {
-
 	// Ensure txID is record reference so other collectors can match it.
 	txID := *insolar.NewRecordReference(*result.Request.GetLocal())
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
@@ -666,7 +717,8 @@ func (c *TxSagaResultCollector) fromCall(
 
 	isTransfer := args.Params.CallSite == callSiteTransfer
 	isRelease := args.Params.CallSite == callSiteRelease
-	if !isTransfer && !isRelease {
+	isAllocation := args.Params.CallSite == callSiteAllocation
+	if !isTransfer && !isRelease && !isAllocation {
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
 	}

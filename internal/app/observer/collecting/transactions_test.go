@@ -135,20 +135,68 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		assert.Equal(t, &expectedTx, tx)
 	})
 
-	t.Run("migration happy path", func(t *testing.T) {
+	t.Run("migration with transaction type happy path", func(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
 		memberFrom := gen.Reference()
 		memberTo := gen.Reference()
 		depositTo := gen.Reference()
+		caller := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeMigration,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: memberFrom.Bytes(),
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  depositTo.Bytes(),
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeMigration,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
+		}
+
+		arguments, err := insolar.Serialize([]interface{}{
+			expectedTx.Amount,
+			depositTo,
+			memberFrom,
+			txID,
+			memberTo,
+			"migration",
+		})
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodTransferToDeposit,
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Caller:     caller,
+					Prototype:  proxyDeposit.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("migration without transaction type happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberFrom := gen.Reference()
+		memberTo := gen.Reference()
+		depositTo := gen.Reference()
+		caller := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID:        txID,
+			Type:                 models.TTypeMigration,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
 		}
 
 		arguments, err := insolar.Serialize([]interface{}{
@@ -165,7 +213,53 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 					Method:     methodTransferToDeposit,
 					ReturnMode: record.ReturnResult,
 					Arguments:  arguments,
-					Caller:     gen.Reference(),
+					Caller:     caller,
+					Prototype:  proxyDeposit.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("allocation deposit to deposit happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberFrom := gen.Reference()
+		memberTo := gen.Reference()
+		depositTo := gen.Reference()
+		caller := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID:        txID,
+			Type:                 models.TTypeAllocation,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  memberFrom.Bytes(),
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   depositTo.Bytes(),
+			DepositFromReference: caller.Bytes(),
+			Amount:               "123",
+		}
+
+		arguments, err := insolar.Serialize([]interface{}{
+			expectedTx.Amount,
+			depositTo,
+			memberFrom,
+			txID,
+			memberTo,
+			"allocation",
+		})
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodTransferToDeposit,
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Caller:     caller,
 					Prototype:  proxyDeposit.PrototypeReference,
 				}),
 				ID: *txID.GetLocal(),
@@ -182,14 +276,15 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		txID := *insolar.NewRecordReference(gen.ID())
 		memberTo := gen.Reference()
 		expectedTx := observer.TxRegister{
-			TransactionID:       txID,
-			Type:                models.TTypeRelease,
-			PulseNumber:         int64(txID.GetLocal().Pulse()),
-			RecordNumber:        int64(rand.Int31()),
-			MemberFromReference: nil,
-			MemberToReference:   memberTo.Bytes(),
-			DepositToReference:  nil,
-			Amount:              "123",
+			TransactionID:        txID,
+			Type:                 models.TTypeRelease,
+			PulseNumber:          int64(txID.GetLocal().Pulse()),
+			RecordNumber:         int64(rand.Int31()),
+			MemberFromReference:  nil,
+			MemberToReference:    memberTo.Bytes(),
+			DepositToReference:   nil,
+			DepositFromReference: nil,
+			Amount:               "123",
 		}
 
 		request := member.Request{
@@ -225,6 +320,98 @@ func TestTxRegisterCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		assert.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("allocation happy path", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberTo := gen.Reference()
+		memberFrom := gen.Reference()
+		expectedTx := observer.TxRegister{
+			TransactionID:       txID,
+			Type:                models.TTypeAllocation,
+			PulseNumber:         int64(txID.GetLocal().Pulse()),
+			RecordNumber:        int64(rand.Int31()),
+			MemberFromReference: memberFrom.Bytes(),
+			MemberToReference:   memberTo.Bytes(),
+			DepositToReference:  nil,
+			Amount:              "123",
+		}
+
+		request := member.Request{
+			Params: member.Params{
+				Reference: memberFrom.String(),
+				CallSite:  callSiteAllocation,
+				CallParams: map[string]interface{}{
+					paramToMemberRef: memberTo.String(),
+					"toDepositName":  "genesis_deposit2",
+					paramAmount:      expectedTx.Amount,
+				},
+			},
+		}
+		encodedRequest, err := json.Marshal(&request)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodCall,
+					APINode:    gen.Reference(),
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Prototype:  proxyMember.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(expectedTx.RecordNumber),
+		}
+		tx := c.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		require.Equal(t, &expectedTx, tx)
+	})
+
+	t.Run("allocation, error wrong memberTo", func(t *testing.T) {
+		txID := *insolar.NewRecordReference(gen.ID())
+		memberTo := uuid.New()
+		memberFrom := gen.Reference()
+
+		request := member.Request{
+			Params: member.Params{
+				Reference: memberFrom.String(),
+				CallSite:  callSiteAllocation,
+				CallParams: map[string]interface{}{
+					paramToMemberRef: memberTo,
+					"toDepositName":  "genesis_deposit2",
+					paramAmount:      "123",
+				},
+			},
+		}
+		encodedRequest, err := json.Marshal(&request)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.IncomingRequest{
+					Method:     methodCall,
+					APINode:    gen.Reference(),
+					ReturnMode: record.ReturnResult,
+					Arguments:  arguments,
+					Prototype:  proxyMember.PrototypeReference,
+				}),
+				ID: *txID.GetLocal(),
+			},
+			RecordNumber: uint32(123),
+		}
+		tx := c.Collect(ctx, rec)
+		require.Nil(t, tx)
 	})
 }
 
@@ -334,7 +521,7 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		defer mc.Finish()
 
 		txID := *insolar.NewRecordReference(gen.ID())
-		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil})
+		arguments, err := insolar.Serialize([]interface{}{nil, nil, nil, &txID, nil, nil})
 		require.NoError(t, err)
 		request := record.Material{
 			Virtual: record.Wrap(&record.IncomingRequest{
@@ -400,6 +587,45 @@ func TestTxResultCollector_Collect(t *testing.T) {
 		require.NotNil(t, tx)
 		require.NoError(t, tx.Validate())
 		assert.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
+	})
+
+	t.Run("allocation happy path", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteAllocation}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		txID := *insolar.NewRecordReference(gen.ID())
+		require.NoError(t, err)
+		rec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: txID,
+				}),
+			},
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *txID.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, rec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		require.Equal(t, &observer.TxResult{TransactionID: txID, Fee: "0"}, tx)
 	})
 
 	t.Run("transfer with error", func(t *testing.T) {
@@ -663,4 +889,72 @@ func TestTxSagaResultCollector_Collect(t *testing.T) {
 		}
 		assert.Equal(t, &expectedTx, tx)
 	})
+
+	t.Run("call fail allocation", func(t *testing.T) {
+		setup()
+		defer mc.Finish()
+
+		memberRequest := member.Request{Params: member.Params{CallSite: callSiteAllocation}}
+		encodedRequest, err := json.Marshal(&memberRequest)
+		require.NoError(t, err)
+		signedRequest, err := insolar.Serialize([]interface{}{encodedRequest, nil, nil})
+		require.NoError(t, err)
+		arguments, err := insolar.Serialize([]interface{}{&signedRequest})
+		require.NoError(t, err)
+		request := record.Material{
+			Virtual: record.Wrap(&record.IncomingRequest{
+				ReturnMode: record.ReturnResult,
+				Method:     methodCall,
+				Arguments:  arguments,
+				APINode:    gen.Reference(),
+			}),
+		}
+		txID := *insolar.NewRecordReference(gen.ID())
+
+		resultPayload, err := insolar.Serialize(&foundation.Result{
+			Returns: []interface{}{nil, &foundation.Error{S: "test error"}},
+		})
+		require.NoError(t, err)
+		resultRec := exporter.Record{
+			Record: record.Material{
+				Virtual: record.Wrap(&record.Result{
+					Request: txID,
+					Payload: resultPayload,
+				}),
+				ID: gen.ID(),
+			},
+			RecordNumber: rand.Uint32(),
+		}
+
+		fetcher.RequestMock.Inspect(func(_ context.Context, reqID insolar.ID) {
+			require.Equal(t, *txID.GetLocal(), reqID)
+		}).Return(request, nil)
+
+		tx := collector.Collect(ctx, resultRec)
+		require.NotNil(t, tx)
+		require.NoError(t, tx.Validate())
+		expectedTx := observer.TxSagaResult{
+			TransactionID:      txID,
+			FinishSuccess:      false,
+			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
+			FinishRecordNumber: int64(resultRec.RecordNumber),
+		}
+		assert.Equal(t, &expectedTx, tx)
+	})
+}
+
+func TestCborSerializationDeserialization(t *testing.T) {
+	var amount, txType string
+
+	arguments, err := insolar.Serialize([]interface{}{"100"})
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "", txType)
+
+	arguments, err = insolar.Serialize([]interface{}{"100", "migration"})
+	require.NoError(t, err)
+	err = insolar.Deserialize(arguments, []interface{}{&amount, &txType})
+	require.NoError(t, err)
+	require.Equal(t, "migration", txType)
 }

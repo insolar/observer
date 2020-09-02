@@ -111,6 +111,11 @@ func (c *DepositCollector) Collect(ctx context.Context, rec *observer.Record) []
 	log.Debugf("New deposit ref %s, state %s, EthHash %s", d.Ref.String(),
 		d.DepositState.String(), d.EthHash)
 
+	// We fill member reference here because the fund deposit is created without deposit.Confirm requests.
+	if req.Method == "NewFund" {
+		d.Member = appfoundation.GetMigrationAdminMember()
+	}
+
 	return []observer.Deposit{*d}
 }
 
@@ -233,6 +238,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 		DepositState: id,
 		Vesting:      state.Vesting,
 		VestingStep:  state.VestingStep,
+		IsConfirmed:  state.IsConfirmed,
 		VestingType:  vestingType,
 	}
 
@@ -249,7 +255,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 }
 
 func (c *DepositCollector) isDepositNew(req *record.IncomingRequest) bool {
-	if req.Method != "New" {
+	if req.Method != "New" && req.Method != "NewFund" {
 		return false
 	}
 

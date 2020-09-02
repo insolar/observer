@@ -2,7 +2,6 @@
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:276",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -16,7 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1594552561142,
+  "id": 1,
+  "iteration": 1597664031393,
   "links": [],
   "panels": [
     {
@@ -41,9 +41,9 @@
         "thresholdMarkers": true
       },
       "gridPos": {
-        "h": 6,
+        "h": 3,
         "w": 8,
-        "x": 4,
+        "x": 0,
         "y": 0
       },
       "id": 4,
@@ -52,12 +52,10 @@
       "mappingType": 1,
       "mappingTypes": [
         {
-          "$$hashKey": "object:1148",
           "name": "value to text",
           "value": 1
         },
         {
-          "$$hashKey": "object:1149",
           "name": "range to text",
           "value": 2
         }
@@ -101,7 +99,6 @@
       "valueFontSize": "80%",
       "valueMaps": [
         {
-          "$$hashKey": "object:1151",
           "op": "=",
           "text": "N/A",
           "value": "null"
@@ -121,7 +118,7 @@
       "gridPos": {
         "h": 6,
         "w": 9,
-        "x": 12,
+        "x": 8,
         "y": 0
       },
       "hiddenSeries": false,
@@ -161,7 +158,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Process pulse time",
+      "title": "Pulse processing time",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -178,7 +175,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:511",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -187,7 +183,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:512",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -200,6 +195,81 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": null,
+      "gridPos": {
+        "h": 2,
+        "w": 8,
+        "x": 0,
+        "y": 3
+      },
+      "id": 15,
+      "links": [],
+      "options": {
+        "colorMode": "background",
+        "fieldOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "defaults": {
+            "mappings": [
+              {
+                "id": 0,
+                "op": "=",
+                "text": "Up to date",
+                "type": 1,
+                "value": "0"
+              },
+              {
+                "id": 1,
+                "op": "=",
+                "text": "Out of date. Please update your Node.",
+                "type": 1,
+                "value": "1"
+              }
+            ],
+            "nullValueMode": "connected",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#299c46",
+                  "value": null
+                },
+                {
+                  "color": "#56A64B",
+                  "value": 0
+                },
+                {
+                  "color": "#C4162A",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "none"
+          },
+          "overrides": [],
+          "values": false
+        },
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal"
+      },
+      "pluginVersion": "6.7.1",
+      "targets": [
+        {
+          "expr": "observer_version_is_deprecated",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Observer version",
+      "type": "stat"
     },
     {
       "aliasColors": {},
@@ -357,7 +427,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:764",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -366,7 +435,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:765",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -446,7 +514,6 @@
       },
       "yaxes": [
         {
-          "$$hashKey": "object:875",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -455,7 +522,6 @@
           "show": true
         },
         {
-          "$$hashKey": "object:876",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -557,7 +623,7 @@
       }
     }
   ],
-  "refresh": false,
+  "refresh": "5s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -566,8 +632,10 @@
       {
         "allValue": null,
         "current": {
-          "text": "wallet",
-          "value": "wallet"
+          "isNone": true,
+          "selected": false,
+          "text": "None",
+          "value": ""
         },
         "datasource": "prometheus",
         "definition": "label_values(observer_last_fetched_pulse, namespace)",
@@ -592,8 +660,8 @@
     ]
   },
   "time": {
-    "from": "2020-07-12T08:38:53.062Z",
-    "to": "2020-07-12T13:06:30.351Z"
+    "from": "now-5m",
+    "to": "now"
   },
   "timepicker": {
     "refresh_intervals": [

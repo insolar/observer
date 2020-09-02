@@ -10,9 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-pg/pg/orm"
-
 	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 	"github.com/insolar/insolar/insolar"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,6 +20,7 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/app/observer/postgres"
 	"github.com/insolar/observer/internal/models"
+	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
 )
 
@@ -40,172 +40,51 @@ func makeStorer(
 		if b == nil {
 			return nil
 		}
-
 		var stat *observer.Statistic
-		err := db.RunInTransaction(func(tx *pg.Tx) error {
-			// plain records
 
-			pulses := postgres.NewPulseStorage(log, tx)
-			err := pulses.Insert(b.pulse)
-			if err != nil {
-				return errors.Wrap(err, "failed to insert pulse")
-			}
-
-			requests := postgres.NewRequestStorage(obs, tx)
-			for _, req := range b.requests {
-				if req == nil {
-					continue
-				}
-				err := requests.Insert(req)
+		cycle.UntilError(func() error {
+			err := db.RunInTransaction(func(tx *pg.Tx) error {
+				// plain records
+				pulses := postgres.NewPulseStorage(log, tx)
+				err := pulses.Insert(b.pulse)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert request")
+					return errors.Wrap(err, "failed to insert pulse")
 				}
-			}
 
-			results := postgres.NewResultStorage(obs, tx)
-			for _, res := range b.results {
-				if res == nil {
-					continue
-				}
-				err := results.Insert(res)
+				err = insertRawData(b, tx, obs)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert result")
+					return err
 				}
-			}
-
-			objects := postgres.NewObjectStorage(obs, tx)
-			for _, act := range b.activates {
-				if act == nil {
-					continue
-				}
-				err := objects.Insert(act)
+				err = insertObjectData(cfg, b, tx, obs)
 				if err != nil {
-					return errors.Wrap(err, "failed to insert activate record")
+					return err
 				}
-			}
 
-			for _, amd := range b.amends {
-				if amd == nil {
-					continue
+				// statistic
+				if b.pulse == nil {
+					return nil
 				}
-				err := objects.Insert(amd)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert amend record")
-				}
-			}
 
-			for _, deact := range b.deactivates {
-				if deact == nil {
-					continue
+				nodes := len(b.pulse.Nodes)
+				stat = &observer.Statistic{
+					Pulse:     b.pulse.Number,
+					Transfers: len(b.txSagaResult),
+					Nodes:     nodes,
 				}
-				err := objects.Insert(deact)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert deactivate record")
-				}
-			}
 
-			// new entities
-			members := postgres.NewMemberStorage(obs, tx)
-			for _, member := range b.members {
-				if member == nil {
-					continue
-				}
-				err := members.Insert(member)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert member")
-				}
-			}
-
-			err = StoreTxRegister(tx, b.txRegister)
-			if err != nil {
-				return errors.Wrap(err, "failed to insert txRegister")
-			}
-			err = StoreTxDepositData(tx, b.txDepositTransfers)
-			if err != nil {
-				return errors.Wrap(err, "failed to update txDepositTrasfers")
-			}
-			err = StoreTxResult(tx, b.txResult)
-			if err != nil {
-				return errors.Wrap(err, "failed to insert txResult")
-			}
-			err = StoreTxSagaResult(tx, b.txSagaResult)
-			if err != nil {
-				return errors.Wrap(err, "failed to insert txSagaResult")
-			}
-
-			deposits := postgres.NewDepositStorage(obs, tx)
-			for _, deposit := range b.deposits {
-				err := deposits.Insert(deposit)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert deposit")
-				}
-			}
-
-			addresses := postgres.NewMigrationAddressStorage(&cfg.DB, obs, tx)
-			for _, address := range b.addresses {
-				if address == nil {
-					continue
-				}
-				err := addresses.Insert(address)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert migration address")
-				}
-			}
-
-			// updates
-
-			for _, balance := range b.balances {
-				if balance == nil {
-					continue
-				}
-				err := members.Update(balance)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert balance")
-				}
-			}
-
-			for _, update := range b.depositUpdates {
-				err := deposits.Update(update)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert deposit update")
-				}
-			}
-
-			for _, update := range b.depositMembers {
-				err := deposits.SetMember(update.Ref, update.Member)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert deposit member update")
-				}
-			}
-
-			for _, vesting := range b.vestings {
-				if vesting == nil {
-					continue
-				}
-				err := addresses.Update(vesting)
-				if err != nil {
-					return errors.Wrap(err, "failed to insert vesting")
-				}
-			}
-
-			// statistic
-			if b.pulse == nil {
+				platformNodes.Set(float64(nodes))
 				return nil
+			})
+			if err != nil {
+				if strings.Contains(err.Error(), "connection refused") ||
+					strings.Contains(err.Error(), "EOF") {
+					log.Errorf("Connection refused... %s", err.Error())
+					return err
+				}
+				panic(err)
 			}
-
-			nodes := len(b.pulse.Nodes)
-			stat = &observer.Statistic{
-				Pulse:     b.pulse.Number,
-				Transfers: len(b.txSagaResult),
-				Nodes:     nodes,
-			}
-
-			platformNodes.Set(float64(nodes))
 			return nil
-		})
-		if err != nil {
-			panic(err)
-		}
+		}, cfg.DB.AttemptInterval, cfg.DB.Attempts)
 
 		log.Info("items successfully stored")
 
@@ -227,6 +106,147 @@ func makeStorer(
 
 		return stat
 	}
+}
+
+func insertRawData(b *beauty, tx orm.DB, obs *observability.Observability) error {
+	requests := postgres.NewRequestStorage(obs, tx)
+	for _, req := range b.requests {
+		if req == nil {
+			continue
+		}
+		err := requests.Insert(req)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert request")
+		}
+	}
+
+	results := postgres.NewResultStorage(obs, tx)
+	for _, res := range b.results {
+		if res == nil {
+			continue
+		}
+		err := results.Insert(res)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert result")
+		}
+	}
+
+	objects := postgres.NewObjectStorage(obs, tx)
+	for _, act := range b.activates {
+		if act == nil {
+			continue
+		}
+		err := objects.Insert(act)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert activate record")
+		}
+	}
+
+	for _, amd := range b.amends {
+		if amd == nil {
+			continue
+		}
+		err := objects.Insert(amd)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert amend record")
+		}
+	}
+
+	for _, deact := range b.deactivates {
+		if deact == nil {
+			continue
+		}
+		err := objects.Insert(deact)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert deactivate record")
+		}
+	}
+	return nil
+}
+
+func insertObjectData(cfg *configuration.Observer, b *beauty, tx orm.DB, obs *observability.Observability) error {
+	err := StoreTxRegister(tx, b.txRegister)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert txRegister")
+	}
+	err = StoreTxDepositData(tx, b.txDepositTransfers)
+	if err != nil {
+		return errors.Wrap(err, "failed to update txDepositTrasfers")
+	}
+	err = StoreTxResult(tx, b.txResult)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert txResult")
+	}
+	err = StoreTxSagaResult(tx, b.txSagaResult)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert txSagaResult")
+	}
+
+	members := postgres.NewMemberStorage(obs, tx)
+	for _, member := range b.members {
+		if member == nil {
+			continue
+		}
+		err := members.Insert(member)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert member")
+		}
+	}
+
+	deposits := postgres.NewDepositStorage(obs, tx)
+	for _, deposit := range b.deposits {
+		err := deposits.Insert(deposit)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert deposit")
+		}
+	}
+
+	// updates
+	for _, balance := range b.balances {
+		if balance == nil {
+			continue
+		}
+		err := members.Update(balance)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert balance")
+		}
+	}
+
+	for _, update := range b.depositUpdates {
+		err := deposits.Update(update)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert deposit update")
+		}
+	}
+
+	for _, update := range b.depositMembers {
+		err := deposits.SetMember(update.Ref, update.Member)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert deposit member update")
+		}
+	}
+
+	addresses := postgres.NewMigrationAddressStorage(&cfg.DB, obs, tx)
+	for _, address := range b.addresses {
+		if address == nil {
+			continue
+		}
+		err := addresses.Insert(address)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert migration address")
+		}
+	}
+
+	for _, vesting := range b.vestings {
+		if vesting == nil {
+			continue
+		}
+		err := addresses.Update(vesting)
+		if err != nil {
+			return errors.Wrap(err, "failed to insert vesting")
+		}
+	}
+	return nil
 }
 
 type Execer interface {
@@ -269,6 +289,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 		"member_from_ref",
 		"member_to_ref",
 		"deposit_to_ref",
+		"deposit_from_ref",
 		"amount",
 	}
 	var values []interface{}
@@ -282,6 +303,7 @@ func StoreTxRegister(tx Execer, transactions []observer.TxRegister) error {
 			t.MemberFromReference,
 			t.MemberToReference,
 			t.DepositToReference,
+			t.DepositFromReference,
 			t.Amount,
 		)
 	}

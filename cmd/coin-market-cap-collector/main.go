@@ -41,7 +41,7 @@ var symbol = flag.String("symbol", "", "symbol for fetching from coin market cap
 func main() {
 	cfg := &configuration.CollectorCoinMarketCap{}
 	params := insconfig.Params{
-		EnvPrefix: "coin-market-cap-collector",
+		EnvPrefix: "coinmarketcapcollector",
 		ConfigPathGetter: &insconfig.FlagPathGetter{
 			GoFlags: flag.CommandLine,
 		},

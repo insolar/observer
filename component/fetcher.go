@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/app/observer/grpc"
 	"github.com/insolar/observer/observability"
 )
 
@@ -28,6 +29,10 @@ func makeFetcher(
 		// todo: get batch of empty pulses, if shouldIterateFrom set
 		pulse, err := pulses.Fetch(ctx, s.last)
 		if err != nil {
+			if err == grpc.ErrNoPulseReceived {
+				log.Warn(grpc.ErrNoPulseReceived.Error())
+				return nil
+			}
 			log.Error(errors.Wrapf(err, "failed to fetch pulse"))
 			return nil
 		}
@@ -73,5 +78,6 @@ func fetchingMetrics(obs *observability.Observability) (prometheus.Gauge, promet
 		Name: "observer_fetched_record_total",
 		Help: "Number of records fetched from HME.",
 	})
+	grpc.NewDeprecatedClientMetric(obs)
 	return lastPulse, recordCounter
 }
