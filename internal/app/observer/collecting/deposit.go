@@ -10,16 +10,17 @@ import (
 	"strings"
 
 	"github.com/insolar/insolar/pulse"
-	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	"github.com/insolar/mainnet/application/builtin/contract/pkshard"
 	"github.com/insolar/mainnet/application/builtin/contract/wallet"
 
 	"github.com/insolar/observer/internal/app/observer/store"
 	"github.com/insolar/observer/internal/app/observer/tree"
+	"github.com/insolar/observer/internal/models"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/record"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	proxyPKShard "github.com/insolar/mainnet/application/builtin/proxy/pkshard"
@@ -177,6 +178,15 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				hrd, _ = pulse.Number(pulse.MinTimePulse).AsApproximateTime()
 			}
 
+			var vestingType models.DepositType
+			switch depositState.VestingType {
+			case appfoundation.DefaultVesting:
+				vestingType = models.DepositTypeNonLinear
+			case appfoundation.LinearVesting:
+				vestingType = models.DepositTypeLinear
+			case appfoundation.Vesting2:
+				vestingType = models.DepositTypeDefaultFund
+			}
 			d := observer.Deposit{
 				EthHash:         strings.ToLower(depositState.TxHash),
 				Ref:             *depositRef,
@@ -188,6 +198,7 @@ func (c *DepositCollector) processGenesisRecord(ctx context.Context, rec *observ
 				HoldReleaseDate: hrd.Unix(),
 				Vesting:         depositState.Vesting,
 				VestingStep:     depositState.VestingStep,
+				VestingType:     vestingType,
 				IsConfirmed:     true,
 			}
 
@@ -207,6 +218,17 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 	}
 
 	state := c.initialDepositState(activate)
+
+	var vestingType models.DepositType
+	switch state.VestingType {
+	case appfoundation.DefaultVesting:
+		vestingType = models.DepositTypeNonLinear
+	case appfoundation.LinearVesting:
+		vestingType = models.DepositTypeLinear
+	case appfoundation.Vesting2:
+		vestingType = models.DepositTypeDefaultFund
+	}
+
 	d := &observer.Deposit{
 		EthHash:      strings.ToLower(state.TxHash),
 		Ref:          *insolar.NewReference(*activate.Request.GetLocal()),
@@ -217,6 +239,7 @@ func (c *DepositCollector) build(id insolar.ID, pn pulse.Number, activate *recor
 		Vesting:      state.Vesting,
 		VestingStep:  state.VestingStep,
 		IsConfirmed:  state.IsConfirmed,
+		VestingType:  vestingType,
 	}
 
 	if state.PulseDepositUnHold > 0 {
