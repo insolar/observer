@@ -247,6 +247,87 @@ func INSMETHOD_GetAmount(object []byte, data []byte) (newState []byte, result []
 	return
 }
 
+func INSMETHOD_GetBalance(object []byte, data []byte) (newState []byte, result []byte, err error) {
+	ph := common.CurrentProxyCtx
+	ph.SetSystemError(nil)
+
+	self := new(Deposit)
+
+	if len(object) == 0 {
+		err = &foundation.Error{S: "[ FakeGetBalance ] ( INSMETHOD_* ) ( Generated Method ) Object is nil"}
+		return
+	}
+
+	err = ph.Deserialize(object, self)
+	if err != nil {
+		err = &foundation.Error{S: "[ FakeGetBalance ] ( INSMETHOD_* ) ( Generated Method ) Can't deserialize args.Data: " + err.Error()}
+		return
+	}
+
+	args := []interface{}{}
+
+	err = ph.Deserialize(data, &args)
+	if err != nil {
+		err = &foundation.Error{S: "[ FakeGetBalance ] ( INSMETHOD_* ) ( Generated Method ) Can't deserialize args.Arguments: " + err.Error()}
+		return
+	}
+
+	var ret0 string
+	var ret1 error
+
+	serializeResults := func() error {
+		return ph.Serialize(
+			foundation.Result{Returns: []interface{}{ret0, ret1}},
+			&result,
+		)
+	}
+
+	needRecover := true
+	defer func() {
+		if !needRecover {
+			return
+		}
+		if r := recover(); r != nil {
+			recoveredError := errors.Wrap(errors.Errorf("%v", r), "Failed to execute method (panic)")
+			recoveredError = ph.MakeErrorSerializable(recoveredError)
+
+			if PanicIsLogicalError {
+				ret1 = recoveredError
+
+				newState = object
+				err = serializeResults()
+				if err == nil {
+					newState = object
+				}
+			} else {
+				err = recoveredError
+			}
+		}
+	}()
+
+	ret0, ret1 = self.GetBalance()
+
+	needRecover = false
+
+	if ph.GetSystemError() != nil {
+		return nil, nil, ph.GetSystemError()
+	}
+
+	err = ph.Serialize(self, &newState)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ret1 = ph.MakeErrorSerializable(ret1)
+
+	err = serializeResults()
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func INSMETHOD_GetPulseUnHold(object []byte, data []byte) (newState []byte, result []byte, err error) {
 	ph := common.CurrentProxyCtx
 	ph.SetSystemError(nil)
@@ -936,90 +1017,12 @@ func INSCONSTRUCTOR_NewFund(ref insolar.Reference, data []byte) (state []byte, r
 	return
 }
 
-func INSCONSTRUCTOR_NewFund(ref insolar.Reference, data []byte) (state []byte, result []byte, err error) {
-	ph := common.CurrentProxyCtx
-	ph.SetSystemError(nil)
-
-	args := make([]interface{}, 1)
-	var args0 int64
-	args[0] = &args0
-
-	err = ph.Deserialize(data, &args)
-	if err != nil {
-		err = &foundation.Error{S: "[ FakeNewFund ] ( INSCONSTRUCTOR_* ) ( Generated Method ) Can't deserialize args.Arguments: " + err.Error()}
-		return
-	}
-
-	var ret0 *Deposit
-	var ret1 error
-
-	serializeResults := func() error {
-		return ph.Serialize(
-			foundation.Result{Returns: []interface{}{ref, ret1}},
-			&result,
-		)
-	}
-
-	needRecover := true
-	defer func() {
-		if !needRecover {
-			return
-		}
-		if r := recover(); r != nil {
-			recoveredError := errors.Wrap(errors.Errorf("%v", r), "Failed to execute constructor (panic)")
-			recoveredError = ph.MakeErrorSerializable(recoveredError)
-
-			if PanicIsLogicalError {
-				ret1 = recoveredError
-
-				err = serializeResults()
-				if err == nil {
-					state = data
-				}
-			} else {
-				err = recoveredError
-			}
-		}
-	}()
-
-	ret0, ret1 = NewFund(args0)
-
-	needRecover = false
-
-	ret1 = ph.MakeErrorSerializable(ret1)
-	if ret0 == nil && ret1 == nil {
-		ret1 = &foundation.Error{S: "constructor returned nil"}
-	}
-
-	if ph.GetSystemError() != nil {
-		err = ph.GetSystemError()
-		return
-	}
-
-	err = serializeResults()
-	if err != nil {
-		return
-	}
-
-	if ret1 != nil {
-		// logical error, the result should be registered with type RequestSideEffectNone
-		state = nil
-		return
-	}
-
-	err = ph.Serialize(ret0, &state)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
 func Initialize() insolar.ContractWrapper {
 	return insolar.ContractWrapper{
 		Methods: insolar.ContractMethods{
 			"GetTxHash":         INSMETHOD_GetTxHash,
 			"GetAmount":         INSMETHOD_GetAmount,
+			"GetBalance":        INSMETHOD_GetBalance,
 			"GetPulseUnHold":    INSMETHOD_GetPulseUnHold,
 			"Itself":            INSMETHOD_Itself,
 			"Confirm":           INSMETHOD_Confirm,

@@ -14,8 +14,8 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
-	github.com/insolar/insolar v1.7.2
-	github.com/insolar/mainnet v1.10.2
+	github.com/insolar/insolar v1.7.3
+	github.com/insolar/mainnet v1.11.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
@@ -27,10 +27,8 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.1 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
 	golang.org/x/sys v0.0.0-20191020212454-3e7259c5e7c2 // indirect
 	gonum.org/v1/gonum v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect
