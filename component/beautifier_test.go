@@ -22,10 +22,8 @@ import (
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/insolar/insolar/log"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
-	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 	"github.com/insolar/mainnet/application/builtin/proxy/migrationdaemon"
-	"github.com/insolar/observer/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -189,7 +187,6 @@ func TestBeautifier_Deposit(t *testing.T) {
 		PulseDepositUnHold: pn + 10,
 		Vesting:            10,
 		VestingStep:        10,
-		VestingType:        appfoundation.DefaultVesting,
 	}
 	memory, err := insolar.Serialize(dep)
 	if err != nil {
@@ -239,7 +236,6 @@ func TestBeautifier_Deposit(t *testing.T) {
 			DepositState:    act.Record.ID,
 			Vesting:         10,
 			VestingStep:     10,
-			VestingType:     models.DepositTypeNonLinear,
 		},
 	}, res.deposits)
 	assert.Equal(t, map[insolar.Reference]observer.DepositMemberUpdate{

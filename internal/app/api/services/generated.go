@@ -62,6 +62,9 @@ type ResponsesIsMigrationAddressYaml struct {
 // ResponsesMarketStatsYaml defines model for responses-marketStats-yaml.
 type ResponsesMarketStatsYaml struct {
 
+	// Best approximation of the number of coins that are circulating in the market.
+	CirculatingSupply *string `json:"circulatingSupply,omitempty"`
+
 	// 24 hour trading price percentage change in the specified currency (USD if not specified).
 	DailyChange *string `json:"dailyChange,omitempty"`
 

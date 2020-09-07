@@ -204,6 +204,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		Rank:                 2,
 		MarketCap:            3,
 		Volume24Hours:        4,
+		CirculatingSupply:    5,
 		Created:              statsTime,
 	})
 	require.NoError(t, err)
@@ -215,6 +216,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		Rank:                 22,
 		MarketCap:            33,
 		Volume24Hours:        44,
+		CirculatingSupply:    55,
 		Created:              statsTime,
 	})
 	require.NoError(t, err)
@@ -227,6 +229,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		Rank:                 222,
 		MarketCap:            333,
 		Volume24Hours:        444,
+		CirculatingSupply:    555,
 		Created:              statsTime,
 	})
 	require.NoError(t, err)
@@ -239,6 +242,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		Rank:                 2222,
 		MarketCap:            3333,
 		Volume24Hours:        4444,
+		CirculatingSupply:    5555,
 		Created:              statsTime,
 	})
 	require.NoError(t, err)
@@ -249,10 +253,11 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 		Price:       testPrice,
 		PriceOrigin: "coin_market_cap",
 		CMCMarketStatsParams: configuration.CMCMarketStatsParamsEnabled{
-			DailyChange: true,
-			MarketCap:   true,
-			Rank:        true,
-			Volume:      true,
+			CirculatingSupply: true,
+			DailyChange:       true,
+			MarketCap:         true,
+			Rank:              true,
+			Volume:            true,
 		},
 	})
 
@@ -275,6 +280,7 @@ func TestObserverServer_CMC_Price(t *testing.T) {
 	require.Equal(t, "400", received.Price)
 	require.Equal(t, "3333", *received.MarketCap)
 	require.Equal(t, "2222", *received.Rank)
+	require.Equal(t, "5555", *received.CirculatingSupply)
 	require.Equal(t, "1111", *received.DailyChange)
 	require.Equal(t, "4444", *received.Volume)
 

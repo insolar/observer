@@ -312,7 +312,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			Vesting:         10,
 			VestingStep:     5,
 			InnerStatus:     models.DepositStatusCreated,
-			VestingType:     models.DepositTypeNonLinear,
 		},
 	}
 
@@ -331,7 +330,6 @@ func TestStoreSimpleDeposit(t *testing.T) {
 			DepositState:    *insolar.NewIDFromBytes(expectedDeposit[0].State),
 			Vesting:         expectedDeposit[0].Vesting,
 			VestingStep:     expectedDeposit[0].VestingStep,
-			VestingType:     expectedDeposit[0].VestingType,
 			DepositNumber:   100,
 		})
 		if err != nil {
@@ -377,7 +375,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			VestingStep:     5,
 			Timestamp:       transferDate,
 			DepositNumber:   newInt(1),
-			VestingType:     models.DepositTypeNonLinear,
 		},
 		{
 			Reference:       ref.Bytes(),
@@ -391,7 +388,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			VestingStep:     5,
 			Timestamp:       transferDate,
 			DepositNumber:   newInt(2),
-			VestingType:     models.DepositTypeNonLinear,
 		},
 		{
 			Reference:       gen.RecordReference().Bytes(),
@@ -405,7 +401,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 			VestingStep:     5,
 			Timestamp:       transferDate,
 			DepositNumber:   newInt(1),
-			VestingType:     models.DepositTypeNonLinear,
 		},
 	}
 
@@ -426,7 +421,6 @@ func TestStoreSeveralDepositsWithDepositsNumbers(t *testing.T) {
 				Vesting:         dep.Vesting,
 				VestingStep:     dep.VestingStep,
 				DepositNumber:   *dep.DepositNumber,
-				VestingType:     models.DepositTypeNonLinear,
 			})
 			if err != nil {
 				return err
@@ -531,7 +525,6 @@ func TestStorerOK(t *testing.T) {
 				DepositState:    gen.ID(),
 				Vesting:         10,
 				VestingStep:     10,
-				VestingType:     models.DepositTypeNonLinear,
 			},
 		},
 	}, &state{})

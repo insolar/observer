@@ -42,10 +42,11 @@ func (APIExtended) Default() *APIExtended {
 		Price:       "0.05",
 		PriceOrigin: "const", // const|binance|coin_market_cap
 		CMCMarketStatsParams: CMCMarketStatsParamsEnabled{
-			DailyChange: true,
-			MarketCap:   true,
-			Rank:        true,
-			Volume:      true,
+			CirculatingSupply: true,
+			DailyChange:       true,
+			MarketCap:         true,
+			Rank:              true,
+			Volume:            true,
 		},
 	}
 }

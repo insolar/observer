@@ -26,10 +26,11 @@ type APIConfig interface {
 }
 
 type CMCMarketStatsParamsEnabled struct {
-	DailyChange bool
-	MarketCap   bool
-	Rank        bool
-	Volume      bool
+	CirculatingSupply bool
+	DailyChange       bool
+	MarketCap         bool
+	Rank              bool
+	Volume            bool
 }
 
 type API struct {
