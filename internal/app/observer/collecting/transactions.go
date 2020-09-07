@@ -256,10 +256,10 @@ func (c *TxRegisterCollector) fromDepositToDeposit(log insolar.Logger, rec expor
 	}
 
 	var (
-		amount, txType                              string
-		apiRequest, toDeposit, fromMember, toMember insolar.Reference
+		amount, txType                        string
+		txID, toDeposit, fromMember, toMember insolar.Reference
 	)
-	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &apiRequest, &toMember, &txType})
+	err := insolar.Deserialize(request.Arguments, []interface{}{&amount, &toDeposit, &fromMember, &txID, &toMember, &txType})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
@@ -269,7 +269,7 @@ func (c *TxRegisterCollector) fromDepositToDeposit(log insolar.Logger, rec expor
 	}
 
 	// Ensure txID is record reference so other collectors can match it.
-	txID := *insolar.NewRecordReference(rec.Record.ID)
+	txID = *insolar.NewRecordReference(*txID.GetLocal())
 
 	log = log.WithField("tx_id", txID.GetLocal().DebugString())
 	log.Debug("created TxRegister")
@@ -444,7 +444,7 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	if request.Method == methodTransferToDeposit {
-		return c.fromDepositToDeposit(log, *request, txID)
+		return c.fromDepositToDeposit(log, *request)
 	}
 
 	if request.Method != methodCall {
@@ -531,7 +531,6 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 func (c *TxResultCollector) fromDepositToDeposit(
 	log insolar.Logger,
 	request record.IncomingRequest,
-	txID insolar.Reference,
 ) *observer.TxResult {
 	// Skip API requests.
 	if !request.APINode.IsEmpty() {
@@ -550,8 +549,8 @@ func (c *TxResultCollector) fromDepositToDeposit(
 		return nil
 	}
 
-	var apiRequest insolar.Reference
-	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &apiRequest, nil, nil})
+	var txID insolar.Reference
+	err := insolar.Deserialize(request.Arguments, []interface{}{nil, nil, nil, &txID, nil, nil})
 	if err != nil {
 		log.Error(errors.Wrap(err, "failed to parse arguments"))
 		return nil
@@ -625,8 +624,6 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 		tx = c.fromAccept(log, rec, *request, *result)
 	case methodCall:
 		tx = c.fromCall(log, rec, *request, *result)
-	case methodTransferToDeposit:
-		tx = c.fromTransferToDeposit(log, rec, *request, *result)
 	}
 	if tx != nil {
 		if err := tx.Validate(); err != nil {
@@ -744,54 +741,6 @@ func (c *TxSagaResultCollector) fromCall(
 
 	// The second return parameter of Call method is error, so we check if its not nil.
 	if response.Error != nil || response.Returns[1] != nil {
-		log.Debug("created failed TxSagaResult")
-		return &observer.TxSagaResult{
-			TransactionID:      txID,
-			FinishSuccess:      false,
-			FinishPulseNumber:  int64(resultRec.Record.ID.Pulse()),
-			FinishRecordNumber: int64(resultRec.RecordNumber),
-		}
-	}
-
-	// Successful call does not produce transactions since it will be produced by saga call. It avoids double insert
-	// on conflict.
-	return nil
-}
-
-func (c *TxSagaResultCollector) fromTransferToDeposit(
-	log insolar.Logger,
-	resultRec exporter.Record,
-	request record.IncomingRequest,
-	result record.Result,
-) *observer.TxSagaResult {
-	// Ensure txID is record reference so other collectors can match it.
-	txID := *insolar.NewRecordReference(*result.Request.GetLocal())
-	log = log.WithField("tx_id", txID.GetLocal().DebugString())
-
-	// Skip saga.
-	if request.IsDetachedCall() {
-		log.Debug("skipped (request is saga)")
-		return nil
-	}
-
-	if !request.Prototype.Equal(*proxyDeposit.PrototypeReference) {
-		log.Debugf("skipped (not deposit object)")
-		return nil
-	}
-
-	var response foundation.Result
-	err := insolar.Deserialize(result.Payload, &response)
-	if err != nil {
-		log.Error(errors.Wrap(err, "failed to deserialize method result"))
-		return nil
-	}
-	if len(response.Returns) != 1 {
-		log.Error(errors.Wrap(err, "unexpected number of Call method returned parameters"))
-		return nil
-	}
-
-	// The second return parameter of Call method is error, so we check if its not nil.
-	if response.Error != nil || response.Returns[0] != nil {
 		log.Debug("created failed TxSagaResult")
 		return &observer.TxSagaResult{
 			TransactionID:      txID,
