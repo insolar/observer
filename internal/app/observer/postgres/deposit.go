@@ -47,7 +47,7 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 			"eth_hash", "deposit_ref",
 			"transfer_date", "hold_release_date",
 			"amount", "balance", "deposit_state",
-			"vesting", "vesting_step", "vesting_type",
+			"vesting", "vesting_step",
 			"status",
 		}
 		values = []interface{}{
@@ -60,7 +60,6 @@ func (s *DepositStorage) Insert(model observer.Deposit) error {
 			row.State,
 			row.Vesting,
 			row.VestingStep,
-			row.VestingType,
 		}
 	)
 
@@ -248,6 +247,5 @@ func depositSchema(model observer.Deposit) models.Deposit {
 		State:           model.DepositState.Bytes(),
 		Vesting:         model.Vesting,
 		VestingStep:     model.VestingStep,
-		VestingType:     model.VestingType,
 	}
 }

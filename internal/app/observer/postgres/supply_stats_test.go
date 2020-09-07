@@ -8,12 +8,9 @@
 package postgres_test
 
 import (
-	"context"
-	"github.com/insolar/observer/internal/app/observer"
-	"github.com/insolar/observer/internal/testutils"
-	"github.com/insolar/observer/observability"
 	"testing"
-	"time"
+
+	"github.com/insolar/observer/internal/testutils"
 
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
@@ -23,146 +20,36 @@ import (
 )
 
 func TestSupplyStats(t *testing.T) {
-	supplyStatsRepository := postgres.NewSupplyStatsRepository(db)
-	depositRepo := postgres.NewDepositStorage(observability.Make(context.Background()), db)
-
-	t.Run("two deposits and one member", func(t *testing.T) {
-		defer testutils.TruncateTables(t, db, []interface{}{
-			&models.Member{},
-			&models.SupplyStats{},
-			&models.Deposit{},
-		})
-		stats, err := supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "0", stats.Total)
-
-		memberRef := gen.Reference()
-		now := time.Now().Unix()
-		member := models.Member{
-			Reference: memberRef.Bytes(),
-			Balance:   "200",
-		}
-		err = db.Insert(&member)
-		require.NoError(t, err)
-
-		deposit1 := observer.Deposit{
-			EthHash:         "123",
-			Ref:             gen.Reference(),
-			Member:          memberRef,
-			Timestamp:       now,
-			HoldReleaseDate: now,
-			Amount:          "100",
-			Balance:         "100",
-			DepositState:    gen.ID(),
-			VestingType:     models.DepositTypeDefaultFund,
-		}
-
-		deposit2 := observer.Deposit{
-			EthHash:         "123",
-			Ref:             gen.Reference(),
-			Member:          memberRef,
-			Timestamp:       now,
-			HoldReleaseDate: now,
-			Amount:          "100",
-			Balance:         "100",
-			DepositState:    gen.ID(),
-			VestingType:     models.DepositTypeDefaultFund,
-		}
-
-		err = depositRepo.Insert(deposit1)
-		require.NoError(t, err, "insert")
-		err = depositRepo.Insert(deposit2)
-		require.NoError(t, err, "insert")
-
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "400", stats.Total)
-
-		stats, err = supplyStatsRepository.LastStats()
-		require.Error(t, err)
-
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		err = supplyStatsRepository.InsertStats(stats)
-		require.NoError(t, err)
-
-		stats, err = supplyStatsRepository.LastStats()
-		require.NoError(t, err)
-		require.Equal(t, "400", stats.Total)
+	defer testutils.TruncateTables(t, db, []interface{}{
+		&models.Member{},
+		&models.SupplyStats{},
 	})
+	repo := postgres.NewSupplyStatsRepository(db)
 
-	t.Run("one member", func(t *testing.T) {
-		defer testutils.TruncateTables(t, db, []interface{}{
-			&models.Member{},
-			&models.SupplyStats{},
-			&models.Deposit{},
-		})
-		stats, err := supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "0", stats.Total)
+	stats, err := repo.CountStats()
+	require.NoError(t, err)
+	require.Equal(t, "0", stats.Total)
 
-		member := models.Member{
-			Reference: gen.Reference().Bytes(),
-			Balance:   "200",
-		}
-		err = db.Insert(&member)
-		require.NoError(t, err)
+	member := models.Member{
+		Reference: gen.Reference().Bytes(),
+		Balance:   "1234567890",
+	}
+	err = db.Insert(&member)
+	require.NoError(t, err)
 
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "200", stats.Total)
+	stats, err = repo.CountStats()
+	require.NoError(t, err)
+	require.Equal(t, "1234567890", stats.Total)
 
-		stats, err = supplyStatsRepository.LastStats()
-		require.Error(t, err)
+	stats, err = repo.LastStats()
+	require.Error(t, err)
 
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		err = supplyStatsRepository.InsertStats(stats)
-		require.NoError(t, err)
+	stats, err = repo.CountStats()
+	require.NoError(t, err)
+	err = repo.InsertStats(stats)
+	require.NoError(t, err)
 
-		stats, err = supplyStatsRepository.LastStats()
-		require.NoError(t, err)
-		require.Equal(t, "200", stats.Total)
-	})
-
-	t.Run("two members", func(t *testing.T) {
-		defer testutils.TruncateTables(t, db, []interface{}{
-			&models.Member{},
-			&models.SupplyStats{},
-			&models.Deposit{},
-		})
-		stats, err := supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "0", stats.Total)
-
-		member1 := models.Member{
-			Reference: gen.Reference().Bytes(),
-			Balance:   "200",
-		}
-		err = db.Insert(&member1)
-		require.NoError(t, err)
-
-		member2 := models.Member{
-			Reference: gen.Reference().Bytes(),
-			Balance:   "200",
-		}
-		err = db.Insert(&member2)
-		require.NoError(t, err)
-
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		require.Equal(t, "400", stats.Total)
-
-		stats, err = supplyStatsRepository.LastStats()
-		require.Error(t, err)
-
-		stats, err = supplyStatsRepository.CountStats()
-		require.NoError(t, err)
-		err = supplyStatsRepository.InsertStats(stats)
-		require.NoError(t, err)
-
-		stats, err = supplyStatsRepository.LastStats()
-		require.NoError(t, err)
-		require.Equal(t, "400", stats.Total)
-	})
+	stats, err = repo.LastStats()
+	require.NoError(t, err)
+	require.Equal(t, "1234567890", stats.Total)
 }

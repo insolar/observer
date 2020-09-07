@@ -30,32 +30,26 @@ type Member struct {
 }
 
 type DepositStatus string
-type DepositType string
 
 const (
 	DepositStatusCreated   DepositStatus = "created"
 	DepositStatusConfirmed DepositStatus = "confirmed"
-
-	DepositTypeNonLinear   DepositType = "non-linear"
-	DepositTypeDefaultFund DepositType = "vesting-fund"
-	DepositTypeLinear      DepositType = "linear"
 )
 
 type Deposit struct {
 	tableName struct{} `sql:"deposits"` // nolint: unused,structcheck
 
-	Reference       []byte      `sql:"deposit_ref"`
-	MemberReference []byte      `sql:"member_ref"`
-	EtheriumHash    string      `sql:"eth_hash"`
-	State           []byte      `sql:"deposit_state"`
-	HoldReleaseDate int64       `sql:"hold_release_date"`
-	Amount          string      `sql:"amount"`
-	Balance         string      `sql:"balance"`
-	Timestamp       int64       `sql:"transfer_date"`
-	DepositNumber   *int64      `sql:"deposit_number"`
-	Vesting         int64       `sql:"vesting"`
-	VestingStep     int64       `sql:"vesting_step"`
-	VestingType     DepositType `sql:"vesting_type"`
+	Reference       []byte `sql:"deposit_ref"`
+	MemberReference []byte `sql:"member_ref"`
+	EtheriumHash    string `sql:"eth_hash"`
+	State           []byte `sql:"deposit_state"`
+	HoldReleaseDate int64  `sql:"hold_release_date"`
+	Amount          string `sql:"amount"`
+	Balance         string `sql:"balance"`
+	Timestamp       int64  `sql:"transfer_date"`
+	DepositNumber   *int64 `sql:"deposit_number"`
+	Vesting         int64  `sql:"vesting"`
+	VestingStep     int64  `sql:"vesting_step"`
 
 	InnerStatus DepositStatus `sql:"status"`
 }
@@ -182,6 +176,7 @@ type CoinMarketCapStats struct {
 	Rank                 int     `sql:"rank"`
 	MarketCap            float64 `sql:"market_cap"`
 	Volume24Hours        float64 `sql:"volume_24_hours"`
+	CirculatingSupply    float64 `json:"circulating_supply"`
 
 	Created time.Time `sql:"created,pk,default:now(),notnull"`
 }
@@ -323,17 +318,7 @@ func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (am
 
 	currentStep := (currentTime - d.HoldReleaseDate) / d.VestingStep
 	steps := d.Vesting / d.VestingStep
-
-	switch d.VestingType {
-	case DepositTypeNonLinear:
-		releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
-	case DepositTypeLinear:
-		releaseAmount = deposit.LinearVestedByNow(amount, uint64(currentStep), uint64(steps))
-	case DepositTypeDefaultFund:
-		releaseAmount = new(big.Int).Set(amount)
-	default:
-		panic(fmt.Sprintf("undefined vesting type %v", d.VestingType))
-	}
+	releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
 
 	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
 

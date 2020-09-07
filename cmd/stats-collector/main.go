@@ -49,24 +49,7 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	calcSupply(logger, db)
 	calcNetwork(logger, db)
-}
-
-func calcSupply(log insolar.Logger, db *pg.DB) {
-	repo := postgres.NewSupplyStatsRepository(db)
-
-	stats, err := repo.CountStats()
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to count supply stats"))
-	}
-
-	log.Debugf("collected supply stats: %+v", stats)
-
-	err = repo.InsertStats(stats)
-	if err != nil {
-		log.Fatal(errors.Wrapf(err, "failed to save supply stats"))
-	}
 }
 
 func calcNetwork(log insolar.Logger, db *pg.DB) {
