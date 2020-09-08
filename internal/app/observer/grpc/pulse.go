@@ -72,7 +72,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 		}
 
 		return err
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	if resp == nil {
 		return nil, ErrNoPulseReceived
@@ -104,7 +104,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 			return err
 		}
 		return nil
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
 	return insolar.PulseNumber(tsp.PulseNumber), nil

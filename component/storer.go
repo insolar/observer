@@ -84,7 +84,7 @@ func makeStorer(
 				panic(err)
 			}
 			return nil
-		}, cfg.DB.AttemptInterval, cfg.DB.Attempts)
+		}, cfg.DB.AttemptInterval, cfg.DB.Attempts, log)
 
 		log.Info("items successfully stored")
 

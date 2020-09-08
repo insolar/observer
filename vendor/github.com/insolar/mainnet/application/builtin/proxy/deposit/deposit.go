@@ -12,24 +12,22 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/insolar/logicrunner/common"
+	"github.com/insolar/insolar/pulse"
 	"github.com/insolar/mainnet/application/appfoundation"
 )
 
-type DaemonConfirm struct {
-	Reference string `json:"reference"`
-	Amount    string `json:"amount"`
-}
 type DepositOut struct {
-	Balance                 string                    `json:"balance"`
-	HoldStartDate           int64                     `json:"holdStartDate"`
-	PulseDepositUnHold      int64                     `json:"holdReleaseDate"`
-	MigrationDaemonConfirms []DaemonConfirm           `json:"confirmerReferences"`
-	Amount                  string                    `json:"amount"`
-	TxHash                  string                    `json:"ethTxHash"`
-	VestingType             appfoundation.VestingType `json:"vestingType"`
-	Lockup                  int64                     `json:"lockup"`
-	Vesting                 int64                     `json:"vesting"`
-	VestingStep             int64                     `json:"vestingStep"`
+	Ref                     string                        `json:"reference"`
+	Balance                 string                        `json:"balance"`
+	HoldStartDate           int64                         `json:"holdStartDate"`
+	PulseDepositUnHold      int64                         `json:"holdReleaseDate"`
+	MigrationDaemonConfirms []appfoundation.DaemonConfirm `json:"confirmerReferences"`
+	Amount                  string                        `json:"amount"`
+	TxHash                  string                        `json:"ethTxHash"`
+	VestingType             appfoundation.VestingType     `json:"vestingType"`
+	Lockup                  int64                         `json:"lockup"`
+	Vesting                 int64                         `json:"vesting"`
+	VestingStep             int64                         `json:"vestingStep"`
 }
 
 // PrototypeReference to prototype of this contract
@@ -91,12 +89,18 @@ func GetPrototype() insolar.Reference {
 }
 
 // New is constructor
-func New(txHash string, lockup int64, vesting int64, vestingStep int64) *ContractConstructorHolder {
-	var args [4]interface{}
+func New(txHash string, lockup int64, vesting int64, vestingStep int64, balance string, pulseDepositUnHold pulse.Number, confirms []appfoundation.DaemonConfirm, amount string, vestingType appfoundation.VestingType, isConfirmed bool) *ContractConstructorHolder {
+	var args [10]interface{}
 	args[0] = txHash
 	args[1] = lockup
 	args[2] = vesting
 	args[3] = vestingStep
+	args[4] = balance
+	args[5] = pulseDepositUnHold
+	args[6] = confirms
+	args[7] = amount
+	args[8] = vestingType
+	args[9] = isConfirmed
 
 	var argsSerialized []byte
 	err := common.CurrentProxyCtx.Serialize(args, &argsSerialized)
@@ -341,6 +345,84 @@ func (r *Deposit) GetAmount() (string, error) {
 	return ret0, nil
 }
 
+// GetBalance is proxy generated method
+func (r *Deposit) GetBalanceAsMutable() (string, error) {
+	var args [0]interface{}
+
+	var argsSerialized []byte
+
+	ret := make([]interface{}, 2)
+	var ret0 string
+	ret[0] = &ret0
+	var ret1 *foundation.Error
+	ret[1] = &ret1
+
+	err := common.CurrentProxyCtx.Serialize(args, &argsSerialized)
+	if err != nil {
+		return ret0, err
+	}
+
+	res, err := common.CurrentProxyCtx.RouteCall(r.Reference, false, false, "GetBalance", argsSerialized, *PrototypeReference)
+	if err != nil {
+		return ret0, err
+	}
+
+	resultContainer := foundation.Result{
+		Returns: ret,
+	}
+	err = common.CurrentProxyCtx.Deserialize(res, &resultContainer)
+	if err != nil {
+		return ret0, err
+	}
+	if resultContainer.Error != nil {
+		err = resultContainer.Error
+		return ret0, err
+	}
+	if ret1 != nil {
+		return ret0, ret1
+	}
+	return ret0, nil
+}
+
+// GetBalanceAsImmutable is proxy generated method
+func (r *Deposit) GetBalance() (string, error) {
+	var args [0]interface{}
+
+	var argsSerialized []byte
+
+	ret := make([]interface{}, 2)
+	var ret0 string
+	ret[0] = &ret0
+	var ret1 *foundation.Error
+	ret[1] = &ret1
+
+	err := common.CurrentProxyCtx.Serialize(args, &argsSerialized)
+	if err != nil {
+		return ret0, err
+	}
+
+	res, err := common.CurrentProxyCtx.RouteCall(r.Reference, true, false, "GetBalance", argsSerialized, *PrototypeReference)
+	if err != nil {
+		return ret0, err
+	}
+
+	resultContainer := foundation.Result{
+		Returns: ret,
+	}
+	err = common.CurrentProxyCtx.Deserialize(res, &resultContainer)
+	if err != nil {
+		return ret0, err
+	}
+	if resultContainer.Error != nil {
+		err = resultContainer.Error
+		return ret0, err
+	}
+	if ret1 != nil {
+		return ret0, ret1
+	}
+	return ret0, nil
+}
+
 // GetPulseUnHold is proxy generated method
 func (r *Deposit) GetPulseUnHoldAsMutable() (insolar.PulseNumber, error) {
 	var args [0]interface{}
@@ -498,12 +580,12 @@ func (r *Deposit) Itself() (interface{}, error) {
 }
 
 // Confirm is proxy generated method
-func (r *Deposit) Confirm(txHash string, amountStr string, fromMember insolar.Reference, request insolar.Reference, toMember insolar.Reference) error {
+func (r *Deposit) Confirm(txHash string, proposedAmount string, migrationDaemonRef insolar.Reference, requestRef insolar.Reference, toMember insolar.Reference) error {
 	var args [5]interface{}
 	args[0] = txHash
-	args[1] = amountStr
-	args[2] = fromMember
-	args[3] = request
+	args[1] = proposedAmount
+	args[2] = migrationDaemonRef
+	args[3] = requestRef
 	args[4] = toMember
 
 	var argsSerialized []byte
@@ -540,12 +622,12 @@ func (r *Deposit) Confirm(txHash string, amountStr string, fromMember insolar.Re
 }
 
 // ConfirmAsImmutable is proxy generated method
-func (r *Deposit) ConfirmAsImmutable(txHash string, amountStr string, fromMember insolar.Reference, request insolar.Reference, toMember insolar.Reference) error {
+func (r *Deposit) ConfirmAsImmutable(txHash string, proposedAmount string, migrationDaemonRef insolar.Reference, requestRef insolar.Reference, toMember insolar.Reference) error {
 	var args [5]interface{}
 	args[0] = txHash
-	args[1] = amountStr
-	args[2] = fromMember
-	args[3] = request
+	args[1] = proposedAmount
+	args[2] = migrationDaemonRef
+	args[3] = requestRef
 	args[4] = toMember
 
 	var argsSerialized []byte

@@ -107,7 +107,7 @@ func (s *MigrationAddressStorage) Wasted() int {
 			return nil
 		}
 		return err
-	}, s.cfg.AttemptInterval, s.cfg.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts, s.log)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find wasted addresses from db")
@@ -136,7 +136,7 @@ func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
 			return nil
 		}
 		return err
-	}, s.cfg.AttemptInterval, s.cfg.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts, s.log)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find active addresses from db")
