@@ -27,7 +27,7 @@ func UntilError(f func() error, interval time.Duration, attempts Limit, log inso
 	for {
 		err := f()
 		if err != nil {
-			if !strings.Contains(err.Error(), "connection") || counter > attempts {
+			if !strings.Contains(err.Error(), "connection") || counter >= attempts {
 				panic(err)
 			}
 			log.Errorf("Connection error, try again (attempt %d, totalAttempts %d) %+v", counter, attempts, err)
