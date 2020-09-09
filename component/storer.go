@@ -42,7 +42,7 @@ func makeStorer(
 		}
 		var stat *observer.Statistic
 
-		cycle.UntilError(func() error {
+		cycle.UntilConnectionError(func() error {
 			err := db.RunInTransaction(func(tx *pg.Tx) error {
 				// plain records
 				pulses := postgres.NewPulseStorage(log, tx)

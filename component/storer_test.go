@@ -221,14 +221,14 @@ func TestPanicSimpleTransactionsWithResults(t *testing.T) {
 	})
 }
 
-func TestUntilError(t *testing.T) {
+func TestUntilConnectionError(t *testing.T) {
 	var dbCleaner func()
 	db2, _, dbCleaner := testutils.SetupDB("../scripts/migrations")
 	dbCleaner()
 
 	counter := 0
 	log := inslogger.FromContext(inslogger.TestContext(t))
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		if counter == 3 {
 			db2 = db
 		}

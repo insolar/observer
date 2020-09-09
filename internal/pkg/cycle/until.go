@@ -18,7 +18,7 @@ const (
 	INFINITY Limit = math.MaxInt32
 )
 
-func UntilError(f func() error, interval time.Duration, attempts Limit, log insolar.Logger) {
+func UntilConnectionError(f func() error, interval time.Duration, attempts Limit, log insolar.Logger) {
 	// TODO: catch external interruptions
 	counter := Limit(1)
 	if attempts < 1 {

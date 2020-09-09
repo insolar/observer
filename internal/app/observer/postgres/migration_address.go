@@ -95,7 +95,7 @@ func (s *MigrationAddressStorage) Wasted() int {
 	var err error
 	cnt := 0
 
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		s.log.Info("trying to get wasted addresses from db")
 		cnt, err = s.db.Model(&MigrationAddressSchema{}).
 			Where("wasted is true").
@@ -125,7 +125,7 @@ func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
 	var err error
 	cnt := 0
 
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		s.log.Info("trying to get active addresses from db")
 		cnt, err = s.db.Model(&MigrationAddressSchema{}).
 			Count()
