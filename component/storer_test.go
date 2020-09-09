@@ -293,7 +293,7 @@ func TestUntilError(t *testing.T) {
 			return errors.Wrap(errTx, "connection reset by peer")
 		}
 		return nil
-	}, 1, 10, log)
+	}, 2*time.Second, 10, log)
 	require.Equal(t, counter, 4)
 }
 
