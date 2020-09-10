@@ -50,7 +50,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		stream, err := client.Export(getCtxWithClientVersion(requestCtx), request)
 		if err != nil {
 			f.log.WithField("request", request).
@@ -72,7 +72,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 		}
 
 		return err
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	if resp == nil {
 		return nil, ErrNoPulseReceived
@@ -95,7 +95,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 	var err error
 	f.log.Debug("Fetching top sync pulse")
 
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		tsp, err = client.TopSyncPulse(getCtxWithClientVersion(ctx), request)
 		if err != nil {
 			detectedDeprecatedVersion(err, f.log)
@@ -104,7 +104,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 			return err
 		}
 		return nil
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
 	return insolar.PulseNumber(tsp.PulseNumber), nil

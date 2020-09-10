@@ -54,7 +54,6 @@ func TestSupplyStats(t *testing.T) {
 			Amount:          "100",
 			Balance:         "100",
 			DepositState:    gen.ID(),
-			VestingType:     models.DepositTypeDefaultFund,
 		}
 
 		deposit2 := observer.Deposit{
@@ -66,7 +65,6 @@ func TestSupplyStats(t *testing.T) {
 			Amount:          "100",
 			Balance:         "100",
 			DepositState:    gen.ID(),
-			VestingType:     models.DepositTypeDefaultFund,
 		}
 
 		err = depositRepo.Insert(deposit1)

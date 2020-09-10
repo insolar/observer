@@ -42,7 +42,7 @@ func makeStorer(
 		}
 		var stat *observer.Statistic
 
-		cycle.UntilError(func() error {
+		cycle.UntilConnectionError(func() error {
 			err := db.RunInTransaction(func(tx *pg.Tx) error {
 				// plain records
 				pulses := postgres.NewPulseStorage(log, tx)
@@ -84,7 +84,7 @@ func makeStorer(
 				panic(err)
 			}
 			return nil
-		}, cfg.DB.AttemptInterval, cfg.DB.Attempts)
+		}, cfg.DB.AttemptInterval, cfg.DB.Attempts, log)
 
 		log.Info("items successfully stored")
 
