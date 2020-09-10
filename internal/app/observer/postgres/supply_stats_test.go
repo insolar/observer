@@ -9,11 +9,12 @@ package postgres_test
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/testutils"
 	"github.com/insolar/observer/observability"
-	"testing"
-	"time"
 
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/stretchr/testify/require"
