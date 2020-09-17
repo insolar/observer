@@ -43,7 +43,7 @@ func makeStorer(
 		var stat *observer.Statistic
 
 		cycle.UntilConnectionError(func() error {
-			err := db.RunInTransaction(func(tx *pg.Tx) error {
+			return db.RunInTransaction(func(tx *pg.Tx) error {
 				// plain records
 				pulses := postgres.NewPulseStorage(log, tx)
 				err := pulses.Insert(b.pulse)
@@ -75,15 +75,6 @@ func makeStorer(
 				platformNodes.Set(float64(nodes))
 				return nil
 			})
-			if err != nil {
-				if strings.Contains(err.Error(), "connection refused") ||
-					strings.Contains(err.Error(), "EOF") {
-					log.Errorf("Connection refused... %s", err.Error())
-					return err
-				}
-				panic(err)
-			}
-			return nil
 		}, cfg.DB.AttemptInterval, cfg.DB.Attempts, log)
 
 		log.Info("items successfully stored")

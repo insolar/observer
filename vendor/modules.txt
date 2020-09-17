@@ -96,7 +96,7 @@ github.com/hashicorp/hcl/json/token
 github.com/insolar/gls
 # github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
 github.com/insolar/insconfig
-# github.com/insolar/insolar v1.8.1
+# github.com/insolar/insolar v1.8.2
 github.com/insolar/insolar/api/requester
 github.com/insolar/insolar/application
 github.com/insolar/insolar/application/appfoundation
@@ -150,7 +150,7 @@ github.com/insolar/insolar/platformpolicy/internal/hash
 github.com/insolar/insolar/platformpolicy/internal/sign
 github.com/insolar/insolar/pulse
 github.com/insolar/insolar/reference
-# github.com/insolar/mainnet v1.11.2
+# github.com/insolar/mainnet v1.11.3
 github.com/insolar/mainnet/application
 github.com/insolar/mainnet/application/appfoundation
 github.com/insolar/mainnet/application/builtin/contract/account
