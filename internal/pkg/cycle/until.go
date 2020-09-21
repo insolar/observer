@@ -6,10 +6,11 @@
 package cycle
 
 import (
-	"github.com/insolar/insolar/insolar"
 	"math"
 	"strings"
 	"time"
+
+	"github.com/insolar/insolar/insolar"
 )
 
 type Limit int
@@ -19,6 +20,17 @@ const (
 )
 
 func UntilConnectionError(f func() error, interval time.Duration, attempts Limit, log insolar.Logger) {
+	condition := func(err error) bool {
+		return !strings.Contains(err.Error(), "connection")
+	}
+	untilError(f, condition, interval, attempts, log)
+}
+
+func UntilError(f func() error, interval time.Duration, attempts Limit, log insolar.Logger) {
+	untilError(f, nil, interval, attempts, log)
+}
+
+func untilError(f func() error, condition func(err error) bool, interval time.Duration, attempts Limit, log insolar.Logger) {
 	// TODO: catch external interruptions
 	counter := Limit(1)
 	if attempts < 1 {
@@ -27,10 +39,10 @@ func UntilConnectionError(f func() error, interval time.Duration, attempts Limit
 	for {
 		err := f()
 		if err != nil {
-			if (!strings.Contains(err.Error(), "connection") && !strings.Contains(err.Error(), "EOF")) || counter >= attempts {
+			if (condition != nil && condition(err)) || counter >= attempts {
 				panic(err)
 			}
-			log.Errorf("Connection error, try again (attempt %d, totalAttempts %d) %+v", counter, attempts, err)
+			log.Errorf("error, try again (attempt %d, totalAttempts %d) %+v", counter, attempts, err)
 			counter++
 			time.Sleep(interval)
 			continue
