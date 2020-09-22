@@ -53,7 +53,7 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	cycle.UntilConnectionError(func() error {
+	cycle.UntilError(func() error {
 		for {
 			stream, err := client.Export(getCtxWithClientVersion(requestCtx), request)
 			if err != nil {
@@ -110,7 +110,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 	var err error
 	f.log.Debug("Fetching top sync pulse")
 
-	cycle.UntilConnectionError(func() error {
+	cycle.UntilError(func() error {
 		tsp, err = client.TopSyncPulse(getCtxWithClientVersion(ctx), request)
 		if err != nil {
 			detectedDeprecatedVersion(err, f.log)
