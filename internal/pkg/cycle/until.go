@@ -21,7 +21,7 @@ const (
 
 func UntilConnectionError(f func() error, interval time.Duration, attempts Limit, log insolar.Logger) {
 	condition := func(err error) bool {
-		return !strings.Contains(err.Error(), "connection")
+		return !strings.Contains(err.Error(), "connection") && !strings.Contains(err.Error(), "EOF")
 	}
 	untilError(f, condition, interval, attempts, log)
 }
