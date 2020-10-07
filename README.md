@@ -29,7 +29,7 @@ The tests showed the following configuration gives satisfying results:
 
 ## Install the prerequisites
 
-Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.12](https://golang.org/doc/install).
+Install and set up [PostgreSQL 11.4](https://www.postgresql.org/download/) and [Go Tools 1.15](https://golang.org/doc/install).
 
 ## <a name="obtain-access">Obtain an authorized access</a> to Insolar MainNet
 

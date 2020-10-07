@@ -1,6 +1,6 @@
 module github.com/insolar/observer
 
-go 1.12
+go 1.15
 
 require (
 	github.com/deepmap/oapi-codegen v1.3.0
@@ -14,8 +14,10 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
-	github.com/insolar/insolar v1.8.2
-	github.com/insolar/mainnet v1.11.3
+	// TODO replace to tag with the changes from PENV-680
+	github.com/insolar/insolar v1.8.3-0.20201006152754-36c995bbabdf
+	// TODO replace to tag with the changes from PENV-680
+	github.com/insolar/mainnet v1.11.4-0.20201007125809-3b4655e38feb
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
