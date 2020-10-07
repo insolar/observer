@@ -82,6 +82,8 @@ jobs:
       uses: actions/checkout@v1
       with:
         fetch-depth: 1
+    - name: Vendor
+      run: make vendor
     - name: Run linter
       continue-on-error: false
       run: make lint
