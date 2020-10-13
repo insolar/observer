@@ -792,10 +792,10 @@ func TestMember(t *testing.T) {
 				AvailableAmount:  "1000",
 				DepositReference: deposite1.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            1,
 				ReleasedAmount:   "10000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -804,10 +804,10 @@ func TestMember(t *testing.T) {
 				AvailableAmount:  "2000",
 				DepositReference: deposite2.String(),
 				EthTxHash:        "eth_hash_2",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            2,
 				ReleasedAmount:   "2000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -859,10 +859,10 @@ func TestMemberByPublicKey(t *testing.T) {
 				AvailableAmount:  "1000",
 				DepositReference: deposite1.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            1,
 				ReleasedAmount:   "10000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -872,10 +872,10 @@ func TestMemberByPublicKey(t *testing.T) {
 				AvailableAmount:  "2000",
 				DepositReference: deposite2.String(),
 				EthTxHash:        "eth_hash_2",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            2,
 				ReleasedAmount:   "2000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -926,10 +926,10 @@ func TestMemberByPublicKeyDifferentPEM(t *testing.T) {
 				AvailableAmount:  "1000",
 				DepositReference: deposite1.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            1,
 				ReleasedAmount:   "10000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -939,10 +939,10 @@ func TestMemberByPublicKeyDifferentPEM(t *testing.T) {
 				AvailableAmount:  "2000",
 				DepositReference: deposite2.String(),
 				EthTxHash:        "eth_hash_2",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            2,
 				ReleasedAmount:   "2000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -996,10 +996,10 @@ func TestMember_UnconfirmedDeposit(t *testing.T) {
 				AvailableAmount:  "2000",
 				DepositReference: deposite2.String(),
 				EthTxHash:        "eth_hash_2",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            1,
 				ReleasedAmount:   "2000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -1053,10 +1053,10 @@ func TestMember_MigrationAddress(t *testing.T) {
 				AvailableAmount:  "1000",
 				DepositReference: deposite1.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            1,
 				ReleasedAmount:   "10000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 				MemberReference:  NullableString(memberRef.String()),
@@ -1066,10 +1066,10 @@ func TestMember_MigrationAddress(t *testing.T) {
 				AvailableAmount:  "2000",
 				DepositReference: deposite2.String(),
 				EthTxHash:        "eth_hash_2",
-				HoldReleaseDate:  0,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            2,
 				ReleasedAmount:   "2000",
-				ReleaseEndDate:   0,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 				MemberReference:  NullableString(memberRef.String()),
@@ -1109,7 +1109,7 @@ func TestMember_WithoutDeposit(t *testing.T) {
 	require.Equal(t, expected, received)
 }
 
-func TestMember_Hold(t *testing.T) {
+func TestMember_NoHold(t *testing.T) {
 	defer truncateDB(t)
 
 	member := gen.Reference()
@@ -1154,27 +1154,23 @@ func TestMember_Hold(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "500000000",
-				AvailableAmount:  "0",
+				AmountOnHold:     "0",
+				AvailableAmount:  "500000000",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  currentTime,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            100,
-				ReleasedAmount:   "0",
-				ReleaseEndDate:   currentTime + deposit.Vesting,
-				Status:           "LOCKED",
+				ReleasedAmount:   "500000000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
-				NextRelease: &SchemaNextRelease{
-					Amount:    "1128",
-					Timestamp: currentTime,
-				},
 			},
 		},
 	}
 	require.Equal(t, expected, received)
 }
 
-func TestMember_Hold_When_Balance_Smaller_than_Amount_For_Holded_Deposit(t *testing.T) {
+func TestMember_NoHold_When_Balance_Smaller_than_Amount(t *testing.T) {
 	defer truncateDB(t)
 
 	member := gen.Reference()
@@ -1219,27 +1215,23 @@ func TestMember_Hold_When_Balance_Smaller_than_Amount_For_Holded_Deposit(t *test
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "5000",
-				AvailableAmount:  "0",
+				AmountOnHold:     "0",
+				AvailableAmount:  "5000",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  currentTime,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            100,
-				ReleasedAmount:   "0",
-				ReleaseEndDate:   currentTime + deposit.Vesting,
-				Status:           "LOCKED",
+				ReleasedAmount:   "500000000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
-				NextRelease: &SchemaNextRelease{
-					Amount:    "1128",
-					Timestamp: currentTime,
-				},
 			},
 		},
 	}
 	require.Equal(t, expected, received)
 }
 
-func TestMember_Vesting(t *testing.T) {
+func TestMember_Vesting_AllFromTheStart(t *testing.T) {
 	defer truncateDB(t)
 
 	member := gen.Reference()
@@ -1289,20 +1281,16 @@ func TestMember_Vesting(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "499987121",
-				AvailableAmount:  "12879",
+				AmountOnHold:     "0",
+				AvailableAmount:  "500000000",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  currentTime,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            200,
-				ReleasedAmount:   "12879",
-				ReleaseEndDate:   currentTime + deposit.Vesting,
+				ReleasedAmount:   "500000000",
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
-				NextRelease: &SchemaNextRelease{
-					Amount:    "13970",
-					Timestamp: currentTime + 2*deposit.VestingStep,
-				},
 			},
 		},
 	}
@@ -1363,10 +1351,10 @@ func TestMember_VestingAll(t *testing.T) {
 				AvailableAmount:  "5000",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  currentTime,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            300,
 				ReleasedAmount:   "5000",
-				ReleaseEndDate:   currentTime + deposit.Vesting,
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
 			},
@@ -1375,7 +1363,7 @@ func TestMember_VestingAll(t *testing.T) {
 	require.Equal(t, expected, received)
 }
 
-func TestMember_VestingAndSpent(t *testing.T) {
+func TestMember_VestingAllFromTheStartAndSpent(t *testing.T) {
 	defer truncateDB(t)
 
 	member := gen.Reference()
@@ -1426,20 +1414,16 @@ func TestMember_VestingAndSpent(t *testing.T) {
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
-				AmountOnHold:     "499991926",
-				AvailableAmount:  "3074",
+				AmountOnHold:     "0",
+				AvailableAmount:  "499995000",
 				DepositReference: deposite.String(),
 				EthTxHash:        "eth_hash_1",
-				HoldReleaseDate:  currentTime,
+				HoldReleaseDate:  currentTime - 10,
 				Index:            500,
-				ReleasedAmount:   "8074",
-				ReleaseEndDate:   currentTime + deposit.Vesting,
+				ReleasedAmount:   "500000000",
+				ReleaseEndDate:   currentTime - 10,
 				Status:           "AVAILABLE",
 				Timestamp:        currentTime - 10,
-				NextRelease: &SchemaNextRelease{
-					Amount:    "1188",
-					Timestamp: currentTime + 12*deposit.VestingStep,
-				},
 			},
 		},
 	}
