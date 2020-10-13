@@ -105,9 +105,9 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, withMemb
 			AmountOnHold:    "0",
 			AvailableAmount: balance.Text(10),
 			EthTxHash:       d.EtheriumHash,
-			HoldReleaseDate: d.Timestamp, // here
+			HoldReleaseDate: d.Timestamp,
 			ReleasedAmount:  amount.Text(10),
-			ReleaseEndDate:  d.Timestamp, // here
+			ReleaseEndDate:  d.Timestamp,
 			Status:          "AVAILABLE",
 			Timestamp:       d.Timestamp,
 		}
