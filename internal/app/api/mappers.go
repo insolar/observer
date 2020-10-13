@@ -10,7 +10,6 @@ import (
 	"math/big"
 
 	"github.com/insolar/insolar/insolar"
-	depositContract "github.com/insolar/mainnet/application/builtin/contract/deposit"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/models"
@@ -88,7 +87,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 }
 
-func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentTime int64, withMemberRef bool) (ResponsesMemberYaml, error) {
+func MemberToAPIMember(member models.Member, deposits []models.Deposit, withMemberRef bool) (ResponsesMemberYaml, error) {
 	var resDeposits []SchemaDeposit
 
 	for _, d := range deposits {
@@ -100,30 +99,16 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 		if _, err := fmt.Sscan(d.Balance, balance); err != nil {
 			return ResponsesMemberYaml{}, errors.Wrap(err, "failed to parse deposit balance")
 		}
-		amountOnHold, releaseAmount := d.ReleaseAmount(balance, amount, currentTime)
 
-		// In a few cases we can have deposit
-		// where balance is actually lower than amountOnHold,
-		// in such cases old API couldn't show the fact.
-		if currentTime < d.HoldReleaseDate && amountOnHold.Cmp(balance) == 1 {
-			amountOnHold = balance
-		}
-
-		available := big.NewInt(0).Sub(balance, amountOnHold)
-		// if partially vested and partially transferred to wallet
-		if available.Cmp(big.NewInt(0)) == -1 {
-			available = big.NewInt(0)
-		}
 		resDeposit := SchemaDeposit{
 			Index:           int(*d.DepositNumber),
-			AmountOnHold:    amountOnHold.Text(10),
-			AvailableAmount: available.Text(10),
+			AmountOnHold:    "0",
+			AvailableAmount: balance.Text(10),
 			EthTxHash:       d.EtheriumHash,
-			HoldReleaseDate: d.HoldReleaseDate,
-			NextRelease:     NextRelease(currentTime, amount, balance, d),
-			ReleasedAmount:  releaseAmount.Text(10),
-			ReleaseEndDate:  d.Vesting + d.HoldReleaseDate,
-			Status:          d.Status(currentTime),
+			HoldReleaseDate: d.Timestamp,
+			ReleasedAmount:  amount.Text(10),
+			ReleaseEndDate:  d.Timestamp,
+			Status:          "AVAILABLE",
 			Timestamp:       d.Timestamp,
 		}
 		ref := insolar.NewReferenceFromBytes(d.Reference)
@@ -160,62 +145,4 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, currentT
 	}
 
 	return res, nil
-}
-
-func NextRelease(currentTime int64, amount *big.Int, balance *big.Int, deposit models.Deposit) *SchemaNextRelease {
-	if deposit.HoldReleaseDate == 0 {
-		return nil
-	}
-
-	if deposit.Vesting == 0 {
-		return nil
-	}
-
-	if balance.Cmp(big.NewInt(0)) <= 0 {
-		return nil
-	}
-
-	vestingEnd := deposit.HoldReleaseDate + deposit.Vesting
-	if currentTime >= vestingEnd {
-		return nil
-	}
-
-	var timestamp int64
-	if currentTime < deposit.HoldReleaseDate {
-		timestamp = deposit.HoldReleaseDate
-	} else {
-		timestamp = deposit.HoldReleaseDate + deposit.VestingStep*(((currentTime-deposit.HoldReleaseDate)/deposit.VestingStep)+1)
-		if timestamp >= vestingEnd {
-			return checkAgainstBalance(vestingEnd, balance, lastReleaseAmount(amount, &deposit))
-		}
-	}
-
-	return checkAgainstBalance(timestamp, balance, nextReleaseAmount(amount, &deposit, currentTime))
-}
-
-func checkAgainstBalance(ts int64, balance *big.Int, next *big.Int) *SchemaNextRelease {
-	if balance.Cmp(next) == -1 {
-		next = balance
-	}
-	return &SchemaNextRelease{Timestamp: ts, Amount: next.Text(10)}
-}
-
-func nextReleaseAmount(amount *big.Int, deposit *models.Deposit, currentTime int64) *big.Int {
-	steps := deposit.Vesting / deposit.VestingStep
-	sinceRelease := currentTime - deposit.HoldReleaseDate
-	if sinceRelease < 0 {
-		return depositContract.VestedByNow(amount, 0, uint64(steps))
-	}
-
-	step := sinceRelease / deposit.VestingStep
-	releasedAmount := depositContract.VestedByNow(amount, uint64(step), uint64(steps))
-	willReleaseAmount := depositContract.VestedByNow(amount, uint64(step+1), uint64(steps))
-
-	return new(big.Int).Sub(willReleaseAmount, releasedAmount)
-}
-
-func lastReleaseAmount(amount *big.Int, deposit *models.Deposit) *big.Int {
-	steps := deposit.Vesting / deposit.VestingStep
-	releasedAmount := depositContract.VestedByNow(amount, uint64(steps-1), uint64(steps))
-	return new(big.Int).Sub(amount, releasedAmount)
 }

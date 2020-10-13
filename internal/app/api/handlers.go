@@ -182,25 +182,13 @@ func (s *ObserverServer) getMember(ctx echo.Context, method int, smth string) er
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	pulse, err := s.pStorage.Last()
-	if err != nil {
-		s.log.Error(errors.Wrap(err, "couldn't load last pulse"))
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
-	pTime, err := pulse.Number.AsApproximateTime()
-	if err != nil {
-		s.log.Error(errors.Wrapf(err, "couldn't convert pulse %d to time", pulse.Number))
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
 	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference, true)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	response, err := MemberToAPIMember(*member, deposits, pTime.Unix(), method != getByReference)
+	response, err := MemberToAPIMember(*member, deposits, method != getByReference)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
