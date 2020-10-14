@@ -141,6 +141,7 @@ type beauty struct {
 
 	members        map[insolar.ID]*observer.Member
 	balances       map[insolar.ID]*observer.Balance
+	burnedBalances map[insolar.ID]*observer.BurnedBalance
 	deposits       map[insolar.ID]observer.Deposit
 	depositUpdates map[insolar.ID]observer.DepositUpdate
 	depositMembers map[insolar.Reference]observer.DepositMemberUpdate
