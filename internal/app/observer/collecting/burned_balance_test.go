@@ -66,30 +66,23 @@ func makeBurnAccountAmend(pn insolar.PulseNumber, balance string, prev insolar.I
 	return (*observer.Record)(rec)
 }
 
-func makeBurnBalanceActivate() (*observer.BurnedBalance, *observer.Record) {
-	pn := insolar.PulseNumber(pulse.OfNow())
+func makeBurnBalance(isActivate bool) (*observer.BurnedBalance, *observer.Record) {
+	pn := pulse.OfNow()
 	balance := "12345678"
-	rec := makeBurnAccountActivate(pn, balance)
-	activate := &observer.BurnedBalance{
-		AccountState: rec.ID,
-		IsActivate:   true,
-		Balance:      balance,
+	burnedBalance := &observer.BurnedBalance{
+		IsActivate: isActivate,
+		Balance:    balance,
 	}
-	return activate, rec
-}
-
-func makeBurnBalanceUpdate() (*observer.BurnedBalance, *observer.Record) {
-	pn := insolar.PulseNumber(pulse.OfNow())
-	balance := "12345678"
+	if isActivate {
+		rec := makeBurnAccountActivate(pn, balance)
+		burnedBalance.AccountState = rec.ID
+		return burnedBalance, rec
+	}
 	prev := gen.IDWithPulse(pn)
 	rec := makeBurnAccountAmend(pn, balance, prev)
-	update := &observer.BurnedBalance{
-		PrevState:    prev,
-		AccountState: rec.ID,
-		IsActivate:   false,
-		Balance:      balance,
-	}
-	return update, rec
+	burnedBalance.AccountState = rec.ID
+	burnedBalance.PrevState = prev
+	return burnedBalance, rec
 }
 
 func TestBurnedBalanceCollector_Collect(t *testing.T) {
@@ -112,14 +105,14 @@ func TestBurnedBalanceCollector_Collect(t *testing.T) {
 	})
 
 	t.Run("ordinary_activate", func(t *testing.T) {
-		activate, rec := makeBurnBalanceActivate()
+		activate, rec := makeBurnBalance(true)
 		actual := collector.Collect(rec)
 
 		require.Equal(t, activate, actual)
 	})
 
 	t.Run("ordinary_update", func(t *testing.T) {
-		update, rec := makeBurnBalanceUpdate()
+		update, rec := makeBurnBalance(false)
 		actual := collector.Collect(rec)
 
 		require.Equal(t, update, actual)

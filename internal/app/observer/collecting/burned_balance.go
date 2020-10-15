@@ -18,12 +18,12 @@ import (
 	"github.com/insolar/observer/internal/app/observer"
 )
 
-// import from mainnet
+// TODO: import from mainnet
 type BurnAccount struct {
 	Balance string
 }
 
-// import from mainnet
+// nolint TODO: import from mainnet
 var BurnAccountPrototypeReference = gen.Reference()
 
 type BurnedBalanceCollector struct {
@@ -41,10 +41,29 @@ func (c *BurnedBalanceCollector) Collect(rec *observer.Record) *observer.BurnedB
 		return nil
 	}
 
+	b, memory := burnedBalance(rec)
+	if b == nil {
+		return nil
+	}
+	if memory == nil {
+		log.Warn(errors.New("burn balance memory is nil"))
+		return b
+	}
+
+	burnAccount := BurnAccount{}
+	// b := burned.Burned{}
+	if err := insolar.Deserialize(memory, &burnAccount); err != nil {
+		log.Error(errors.New("failed to deserialize burn balance memory"))
+	}
+	b.Balance = burnAccount.Balance
+
+	return b
+}
+
+func burnedBalance(rec *observer.Record) (*observer.BurnedBalance, []byte) {
 	var prevState insolar.ID
 	var image insolar.Reference
 	var memory []byte
-	balance := ""
 	isActivate := false
 	switch v := rec.Virtual.Union.(type) {
 	case *record.Virtual_Activate:
@@ -57,36 +76,19 @@ func (c *BurnedBalanceCollector) Collect(rec *observer.Record) *observer.BurnedB
 		image = v.Amend.Image
 	default:
 		log.Error(errors.New("invalid record to get burned balance memory"))
-		return nil
+		return nil, nil
 	}
 
 	if !image.Equal(BurnAccountPrototypeReference) {
 		// if !image.Equal(*proxyBurned.PrototypeReference) {
-		return nil
-	}
-
-	if memory == nil {
-		log.Warn(errors.New("burn balance memory is nil"))
-		return &observer.BurnedBalance{
-			PrevState:    prevState,
-			IsActivate:   isActivate,
-			AccountState: rec.ID,
-			Balance:      "0",
-		}
-	}
-
-	b := BurnAccount{}
-	// b := burned.Burned{}
-	if err := insolar.Deserialize(memory, &b); err != nil {
-		log.Error(errors.New("failed to deserialize burn balance memory"))
-	} else {
-		balance = b.Balance
+		return nil, nil
 	}
 
 	return &observer.BurnedBalance{
 		PrevState:    prevState,
 		IsActivate:   isActivate,
 		AccountState: rec.ID,
-		Balance:      balance,
-	}
+		Balance:      "0",
+	}, memory
+
 }
