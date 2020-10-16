@@ -319,3 +319,11 @@ func convertCoinsToXNS(str string) string {
 		return str[:l-10] + "." + str[l-10:]
 	}
 }
+
+type BurnedBalance struct {
+	tableName struct{} `sql:"burned_balance"` // nolint: unused,structcheck
+
+	ID           int64  `sql:"id,notnull"`
+	Balance      string `sql:"balance"`
+	AccountState []byte `sql:"account_state"`
+}

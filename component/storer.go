@@ -192,6 +192,24 @@ func insertObjectData(cfg *configuration.Observer, b *beauty, tx orm.DB, obs *ob
 		}
 	}
 
+	burnedBalances := postgres.NewBurnedBalanceStorage(obs, tx)
+	for _, burnedBalance := range b.burnedBalances {
+		if burnedBalance == nil {
+			continue
+		}
+		if burnedBalance.IsActivate {
+			err := burnedBalances.Insert(burnedBalance)
+			if err != nil {
+				return errors.Wrap(err, "failed to insert burned balance")
+			}
+		} else {
+			err := burnedBalances.Update(burnedBalance)
+			if err != nil {
+				return errors.Wrap(err, "failed to insert burned balance update")
+			}
+		}
+	}
+
 	// updates
 	for _, balance := range b.balances {
 		if balance == nil {

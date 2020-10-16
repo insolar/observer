@@ -29,6 +29,13 @@ type Balance struct {
 	Balance      string
 }
 
+type BurnedBalance struct {
+	PrevState    insolar.ID
+	AccountState insolar.ID
+	IsActivate   bool
+	Balance      string
+}
+
 type MemberCollector interface {
 	Collect(context.Context, *Record) *Member
 }
