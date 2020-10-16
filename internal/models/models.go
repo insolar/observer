@@ -70,6 +70,7 @@ const (
 	TTypeMigration  TransactionType = "migration"
 	TTypeRelease    TransactionType = "release"
 	TTypeAllocation TransactionType = "allocation"
+	TTypeBurn       TransactionType = "burn"
 )
 
 type TxIndexType int

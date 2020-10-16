@@ -96,6 +96,37 @@ type ResponsesPulseNumberYaml struct {
 // ResponsesPulseRangeYaml defines model for responses-pulse-range-yaml.
 type ResponsesPulseRangeYaml []int64
 
+// SchemaAllocation defines model for schema-allocation.
+type SchemaAllocation struct {
+	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
+	SchemasTransactionAbstract
+	// Embedded fields due to inline allOf schema
+
+	// Reference to the sending member object (migration daemon).
+	FromMemberReference string `json:"fromMemberReference"`
+
+	// Reference to the receiving deposit object.
+	ToDepositReference string `json:"toDepositReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference string `json:"toMemberReference"`
+	Type              string `json:"type"`
+}
+
+// SchemaBurn defines model for schema-burn.
+type SchemaBurn struct {
+	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
+	SchemasTransactionAbstract
+	// Embedded fields due to inline allOf schema
+
+	// Reference to the sending member object.
+	FromMemberReference string `json:"fromMemberReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference *string `json:"toMemberReference"`
+	Type              string  `json:"type"`
+}
+
 // SchemaDeposit defines model for schema-deposit.
 type SchemaDeposit struct {
 
