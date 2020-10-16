@@ -36,22 +36,6 @@ type ResponsesAddressesYaml []struct {
 	Index string `json:"index"`
 }
 
-// ResponsesDetailsYaml defines model for responses-details-yaml.
-type ResponsesDetailsYaml struct {
-
-	// References to CostCenter object and fee calculation request.
-	CostCenter SchemaCostCenter `json:"costCenter"`
-
-	// References to fee member object and fee member transfer request.
-	FeeMember SchemaFeeMember `json:"feeMember"`
-
-	// References to sender's objects and their transfer requests.
-	From SchemaFromRefs `json:"from"`
-
-	// References to recipient's objects and their accept requests.
-	To SchemaToRefs `json:"to"`
-}
-
 // ResponsesIsMigrationAddressYaml defines model for responses-isMigrationAddress-yaml.
 type ResponsesIsMigrationAddressYaml struct {
 
@@ -61,9 +45,6 @@ type ResponsesIsMigrationAddressYaml struct {
 
 // ResponsesMarketStatsYaml defines model for responses-marketStats-yaml.
 type ResponsesMarketStatsYaml struct {
-
-	// Best approximation of the number of coins that are circulating in the market.
-	CirculatingSupply *string `json:"circulatingSupply,omitempty"`
 
 	// 24 hour trading price percentage change in the specified currency (USD if not specified).
 	DailyChange *string `json:"dailyChange,omitempty"`
@@ -86,6 +67,9 @@ type ResponsesMarketStatsYaml struct {
 
 	// Current token rank.
 	Rank *string `json:"rank,omitempty"`
+
+	// Total amount of XNS coins available at the moment. An XNS coin can have 10 digits after the decimal point.
+	TotalSupply *string `json:"totalSupply,omitempty"`
 
 	// Token's 24-hour trading volume in the specified currency (USD if not specified).
 	Volume *string `json:"volume,omitempty"`
@@ -111,84 +95,6 @@ type ResponsesNetworkStatsYaml struct {
 
 	// Total number of transactions.
 	TotalTransactions int `json:"totalTransactions"`
-}
-
-// SchemaAcceptRefs defines model for schema-accept-refs.
-type SchemaAcceptRefs struct {
-
-	// Reference to recipient's account accept request.
-	Account string `json:"account"`
-
-	// Reference to recipient's member accept request.
-	Member string `json:"member"`
-
-	// Reference to recipient's wallet accept request.
-	Wallet string `json:"wallet"`
-}
-
-// SchemaCostCenter defines model for schema-cost-center.
-type SchemaCostCenter struct {
-
-	// Reference to fee calculation request.
-	CalcFeeRequest string `json:"calcFeeRequest"`
-
-	// Reference to CostCenter object.
-	Reference string `json:"reference"`
-}
-
-// SchemaFeeMember defines model for schema-fee-member.
-type SchemaFeeMember struct {
-
-	// Reference to fee member's transfer request.
-	AcceptRequest string `json:"acceptRequest"`
-
-	// Reference to fee member object.
-	Reference string `json:"reference"`
-}
-
-// SchemaFromRefs defines model for schema-from-refs.
-type SchemaFromRefs struct {
-
-	// Reference to sender's account object.
-	AccountReference string `json:"accountReference"`
-
-	// Reference to sender's member object.
-	MemberReference string `json:"memberReference"`
-
-	// References to transfer requests pertaining to senders's objects.
-	TransferRequests SchemaTransferRefs `json:"transferRequests"`
-
-	// Reference to sender's wallet object.
-	WalletReference string `json:"walletReference"`
-}
-
-// SchemaToRefs defines model for schema-to-refs.
-type SchemaToRefs struct {
-
-	// References to accept requests pertaining to recipient's objects.
-	AcceptRequests SchemaAcceptRefs `json:"acceptRequests"`
-
-	// Reference to recipient's account object.
-	AccountReference string `json:"accountReference"`
-
-	// Reference to recipient's member object.
-	MemberReference string `json:"memberReference"`
-
-	// Reference to recipient's wallet object.
-	WalletReference string `json:"walletReference"`
-}
-
-// SchemaTransferRefs defines model for schema-transfer-refs.
-type SchemaTransferRefs struct {
-
-	// Reference to sender's account transfer request.
-	Account string `json:"account"`
-
-	// Reference to sender's member transfer request.
-	Member string `json:"member"`
-
-	// Reference to sender's wallet transfer request.
-	Wallet string `json:"wallet"`
 }
 
 // GetMigrationAddressesParams defines parameters for GetMigrationAddresses.
@@ -218,9 +124,6 @@ type ServerInterface interface {
 	// stats/network
 	// (GET /api/stats/network)
 	NetworkStats(ctx echo.Context) error
-	// transaction details
-	// (GET /api/transaction/{txID}/details)
-	TransactionsDetails(ctx echo.Context, txID string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -296,22 +199,6 @@ func (w *ServerInterfaceWrapper) NetworkStats(ctx echo.Context) error {
 	return err
 }
 
-// TransactionsDetails converts echo context to params.
-func (w *ServerInterfaceWrapper) TransactionsDetails(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "txID" -------------
-	var txID string
-
-	err = runtime.BindStyledParameter("simple", false, "txID", ctx.Param("txID"), &txID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter txID: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.TransactionsDetails(ctx, txID)
-	return err
-}
-
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -339,6 +226,5 @@ func RegisterHandlers(router EchoRouter, si ServerInterface) {
 	router.GET("/admin/migration/addresses/count", wrapper.GetMigrationAddressCount)
 	router.GET("/api/stats/market", wrapper.MarketStats)
 	router.GET("/api/stats/network", wrapper.NetworkStats)
-	router.GET("/api/transaction/:txID/details", wrapper.TransactionsDetails)
 
 }
