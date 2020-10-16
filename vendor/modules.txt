@@ -102,7 +102,6 @@ github.com/insolar/insolar/log
 github.com/insolar/insolar/insolar/record
 github.com/insolar/insolar/ledger/heavy/exporter
 github.com/insolar/insolar/logicrunner/builtin/foundation
-github.com/insolar/insolar/insolar/gen
 github.com/insolar/insolar/pulse
 github.com/insolar/insolar/insolar/bits
 github.com/insolar/insolar/insolar/defaults
@@ -119,6 +118,7 @@ github.com/insolar/insolar/instrumentation/insmetrics
 github.com/insolar/insolar/ledger/heavy/executor
 github.com/insolar/insolar/ledger/object
 github.com/insolar/insolar/api/requester
+github.com/insolar/insolar/insolar/gen
 github.com/insolar/insolar/applicationbase/genesisrefs
 github.com/insolar/insolar/logicrunner/common
 github.com/insolar/insolar/insolar/secrets
@@ -149,11 +149,13 @@ github.com/insolar/insolar/insolar/flow/internal/pulse
 github.com/insolar/mainnet/application/appfoundation
 github.com/insolar/mainnet/application/builtin/contract/member
 github.com/insolar/mainnet/application/builtin/contract/account
+github.com/insolar/mainnet/application/builtin/contract/burnedaccount
 github.com/insolar/mainnet/application/builtin/contract/deposit
 github.com/insolar/mainnet/application/builtin/contract/migrationshard
 github.com/insolar/mainnet/application/builtin/contract/pkshard
 github.com/insolar/mainnet/application/builtin/contract/wallet
 github.com/insolar/mainnet/application/builtin/proxy/account
+github.com/insolar/mainnet/application/builtin/proxy/burnedaccount
 github.com/insolar/mainnet/application/builtin/proxy/deposit
 github.com/insolar/mainnet/application/builtin/proxy/member
 github.com/insolar/mainnet/application/builtin/proxy/migrationshard
@@ -162,7 +164,6 @@ github.com/insolar/mainnet/application/builtin/proxy/wallet
 github.com/insolar/mainnet/application/genesisrefs
 github.com/insolar/mainnet/application/builtin/proxy/costcenter
 github.com/insolar/mainnet/application/builtin/proxy/migrationdaemon
-github.com/insolar/mainnet/application/builtin/proxy/burnedaccount
 github.com/insolar/mainnet/application/builtin/proxy/migrationadmin
 github.com/insolar/mainnet/application/builtin/proxy/rootdomain
 github.com/insolar/mainnet/application
