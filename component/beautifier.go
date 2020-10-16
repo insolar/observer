@@ -186,8 +186,8 @@ func makeBeautifier(
 			}
 
 			burnedBalance := burnedBalances.Collect(&obsRecord)
-			if balance != nil {
-				b.burnedBalances[balance.AccountState] = burnedBalance
+			if burnedBalance != nil {
+				b.burnedBalances[burnedBalance.AccountState] = burnedBalance
 			}
 		}
 		log.Debug("Timer:  collected ", time.Since(tempTimer))
