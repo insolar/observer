@@ -9,22 +9,13 @@ import (
 	"errors"
 
 	"github.com/insolar/insolar/insolar"
-	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/log"
-	// "github.com/insolar/mainnet/application/builtin/contract/burned"
-	// proxyBurned "github.com/insolar/mainnet/application/builtin/proxy/burned"
+	"github.com/insolar/mainnet/application/builtin/contract/burnedaccount"
+	proxyBurned "github.com/insolar/mainnet/application/builtin/proxy/burnedaccount"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
-
-// TODO: import from mainnet
-type BurnAccount struct {
-	Balance string
-}
-
-// nolint TODO: import from mainnet
-var BurnAccountPrototypeReference = gen.Reference()
 
 type BurnedBalanceCollector struct {
 	log insolar.Logger
@@ -50,8 +41,7 @@ func (c *BurnedBalanceCollector) Collect(rec *observer.Record) *observer.BurnedB
 		return b
 	}
 
-	burnAccount := BurnAccount{}
-	// b := burned.Burned{}
+	burnAccount := burnedaccount.BurnedAccount{}
 	if err := insolar.Deserialize(memory, &burnAccount); err != nil {
 		log.Error(errors.New("failed to deserialize burn balance memory"))
 	}
@@ -79,8 +69,7 @@ func burnedBalance(rec *observer.Record) (*observer.BurnedBalance, []byte) {
 		return nil, nil
 	}
 
-	if !image.Equal(BurnAccountPrototypeReference) {
-		// if !image.Equal(*proxyBurned.PrototypeReference) {
+	if !image.Equal(*proxyBurned.PrototypeReference) {
 		return nil, nil
 	}
 

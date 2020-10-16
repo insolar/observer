@@ -153,6 +153,8 @@ github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866 h1:821agB4jwkceJ
 github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
 github.com/insolar/insolar v1.7.2 h1:8+x/EaJQdBshTeMcJ9tVZFIsCeQdXHrzNDveVgLWsIE=
 github.com/insolar/insolar v1.7.2/go.mod h1:njbrBINqSm5ek4TZj06D1xQE9fI3NOG5rG/fvNnfAGY=
+github.com/insolar/mainnet v1.10.1-0.20201015161316-e5711a22dc94 h1:bBuIc0ajwrVxHWAl1KjtYK5Z89Sv+8U4QRvoc24qR7c=
+github.com/insolar/mainnet v1.10.1-0.20201015161316-e5711a22dc94/go.mod h1:AGV7WgOiNe5mUkeSwF1hoiEF6oTnHodXT/Ukd6k2w9w=
 github.com/insolar/mainnet v1.10.2 h1:NrYBWUJMCWf2dLg6l0IQju8ZN7n0jQ7iEYZlfveTZwI=
 github.com/insolar/mainnet v1.10.2/go.mod h1:AGV7WgOiNe5mUkeSwF1hoiEF6oTnHodXT/Ukd6k2w9w=
 github.com/insolar/rpc v1.2.2-0.20200331123021-db57b8833f82/go.mod h1:BZcTsPtQu8QG8RqqQdAnuNAG8n6TOrdNxIHro0h99Ik=

@@ -13,13 +13,15 @@ import (
 	"github.com/insolar/insolar/insolar/record"
 	"github.com/insolar/insolar/instrumentation/inslogger"
 	"github.com/insolar/insolar/pulse"
+	"github.com/insolar/mainnet/application/builtin/contract/burnedaccount"
+	proxyBurned "github.com/insolar/mainnet/application/builtin/proxy/burnedaccount"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
 )
 
 func makeBurnAccountActivate(pn insolar.PulseNumber, balance string) *observer.Record {
-	acc := &BurnAccount{
+	acc := &burnedaccount.BurnedAccount{
 		Balance: balance,
 	}
 	memory, err := insolar.Serialize(acc)
@@ -33,7 +35,7 @@ func makeBurnAccountActivate(pn insolar.PulseNumber, balance string) *observer.R
 				Activate: &record.Activate{
 					Request:     *insolar.NewReference(gen.IDWithPulse(pn)),
 					Memory:      memory,
-					Image:       BurnAccountPrototypeReference,
+					Image:       *proxyBurned.PrototypeReference,
 					IsPrototype: false,
 				},
 			},
@@ -43,7 +45,7 @@ func makeBurnAccountActivate(pn insolar.PulseNumber, balance string) *observer.R
 }
 
 func makeBurnAccountAmend(pn insolar.PulseNumber, balance string, prev insolar.ID) *observer.Record {
-	acc := &BurnAccount{
+	acc := &burnedaccount.BurnedAccount{
 		Balance: balance,
 	}
 	memory, err := insolar.Serialize(acc)
@@ -57,7 +59,7 @@ func makeBurnAccountAmend(pn insolar.PulseNumber, balance string, prev insolar.I
 				Amend: &record.Amend{
 					Request:   *insolar.NewReference(gen.IDWithPulse(pn)),
 					Memory:    memory,
-					Image:     BurnAccountPrototypeReference,
+					Image:     *proxyBurned.PrototypeReference,
 					PrevState: prev,
 				},
 			},
