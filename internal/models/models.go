@@ -174,7 +174,6 @@ type CoinMarketCapStats struct {
 	Rank                 int     `sql:"rank"`
 	MarketCap            float64 `sql:"market_cap"`
 	Volume24Hours        float64 `sql:"volume_24_hours"`
-	CirculatingSupply    float64 `json:"circulating_supply"`
 
 	Created time.Time `sql:"created,pk,default:now(),notnull"`
 }

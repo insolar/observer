@@ -8,8 +8,10 @@ package grpc
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
 	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
@@ -45,34 +47,47 @@ func (f *PulseFetcher) Fetch(ctx context.Context, last insolar.PulseNumber) (*ob
 	request := &exporter.GetPulses{Count: 1, PulseNumber: last}
 	f.log.Infof("Fetching %d pulses from %s", request.Count, last)
 	var (
-		resp *exporter.Pulse
+		resp     *exporter.Pulse
+		attempts = cycle.Limit(0)
 	)
 
 	requestCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	cycle.UntilError(func() error {
-		stream, err := client.Export(getCtxWithClientVersion(requestCtx), request)
-		if err != nil {
-			f.log.WithField("request", request).
-				Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
+		for {
+			stream, err := client.Export(getCtxWithClientVersion(requestCtx), request)
+			if err != nil {
+				f.log.WithField("request", request).
+					Error(errors.Wrapf(err, "failed to get gRPC stream from exporter.Export method"))
+				return err
+			}
+
+			resp, err = stream.Recv()
+			if err != nil {
+				// stream is closed, no point of retrying
+				if err == io.EOF {
+					f.log.Debug("EOF received, quit")
+					return nil
+				}
+				detectedDeprecatedVersion(err, f.log)
+
+				f.log.WithField("request", request).
+					Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
+
+				if connectivity.ExporterLimited(err) && attempts < f.cfg.Replicator.Attempts {
+					f.log.WithFields(map[string]interface{}{
+						"attempt":       attempts,
+						"attempt_limit": f.cfg.Replicator.Attempts,
+					}).Errorf("Exporter rate limit exceeded. Will try again in %s",
+						f.cfg.Replicator.AttemptInterval.String())
+					time.Sleep(f.cfg.Replicator.AttemptInterval)
+					attempts++
+					continue
+				}
+			}
 			return err
 		}
-
-		resp, err = stream.Recv()
-		if err != nil {
-			// stream is closed, no point of retrying
-			if err == io.EOF {
-				f.log.Debug("EOF received, quit")
-				return nil
-			}
-			detectedDeprecatedVersion(err, f.log)
-
-			f.log.WithField("request", request).
-				Error(errors.Wrapf(err, "received error value from pulses gRPC stream"))
-		}
-
-		return err
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	if resp == nil {
 		return nil, ErrNoPulseReceived
@@ -104,7 +119,7 @@ func (f *PulseFetcher) FetchCurrent(ctx context.Context) (insolar.PulseNumber, e
 			return err
 		}
 		return nil
-	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts)
+	}, f.cfg.Replicator.AttemptInterval, f.cfg.Replicator.Attempts, f.log)
 
 	f.log.Debug("Received top sync pulse ", tsp.PulseNumber)
 	return insolar.PulseNumber(tsp.PulseNumber), nil

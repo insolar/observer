@@ -8,13 +8,16 @@ package grpc
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/ledger/heavy/exporter"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/configuration"
+	"github.com/insolar/observer/connectivity"
 	"github.com/insolar/observer/internal/app/observer"
+	"github.com/insolar/observer/internal/pkg/cycle"
 	"github.com/insolar/observer/observability"
 )
 
@@ -22,6 +25,7 @@ import (
 
 type RecordFetcher struct {
 	log     insolar.Logger
+	cfg     *configuration.Observer
 	client  exporter.RecordExporterClient
 	records observer.RecordStorage //nolint: unused,structcheck
 	request *exporter.GetRecords
@@ -35,6 +39,7 @@ func NewRecordFetcher(
 	request := &exporter.GetRecords{Count: cfg.Replicator.BatchSize}
 	return &RecordFetcher{
 		log:     obs.Log(),
+		cfg:     cfg,
 		client:  client,
 		request: request,
 	}
@@ -56,11 +61,15 @@ func (f *RecordFetcher) Fetch(
 	f.request.RecordNumber = 0
 
 	batch := make(map[uint32]*exporter.Record)
-	var counter uint32
-	shouldIterateFrom := insolar.PulseNumber(0)
+	var (
+		counter           uint32
+		shouldIterateFrom = insolar.PulseNumber(0)
+		attempts          = cycle.Limit(0)
+	)
 	// Get pulse batches
 	for {
 		counter = 0
+		limitExceeded := false
 		f.log.Debug("Data request: ", f.request)
 		stream, err := client.Export(getCtxWithClientVersion(ctx), f.request)
 
@@ -79,6 +88,17 @@ func (f *RecordFetcher) Fetch(
 			if err != nil {
 				detectedDeprecatedVersion(err, f.log)
 				f.log.Debugf("received error value from records gRPC stream %v", f.request)
+				if connectivity.ExporterLimited(err) && attempts < f.cfg.Replicator.Attempts {
+					limitExceeded = true
+					f.log.WithFields(map[string]interface{}{
+						"attempt":       attempts,
+						"attempt_limit": f.cfg.Replicator.Attempts,
+					}).Errorf("Exporter rate limit exceeded. Will try again in %s",
+						f.cfg.Replicator.AttemptInterval.String())
+					time.Sleep(f.cfg.Replicator.AttemptInterval)
+					attempts++
+					break
+				}
 				return batch, shouldIterateFrom, errors.Wrapf(err, "received error value from records gRPC stream %v", f.request)
 			}
 
@@ -107,6 +127,9 @@ func (f *RecordFetcher) Fetch(
 		}
 
 		f.log.Debug("go to next round, fetched: ", len(batch))
+		if limitExceeded {
+			continue
+		}
 		// If we get less than batch size, then stop
 		if counter < f.request.Count {
 			f.log.Debugf("Exiting: counter %+v", uint32(len(batch)))

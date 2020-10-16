@@ -95,7 +95,7 @@ func (s *MigrationAddressStorage) Wasted() int {
 	var err error
 	cnt := 0
 
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		s.log.Info("trying to get wasted addresses from db")
 		cnt, err = s.db.Model(&MigrationAddressSchema{}).
 			Where("wasted is true").
@@ -107,7 +107,7 @@ func (s *MigrationAddressStorage) Wasted() int {
 			return nil
 		}
 		return err
-	}, s.cfg.AttemptInterval, s.cfg.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts, s.log)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find wasted addresses from db")
@@ -125,7 +125,7 @@ func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
 	var err error
 	cnt := 0
 
-	cycle.UntilError(func() error {
+	cycle.UntilConnectionError(func() error {
 		s.log.Info("trying to get active addresses from db")
 		cnt, err = s.db.Model(&MigrationAddressSchema{}).
 			Count()
@@ -136,7 +136,7 @@ func (s *MigrationAddressStorage) TotalMigrationAddresses() int {
 			return nil
 		}
 		return err
-	}, s.cfg.AttemptInterval, s.cfg.Attempts)
+	}, s.cfg.AttemptInterval, s.cfg.Attempts, s.log)
 
 	if err != nil && err != pg.ErrNoRows {
 		s.log.Debug("failed to find active addresses from db")

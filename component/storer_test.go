@@ -8,6 +8,10 @@ package component
 import (
 	"bytes"
 	"context"
+	"github.com/insolar/insolar/instrumentation/inslogger"
+	"github.com/insolar/observer/internal/pkg/cycle"
+	"github.com/insolar/observer/internal/testutils"
+	"github.com/pkg/errors"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -215,6 +219,82 @@ func TestPanicSimpleTransactionsWithResults(t *testing.T) {
 
 		return tx.Rollback()
 	})
+}
+
+func TestUntilConnectionError(t *testing.T) {
+	var dbCleaner func()
+	db2, _, dbCleaner := testutils.SetupDB("../scripts/migrations")
+	dbCleaner()
+
+	counter := 0
+	log := inslogger.FromContext(inslogger.TestContext(t))
+	cycle.UntilConnectionError(func() error {
+		if counter == 3 {
+			db2 = db
+		}
+		counter++
+		errTx := db2.RunInTransaction(func(tx *pg.Tx) error {
+			expectedTransactions := []models.Transaction{
+				{
+					TransactionID:       gen.RecordReference().Bytes(),
+					Type:                models.TTypeTransfer,
+					PulseRecord:         [2]int64{rand.Int63(), rand.Int63()},
+					MemberFromReference: gen.Reference().Bytes(),
+					MemberToReference:   gen.Reference().Bytes(),
+					Amount:              strconv.Itoa(rand.Int()),
+					Fee:                 strconv.Itoa(rand.Int()),
+					FinishSuccess:       rand.Int()/2 == 0,
+					FinishPulseRecord:   [2]int64{rand.Int63(), rand.Int63()},
+					StatusRegistered:    true,
+					StatusSent:          true,
+					StatusFinished:      true,
+				},
+				{
+					TransactionID:      gen.RecordReference().Bytes(),
+					Type:               models.TTypeMigration,
+					PulseRecord:        [2]int64{rand.Int63(), rand.Int63()},
+					DepositToReference: gen.Reference().Bytes(),
+					Amount:             strconv.Itoa(rand.Int()),
+					Fee:                strconv.Itoa(rand.Int()),
+					StatusRegistered:   true,
+					StatusSent:         true,
+					StatusFinished:     false,
+				},
+			}
+			err := StoreTxRegister(db, []observer.TxRegister{
+				{
+					TransactionID:       *insolar.NewReferenceFromBytes(expectedTransactions[0].TransactionID),
+					Type:                expectedTransactions[0].Type,
+					PulseNumber:         expectedTransactions[0].PulseRecord[0],
+					RecordNumber:        expectedTransactions[0].PulseRecord[1],
+					MemberFromReference: expectedTransactions[0].MemberFromReference,
+					MemberToReference:   expectedTransactions[0].MemberToReference,
+					Amount:              expectedTransactions[0].Amount,
+				},
+				{
+					TransactionID:      *insolar.NewReferenceFromBytes(expectedTransactions[1].TransactionID),
+					Type:               expectedTransactions[1].Type,
+					PulseNumber:        expectedTransactions[1].PulseRecord[0],
+					RecordNumber:       expectedTransactions[1].PulseRecord[1],
+					DepositToReference: expectedTransactions[1].DepositToReference,
+					Amount:             expectedTransactions[1].Amount,
+				},
+			})
+			if err != nil {
+				return err
+			}
+			_, err = GetTx(context.Background(), tx, expectedTransactions[0].TransactionID)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if errTx != nil {
+			return errors.Wrap(errTx, "connection reset by peer")
+		}
+		return nil
+	}, 2*time.Second, 10, log)
+	require.Equal(t, counter, 4)
 }
 
 func TestPanicSimpleTransactionsWithSagaResults(t *testing.T) {

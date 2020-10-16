@@ -82,7 +82,6 @@ func main() {
 		Rank:                 stats.Rank,
 		MarketCap:            stats.Quote.USD.MarketCap,
 		Volume24Hours:        stats.Quote.USD.Volume24Hours,
-		CirculatingSupply:    stats.CirculatingSupply,
 		Created:              time.Now().UTC(),
 	})
 	if err != nil {
@@ -94,20 +93,19 @@ func main() {
 
 // Calculates and replaces stats params
 func replaceStats(stats *CmcInfo, db orm.DB) {
-	var circulatingFloat float64
+	var totalSupplyFloat float64
 	supplyStatsRepo := postgres.NewSupplyStatsRepository(db)
 	result, err := supplyStatsRepo.LastStats()
 	if err != nil {
-		circulatingFloat = 0
+		totalSupplyFloat = 0
 	} else {
-		circulatingFloat, err = strconv.ParseFloat(result.Total, 64)
+		totalSupplyFloat, err = strconv.ParseFloat(result.Total, 64)
 		if err != nil {
-			circulatingFloat = 0
+			totalSupplyFloat = 0
 		}
 	}
-	circulatingFloat /= 10000000000
-	stats.CirculatingSupply = circulatingFloat
-	stats.Quote.USD.MarketCap = circulatingFloat * stats.Quote.USD.Price
+	totalSupplyFloat /= 10000000000
+	stats.Quote.USD.MarketCap = totalSupplyFloat * stats.Quote.USD.Price
 }
 
 func initGlobalLogger(ctx context.Context, cfg insconf.Log) (context.Context, insolar.Logger) {
@@ -176,17 +174,16 @@ func getStats(token string, symbol string, logger insolar.Logger) *CmcInfo {
 }
 
 type CmcInfo struct {
-	ID                int       `json:"id"`
-	Name              string    `json:"name"`
-	Symbol            string    `json:"symbol"`
-	Slug              string    `json:"slug"`
-	Rank              int       `json:"cmc_rank"`
-	CirculatingSupply float64   `json:"circulating_supply"`
-	TotalSupply       float64   `json:"total_supply"`
-	MaxSupply         float64   `json:"max_supply"`
-	LastUpdated       time.Time `json:"last_updated"`
-	DateAdded         time.Time `json:"date_added"`
-	Quote             struct {
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Symbol      string    `json:"symbol"`
+	Slug        string    `json:"slug"`
+	Rank        int       `json:"cmc_rank"`
+	TotalSupply float64   `json:"total_supply"`
+	MaxSupply   float64   `json:"max_supply"`
+	LastUpdated time.Time `json:"last_updated"`
+	DateAdded   time.Time `json:"date_added"`
+	Quote       struct {
 		USD struct {
 			Price                float64   `json:"price"`
 			Volume24Hours        float64   `json:"volume_24h"`
