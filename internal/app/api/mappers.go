@@ -82,6 +82,21 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 		}
 
 		return res
+	case models.TTypeBurn:
+		res := SchemaBurn{
+			SchemasTransactionAbstract: internalTx,
+			Type:                       string(tx.Type),
+		}
+		if len(tx.MemberFromReference) > 0 {
+			ref := insolar.NewReferenceFromBytes(tx.MemberFromReference)
+			res.FromMemberReference = ref.String()
+		}
+		if len(tx.MemberToReference) > 0 {
+			ref := insolar.NewReferenceFromBytes(tx.MemberToReference)
+			res.ToMemberReference = NullableString(ref.String())
+		}
+
+		return res
 	default:
 		return internalTx
 	}
