@@ -25,6 +25,7 @@ func (*BurnedBalanceFilter) Filter(burnedBalances map[insolar.ID]*observer.Burne
 			delete(burnedBalances, burnedBalance.PrevState)
 
 			burnedBalance.PrevState = bal.PrevState
+			burnedBalance.IsActivate = bal.IsActivate
 			bal, ok = burnedBalances[burnedBalance.PrevState]
 		}
 		burnedBalances[state] = burnedBalance
