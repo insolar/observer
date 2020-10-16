@@ -1,6 +1,6 @@
 module github.com/insolar/observer
 
-go 1.15
+go 1.12
 
 require (
 	github.com/deepmap/oapi-codegen v1.3.0
@@ -14,10 +14,8 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866
-	// TODO replace to tag with the changes from PENV-680
-	github.com/insolar/insolar v1.8.3-0.20201006152754-36c995bbabdf
-	// TODO replace to tag with the changes from PENV-680
-	github.com/insolar/mainnet v1.11.4-0.20201007125809-3b4655e38feb
+	github.com/insolar/insolar v1.9.0
+	github.com/insolar/mainnet v1.12.1
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/labstack/echo/v4 v4.1.11
 	github.com/mitchellh/mapstructure v1.1.2
@@ -26,9 +24,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/ugorji/go v1.1.12 // indirect
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
 	gonum.org/v1/gonum v0.6.0 // indirect
+	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect
 	google.golang.org/grpc v1.21.0
 	gopkg.in/yaml.v2 v2.3.0

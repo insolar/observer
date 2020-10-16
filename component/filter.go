@@ -21,6 +21,7 @@ func makeFilter(obs *observability.Observability) func(*beauty) *beauty {
 		filtering.NewBalanceFilter().Filter(b.balances, b.members)
 		filtering.NewDepositUpdateFilter().Filter(b.depositUpdates, b.deposits)
 		filtering.NewVestingFilter().Filter(b.vestings, b.addresses)
+		filtering.NewBurnedBalanceFilter().Filter(b.burnedBalances)
 
 		log.Info("items successfully filtered")
 
