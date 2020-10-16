@@ -87,7 +87,7 @@ func TxToAPITx(tx models.Transaction, indexType models.TxIndexType) interface{} 
 	}
 }
 
-func MemberToAPIMember(member models.Member, deposits []models.Deposit, withMemberRef bool) (ResponsesMemberYaml, error) {
+func MemberToAPIMember(member models.Member, deposits []models.Deposit, burnedBalance *models.BurnedBalance, withMemberRef bool) (ResponsesMemberYaml, error) {
 	var resDeposits []SchemaDeposit
 
 	for _, d := range deposits {
@@ -142,6 +142,9 @@ func MemberToAPIMember(member models.Member, deposits []models.Deposit, withMemb
 	}
 	if member.MigrationAddress != "" {
 		res.MigrationAddress = &member.MigrationAddress
+	}
+	if burnedBalance != nil {
+		res.BurnedBalance = NullableString(burnedBalance.Balance)
 	}
 
 	return res, nil

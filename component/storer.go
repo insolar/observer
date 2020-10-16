@@ -875,3 +875,14 @@ func GetNotification(ctx context.Context, db Querier) (models.Notification, erro
 	}
 	return res, nil
 }
+
+func GetBurnedBalance(db orm.DB) (*models.BurnedBalance, error) {
+	burnedBalance := &models.BurnedBalance{
+		Balance: "0",
+	}
+	err := db.Model(burnedBalance).Last()
+	if err != nil && err != pg.ErrNoRows {
+		return nil, errors.Wrap(err, "failed to fetch burned balance")
+	}
+	return burnedBalance, nil
+}
