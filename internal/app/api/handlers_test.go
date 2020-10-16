@@ -21,6 +21,7 @@ import (
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/secrets"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -533,6 +534,15 @@ func insertDeposit(
 	require.NoError(t, err)
 }
 
+func insertBurnedBalance(t *testing.T, balance string) {
+	burnedBalance := models.BurnedBalance{
+		Balance:      balance,
+		AccountState: gen.Reference().Bytes(),
+	}
+	err := db.Insert(&burnedBalance)
+	require.NoError(t, err)
+}
+
 func TestTransactionsSearch(t *testing.T) {
 	defer truncateDB(t)
 
@@ -785,6 +795,130 @@ func TestMember(t *testing.T) {
 		Reference:        member.String(),
 		AccountReference: memberAccountReference.String(),
 		Balance:          balance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite1.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime - 10,
+				Index:            1,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  currentTime - 10,
+				Index:            2,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_MigrationAdmin_WithBurnedBalance(t *testing.T) {
+	defer truncateDB(t)
+
+	member := appfoundation.GetMigrationAdminMember()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+	burnedBalance := "20202020202"
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
+	insertBurnedBalance(t, burnedBalance)
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
+
+	memberStr := url.QueryEscape(member.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		BurnedBalance:    &burnedBalance,
+		WalletReference:  memberWalletReference.String(),
+		Deposits: &[]SchemaDeposit{
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "1000",
+				DepositReference: deposite1.String(),
+				EthTxHash:        "eth_hash_1",
+				HoldReleaseDate:  currentTime - 10,
+				Index:            1,
+				ReleasedAmount:   "10000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+			{
+				AmountOnHold:     "0",
+				AvailableAmount:  "2000",
+				DepositReference: deposite2.String(),
+				EthTxHash:        "eth_hash_2",
+				HoldReleaseDate:  currentTime - 10,
+				Index:            2,
+				ReleasedAmount:   "2000",
+				ReleaseEndDate:   currentTime - 10,
+				Status:           "AVAILABLE",
+				Timestamp:        currentTime - 10,
+			},
+		},
+	}
+	require.Equal(t, expected, received)
+}
+
+func TestMember_MigrationAdmin_WithoutBurnedBalance(t *testing.T) {
+	defer truncateDB(t)
+
+	member := appfoundation.GetMigrationAdminMember()
+	memberWalletReference := gen.Reference()
+	memberAccountReference := gen.Reference()
+	balance := "1010101"
+
+	deposite1 := gen.Reference()
+	deposite2 := gen.Reference()
+	insertMember(t, member, &memberWalletReference, &memberAccountReference, balance, "")
+	insertDeposit(t, deposite2, member, "2000", "2000", "eth_hash_2", 2, models.DepositStatusConfirmed)
+	insertDeposit(t, deposite1, member, "10000", "1000", "eth_hash_1", 1, models.DepositStatusConfirmed)
+
+	memberStr := url.QueryEscape(member.String())
+	resp, err := http.Get("http://" + apihost + "/api/member/" + memberStr)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	received := ResponsesMemberYaml{}
+	err = json.Unmarshal(bodyBytes, &received)
+	require.NoError(t, err)
+	expected := ResponsesMemberYaml{
+		Reference:        member.String(),
+		AccountReference: memberAccountReference.String(),
+		Balance:          balance,
+		BurnedBalance:    NullableString("0"),
 		WalletReference:  memberWalletReference.String(),
 		Deposits: &[]SchemaDeposit{
 			{
