@@ -169,6 +169,8 @@ github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866 h1:821agB4jwkceJ
 github.com/insolar/insconfig v0.0.0-20200227134411-011eca6dc866/go.mod h1:zB9bawcGFKS4hwXcu6yH4rYH06EZnGlFfhl0+KMKM9k=
 github.com/insolar/insolar v1.8.2 h1:d1bZyPvU5z6otUYDpb4JQ7NC2X01gOSYN687Yc+vTNA=
 github.com/insolar/insolar v1.8.2/go.mod h1:vBRQccV1Uuao6tRxD8Ek45CDp+15LMz15gELb2Qgn34=
+github.com/insolar/insolar v1.9.0 h1:lX8fVreRtCKdl/QxXAcQEORui0ax/eXmpObj7c8xlX0=
+github.com/insolar/insolar v1.9.0/go.mod h1:K9BPXhEiWsTornH2QSzUBC5OZc6shew3bUCUon7+FB0=
 github.com/insolar/mainnet v1.12.1 h1:KDDoRTARDQJeOuKpiuESoZq7rXQNAWF6W5ykxzhX+6A=
 github.com/insolar/mainnet v1.12.1/go.mod h1:Ob3JpozS3MtAyWN06tk/ztU9WLvRZJ6C1MYsOriT+TM=
 github.com/insolar/ratelimiter v1.0.0/go.mod h1:tdN/LjBmGJt5/dfwAQk+0GXVtv2f+mGKvXpnt2FBpfs=

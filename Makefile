@@ -90,27 +90,32 @@ ci_test: ## run tests with coverage
 	go test -json -v -count 10 -timeout 20m --coverprofile=coverage.txt --covermode=atomic ./... | tee ci_test_with_coverage.json
 
 .PHONY: test
-test: config ## tests
+test: vendor config ## tests
 	go test ./... -v $(TEST_ARGS)
 
 .PHONY: test-node
-test-node: config-node ## tests
+test-node: vendor config-node ## tests
 	go test ./... -tags node -v $(TEST_ARGS)
 
 .PHONY: all
-all: config build
+all: vendor config build
 
 .PHONY: all-node
-all-node: config-node build-node
+all-node: vendor config-node build-node
 
 .PHONY: help
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: migrate-init
-migrate-init: ## initial migrate
+migrate-init: vendor ## initial migrate
 	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --init --config=.artifacts/migrate.yaml
 
 .PHONY: migrate
-migrate:  ## migrate
+migrate: vendor  ## migrate
 	go run ./cmd/migrate/migrate.go --dir=scripts/migrations --config=.artifacts/migrate.yaml
+
+.PHONY: vendor
+vendor: ## update vendor dependencies
+	rm -rf vendor
+	go mod vendor
