@@ -18,7 +18,7 @@ import (
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/mainnet/application/builtin/proxy/member"
-	"github.com/insolar/mainnet/application/genesisrefs"
+	"github.com/insolar/mainnet/application/genesis"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -620,7 +620,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 		return nil
 	}
 
-	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
+	if rec.Record.ObjectID == *genesis.ContractFeeMember.GetLocal() {
 		log.Debug("skipped (fee member object)")
 		return nil
 	}
