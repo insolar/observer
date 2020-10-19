@@ -111,6 +111,12 @@ const PointsCount = 21
 
 func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 	s.setExpire(ctx, 1*time.Hour)
+
+	totalSupply, err := s.totalSupply()
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, "")
+	}
 	switch s.config.GetPriceOrigin() {
 	case "binance":
 		repo := postgres.NewBinanceStatsRepository(s.db)
@@ -128,6 +134,7 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 		response := ResponsesMarketStatsYaml{
 			Price:       fmt.Sprintf("%v", stats.SymbolPriceUSD),
 			DailyChange: api.NullableString(stats.PriceChangePercent),
+			TotalSupply: totalSupply,
 		}
 		response.addHistoryPoints(history)
 
@@ -151,20 +158,34 @@ func (s *ObserverServer) MarketStats(ctx echo.Context) error {
 			return ctx.JSON(http.StatusInternalServerError, "")
 		}
 		response := ResponsesMarketStatsYaml{
-			CirculatingSupply: checkEnabled(s.config.GetCMCMarketStatsParams().CirculatingSupply, stats.CirculatingSupply),
-			DailyChange:       checkEnabled(s.config.GetCMCMarketStatsParams().DailyChange, stats.PercentChange24Hours),
-			MarketCap:         checkEnabled(s.config.GetCMCMarketStatsParams().MarketCap, stats.MarketCap),
-			Price:             fmt.Sprintf("%v", stats.Price),
-			Rank:              checkEnabled(s.config.GetCMCMarketStatsParams().Rank, float64(stats.Rank)),
-			Volume:            checkEnabled(s.config.GetCMCMarketStatsParams().Volume, stats.Volume24Hours),
+			DailyChange: checkEnabled(s.config.GetCMCMarketStatsParams().DailyChange, stats.PercentChange24Hours),
+			MarketCap:   checkEnabled(s.config.GetCMCMarketStatsParams().MarketCap, stats.MarketCap),
+			Price:       fmt.Sprintf("%v", stats.Price),
+			Rank:        checkEnabled(s.config.GetCMCMarketStatsParams().Rank, float64(stats.Rank)),
+			Volume:      checkEnabled(s.config.GetCMCMarketStatsParams().Volume, stats.Volume24Hours),
+			TotalSupply: totalSupply,
 		}
 		response.addHistoryPoints(history)
 		return ctx.JSON(http.StatusOK, response)
 	default:
 		return ctx.JSON(http.StatusOK, ResponsesMarketStatsYaml{
-			Price: s.config.GetPrice(),
+			Price:       s.config.GetPrice(),
+			TotalSupply: totalSupply,
 		})
 	}
+}
+
+func (s *ObserverServer) totalSupply() (*string, error) {
+	repo := postgres.NewSupplyStatsRepository(s.db)
+	result, err := repo.LastStats()
+	if err != nil && err == postgres.ErrNoStats {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't get last supply stats")
+	}
+	totalSupply := result.TotalInXNS()
+	return api.NullableString(totalSupply), nil
 }
 
 func (s *ObserverServer) NetworkStats(ctx echo.Context) error {
