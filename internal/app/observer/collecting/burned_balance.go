@@ -65,7 +65,6 @@ func burnedBalance(rec *observer.Record) (*observer.BurnedBalance, []byte) {
 		prevState = v.Amend.PrevState
 		image = v.Amend.Image
 	default:
-		log.Error(errors.New("invalid record to get burned balance memory"))
 		return nil, nil
 	}
 
