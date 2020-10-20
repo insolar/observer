@@ -63,7 +63,7 @@ func (s *BurnedBalanceStorage) Update(model *observer.BurnedBalance) error {
 		return nil
 	}
 
-	res, err := s.db.Model(&observer.BurnedBalance{}).
+	res, err := s.db.Model(&models.BurnedBalance{}).
 		Where("account_state=?", model.PrevState.Bytes()).
 		Set("balance=?,account_state=?", model.Balance, model.AccountState.Bytes()).
 		Update()
