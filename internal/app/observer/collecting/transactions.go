@@ -38,7 +38,7 @@ const (
 	methodTransferToDeposit = "TransferToDeposit"
 	methodTransfer          = "Transfer"
 	methodAccept            = "Accept"
-	methodBurnAccept        = "BurnAccept"
+	methodBurnAccept        = "AcceptBurn"
 )
 
 const (
