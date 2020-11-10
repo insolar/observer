@@ -1,8 +1,6 @@
 name: observer
 on:
   pull_request:
-  schedule:
-    - cron: '0 2 * * *'
 env:
   GO_VERSION: 1.12.15
 jobs:
