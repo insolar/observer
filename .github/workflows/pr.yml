@@ -1,8 +1,6 @@
 name: observer
 on:
   pull_request:
-  schedule:
-    - cron: '0 2 * * *'
 env:
   GO_VERSION: 1.15.2
 jobs:
@@ -47,6 +45,14 @@ jobs:
         fetch-depth: 1
     - name: Test
       run: make test
+    - name: Send failure notification to Slack
+      if: failure() && github.event_name == 'schedule'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTIONS_NOTIFICATIONS_SLACK_HOOK_URL }}
   mocks:
     name: Check mocks
     runs-on: ubuntu-latest
@@ -69,6 +75,14 @@ jobs:
         git status
         git diff
         [[ $(git status -z | wc -c) -eq 0 ]]
+    - name: Send failure notification to Slack
+      if: failure() && github.event_name == 'schedule'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.ACTIONS_NOTIFICATIONS_SLACK_HOOK_URL }}
   lint:
     name: Lint
     runs-on: ubuntu-latest
