@@ -15,9 +15,9 @@ import (
 
 	"github.com/go-pg/pg"
 	"github.com/go-pg/pg/orm"
-	"github.com/insolar/insolar/application/appfoundation"
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/mainnet/application/appfoundation"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -182,25 +182,22 @@ func (s *ObserverServer) getMember(ctx echo.Context, method int, smth string) er
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	pulse, err := s.pStorage.Last()
-	if err != nil {
-		s.log.Error(errors.Wrap(err, "couldn't load last pulse"))
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
-	pTime, err := pulse.Number.AsApproximateTime()
-	if err != nil {
-		s.log.Error(errors.Wrapf(err, "couldn't convert pulse %d to time", pulse.Number))
-		return ctx.JSON(http.StatusInternalServerError, struct{}{})
-	}
-
 	deposits, err := component.GetDeposits(ctx.Request().Context(), s.db, memberReference, true)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	response, err := MemberToAPIMember(*member, deposits, pTime.Unix(), method != getByReference)
+	var burnedBalance *models.BurnedBalance
+	if insolar.NewReferenceFromBytes(member.Reference).Equal(appfoundation.GetMigrationAdminMember()) {
+		burnedBalance, err = component.GetBurnedBalance(s.db)
+		if err != nil {
+			s.log.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, struct{}{})
+		}
+	}
+
+	response, err := MemberToAPIMember(*member, deposits, burnedBalance, method != getByReference)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})

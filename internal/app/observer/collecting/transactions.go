@@ -18,7 +18,7 @@ import (
 	"github.com/insolar/mainnet/application/builtin/contract/member"
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	proxyMember "github.com/insolar/mainnet/application/builtin/proxy/member"
-	"github.com/insolar/mainnet/application/genesisrefs"
+	"github.com/insolar/mainnet/application/genesis"
 	"github.com/pkg/errors"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -30,6 +30,7 @@ const (
 	callSiteTransfer   = "member.transfer"
 	callSiteRelease    = "deposit.transfer"
 	callSiteAllocation = "account.transferToDeposit"
+	callSiteBurn       = "coin.burn"
 )
 
 const (
@@ -37,6 +38,7 @@ const (
 	methodTransferToDeposit = "TransferToDeposit"
 	methodTransfer          = "Transfer"
 	methodAccept            = "Accept"
+	methodBurnAccept        = "AcceptBurn"
 )
 
 const (
@@ -220,6 +222,28 @@ func (c *TxRegisterCollector) fromCall(log insolar.Logger, rec exporter.Record) 
 			RecordNumber:        int64(rec.RecordNumber),
 			Amount:              amount,
 			MemberToReference:   memberTo.Bytes(),
+			MemberFromReference: memberFrom.Bytes(),
+		}
+	case args.Params.CallSite == callSiteBurn:
+		amount, ok := callParams[paramAmount].(string)
+		if !ok {
+			log.Errorf("not found %s in transaction callParams", paramAmount)
+			return nil
+		}
+
+		memberFrom, err := insolar.NewObjectReferenceFromString(args.Params.Reference)
+		if err != nil {
+			log.Error(errors.Wrap(err, "failed to parse from reference"))
+			return nil
+		}
+
+		res = &observer.TxRegister{
+			Type:                models.TTypeBurn,
+			TransactionID:       txID,
+			PulseNumber:         int64(rec.Record.ID.Pulse()),
+			RecordNumber:        int64(rec.RecordNumber),
+			Amount:              amount,
+			MemberToReference:   appfoundation.GetMigrationAdminMember().Bytes(),
 			MemberFromReference: memberFrom.Bytes(),
 		}
 	default:
@@ -473,7 +497,8 @@ func (c *TxResultCollector) Collect(ctx context.Context, rec exporter.Record) *o
 	}
 
 	// Migration and release don't have fees.
-	if args.Params.CallSite == callSiteRelease || args.Params.CallSite == callSiteAllocation {
+	switch args.Params.CallSite {
+	case callSiteRelease, callSiteAllocation, callSiteBurn:
 		tx := &observer.TxResult{
 			TransactionID: txID,
 			Fee:           "0",
@@ -595,7 +620,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 		return nil
 	}
 
-	if rec.Record.ObjectID == *genesisrefs.ContractFeeMember.GetLocal() {
+	if rec.Record.ObjectID == *genesis.ContractFeeMember.GetLocal() {
 		log.Debug("skipped (fee member object)")
 		return nil
 	}
@@ -620,7 +645,7 @@ func (c *TxSagaResultCollector) Collect(ctx context.Context, rec exporter.Record
 	log.Debug("parsing method ", request.Method)
 	var tx *observer.TxSagaResult
 	switch request.Method {
-	case methodAccept:
+	case methodAccept, methodBurnAccept:
 		tx = c.fromAccept(log, rec, *request, *result)
 	case methodCall:
 		tx = c.fromCall(log, rec, *request, *result)
@@ -718,7 +743,8 @@ func (c *TxSagaResultCollector) fromCall(
 	isTransfer := args.Params.CallSite == callSiteTransfer
 	isRelease := args.Params.CallSite == callSiteRelease
 	isAllocation := args.Params.CallSite == callSiteAllocation
-	if !isTransfer && !isRelease && !isAllocation {
+	isBurn := args.Params.CallSite == callSiteBurn
+	if !isTransfer && !isRelease && !isAllocation && !isBurn {
 		log.Debug("skipped (request callSite is not parsable)")
 		return nil
 	}

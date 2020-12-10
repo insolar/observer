@@ -22,7 +22,7 @@ import (
 // ResponsesFeeYaml defines model for responses-fee-yaml.
 type ResponsesFeeYaml struct {
 
-	// Fee value in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// Fee value in XNS coin fractions expressed as an integer. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Fee string `json:"fee"`
 }
 
@@ -53,16 +53,19 @@ type ResponsesMemberYaml struct {
 	// Reference to the member's account object.
 	AccountReference string `json:"accountReference"`
 
-	// Account's balance in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// Account's balance in XNS coin fractions expressed as an integer. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Balance string `json:"balance"`
+
+	// Amount of burned XNS coin fractions expressed as an integer, optional. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	BurnedBalance *string `json:"burnedBalance,omitempty"`
 
 	// Deposits associated with the member.
 	Deposits *[]SchemaDeposit `json:"deposits,omitempty"`
 
-	// Special address in the Ethereum network — transfer destination for INS tokens during the migration period.
+	// Special address on the Ethereum network—a transfer destination for INS tokens during the migration period.
 	MigrationAddress *string `json:"migrationAddress,omitempty"`
 
-	// Reference to the member object.
+	// Reference to the `member` object.
 	Reference string `json:"reference"`
 
 	// Reference to the member's wallet object.
@@ -72,7 +75,7 @@ type ResponsesMemberYaml struct {
 // ResponsesMemberBalanceYaml defines model for responses-memberBalance-yaml.
 type ResponsesMemberBalanceYaml struct {
 
-	// Member's balance in XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// Member's balance in XNS coin fractions expressed as an integer. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Balance string `json:"balance"`
 }
 
@@ -93,42 +96,73 @@ type ResponsesPulseNumberYaml struct {
 // ResponsesPulseRangeYaml defines model for responses-pulse-range-yaml.
 type ResponsesPulseRangeYaml []int64
 
+// SchemaAllocation defines model for schema-allocation.
+type SchemaAllocation struct {
+	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
+	SchemasTransactionAbstract
+	// Embedded fields due to inline allOf schema
+
+	// Reference to the sending member object (migration daemon).
+	FromMemberReference string `json:"fromMemberReference"`
+
+	// Reference to the receiving deposit object.
+	ToDepositReference string `json:"toDepositReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference string `json:"toMemberReference"`
+	Type              string `json:"type"`
+}
+
+// SchemaBurn defines model for schema-burn.
+type SchemaBurn struct {
+	// Embedded struct due to allOf(#/components/schemas/schemas-transactionAbstract)
+	SchemasTransactionAbstract
+	// Embedded fields due to inline allOf schema
+
+	// Reference to the sending member object.
+	FromMemberReference string `json:"fromMemberReference"`
+
+	// Reference to the receiving member object.
+	ToMemberReference *string `json:"toMemberReference"`
+	Type              string  `json:"type"`
+}
+
 // SchemaDeposit defines model for schema-deposit.
 type SchemaDeposit struct {
 
-	// Amount of XNS coin fractions in the deposit that are on hold — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// An integer amount of XNS coin fractions in the deposit that are on hold. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	AmountOnHold string `json:"amountOnHold"`
 
-	// Amount of XNS coin fractions available for transfer from the deposit — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// An integer amount of XNS coin fractions available for transfer from the deposit. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	AvailableAmount string `json:"availableAmount"`
 
-	// Reference to the deposit's object.
+	// Reference to the `deposit` object.
 	DepositReference string `json:"depositReference"`
 
-	// Ethereum transaction's hash associated with the deposit.
+	// Ethereum transaction hash associated with the deposit.
 	EthTxHash string `json:"ethTxHash"`
 
-	// Date (in Unix timestamp format) to start the release of the hold on coins.
+	// Date in Unix timestamp format to start the release of the held coins.
 	HoldReleaseDate int64 `json:"holdReleaseDate"`
 
-	// Deposit's sequence number.
+	// Deposit sequence number.
 	Index int `json:"index"`
 
-	// Reference to the `member` object. Returned if the request had a `migrationAddress` in path instead of `reference`.
+	// Reference to the `member` object. Returned if, instead of `reference`, the request had a `migrationAddress` in path.
 	MemberReference *string `json:"memberReference,omitempty"`
 
-	// Next partial release: amount of XNS coin fractions to release on a particular timestamp in the future.
+	// Next partial release—amount of XNS coin fractions to release at a particular Unix timestamp in the future.
 	NextRelease *SchemaNextRelease `json:"nextRelease,omitempty"`
 
-	// Date (in Unix timestamp format) to end the release period — release all coins.
+	// Date in Unix timestamp format to end the release period meaning release of all coins.
 	ReleaseEndDate int64 `json:"releaseEndDate"`
 
-	// Amount of released XNS coin fractions from the start of the release period — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// An integer amount of released XNS coin fractions from the start of the release period. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	ReleasedAmount string `json:"releasedAmount"`
 
-	// * `AVAILABLE` — deposit is active, you can transfer coins from it.
-	// * `LOCKED` — deposit is on hold until `releaseEndDate`.
-	// * `MIGRATION` — approvals from migration daemons are being collected.
+	// * `AVAILABLE`—deposit is active, you can transfer coins from it.
+	// * `LOCKED`—deposit is on hold until the `releaseEndDate`.
+	// * `MIGRATION`—approvals from migration daemons are being collected.
 	Status string `json:"status"`
 
 	// Deposit creation time in Unix timestamp format.
@@ -155,10 +189,10 @@ type SchemaMigration struct {
 // SchemaNextRelease defines model for schema-next-release.
 type SchemaNextRelease struct {
 
-	// Amount of XNS coin fractions to release — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// An integer amount of XNS coin fractions to release. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Amount string `json:"amount"`
 
-	// Timestamp in the future.
+	// Unix timestamp in the future.
 	Timestamp int64 `json:"timestamp"`
 }
 
@@ -196,7 +230,7 @@ type SchemasTransaction interface{}
 // SchemasTransactionAbstract defines model for schemas-transactionAbstract.
 type SchemasTransactionAbstract struct {
 
-	// Amount of XNS coin fractions — a whole number. The smallest fraction of XNS is `1/10^10`. To calculate XNS, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
+	// An integer amount of XNS coin fractions. The smallest XNS fraction is `1/10^10`. To calculate an XNS value, divide the number of fractions by `10^10`. For example: `1000000000 fractions / 10^10 = 0.1 XNS`.
 	Amount string `json:"amount"`
 
 	// Fee value in XNS coin fractions. Only finalized transactions (with `received` status) have this value.
@@ -205,24 +239,24 @@ type SchemasTransactionAbstract struct {
 	// Transaction index.
 	Index string `json:"index"`
 
-	// Pulse number at transaction timestamp.
+	// Pulse number at the transaction timestamp.
 	PulseNumber int64 `json:"pulseNumber"`
 
 	// Transaction status:
 	//
-	// * `registered` — transfer request is registered;
-	// * `sent` — transfer of funds from the sender is finalized;
-	// * `received` — transfer of funds to the receiver is finalized.
-	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	// * `registered`—transfer request is registered.
+	// * `sent`—transfer of funds from the sender is finalized.
+	// * `received`—transfer of funds to the receiver is finalized.
+	// * `failed`—transfer of funds is finalized with an error; for example, in case of insufficient balance.
 	Status string `json:"status"`
 
-	// Timestamp of the initial transfer request in UNIX format.
+	// Unix timestamp of the initial transfer request.
 	Timestamp int64 `json:"timestamp"`
 
 	// Transaction ID.
 	TxID string `json:"txID"`
 
-	// Transaction type upon which all references depend.
+	// Transaction type that all references depend on.
 	Type string `json:"type"`
 }
 
@@ -246,9 +280,9 @@ type Transactions struct {
 // MemberByPublicKeyParams defines parameters for MemberByPublicKey.
 type MemberByPublicKeyParams struct {
 
-	// Public key of the target `member` object. With or without `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----` delimiters.
+	// Public key of the target `member` object. With or without the `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----` delimiters.
 	//
-	// Note: since query parameters must be valid parts of URL, the `publicKey` value should be URL-encoded.
+	// Note: Query parameters must be properly included into the URL, so `publicKey` value should comply with the HTML URL encoding.
 	PublicKey string `json:"publicKey"`
 }
 
@@ -258,39 +292,40 @@ type MemberTransactionsParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the last known transaction to start the list from the next one.
-	//
+	// Index of the last known transaction. The list starts from the next one.
 	// Each returned transaction has an `index` that can be specified as the value of this parameter.
 	//
 	// To get the list of most recent or old (depending on the `order` value) transactions, omit the index.
 	Index *string `json:"index,omitempty"`
 
-	// Transaction's direction:
+	// Transaction direction:
 	//
-	//   * `incoming` - transactions only to member,
-	//   * `outgoing` - transactions only from member,
-	//   * `all` - both to and from.
+	//   * `incoming`—only transactions to the `member`.
+	//   * `outgoing`—only transactions from the `member`.
+	//   * `all`—both of the above.
 	Direction *string `json:"direction,omitempty"`
 
 	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically preceed a transaction with a given `index`.
+	//   * `chronological`—get transactions that chronologically follow a transaction with a given `index`.
+	//   * `reverse`—get transactions that chronologically preceed a transaction with a given `index.
 	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
-	// * `transfer` - transactions to/from to member,
-	// * `migration` - transactions only to member's deposits,
-	// * `release` - transactions only from member's deposits to member's account.
+	// * `transfer`—transactions to/from the member.
+	// * `migration`—only transactions to the member's deposits.
+	// * `allocation`—only transactions used by Insolar for internal funding purposes.
+	// * `release`—only transactions from the member's deposits to this member's account.
+	// * `burn`-only transactions used by Insolar for internal burning purposes.
 	Type *string `json:"type,omitempty"`
 
 	// Transaction status:
 	//
-	// * `registered` — transfer request is registered;
-	// * `sent` — transfer of funds from the sender is finalized;
-	// * `received` — transfer of funds to the receiver is finalized.
-	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	// * `registered`—transfer request is registered.
+	// * `sent`—transfer of funds from the sender is finalized.
+	// * `received`—transfer of funds to the receiver is finalized.
+	// * `failed`—transfer of funds is finalized with an error; for example, in case of insufficient balance.
 	Status *string `json:"status,omitempty"`
 }
 
@@ -306,7 +341,7 @@ type PulseRangeParams struct {
 	// Number of integers in the returned array.
 	Limit int `json:"limit"`
 
-	// Last known `pulseNumber` to start the array from the next one.
+	// Last known `pulseNumber`. Array starts from the next one.
 	//
 	// Each returned `pulseNumber` can be specified as the value of this parameter in subsequent requests.
 	//
@@ -319,13 +354,13 @@ type TransactionsSearchParams struct {
 
 	// Value of `txID`, `fromMemberReference`, `toMemberReference` or `pulseNumber` by which to search (filter) transactions.
 	//
-	// Note: since path parameters must be valid parts of URL, the `:` after `insolar` in references and IDs is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	// Note: Path parameters must be properly included into the URL, so `:` after `insolar` in references and IDs should be replaced with `%3A` to comply with the HTML URL encoding.
 	Value *string `json:"value,omitempty"`
 
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the last known transaction to start the list from the next one.
+	// Index of the last known transaction. List starts from the next one.
 	//
 	// Each returned transaction has an `index` that can be specified as the value of this parameter.
 	//
@@ -334,23 +369,25 @@ type TransactionsSearchParams struct {
 
 	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically precede a transaction with a given `index`.
+	//   * `chronological`—get transactions that chronologically follow a transaction with a given `index`;
+	//   * `reverse`—get transactions that chronologically precede a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 
 	// Transaction type:
 	//
-	// * `transfer` - transactions to/from to member,
-	// * `migration` - transactions only to member's deposits,
-	// * `release` - transactions only from member's deposits to member's account.
+	// * `transfer`—transactions to/from to the member.
+	// * `migration`—only transactions to the member's deposits.
+	// * `allocation`—only transactions used by Insolar for internal funding purposes.
+	// * `release`—only transactions from the member's deposits to this member's account.
+	// * `burn`-transfers of burned coins from the member.
 	Type *string `json:"type,omitempty"`
 
 	// Transaction status:
 	//
-	// * `registered` — transfer request is registered;
-	// * `sent` — transfer of funds from the sender is finalized;
-	// * `received` — transfer of funds to the receiver is finalized.
-	// * `failed` — transfer of funds is finalized with an error, e.g., in case of insufficient balance.
+	// * `registered`—transfer request is registered.
+	// * `sent`—transfer of funds from the sender is finalized.
+	// * `received`—transfer of funds to the receiver is finalized.
+	// * `failed`—transfer of funds is finalized with an error; for example, in case of insufficient balance.
 	Status *string `json:"status,omitempty"`
 }
 
@@ -360,7 +397,7 @@ type ClosedTransactionsParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the last known transaction to start the list from the next one.
+	// Index of the last known transaction. The list starts from the next one.
 	//
 	// Each returned transaction has an `index` that can be specified as the value of this parameter.
 	//
@@ -369,8 +406,8 @@ type ClosedTransactionsParams struct {
 
 	// Chronological `order` of the transaction list starting from a given `index`:
 	//
-	//   * `chronological` — get transactions that chronologically follow a transaction with a given `index`;
-	//   * `reverse` — get transactions that chronologically precede a transaction with a given `index`.
+	//   * `chronological`—get transactions that chronologically follow a transaction with a given `index`.
+	//   * `reverse`—get transactions that chronologically precede a transaction with a given `index`.
 	Order *string `json:"order,omitempty"`
 }
 
@@ -379,7 +416,7 @@ type TransactionsByPulseNumberRangeParams struct {
 
 	// Reference to the `member` object.
 	//
-	// Note: since path parameters must be valid parts of URL, the `:` after `insolar` in references is to be replaced with `%3A` in accordance with the HTML URL encoding.
+	// Note: Path parameters must be properly included into the URL, so `:` after `insolar` in references and IDs should be replaced with `%3A` to comply with the HTML URL encoding.
 	MemberReference *string `json:"memberReference,omitempty"`
 
 	// Pulse number to start the first transaction list from. This parameter must chronologically precede the `toPulseNumber`.
@@ -391,7 +428,7 @@ type TransactionsByPulseNumberRangeParams struct {
 	// Number of entries per list.
 	Limit int `json:"limit"`
 
-	// Index of the last known transaction to start the list from the next one.
+	// Index of the last known transaction. The list starts from the next one.
 	//
 	// Each returned transaction has an `index` that can be specified as the value of this parameter.
 	//
@@ -401,43 +438,43 @@ type TransactionsByPulseNumberRangeParams struct {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// fee
+	// Fee
 	// (GET /api/fee/{amount})
 	Fee(ctx echo.Context, amount string) error
-	// member by public key
+	// Member by public key
 	// (GET /api/member/byPublicKey)
 	MemberByPublicKey(ctx echo.Context, params MemberByPublicKeyParams) error
-	// member
+	// Member
 	// (GET /api/member/{reference})
 	Member(ctx echo.Context, reference string) error
-	// member balance
+	// Member balance
 	// (GET /api/member/{reference}/balance)
 	Balance(ctx echo.Context, reference string) error
-	// member transactions
+	// Member transactions
 	// (GET /api/member/{reference}/transactions)
 	MemberTransactions(ctx echo.Context, reference string, params MemberTransactionsParams) error
-	// notification
+	// Notification
 	// (GET /api/notification)
 	Notification(ctx echo.Context) error
-	// pulse number
+	// Pulse number
 	// (GET /api/pulse/number)
 	PulseNumber(ctx echo.Context) error
-	// pulse number range
+	// Pulse number range
 	// (GET /api/pulse/range)
 	PulseRange(ctx echo.Context, params PulseRangeParams) error
-	// total supply
+	// Total supply
 	// (GET /api/stats/supply/total)
 	SupplyStatsTotal(ctx echo.Context) error
-	// transaction
+	// Transaction
 	// (GET /api/transaction/{txID})
 	Transaction(ctx echo.Context, txID string) error
-	// transactions
+	// Transactions
 	// (GET /api/transactions)
 	TransactionsSearch(ctx echo.Context, params TransactionsSearchParams) error
-	// closed transactions
+	// Closed transactions
 	// (GET /api/transactions/closed)
 	ClosedTransactions(ctx echo.Context, params ClosedTransactionsParams) error
-	// transactions within a pulse number range
+	// Transactions within a range of pulse numbers
 	// (GET /api/transactions/inPulseNumberRange)
 	TransactionsByPulseNumberRange(ctx echo.Context, params TransactionsByPulseNumberRangeParams) error
 }

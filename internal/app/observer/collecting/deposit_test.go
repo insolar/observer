@@ -21,7 +21,7 @@ import (
 	proxyDeposit "github.com/insolar/mainnet/application/builtin/proxy/deposit"
 	proxyPKShard "github.com/insolar/mainnet/application/builtin/proxy/pkshard"
 	proxyWallet "github.com/insolar/mainnet/application/builtin/proxy/wallet"
-	"github.com/insolar/mainnet/application/genesisrefs"
+	"github.com/insolar/mainnet/application/genesis"
 	"github.com/stretchr/testify/require"
 
 	"github.com/insolar/observer/internal/app/observer"
@@ -52,8 +52,8 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 		Lockup:             lockup,
 	}
 
-	depositRef := genesisrefs.ContractMigrationDeposit
-	memberRef := genesisrefs.ContractMigrationAdminMember
+	depositRef := genesis.ContractMigrationDeposit
+	memberRef := genesis.ContractMigrationAdminMember
 	walletRef1 := gen.ReferenceWithPulse(pn)
 	accountRef1 := gen.ReferenceWithPulse(pn)
 
@@ -79,8 +79,8 @@ func TestDepositCollector_CollectGenesisDeposit(t *testing.T) {
 
 	expected := []observer.Deposit{{
 		EthHash:         txHash,
-		Ref:             genesisrefs.ContractMigrationDeposit,
-		Member:          genesisrefs.ContractMigrationAdminMember,
+		Ref:             genesis.ContractMigrationDeposit,
+		Member:          genesis.ContractMigrationAdminMember,
 		Timestamp:       1546300800,
 		Balance:         balance,
 		Amount:          amount,

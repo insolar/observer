@@ -53,6 +53,7 @@ func makeBeautifier(
 	depositUpdates := collecting.NewDepositUpdateCollector(log)
 	depositMembers := collecting.NewDepositMemberCollector(log)
 	vestings := collecting.NewVestingCollector(log, cachedStore)
+	burnedBalances := collecting.NewBurnedBalanceCollector(log)
 
 	return func(ctx context.Context, r *raw) *beauty {
 		if r == nil {
@@ -68,6 +69,7 @@ func makeBeautifier(
 			depositUpdates: make(map[insolar.ID]observer.DepositUpdate),
 			depositMembers: make(map[insolar.Reference]observer.DepositMemberUpdate),
 			vestings:       make(map[string]*observer.Vesting),
+			burnedBalances: make(map[insolar.ID]*observer.BurnedBalance),
 		}
 
 		// preparing data
@@ -182,6 +184,11 @@ func makeBeautifier(
 			if vesting != nil {
 				b.vestings[vesting.Addr] = vesting
 			}
+
+			burnedBalance := burnedBalances.Collect(&obsRecord)
+			if burnedBalance != nil {
+				b.burnedBalances[burnedBalance.AccountState] = burnedBalance
+			}
 		}
 		log.Debug("Timer:  collected ", time.Since(tempTimer))
 
@@ -200,6 +207,7 @@ func makeBeautifier(
 			"deposit_updates":           len(b.depositUpdates),
 			"migration_address_updates": len(b.vestings),
 			"deposit_member_updates":    len(b.depositMembers),
+			"burned_balances":           len(b.burnedBalances),
 		}).Infof("collected depositUpdates")
 
 		metric.Transfers.Add(float64(len(b.txSagaResult)))

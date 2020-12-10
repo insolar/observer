@@ -7,13 +7,11 @@ package models
 
 import (
 	"fmt"
-	"math/big"
 	"reflect"
 	"sync"
 	"time"
 
 	"github.com/insolar/insolar/pulse"
-	"github.com/insolar/mainnet/application/builtin/contract/deposit"
 )
 
 type Member struct {
@@ -72,6 +70,7 @@ const (
 	TTypeMigration  TransactionType = "migration"
 	TTypeRelease    TransactionType = "release"
 	TTypeAllocation TransactionType = "allocation"
+	TTypeBurn       TransactionType = "burn"
 )
 
 type TxIndexType int
@@ -302,50 +301,6 @@ func (t *Transaction) Timestamp() int64 {
 	return pulseTime.Unix()
 }
 
-func (d *Deposit) ReleaseAmount(balance, amount *big.Int, currentTime int64) (amountOnHold *big.Int, releaseAmount *big.Int) {
-	if d.HoldReleaseDate == 0 {
-		return big.NewInt(0), amount
-	}
-
-	if currentTime < d.HoldReleaseDate {
-		return amount, big.NewInt(0)
-	}
-
-	if currentTime >= (d.Vesting + d.HoldReleaseDate) {
-		return big.NewInt(0), amount
-	}
-
-	currentStep := (currentTime - d.HoldReleaseDate) / d.VestingStep
-	steps := d.Vesting / d.VestingStep
-	releaseAmount = deposit.VestedByNow(amount, uint64(currentStep), uint64(steps))
-
-	amountOnHold = big.NewInt(0).Sub(amount, releaseAmount)
-
-	// if amountOnHold greater then balance,
-	// then it should be balance
-	if amountOnHold.Cmp(balance) == 1 {
-		amountOnHold = balance
-	}
-
-	// if releaseAmount greater then balance,
-	// then it should be balance
-	if releaseAmount.Cmp(balance) == 1 {
-		releaseAmount = balance
-	}
-
-	return amountOnHold, releaseAmount
-}
-
-func (d *Deposit) Status(currentTime int64) string {
-	if d.HoldReleaseDate == 0 {
-		return "AVAILABLE"
-	}
-	if currentTime < d.HoldReleaseDate {
-		return "LOCKED"
-	}
-	return "AVAILABLE"
-}
-
 func (s *SupplyStats) TotalInXNS() string {
 	return convertCoinsToXNS(s.Total)
 }
@@ -363,4 +318,12 @@ func convertCoinsToXNS(str string) string {
 	default:
 		return str[:l-10] + "." + str[l-10:]
 	}
+}
+
+type BurnedBalance struct {
+	tableName struct{} `sql:"burned_balance"` // nolint: unused,structcheck
+
+	ID           int64  `sql:"id,notnull"`
+	Balance      string `sql:"balance"`
+	AccountState []byte `sql:"account_state"`
 }
