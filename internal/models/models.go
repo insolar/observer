@@ -27,6 +27,13 @@ type Member struct {
 	PublicKey        string `sql:"public_key"`
 }
 
+type AugmentedAddress struct {
+	tableName struct{} `sql:"augmented_addresses"` // nolint: unused,structcheck
+
+	Reference []byte `sql:"member_ref"`
+	Address   string `sql:"address"`
+}
+
 type DepositStatus string
 
 const (
@@ -211,6 +218,11 @@ func (t Transaction) Fields() []string {
 }
 
 func (m Member) Fields() []string {
+	tType := reflect.TypeOf(m)
+	return getFields(tType)
+}
+
+func (m AugmentedAddress) Fields() []string {
 	tType := reflect.TypeOf(m)
 	return getFields(tType)
 }
