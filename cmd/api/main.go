@@ -29,7 +29,7 @@ import (
 func main() {
 	cfg := configuration.GetAPIConfig()
 	params := insconfig.Params{
-		EnvPrefix:        "lol",
+		EnvPrefix:        "observerapi",
 		ViperHooks:       []mapstructure.DecodeHookFunc{configuration.ToBigIntHookFunc()},
 		ConfigPathGetter: &insconfig.DefaultPathGetter{},
 	}
