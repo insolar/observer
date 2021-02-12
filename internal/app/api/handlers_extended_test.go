@@ -360,7 +360,7 @@ func TestSetAugmentedAddress_ErrorInvalidAddress(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 
 	received := &ErrorMessage{}
-	expected := &ErrorMessage{Error: []string{"invalid augmented address"}}
+	expected := &ErrorMessage{Error: []string{"invalid metamask address"}}
 	requireEqualResponse(t, resp, received, expected)
 
 	addrInDB, err := component.GetAugmentedAddress(context.Background(), db, member1.Bytes())

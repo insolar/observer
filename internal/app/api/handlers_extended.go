@@ -67,7 +67,7 @@ func (s *ObserverServerExtended) SetAugmentedAddress(ctx echo.Context, reference
 	}
 
 	if !appfoundation.IsEthereumAddress(request.AugmentedAddress) {
-		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid augmented address"))
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid metamask address"))
 	}
 
 	bodyBytes, err := json.Marshal(request)
