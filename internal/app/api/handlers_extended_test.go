@@ -24,6 +24,7 @@ import (
 	"github.com/insolar/insolar/insolar"
 	"github.com/insolar/insolar/insolar/gen"
 	"github.com/insolar/insolar/insolar/secrets"
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	crypto "github.com/insolar/x-crypto"
 	"github.com/insolar/x-crypto/ecdsa"
 	"github.com/insolar/x-crypto/rand"
@@ -189,8 +190,9 @@ func TestSetAugmentedAddress(t *testing.T) {
 	privateKey, err := secrets.GeneratePrivateKeyEthereum()
 	publicKeyPEM, err := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
 	publicKey := string(publicKeyPEM)
+	canonicalPk, err := foundation.ExtractCanonicalPublicKey(publicKey)
 
-	insertMember(t, member1, nil, nil, "0", publicKey)
+	insertMember(t, member1, nil, nil, "0", canonicalPk)
 	insertMember(t, member2, nil, nil, "0", randomString())
 
 	member1Str := url.QueryEscape(member1.String())
@@ -267,8 +269,9 @@ func TestSetAugmentedAddress_UpdateExisted(t *testing.T) {
 	privateKey, err := secrets.GeneratePrivateKeyEthereum()
 	publicKeyPEM, err := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
 	publicKey := string(publicKeyPEM)
+	canonicalPk, err := foundation.ExtractCanonicalPublicKey(publicKey)
 
-	insertMember(t, member1, nil, nil, "0", publicKey)
+	insertMember(t, member1, nil, nil, "0", canonicalPk)
 	insertMember(t, member2, nil, nil, "0", randomString())
 	oldAddr := insertAugmentedAddress(t, member1)
 
@@ -304,8 +307,9 @@ func TestSetAugmentedAddress_ErrorWrongSign(t *testing.T) {
 	privateKey, err := secrets.GeneratePrivateKeyEthereum()
 	publicKeyPEM, err := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
 	publicKey := string(publicKeyPEM)
+	canonicalPk, err := foundation.ExtractCanonicalPublicKey(publicKey)
 
-	insertMember(t, member1, nil, nil, "0", publicKey)
+	insertMember(t, member1, nil, nil, "0", canonicalPk)
 	insertMember(t, member2, nil, nil, "0", randomString())
 	oldAddr := insertAugmentedAddress(t, member1)
 
@@ -338,8 +342,9 @@ func TestSetAugmentedAddress_ErrorInvalidAddress(t *testing.T) {
 	privateKey, err := secrets.GeneratePrivateKeyEthereum()
 	publicKeyPEM, err := secrets.ExportPublicKeyPEM(secrets.ExtractPublicKey(privateKey))
 	publicKey := string(publicKeyPEM)
+	canonicalPk, err := foundation.ExtractCanonicalPublicKey(publicKey)
 
-	insertMember(t, member1, nil, nil, "0", publicKey)
+	insertMember(t, member1, nil, nil, "0", canonicalPk)
 	insertMember(t, member2, nil, nil, "0", randomString())
 	oldAddr := insertAugmentedAddress(t, member1)
 

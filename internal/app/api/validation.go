@@ -10,9 +10,14 @@ package api
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/pem"
+	"fmt"
 	"strings"
 
+	"github.com/insolar/insolar/logicrunner/builtin/foundation"
+	"github.com/insolar/x-crypto/ecdsa"
 	"github.com/insolar/x-crypto/sha256"
+	"github.com/insolar/x-crypto/x509"
 	"github.com/pkg/errors"
 )
 
@@ -66,4 +71,42 @@ func parseSignature(signature string) (string, error) {
 	}
 
 	return signature[index+10:], nil
+}
+
+func verifySignature(rawRequest []byte, signature string, canonicalKeyDB string, rawpublicpem string) error {
+	sig, err := base64.StdEncoding.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("cant decode signature %s", err.Error())
+	}
+
+	canonicalKey, err := foundation.ExtractCanonicalPublicKey(rawpublicpem)
+	if err != nil {
+		return fmt.Errorf("problems with parsing. Key - %v", rawpublicpem)
+	}
+
+	if canonicalKey != canonicalKeyDB {
+		return fmt.Errorf("access denied. Key - %v", rawpublicpem)
+	}
+
+	blockPub, _ := pem.Decode([]byte(rawpublicpem))
+	if blockPub == nil {
+		return fmt.Errorf("problems with decoding. Key - %v", rawpublicpem)
+	}
+	x509EncodedPub := blockPub.Bytes
+	publicKey, err := x509.ParsePKIXPublicKey(x509EncodedPub)
+	if err != nil {
+		return fmt.Errorf("problems with parsing. Key - %v", rawpublicpem)
+	}
+
+	hash := sha256.Sum256(rawRequest)
+	r, s, err := foundation.UnmarshalSig(sig)
+	if err != nil {
+		return err
+	}
+	valid := ecdsa.Verify(publicKey.(*ecdsa.PublicKey), hash[:], r, s)
+	if !valid {
+		return fmt.Errorf("invalid signature")
+	}
+
+	return nil
 }

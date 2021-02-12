@@ -16,7 +16,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/insolar/insolar/logicrunner/builtin/foundation"
 	"github.com/insolar/mainnet/application/appfoundation"
 
 	"github.com/go-pg/pg"
@@ -96,7 +95,7 @@ func (s *ObserverServerExtended) SetAugmentedAddress(ctx echo.Context, reference
 		return ctx.JSON(http.StatusInternalServerError, struct{}{})
 	}
 
-	err = foundation.VerifySignature(bodyBytes, signature, member.PublicKey, request.PublicKey, false)
+	err = verifySignature(bodyBytes, signature, member.PublicKey, request.PublicKey)
 	if err != nil {
 		s.log.Error(err)
 		return ctx.JSON(http.StatusForbidden, NewSingleMessageError("signature is wrong"))
