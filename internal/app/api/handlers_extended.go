@@ -8,11 +8,15 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/insolar/mainnet/application/appfoundation"
 
 	"github.com/go-pg/pg"
 	"github.com/insolar/insolar/insolar"
@@ -36,6 +40,74 @@ type ObserverServerExtended struct {
 func NewObserverServerExtended(db *pg.DB, log insolar.Logger, pStorage observer.PulseStorage, config configuration.APIConfig) *ObserverServerExtended {
 	observerServer := NewObserverServer(db, log, pStorage, config)
 	return &ObserverServerExtended{db: db, log: log, pStorage: pStorage, config: config, server: observerServer}
+}
+
+func (s *ObserverServerExtended) AugmentedAddress(ctx echo.Context, reference string) error {
+	ref, errMsg := s.checkReference(reference)
+	if errMsg != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid reference"))
+	}
+	addr, err := component.GetAugmentedAddress(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.JSON(http.StatusOK, ResponsesAugmentedAddressYaml{AugmentedAddress: ""})
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesAugmentedAddressYaml{AugmentedAddress: addr.Address})
+}
+
+func (s *ObserverServerExtended) SetAugmentedAddress(ctx echo.Context, reference string, params SetAugmentedAddressParams) error {
+	request := SetAugmentedAddressJSONRequestBody{}
+	if err := ctx.Bind(&request); err != nil {
+		s.log.Error(err)
+		return err
+	}
+
+	if !appfoundation.IsEthereumAddress(request.AugmentedAddress) {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid metamask address"))
+	}
+
+	bodyBytes, err := json.Marshal(request)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+	signature, err := validateRequestHeaders(string(params.Digest), string(params.Signature), bodyBytes)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusForbidden, NewSingleMessageError(err.Error()))
+	}
+
+	ref, errMsg := s.checkReference(reference)
+	if errMsg != nil {
+		return ctx.JSON(http.StatusBadRequest, NewSingleMessageError("invalid reference"))
+	}
+
+	member, err := component.GetMember(ctx.Request().Context(), s.db, ref.Bytes())
+	if err != nil {
+		if err == component.ErrReferenceNotFound {
+			return ctx.NoContent(http.StatusNoContent)
+		}
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	err = verifySignature(bodyBytes, signature, member.PublicKey, request.PublicKey)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusForbidden, NewSingleMessageError("signature is wrong"))
+	}
+
+	err = component.SetAugmentedAddress(s.db, *ref, request.AugmentedAddress)
+	if err != nil {
+		s.log.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, struct{}{})
+	}
+
+	return ctx.JSON(http.StatusOK, ResponsesAugmentedAddressYaml{AugmentedAddress: request.AugmentedAddress})
 }
 
 func (s *ObserverServerExtended) Fee(ctx echo.Context, amount string) error {
@@ -135,6 +207,29 @@ func (s *ObserverServerExtended) setExpire(ctx echo.Context, duration time.Durat
 		"Expires",
 		time.Now().UTC().Add(duration).Format(http.TimeFormat),
 	)
+}
+
+func (s *ObserverServerExtended) checkReference(referenceRow string) (*insolar.Reference, *ErrorMessage) {
+	referenceRow = strings.TrimSpace(referenceRow)
+	var errMsg ErrorMessage
+
+	if len(referenceRow) == 0 {
+		errMsg = NewSingleMessageError("empty reference")
+		return nil, &errMsg
+	}
+
+	reference, err := url.QueryUnescape(referenceRow)
+	if err != nil {
+		errMsg = NewSingleMessageError("error unescaping reference parameter")
+		return nil, &errMsg
+	}
+
+	ref, err := insolar.NewReferenceFromString(reference)
+	if err != nil {
+		errMsg = NewSingleMessageError("reference wrong format")
+		return nil, &errMsg
+	}
+	return ref, nil
 }
 
 func isInt(s string) bool {

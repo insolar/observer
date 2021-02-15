@@ -693,6 +693,41 @@ func GetMemberByPublicKey(ctx context.Context, db Querier, pk string) (*models.M
 	return member, nil
 }
 
+func GetAugmentedAddress(ctx context.Context, db Querier, ref []byte) (*models.AugmentedAddress, error) {
+	add := &models.AugmentedAddress{}
+	_, err := db.QueryOneContext(ctx, add,
+		fmt.Sprintf( // nolint: gosec
+			`select %s from augmented_addresses where member_ref = ?0`, strings.Join(models.AugmentedAddress{}.Fields(), ",")),
+		ref)
+	if err != nil {
+		if err == pg.ErrNoRows {
+			return nil, ErrReferenceNotFound
+		}
+		return nil, errors.Wrap(err, "failed to fetch augmented address")
+	}
+	return add, nil
+}
+
+func SetAugmentedAddress(db ExecerQuerirer, ref insolar.Reference, address string) error {
+	_, err := db.Exec(
+		fmt.Sprintf( // nolint: gosec
+			`
+				INSERT INTO augmented_addresses (%s) VALUES %s
+				ON CONFLICT (member_ref) DO UPDATE SET 
+					member_ref = EXCLUDED.member_ref,
+					address = EXCLUDED.address
+			`,
+			strings.Join(models.AugmentedAddress{}.Fields(), ","),
+			valuesTemplate(len(models.AugmentedAddress{}.Fields()), 1),
+		),
+		ref.Bytes(), address,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to set augmented address")
+	}
+	return nil
+}
+
 func GetDeposits(ctx context.Context, db Querier, memberReference []byte, onlyConfirmed bool) ([]models.Deposit, error) {
 	deposits := make([]models.Deposit, 0)
 	whereCond := []string{"member_ref = ?0"}

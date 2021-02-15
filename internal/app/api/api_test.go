@@ -81,6 +81,8 @@ func truncateDB(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.Model(&models.BurnedBalance{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
 	require.NoError(t, err)
+	_, err = db.Model(&models.AugmentedAddress{}).Exec("TRUNCATE TABLE ?TableName CASCADE")
+	require.NoError(t, err)
 
 	_, err = db.Exec("TRUNCATE TABLE pulses CASCADE")
 	require.NoError(t, err)
